@@ -224,19 +224,6 @@ export default function TrxGuidePage() {
         Be Rich &copy; 2024 &mdash; Guide TRX
       </footer>
 
-      {/* Inline keyframes */}
-      <style jsx>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(-6px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   );
 }

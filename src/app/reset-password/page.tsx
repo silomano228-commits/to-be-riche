@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 
@@ -13,94 +13,27 @@ function ResetForm({ token }: { token: string }) {
   const [showPw2, setShowPw2] = useState(false);
   const [loading, setLoading] = useState(false);
   const [tokenValid, setTokenValid] = useState<boolean | null>(null);
+  const [validating, setValidating] = useState(true);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [pwStrength, setPwStrength] = useState(0);
 
-  // Validate token via button click or auto-validate
-  const handleValidate = async () => {
-    try {
-      const res = await fetch(`/api/auth/reset-password?token=${token}`);
-      const data = await res.json();
-      setTokenValid(data.success);
-    } catch {
-      setTokenValid(false);
-    }
-  };
+  // Validate token on mount using useEffect
+  useEffect(() => {
+    const validateToken = async () => {
+      try {
+        const res = await fetch(`/api/auth/reset-password?token=${token}`);
+        const data = await res.json();
+        setTokenValid(data.success);
+      } catch {
+        setTokenValid(false);
+      } finally {
+        setValidating(false);
+      }
+    };
+    validateToken();
+  }, [token]);
 
-  // Auto-validate on first render using a click event simulation
-  if (tokenValid === null) {
-    // Trigger validation
-    handleValidate();
-    return (
-      <div className="min-h-screen bg-[#0B1120] flex items-center justify-center">
-        <div className="w-8 h-8 border-3 border-gray-700 border-t-[#00C853] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
-        <style jsx>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    );
-  }
-
-  // Invalid/expired token
-  if (!tokenValid && !success) {
-    return (
-      <div className="min-h-screen bg-[#0B1120] flex flex-col items-center justify-center px-5">
-        <div className="fixed w-[200px] h-[200px] rounded-full bg-[rgba(239,68,68,0.06)] blur-[80px] top-[30%] left-[20%] pointer-events-none" />
-        <div className="w-full max-w-[380px] text-center">
-          <div className="w-16 h-16 mx-auto rounded-full bg-[rgba(239,68,68,0.1)] flex items-center justify-center mb-4">
-            <i className="fas fa-exclamation-triangle text-[#EF4444] text-[1.4rem]"></i>
-          </div>
-          <h2 className="text-[1.1rem] font-bold text-white mb-2">Lien invalide</h2>
-          <p className="text-[rgba(255,255,255,0.4)] text-[0.78rem] mb-6 leading-relaxed">
-            Ce lien de réinitialisation est invalide ou a expiré. Veuillez demander un nouveau lien.
-          </p>
-          <a
-            href="/forgot-password"
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#FCD34D] to-[#FBBF24] text-[#78350F] font-bold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(251,191,36,0.2)] font-[Inter] transition-transform active:scale-[0.97] flex items-center justify-center gap-2 no-underline"
-          >
-            <i className="fas fa-redo"></i> Demander un nouveau lien
-          </a>
-          <a
-            href="/"
-            className="mt-3 text-[0.78rem] text-[rgba(255,255,255,0.4)] hover:text-[#FBBF24] transition-colors inline-flex items-center gap-1.5"
-          >
-            <i className="fas fa-arrow-left text-[0.7rem]"></i> Retour à la connexion
-          </a>
-        </div>
-      </div>
-    );
-  }
-
-  // Success state
-  if (success) {
-    return (
-      <div className="min-h-screen bg-[#0B1120] flex flex-col items-center justify-center px-5">
-        <div className="fixed w-[200px] h-[200px] rounded-full bg-[rgba(0,200,83,0.08)] blur-[80px] top-[25%] left-[15%] pointer-events-none" />
-        <div className="w-full max-w-[380px] text-center">
-          <img
-            src={LOGO_URL}
-            alt="Be Rich"
-            className="w-[80px] h-[80px] mx-auto mb-4 object-contain"
-            style={{ filter: 'drop-shadow(0 4px 20px rgba(0,200,83,0.2))' }}
-          />
-          <div className="w-16 h-16 mx-auto rounded-full bg-[rgba(0,200,83,0.1)] flex items-center justify-center mb-4">
-            <i className="fas fa-check-circle text-[#00E676] text-[1.6rem]"></i>
-          </div>
-          <h2 className="text-[1.1rem] font-bold text-white mb-2">Mot de passe réinitialisé !</h2>
-          <p className="text-[rgba(255,255,255,0.4)] text-[0.78rem] mb-6 leading-relaxed">
-            Votre mot de passe a été modifié avec succès. Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.
-          </p>
-          <a
-            href="/"
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(0,200,83,0.2)] font-[Inter] transition-transform active:scale-[0.97] flex items-center justify-center gap-2 no-underline"
-          >
-            <i className="fas fa-sign-in-alt"></i> Se connecter
-          </a>
-        </div>
-      </div>
-    );
-  }
-
-  // Reset password form
   const checkStrength = (v: string) => {
     let s = 0;
     if (v.length >= 6) s++;
@@ -147,6 +80,86 @@ function ResetForm({ token }: { token: string }) {
     setLoading(false);
   };
 
+  // Loading state
+  if (validating) {
+    return (
+      <div className="min-h-screen bg-[#0B1120] flex items-center justify-center">
+        <div className="w-8 h-8 border-[3px] border-gray-700 border-t-[#00C853] rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Invalid/expired token
+  if (!tokenValid && !success) {
+    return (
+      <div className="min-h-screen bg-[#0B1120] flex flex-col items-center justify-center px-5">
+        <div className="fixed w-[200px] h-[200px] rounded-full bg-[rgba(239,68,68,0.06)] blur-[80px] top-[30%] left-[20%] pointer-events-none" />
+        <div className="w-full max-w-[380px] text-center">
+          <div className="w-16 h-16 mx-auto rounded-full bg-[rgba(239,68,68,0.1)] flex items-center justify-center mb-4">
+            <i className="fas fa-exclamation-triangle text-[#EF4444] text-[1.4rem]"></i>
+          </div>
+          <h2 className="text-[1.1rem] font-bold text-white mb-2">Lien invalide</h2>
+          <p className="text-[rgba(255,255,255,0.4)] text-[0.78rem] mb-6 leading-relaxed">
+            Ce lien de réinitialisation est invalide ou a expiré. Veuillez demander un nouveau lien.
+          </p>
+          <a
+            href="/forgot-password"
+            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#FCD34D] to-[#FBBF24] text-[#78350F] font-bold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(251,191,36,0.2)] font-[Inter] transition-transform active:scale-[0.97] flex items-center justify-center gap-2 no-underline"
+          >
+            <i className="fas fa-redo"></i> Demander un nouveau lien
+          </a>
+          <a
+            href="/"
+            className="mt-3 text-[0.78rem] text-[rgba(255,255,255,0.4)] hover:text-[#FBBF24] transition-colors inline-flex items-center gap-1.5"
+          >
+            <i className="fas fa-arrow-left text-[0.7rem]"></i> Retour à la connexion
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  // Success state
+  if (success) {
+    return (
+      <div className="min-h-screen bg-[#0B1120] flex flex-col items-center justify-center px-5">
+        <div className="fixed w-[200px] h-[200px] rounded-full bg-[rgba(0,200,83,0.08)] blur-[80px] top-[25%] left-[15%] pointer-events-none" />
+        <div className="w-full max-w-[380px] text-center">
+          <img
+            src={LOGO_URL}
+            alt="Be Rich"
+            className="w-[80px] h-[80px] mx-auto mb-4 object-contain"
+            style={{ filter: 'drop-shadow(0 4px 20px rgba(0,200,83,0.2))' }}
+            onError={(e) => {
+              const t = e.target as HTMLImageElement;
+              const p = t.parentElement;
+              if (p) {
+                const div = document.createElement('div');
+                div.className = 'bg-gradient-to-br from-[#00E676] to-[#00C853] rounded-[22px] flex items-center justify-center text-white font-black w-[80px] h-[80px] mx-auto mb-4';
+                div.textContent = 'BR';
+                p.replaceChild(div, t);
+              }
+            }}
+          />
+          <div className="w-16 h-16 mx-auto rounded-full bg-[rgba(0,200,83,0.1)] flex items-center justify-center mb-4">
+            <i className="fas fa-check-circle text-[#00E676] text-[1.6rem]"></i>
+          </div>
+          <h2 className="text-[1.1rem] font-bold text-white mb-2">Mot de passe réinitialisé !</h2>
+          <p className="text-[rgba(255,255,255,0.4)] text-[0.78rem] mb-6 leading-relaxed">
+            Votre mot de passe a été modifié avec succès. Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.
+          </p>
+          <a
+            href="/"
+            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(0,200,83,0.2)] font-[Inter] transition-transform active:scale-[0.97] flex items-center justify-center gap-2 no-underline"
+          >
+            <i className="fas fa-sign-in-alt"></i> Se connecter
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  // Reset password form
   return (
     <div className="min-h-screen bg-[#0B1120] flex flex-col items-center justify-center px-5">
       {/* Decorative orbs */}
@@ -259,7 +272,7 @@ function ResetForm({ token }: { token: string }) {
             className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(0,200,83,0.2)] font-[Inter] transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {loading ? (
-              <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
+              <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full animate-spin" />
             ) : (
               <>
                 <i className="fas fa-check"></i> Réinitialiser le mot de passe
@@ -275,12 +288,6 @@ function ResetForm({ token }: { token: string }) {
           <i className="fas fa-redo text-[0.7rem]"></i> Renvoyer un lien
         </a>
       </div>
-
-      <style jsx>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }
@@ -329,7 +336,7 @@ export default function ResetPasswordPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-[#0B1120] flex items-center justify-center">
-        <div className="w-8 h-8 border-3 border-gray-700 border-t-[#00C853] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
+        <div className="w-8 h-8 border-[3px] border-gray-700 border-t-[#00C853] rounded-full animate-spin" />
       </div>
     }>
       <ResetPasswordContent />
