@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  name          String
+  password      String
+  balance       Float         @default(0)
+  invested      Float         @default(0)
+  earnings      Float         @default(0)
+  hasInvested   Boolean       @default(false)
+  role          String        @default("user")
+  depositCount  Int               @default(0)
+  transactions  Transaction[]
+  projects      Project[]
+  chatMessages  ChatMessage[]
+  pendingDeposits PendingDeposit[]
+  passwordResetTokens PasswordResetToken[]
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}
+
+model Transaction {
+  id        String   @id @default(cuid())
+  type      String
+  amount    Float
+  gain      Float    @default(0)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+}
+
+model Project {
+  id             String        @id @default(cuid())
+  name           String
+  amount         Float
+  receivedAmount Float         @default(0)
+  description    String
+  status         String        @default("active")
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions   Transaction[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String
+  isAdmin   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model PendingDeposit {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amountUsd   Float
+  amountTrx   Float
+  trxPrice    Float
+  userAddress String
+  txHash      String?
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SiteConfig {
+  id          String @id @default("main")
+  adminTrxAddress String @default("")
+  trxUsdPrice    Float  @default(0.12)
+  updatedAt   DateTime @updatedAt
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
