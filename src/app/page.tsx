@@ -220,10 +220,7 @@ function AuthScreen() {
             <a href="/forgot-password" className="mt-4 text-[0.78rem] text-[rgba(255,255,255,0.35)] hover:text-[#FBBF24] transition-colors inline-flex items-center gap-1.5 no-underline">
               <i className="fas fa-lock text-[0.65rem]"></i> Mot de passe oublié ?
             </a>
-            <div className="mt-4 p-3.5 bg-[rgba(255,255,255,0.03)] rounded-xl border border-[rgba(255,255,255,0.05)]">
-              <p className="text-[0.6rem] text-[rgba(255,255,255,0.2)] mb-1 uppercase tracking-[1px]">Compte admin</p>
-              <p className="text-[0.74rem] font-semibold text-[rgba(255,255,255,0.5)] font-mono">admin@berich.com / Admin@2024</p>
-            </div>
+
           </form>
         ) : (
           <form onSubmit={handleRegister}>
@@ -1685,10 +1682,7 @@ export default function BeRichApp() {
         <NotificationContainer />
         <ToastContainer />
 
-        {/* Mode badge */}
-        <div className="fixed top-1.5 left-1/2 -translate-x-1/2 z-[5000] py-1 px-3 rounded-full text-[0.55rem] font-bold tracking-[0.6px] uppercase pointer-events-none bg-[rgba(0,200,83,0.08)] text-[#00C853] border border-[rgba(0,200,83,0.12)]">
-          Base de données connectée
-        </div>
+
 
         {/* Pages */}
         <div className={`absolute inset-0 bg-[#F2F5F9] overflow-y-auto overflow-x-hidden flex flex-col transition-all duration-300 ${!showSplash && currentPage !== 'profile' ? 'opacity-100 translate-x-0 z-10' : 'opacity-0 translate-x-full pointer-events-none'}`}>
