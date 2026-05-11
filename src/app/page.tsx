@@ -224,31 +224,31 @@ function AuthScreen() {
           </form>
         ) : (
           <form onSubmit={handleRegister}>
-            <div className="mb-4 w-full">
-              <label className="block mb-1.5 text-[0.75rem] font-semibold text-[rgba(255,255,255,0.35)]">Nom complet</label>
-              <input name="name" type="text" required placeholder="Jean Dupont" minLength={2} className={`w-full py-3 px-4 bg-[rgba(255,255,255,0.05)] border-[1.5px] ${errors.name ? 'border-red-500' : 'border-[rgba(255,255,255,0.08)]'} rounded-xl text-[0.88rem] outline-none transition-all font-[Inter] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:bg-[rgba(255,255,255,0.08)] focus:border-[#00C853]`} />
-              {errors.name && <p className="text-red-500 text-[0.68rem] mt-1 font-medium">{errors.name}</p>}
+            <div className="mb-2.5 w-full">
+              <label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(255,255,255,0.35)]">Nom complet</label>
+              <input name="name" type="text" required placeholder="Jean Dupont" minLength={2} className={`w-full py-2.5 px-3.5 bg-[rgba(255,255,255,0.05)] border-[1.5px] ${errors.name ? 'border-red-500' : 'border-[rgba(255,255,255,0.08)]'} rounded-xl text-[0.85rem] outline-none transition-all font-[Inter] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:bg-[rgba(255,255,255,0.08)] focus:border-[#00C853]`} />
+              {errors.name && <p className="text-red-500 text-[0.65rem] mt-0.5 font-medium">{errors.name}</p>}
             </div>
-            <div className="mb-4 w-full">
-              <label className="block mb-1.5 text-[0.75rem] font-semibold text-[rgba(255,255,255,0.35)]">Email</label>
-              <input name="email" type="email" required placeholder="votre@email.com" className="w-full py-3 px-4 bg-[rgba(255,255,255,0.05)] border-[1.5px] border-[rgba(255,255,255,0.08)] rounded-xl text-[0.88rem] outline-none transition-all font-[Inter] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:bg-[rgba(255,255,255,0.08)] focus:border-[#00C853]" />
+            <div className="mb-2.5 w-full">
+              <label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(255,255,255,0.35)]">Email</label>
+              <input name="email" type="email" required placeholder="votre@email.com" className="w-full py-2.5 px-3.5 bg-[rgba(255,255,255,0.05)] border-[1.5px] border-[rgba(255,255,255,0.08)] rounded-xl text-[0.85rem] outline-none transition-all font-[Inter] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:bg-[rgba(255,255,255,0.08)] focus:border-[#00C853]" />
             </div>
-            <div className="mb-4 w-full relative">
-              <label className="block mb-1.5 text-[0.75rem] font-semibold text-[rgba(255,255,255,0.35)]">Mot de passe</label>
-              <input name="password" type={showPw.r ? 'text' : 'password'} required placeholder="Min. 6 caractères" minLength={6} onChange={(e) => checkStrength(e.target.value)} className={`w-full py-3 px-4 pr-11 bg-[rgba(255,255,255,0.05)] border-[1.5px] ${errors.password ? 'border-red-500' : 'border-[rgba(255,255,255,0.08)]'} rounded-xl text-[0.88rem] outline-none transition-all font-[Inter] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:bg-[rgba(255,255,255,0.08)] focus:border-[#00C853]`} />
-              <button type="button" onClick={() => setShowPw({ ...showPw, r: !showPw.r })} className="absolute right-3 top-[38px] bg-transparent border-none text-[rgba(255,255,255,0.25)] cursor-pointer p-0.5"><i className={`fas ${showPw.r ? 'fa-eye-slash' : 'fa-eye'}`}></i></button>
-              <div className="flex gap-1 mt-1.5">
+            <div className="mb-2.5 w-full relative">
+              <label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(255,255,255,0.35)]">Mot de passe</label>
+              <input name="password" type={showPw.r ? 'text' : 'password'} required placeholder="Min. 6 caractères" minLength={6} onChange={(e) => checkStrength(e.target.value)} className={`w-full py-2.5 px-3.5 pr-10 bg-[rgba(255,255,255,0.05)] border-[1.5px] ${errors.password ? 'border-red-500' : 'border-[rgba(255,255,255,0.08)]'} rounded-xl text-[0.85rem] outline-none transition-all font-[Inter] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:bg-[rgba(255,255,255,0.08)] focus:border-[#00C853]`} />
+              <button type="button" onClick={() => setShowPw({ ...showPw, r: !showPw.r })} className="absolute right-3 top-[32px] bg-transparent border-none text-[rgba(255,255,255,0.25)] cursor-pointer p-0.5"><i className={`fas ${showPw.r ? 'fa-eye-slash' : 'fa-eye'}`}></i></button>
+              <div className="flex gap-1 mt-1">
                 {[0, 1, 2, 3].map(i => (
-                  <div key={i} className={`h-[3px] flex-1 rounded-full transition-colors duration-300 ${pwStrength <= 1 && i === 0 ? 'bg-red-500' : pwStrength <= 2 && i <= 1 ? 'bg-red-500' : pwStrength <= 3 && i <= 2 ? 'bg-amber-500' : pwStrength >= 4 ? 'bg-green-400' : 'bg-[rgba(255,255,255,0.06)]'}`} />
+                  <div key={i} className={`h-[2px] flex-1 rounded-full transition-colors duration-300 ${pwStrength <= 1 && i === 0 ? 'bg-red-500' : pwStrength <= 2 && i <= 1 ? 'bg-red-500' : pwStrength <= 3 && i <= 2 ? 'bg-amber-500' : pwStrength >= 4 ? 'bg-green-400' : 'bg-[rgba(255,255,255,0.06)]'}`} />
                 ))}
               </div>
-              <p className="text-[0.64rem] mt-1 text-left" style={{ color: pwStrength <= 1 ? '#EF4444' : pwStrength <= 3 ? '#F59E0B' : '#00E676' }}>{pwStrength === 0 ? '' : pwStrength <= 1 ? 'Faible' : pwStrength <= 3 ? 'Bon' : 'Excellent'}</p>
+              <p className="text-[0.6rem] mt-0.5 text-left" style={{ color: pwStrength <= 1 ? '#EF4444' : pwStrength <= 3 ? '#F59E0B' : '#00E676' }}>{pwStrength === 0 ? '' : pwStrength <= 1 ? 'Faible' : pwStrength <= 3 ? 'Bon' : 'Excellent'}</p>
             </div>
-            <div className="mb-4 w-full relative">
-              <label className="block mb-1.5 text-[0.75rem] font-semibold text-[rgba(255,255,255,0.35)]">Confirmer</label>
-              <input name="password2" type={showPw.r2 ? 'text' : 'password'} required placeholder="•••••••••" className={`w-full py-3 px-4 pr-11 bg-[rgba(255,255,255,0.05)] border-[1.5px] ${errors.password2 ? 'border-red-500' : 'border-[rgba(255,255,255,0.08)]'} rounded-xl text-[0.88rem] outline-none transition-all font-[Inter] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:bg-[rgba(255,255,255,0.08)] focus:border-[#00C853]`} />
-              <button type="button" onClick={() => setShowPw({ ...showPw, r2: !showPw.r2 })} className="absolute right-3 top-[38px] bg-transparent border-none text-[rgba(255,255,255,0.25)] cursor-pointer p-0.5"><i className={`fas ${showPw.r2 ? 'fa-eye-slash' : 'fa-eye'}`}></i></button>
-              {errors.password2 && <p className="text-red-500 text-[0.68rem] mt-1 font-medium">{errors.password2}</p>}
+            <div className="mb-2.5 w-full relative">
+              <label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(255,255,255,0.35)]">Confirmer</label>
+              <input name="password2" type={showPw.r2 ? 'text' : 'password'} required placeholder="•••••••••" className={`w-full py-2.5 px-3.5 pr-10 bg-[rgba(255,255,255,0.05)] border-[1.5px] ${errors.password2 ? 'border-red-500' : 'border-[rgba(255,255,255,0.08)]'} rounded-xl text-[0.85rem] outline-none transition-all font-[Inter] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:bg-[rgba(255,255,255,0.08)] focus:border-[#00C853]`} />
+              <button type="button" onClick={() => setShowPw({ ...showPw, r2: !showPw.r2 })} className="absolute right-3 top-[32px] bg-transparent border-none text-[rgba(255,255,255,0.25)] cursor-pointer p-0.5"><i className={`fas ${showPw.r2 ? 'fa-eye-slash' : 'fa-eye'}`}></i></button>
+              {errors.password2 && <p className="text-red-500 text-[0.65rem] mt-0.5 font-medium">{errors.password2}</p>}
             </div>
             <button type="submit" disabled={loading} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#FCD34D] to-[#FBBF24] text-[#78350F] font-bold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(251,191,36,0.2)] font-[Inter] transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">
               {loading ? <div className="w-4 h-4 border-2 border-[rgba(120,53,15,0.3)] border-t-[#78350F] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <><i className="fas fa-user-plus"></i> Créer mon compte</>}
