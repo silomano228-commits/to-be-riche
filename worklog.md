@@ -69,3 +69,44 @@ Work Log:
 
 Stage Summary:
 - ZIP file created (38KB) with all new/modified files
+
+---
+Task ID: 5
+Agent: Main
+Task: Add withdrawal system, wallet refresh button, dual-account wallet (Principal + Gains)
+
+Work Log:
+- Added Withdrawal model to Prisma schema (id, userId, amount, trxAddress, status, adminNote)
+- Added withdrawals relation to User model
+- Ran prisma db:push to update database
+- Created /api/withdrawal/route.ts (GET for status, POST for withdrawal request)
+  - Validates amount (min 5$), checks earnings balance, prevents duplicate pending requests
+- Created /api/admin/withdrawals/route.ts (GET for list, POST for approve/reject)
+  - Approval: deducts from earnings and balance, creates withdrawal transaction
+  - Rejection: updates status only
+- Updated HomeScreen balance card:
+  - Changed title from "Solde Total" to "Portefeuille"
+  - Added refresh button (sync icon with spin animation)
+  - Added two sub-accounts: Principal (invested) and Gains (earnings) with visual distinction
+  - Made "Retirer" button functional (yellow/amber style, navigates to withdraw page)
+- Created WithdrawalScreen with 3 states:
+  - Form: amount input, quick-select buttons, TRX address, available gains display
+  - Pending: shows withdrawal details, auto-polls for status changes
+  - Done: confirmation screen after approval
+- Added 'withdraw' page routing in BeRichApp
+- Added withdrawal management in AdminScreen:
+  - New "Retraits" tab with badge for pending count
+  - Stats cards (pending/approved/total amount)
+  - Withdrawal list with approve/reject buttons
+  - Auto-polls every 5s
+- Updated ProfileScreen transaction history to show withdrawal transactions
+- Updated handleClaim to also increment earnings
+- ESLint passes (only pre-existing .dev-server.js errors)
+
+Stage Summary:
+- Complete withdrawal system: request → admin approval/rejection → auto-detection
+- Dual-account wallet: Principal (invested) + Gains (earnings) with visual cards
+- Refresh wallet button on homepage
+- Withdrawals only possible from gains account (enforced in frontend and backend)
+- Admin panel has dedicated "Retraits" tab for managing withdrawal requests
+- Transaction history shows withdrawals with distinct styling
