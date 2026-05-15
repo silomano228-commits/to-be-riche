@@ -2,83 +2,47 @@ import { db } from '@/lib/db';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-// GET — Check available daily gains for the user
-export async function GET() {
+// GET — Check claim status for a specific project + get claim history
+export async function GET(request: Request) {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('br_token')?.value;
     if (!token) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
 
-    const user = await db.user.findUnique({ where: { id: token } });
-    if (!user) return NextResponse.json({ success: false, error: 'Utilisateur introuvable' });
+    const { searchParams } = new URL(request.url);
+    const projectId = searchParams.get('projectId');
 
-    if (!user.hasInvested) {
-      return NextResponse.json({
-        success: true,
-        canClaim: false,
-        reason: 'no_investment',
-        message: 'Vous devez d\'abord investir',
-      });
-    }
-
-    // Get user's active projects
-    const projects = await db.project.findMany({
-      where: { userId: token, status: 'active' },
-    });
-
-    if (projects.length === 0) {
-      return NextResponse.json({
-        success: true,
-        canClaim: false,
-        reason: 'no_project',
-        message: 'Aucun projet actif',
-      });
-    }
-
-    // Check if already claimed today
     const today = new Date().toISOString().split('T')[0];
-    const alreadyClaimed = await db.dailyGain.findFirst({
-      where: { userId: token, date: today },
-    });
 
-    // Calculate potential gains for each project (using current dailyRate)
-    const projectGains = projects.map(p => {
-      const rate = p.dailyRate;
-      const gainAmount = Math.round(p.amount * rate / 100 * 100) / 100;
-      return {
-        projectId: p.id,
-        projectName: p.name,
-        investedAmount: p.amount,
-        dailyRate: rate,
-        potentialGain: gainAmount,
-      };
-    });
+    // Check if already claimed today for this project
+    let alreadyClaimedToday = false;
+    if (projectId) {
+      const todayGain = await db.dailyGain.findFirst({
+        where: { userId: token, projectId, date: today },
+      });
+      alreadyClaimedToday = !!todayGain;
+    }
 
-    const totalPotentialGain = projectGains.reduce((sum, g) => sum + g.potentialGain, 0);
-
-    // Check 48h withdrawal eligibility
-    const firstDepositDate = user.firstDepositAt;
-    const now = new Date();
-    const canWithdraw = firstDepositDate
-      ? (now.getTime() - new Date(firstDepositDate).getTime()) >= 48 * 60 * 60 * 1000
-      : false;
-
-    const hoursUntilWithdrawal = firstDepositDate && !canWithdraw
-      ? Math.ceil(48 - (now.getTime() - new Date(firstDepositDate).getTime()) / (60 * 60 * 1000))
-      : 0;
+    // Get last 5 daily gains for this project
+    let history: { rate: number; amount: number; date: string; createdAt: string }[] = [];
+    if (projectId) {
+      const gains = await db.dailyGain.findMany({
+        where: { userId: token, projectId },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      });
+      history = gains.map((g) => ({
+        rate: g.rate,
+        amount: g.amount,
+        date: g.date,
+        createdAt: g.createdAt.toISOString(),
+      }));
+    }
 
     return NextResponse.json({
       success: true,
-      canClaim: !alreadyClaimed,
-      alreadyClaimedToday: !!alreadyClaimed,
-      projectGains,
-      totalPotentialGain,
-      earnings: user.earnings,
-      invested: user.invested,
-      canWithdraw,
-      hoursUntilWithdrawal,
-      firstDepositAt: user.firstDepositAt,
-      lastClaimAt: user.lastClaimAt,
+      alreadyClaimedToday,
+      history,
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });

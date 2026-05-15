@@ -11,6 +11,19 @@ const PROJECTS = [
   { n: 'Urban Farm', img: 'https://picsum.photos/seed/farmx/100/100', s: '14% · Agro' },
 ];
 
+const CATEGORY_ICONS: Record<string, { icon: string; color: string; bg: string }> = {
+  'Tech': { icon: 'fa-microchip', color: '#2563EB', bg: 'bg-[#DBEAFE]' },
+  'Énergie': { icon: 'fa-solar-panel', color: '#16A34A', bg: 'bg-[#DCFCE7]' },
+  'Agro': { icon: 'fa-seedling', color: '#65A30D', bg: 'bg-[#ECFCCB]' },
+  'Finance': { icon: 'fa-chart-pie', color: '#D97706', bg: 'bg-[#FEF3C7]' },
+  'Immobilier': { icon: 'fa-building', color: '#7C3AED', bg: 'bg-[#F3E8FF]' },
+  'Santé': { icon: 'fa-heartbeat', color: '#DC2626', bg: 'bg-[#FEE2E2]' },
+};
+
+function getCategoryIcon(category: string) {
+  return CATEGORY_ICONS[category] || { icon: 'fa-briefcase', color: '#64748B', bg: 'bg-[#F1F5F9]' };
+}
+
 // ==================== SPLASH ====================
 function SplashScreen({ onDone }: { onDone: () => void }) {
   const [hide, setHide] = useState(false);
@@ -352,8 +365,6 @@ function WalletScreen() {
   const { user, setPage, setUser, addToast, addNotification } = useAppStore();
   const [flashBal, setFlashBal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [claiming, setClaiming] = useState(false);
-  const [claimSuccess, setClaimSuccess] = useState(false);
 
   // Fake notifications — intervals: 7, 10, 13, 15 secondes
   useEffect(() => {
@@ -394,35 +405,9 @@ function WalletScreen() {
     setRefreshing(false);
   };
 
-  // Claim daily gains
-  const handleClaimDailyGain = async () => {
-    if (!user) return;
-    setClaiming(true);
-    try {
-      const res = await fetch('/api/gains/claim', { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
-        // Refresh user data
-        const sessRes = await fetch('/api/auth/session');
-        const sessData = await sessRes.json();
-        if (sessData.success && sessData.user) {
-          setUser(sessData.user);
-        }
-        addToast(`+${data.totalGain.toFixed(2)} $ réclamés !`, 'success');
-        setClaimSuccess(true);
-        setTimeout(() => setClaimSuccess(false), 3000);
-      } else {
-        addToast(data.error, 'error');
-      }
-    } catch { addToast('Erreur réseau', 'error'); }
-    setClaiming(false);
-  };
-
   if (!user) return null;
   const principalBalance = user.invested;
   const gainsBalance = user.earnings;
-  const canClaim = user.canClaimDailyGain;
-  const alreadyClaimed = user.alreadyClaimedToday;
   const totalPotentialGain = user.totalPotentialGain || 0;
   const projects = user.projects || [];
   const canWithdraw = user.canWithdraw;
@@ -473,56 +458,31 @@ function WalletScreen() {
           </div>
         </div>
 
-        {/* Daily Gains Claim Card */}
+        {/* Daily Gains Overview Card */}
         {user.hasInvested && projects.length > 0 && (
-          <div className={`rounded-2xl p-5 mb-[18px] border ${claimSuccess ? 'bg-[#F0FDF4] border-[#86EFAC]' : alreadyClaimed ? 'bg-[#F8FAFC] border-[rgba(0,0,0,0.05)]' : 'bg-gradient-to-br from-[#F0FDF4] to-[#DCFCE7] border-[#86EFAC]'}`} style={claimSuccess ? { animation: 'cbIn 0.4s ease' } : {}}>
+          <div className="rounded-2xl p-5 mb-[18px] border bg-gradient-to-br from-[#F0FDF4] to-[#DCFCE7] border-[#86EFAC]">
             <div className="flex items-center gap-2.5 mb-3">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${alreadyClaimed ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[#00C853]'}`}>
-                <i className={`fas ${alreadyClaimed ? 'fa-check' : 'fa-gift'} text-[1rem] ${alreadyClaimed ? 'text-[#94A3B8]' : 'text-white'}`}></i>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#00C853]">
+                <i className="fas fa-gift text-[1rem] text-white"></i>
               </div>
               <div className="flex-1">
-                <h4 className="text-[0.88rem] font-bold text-[#1A2332]">{alreadyClaimed ? 'Gains réclamés' : 'Gains journaliers'}</h4>
-                <p className="text-[0.68rem] text-[#64748B]">{alreadyClaimed ? 'Revenez demain pour vos gains' : 'Réclamez vos gains du jour'}</p>
+                <h4 className="text-[0.88rem] font-bold text-[#1A2332]">Gains journaliers</h4>
+                <p className="text-[0.68rem] text-[#64748B]">Réclamez vos gains par projet</p>
               </div>
             </div>
 
             {/* Show potential gain */}
             <div className="bg-white rounded-xl p-3.5 mb-3 border border-[rgba(0,0,0,0.04)]">
               <div className="flex justify-between items-center mb-1.5">
-                <span className="text-[0.68rem] text-[#64748B] font-medium">Gain potentiel</span>
-                <span className="text-[0.68rem] text-[#00C853] font-bold">7% – 15% / jour</span>
+                <span className="text-[0.68rem] text-[#64748B] font-medium">Gain potentiel total</span>
+                <span className="text-[0.68rem] text-[#00C853] font-bold">{projects.length} projet{projects.length > 1 ? 's' : ''}</span>
               </div>
               <div className="text-[1.4rem] font-black text-[#009624]">{formatMoney(totalPotentialGain)}</div>
             </div>
 
-            {/* Active projects with rates */}
-            {projects.length > 0 && (
-              <div className="space-y-1.5 mb-3">
-                {projects.slice(0, 3).map((p, i) => (
-                  <div key={i} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-[rgba(0,0,0,0.03)]">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-md bg-[#DCFCE7] flex items-center justify-center"><i className="fas fa-briefcase text-[#009624] text-[0.5rem]"></i></div>
-                      <span className="text-[0.72rem] font-semibold text-[#1A2332]">{esc(p.name)}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[0.65rem] text-[#64748B]">{formatMoney(p.amount)}</span>
-                      <span className="px-2 py-0.5 rounded-md text-[0.55rem] font-bold bg-[#DCFCE7] text-[#166534]">{p.dailyRate}%</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Claim button */}
-            {alreadyClaimed ? (
-              <div className="w-full py-3 rounded-xl bg-[rgba(0,0,0,0.03)] text-[#94A3B8] font-semibold text-[0.82rem] text-center flex items-center justify-center gap-2">
-                <i className="fas fa-check-circle"></i> Déjà réclamé aujourd&apos;hui
-              </div>
-            ) : (
-              <button onClick={handleClaimDailyGain} disabled={claiming} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(0,200,83,0.25)] font-[Inter] transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">
-                {claiming ? <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <><i className="fas fa-coins"></i> Réclamer mes gains</>}
-              </button>
-            )}
+            <button onClick={() => setPage('projects')} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(0,200,83,0.25)] font-[Inter] transition-transform active:scale-[0.97] flex items-center justify-center gap-2">
+              <i className="fas fa-briefcase"></i> Voir mes projets
+            </button>
           </div>
         )}
 
@@ -2105,6 +2065,274 @@ function ProfileScreen() {
   );
 }
 
+// ==================== PROJECTS SCREEN ====================
+function ProjectsScreen() {
+  const { user, setPage, setSelectedProjectId } = useAppStore();
+
+  if (!user) return null;
+  const projects = user.projects || [];
+  const totalPotentialGain = user.totalPotentialGain || 0;
+
+  const handleProjectClick = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    setPage('project-detail');
+  };
+
+  return (
+    <>
+      <Header title="Mes Projets" icon="fa-briefcase" iconColor="#00C853" rightElement={
+        <button className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90" onClick={() => setPage('wallet')}><i className="fas fa-arrow-left"></i></button>
+      } />
+      <div className="px-[18px] py-4 flex-1 w-full">
+        {/* Total Potential Gains */}
+        <div className="bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white rounded-2xl p-5 mb-5 relative overflow-hidden border border-[rgba(255,255,255,0.05)]">
+          <div className="absolute -top-12 -right-12 w-[180px] h-[180px] bg-[radial-gradient(circle,rgba(0,200,83,0.1),transparent_65%)]" />
+          <div className="relative z-[1]">
+            <div className="text-[0.7rem] opacity-40 font-semibold uppercase tracking-[1.5px] mb-1">Voir tous les gains</div>
+            <div className="text-[1.8rem] font-black tracking-[-1px] text-[#86EFAC] mb-2">{formatMoney(totalPotentialGain)}</div>
+            <div className="flex items-center gap-2">
+              <span className="text-[0.68rem] text-[rgba(255,255,255,0.5)]">{projects.length} projet{projects.length > 1 ? 's' : ''} actif{projects.length > 1 ? 's' : ''}</span>
+              <span className="text-[0.68rem] text-[#00C853] font-bold">7% – 15% / jour</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Projects List */}
+        {projects.length > 0 ? (
+          <div className="space-y-3">
+            {projects.map((p, i) => {
+              const cat = getCategoryIcon(p.category);
+              const potentialGain = p.potentialGain || (p.amount * p.dailyRate / 100);
+              return (
+                <div key={i} onClick={() => handleProjectClick(p.id)} className="bg-white rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)] border border-[rgba(0,0,0,0.03)] cursor-pointer transition-transform active:scale-[0.98]">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${cat.bg}`}>
+                      <i className={`fas ${cat.icon} text-[1rem]`} style={{ color: cat.color }}></i>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[0.88rem] font-bold text-[#1A2332]">{esc(p.name)}</div>
+                      <div className="text-[0.65rem] text-[#94A3B8] font-medium">{p.category}</div>
+                    </div>
+                    <div className="px-2.5 py-1 rounded-md text-[0.6rem] font-bold bg-[#DCFCE7] text-[#166534]">{p.dailyRate}%</div>
+                  </div>
+                  <div className="flex items-center justify-between bg-[#F8FAFC] rounded-xl px-3.5 py-2.5">
+                    <div>
+                      <div className="text-[0.6rem] text-[#94A3B8] font-medium uppercase tracking-[0.3px]">Investi</div>
+                      <div className="text-[0.85rem] font-black text-[#1A2332]">{formatMoney(p.amount)}</div>
+                    </div>
+                    <div className="w-px h-8 bg-[#E2E8F0]"></div>
+                    <div>
+                      <div className="text-[0.6rem] text-[#94A3B8] font-medium uppercase tracking-[0.3px]">Gain potentiel</div>
+                      <div className="text-[0.85rem] font-black text-[#009624]">+{formatMoney(potentialGain)}</div>
+                    </div>
+                    <i className="fas fa-chevron-right text-[#CBD5E1] text-[0.65rem]"></i>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-10">
+            <div className="w-16 h-16 rounded-full bg-[#F1F5F9] flex items-center justify-center mx-auto mb-4">
+              <i className="fas fa-briefcase text-[#94A3B8] text-[1.5rem]"></i>
+            </div>
+            <h4 className="text-[0.95rem] font-bold text-[#1A2332] mb-2">Aucun projet actif</h4>
+            <p className="text-[0.78rem] text-[#64748B] mb-5">Investissez pour commencer à gagner des revenus journaliers.</p>
+            <button onClick={() => setPage('invest')} className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.85rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(0,200,83,0.25)] font-[Inter] transition-transform active:scale-[0.97]">
+              <i className="fas fa-rocket mr-1.5"></i> Investir
+            </button>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+// ==================== PROJECT DETAIL SCREEN ====================
+function ProjectDetailScreen() {
+  const { user, setUser, setPage, addToast, selectedProjectId, setSelectedProjectId } = useAppStore();
+  const [claiming, setClaiming] = useState(false);
+  const [claimSuccess, setClaimSuccess] = useState(false);
+  const [claimHistory, setClaimHistory] = useState<{ rate: number; amount: number; date: string; createdAt: string }[]>([]);
+  const [alreadyClaimedToday, setAlreadyClaimedToday] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+
+  useEffect(() => {
+    if (!selectedProjectId) return;
+    // Check if already claimed today for this project + load history
+    const fetchData = async () => {
+      try {
+        setLoadingHistory(true);
+        const res = await fetch(`/api/gains/status?projectId=${selectedProjectId}`);
+        const data = await res.json();
+        if (data.success) {
+          setAlreadyClaimedToday(data.alreadyClaimedToday || false);
+          setClaimHistory(data.history || []);
+        }
+      } catch { /* ignore */ }
+      setLoadingHistory(false);
+    };
+    fetchData();
+  }, [selectedProjectId, claimSuccess]);
+
+  if (!user || !selectedProjectId) return null;
+  const projects = user.projects || [];
+  const project = projects.find((p) => p.id === selectedProjectId);
+  if (!project) {
+    return (
+      <>
+        <Header title="Projet" icon="fa-briefcase" iconColor="#00C853" rightElement={
+          <button className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90" onClick={() => { setSelectedProjectId(null); setPage('projects'); }}><i className="fas fa-arrow-left"></i></button>
+        } />
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-[#64748B]">Projet non trouvé</p>
+        </div>
+      </>
+    );
+  }
+
+  const cat = getCategoryIcon(project.category);
+  const potentialGain = project.potentialGain || (project.amount * project.dailyRate / 100);
+
+  const handleClaim = async () => {
+    setClaiming(true);
+    try {
+      const res = await fetch('/api/projects/claim-daily', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: selectedProjectId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Refresh user data
+        const sessRes = await fetch('/api/auth/session');
+        const sessData = await sessRes.json();
+        if (sessData.success && sessData.user) {
+          setUser(sessData.user);
+        }
+        setAlreadyClaimedToday(true);
+        setClaimSuccess(true);
+        addToast(`+${data.gainAmount.toFixed(2)} $ réclamés !`, 'success');
+        setTimeout(() => setClaimSuccess(false), 3000);
+      } else {
+        if (data.alreadyClaimed) {
+          setAlreadyClaimedToday(true);
+        }
+        addToast(data.error, 'error');
+      }
+    } catch { addToast('Erreur réseau', 'error'); }
+    setClaiming(false);
+  };
+
+  return (
+    <>
+      <Header title="Détail du projet" icon="fa-briefcase" iconColor="#00C853" rightElement={
+        <button className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90" onClick={() => { setSelectedProjectId(null); setPage('projects'); }}><i className="fas fa-arrow-left"></i></button>
+      } />
+      <div className="px-[18px] py-4 flex-1 w-full">
+        {/* Project Header */}
+        <div className="bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white rounded-2xl p-5 mb-4 relative overflow-hidden border border-[rgba(255,255,255,0.05)]">
+          <div className="absolute -top-12 -right-12 w-[180px] h-[180px] bg-[radial-gradient(circle,rgba(0,200,83,0.1),transparent_65%)]" />
+          <div className="relative z-[1]">
+            <div className="flex items-center gap-3 mb-3">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${cat.bg}`}>
+                <i className={`fas ${cat.icon} text-[1.1rem]`} style={{ color: cat.color }}></i>
+              </div>
+              <div>
+                <div className="text-[1rem] font-bold text-white">{esc(project.name)}</div>
+                <div className="text-[0.68rem] text-[rgba(255,255,255,0.5)]">{project.category}</div>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <div className="flex-1 bg-[rgba(255,255,255,0.06)] rounded-xl p-3 border border-[rgba(255,255,255,0.05)]">
+                <div className="text-[0.6rem] text-[rgba(255,255,255,0.4)] font-semibold uppercase tracking-[0.3px]">Investi</div>
+                <div className="text-[1rem] font-black text-white">{formatMoney(project.amount)}</div>
+              </div>
+              <div className="flex-1 bg-[rgba(0,200,83,0.08)] rounded-xl p-3 border border-[rgba(0,200,83,0.12)]">
+                <div className="text-[0.6rem] text-[rgba(255,255,255,0.4)] font-semibold uppercase tracking-[0.3px]">Taux du jour</div>
+                <div className="text-[1rem] font-black text-[#86EFAC]">{project.dailyRate}%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Gain du jour Card */}
+        <div className={`rounded-2xl p-5 mb-4 border ${claimSuccess ? 'bg-[#F0FDF4] border-[#86EFAC]' : alreadyClaimedToday ? 'bg-[#F8FAFC] border-[rgba(0,0,0,0.05)]' : 'bg-gradient-to-br from-[#F0FDF4] to-[#DCFCE7] border-[#86EFAC]'}`} style={claimSuccess ? { animation: 'cbIn 0.4s ease' } : {}}>
+          <div className="flex items-center gap-2.5 mb-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${alreadyClaimedToday ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[#00C853]'}`}>
+              <i className={`fas ${alreadyClaimedToday ? 'fa-check' : 'fa-coins'} text-[1rem] ${alreadyClaimedToday ? 'text-[#94A3B8]' : 'text-white'}`}></i>
+            </div>
+            <div className="flex-1">
+              <h4 className="text-[0.88rem] font-bold text-[#1A2332]">{alreadyClaimedToday ? 'Déjà réclamé' : 'Gain du jour'}</h4>
+              <p className="text-[0.68rem] text-[#64748B]">{alreadyClaimedToday ? 'Revenez demain pour ce projet' : 'Réclamez vos gains journaliers'}</p>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl p-4 mb-3 border border-[rgba(0,0,0,0.04)] text-center">
+            <div className="text-[0.68rem] text-[#64748B] font-medium mb-1">Gain potentiel</div>
+            <div className="text-[1.8rem] font-black text-[#009624]">+{formatMoney(potentialGain)}</div>
+            <div className="text-[0.65rem] text-[#00C853] font-semibold mt-1">à {project.dailyRate}% / jour</div>
+          </div>
+
+          {alreadyClaimedToday ? (
+            <div className="w-full py-3 rounded-xl bg-[rgba(0,0,0,0.03)] text-[#94A3B8] font-semibold text-[0.82rem] text-center flex items-center justify-center gap-2">
+              <i className="fas fa-check-circle"></i> Déjà réclamé aujourd&apos;hui
+            </div>
+          ) : (
+            <button onClick={handleClaim} disabled={claiming} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(0,200,83,0.25)] font-[Inter] transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">
+              {claiming ? <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <><i className="fas fa-coins"></i> Réclamer mes gains</>}
+            </button>
+          )}
+        </div>
+
+        {/* Project Stats */}
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          {[
+            { icon: 'fa-wallet', color: 'bg-[#DCFCE7] text-[#166534]', val: formatMoney(project.amount), label: 'Investi' },
+            { icon: 'fa-percentage', color: 'bg-[#FEF3C7] text-[#92400E]', val: `${project.dailyRate}%`, label: 'Taux' },
+            { icon: 'fa-tag', color: 'bg-[#DBEAFE] text-[#1E40AF]', val: project.category, label: 'Catégorie' },
+          ].map((s, i) => (
+            <div key={i} className="bg-white rounded-xl p-3 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+              <div className={`w-8 h-8 rounded-[10px] flex items-center justify-center mx-auto mb-1 text-[0.75rem] ${s.color}`}><i className={`fas ${s.icon}`}></i></div>
+              <div className="font-extrabold text-[0.75rem] text-[#1A2332] tracking-[-0.2px]">{s.val}</div>
+              <div className="text-[0.52rem] text-[#94A3B8] mt-0.5 font-medium uppercase tracking-[0.4px]">{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Claim History */}
+        <div className="flex justify-between items-center mb-2.5">
+          <h3 className="text-[0.9rem] font-bold text-[#1A2332]">Historique des gains</h3>
+          <span className="text-[0.68rem] text-[#94A3B8]">5 derniers</span>
+        </div>
+        {loadingHistory ? (
+          <div className="flex items-center justify-center py-6">
+            <div className="w-5 h-5 border-2 border-[#E2E8F0] border-t-[#00C853] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
+          </div>
+        ) : claimHistory.length > 0 ? (
+          <div className="space-y-2">
+            {claimHistory.map((g, i) => (
+              <div key={i} className="flex items-center justify-between bg-white rounded-xl px-3.5 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-[#DCFCE7] flex items-center justify-center"><i className="fas fa-coins text-[#009624] text-[0.65rem]"></i></div>
+                  <div>
+                    <div className="text-[0.78rem] font-bold text-[#1A2332]">+{formatMoney(g.amount)}</div>
+                    <div className="text-[0.6rem] text-[#94A3B8]">{g.date}</div>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-md text-[0.55rem] font-bold bg-[#DCFCE7] text-[#166534]">{g.rate}%</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-5">
+            <p className="text-[0.78rem] text-[#94A3B8]">Aucun gain réclamé pour ce projet</p>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
 // ==================== BOTTOM NAV ====================
 function BottomNav() {
   const { currentPage, setPage, user } = useAppStore();
@@ -2112,7 +2340,7 @@ function BottomNav() {
 
   const items = [
     { id: 'home', icon: 'fa-home', label: 'Accueil' },
-    { id: 'wallet', icon: 'fa-wallet', label: 'Wallet', isFab: true },
+    { id: 'projects', icon: 'fa-briefcase', label: 'Projets', isFab: true },
     { id: 'chat', icon: 'fa-comment-alt', label: 'Chat' },
     { id: 'profile', icon: 'fa-user', label: 'Profil' },
   ];
@@ -2128,9 +2356,9 @@ function BottomNav() {
           {item.isFab ? (
             <>
               <div className={`w-12 h-12 bg-gradient-to-br from-[#00E676] to-[#00C853] rounded-[14px] flex items-center justify-center text-white shadow-[0_4px_16px_rgba(0,200,83,0.3)] -mt-6 border-[3.5px] border-[#F2F5F9] transition-transform active:scale-90`}>
-                <i className="fas fa-wallet"></i>
+                <i className="fas fa-briefcase"></i>
               </div>
-              <span className="mt-1">Wallet</span>
+              <span className="mt-1">Projets</span>
             </>
           ) : (
             <>
@@ -2194,6 +2422,8 @@ export default function BeRichApp() {
         <div className={`absolute inset-0 bg-[#F2F5F9] overflow-y-auto overflow-x-hidden flex flex-col transition-all duration-300 ${!showSplash && currentPage !== 'profile' ? 'opacity-100 translate-x-0 z-10' : 'opacity-0 translate-x-full pointer-events-none'}`}>
           {currentPage === 'home' && <HomeScreen />}
           {currentPage === 'wallet' && <WalletScreen />}
+          {currentPage === 'projects' && <ProjectsScreen />}
+          {currentPage === 'project-detail' && <ProjectDetailScreen />}
           {currentPage === 'invest' && <InvestScreen />}
           {currentPage === 'withdraw' && <WithdrawalScreen />}
           {currentPage === 'add' && <AddProjectScreen />}

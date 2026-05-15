@@ -58,6 +58,7 @@ interface AppState {
   currentPage: string;
   isLoading: boolean;
   showSplash: boolean;
+  selectedProjectId: string | null;
   toasts: Toast[];
   notifications: Notification[];
   setUser: (user: AppUser | null) => void;
@@ -65,6 +66,7 @@ interface AppState {
   setPage: (page: string) => void;
   setLoading: (loading: boolean) => void;
   setShowSplash: (show: boolean) => void;
+  setSelectedProjectId: (id: string | null) => void;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
   removeToast: (id: string) => void;
   addNotification: (id: string, text: string) => void;
@@ -76,13 +78,15 @@ export const useAppStore = create<AppState>((set) => ({
   currentPage: 'home',
   isLoading: false,
   showSplash: true,
+  selectedProjectId: null,
   toasts: [],
   notifications: [],
   setUser: (user) => set({ user }),
-  clearUser: () => set({ user: null, currentPage: 'profile' }),
+  clearUser: () => set({ user: null, currentPage: 'profile', selectedProjectId: null }),
   setPage: (page) => set({ currentPage: page }),
   setLoading: (isLoading) => set({ isLoading }),
   setShowSplash: (showSplash) => set({ showSplash }),
+  setSelectedProjectId: (id) => set({ selectedProjectId: id }),
   addToast: (message, type) => {
     const id = Math.random().toString(36).slice(2);
     set((s) => ({ toasts: [...s.toasts, { id, message, type }] }));
