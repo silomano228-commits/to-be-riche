@@ -147,7 +147,7 @@ function AuthScreen() {
       if (data.success) {
         setUser(data.user);
         addToast('Bienvenue, ' + data.user.name, 'success');
-        setPage('wallet');
+        setPage('home');
       } else {
         addToast(data.error, 'error');
       }
@@ -175,7 +175,7 @@ function AuthScreen() {
       if (data.success) {
         setUser(data.user);
         addToast('Compte créé !', 'success');
-        setPage('wallet');
+        setPage('home');
       } else { addToast(data.error, 'error'); }
     } catch { addToast('Erreur réseau', 'error'); }
     setLoading(false);
@@ -2096,9 +2096,13 @@ export default function BeRichApp() {
         const data = await res.json();
         if (data.success && data.user) {
           setUser(data.user);
-          setPage('wallet');
+          setPage('home');
+        } else {
+          setPage('profile');
         }
-      } catch { /* not logged in */ }
+      } catch {
+        setPage('profile');
+      }
       setInitialized(true);
     };
     init();
