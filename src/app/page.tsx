@@ -290,13 +290,13 @@ function HomeScreen() {
         <h3 className="text-[0.9rem] font-bold text-[#1A2332] mb-3">Pourquoi Be Rich ?</h3>
         <div className="grid grid-cols-2 gap-2.5 mb-5">
           {[
-            { emoji: '💰', title: 'Investissement simplifié', desc: 'Déposez via TRX et gagnez 10% de rendement', color: 'bg-[#DCFCE7] border-[#BBF7D0]' },
-            { emoji: '📊', title: 'Suivi en temps réel', desc: 'Suivez vos gains et votre portefeuille', color: 'bg-[#DBEAFE] border-[#BFDBFE]' },
-            { emoji: '🔒', title: 'Sécurisé', desc: 'Vos fonds sont protégés', color: 'bg-[#FEF3C7] border-[#FDE68A]' },
-            { emoji: '⚡', title: 'Retrait facile', desc: 'Retirez vos gains quand vous voulez', color: 'bg-[#F3E8FF] border-[#E9D5FF]' },
+            { icon: 'fa-coins', iconColor: '#16A34A', title: 'Investissement simplifié', desc: 'Déposez via TRX et gagnez 10% de rendement', color: 'bg-[#DCFCE7] border-[#BBF7D0]' },
+            { icon: 'fa-chart-line', iconColor: '#2563EB', title: 'Suivi en temps réel', desc: 'Suivez vos gains et votre portefeuille', color: 'bg-[#DBEAFE] border-[#BFDBFE]' },
+            { icon: 'fa-shield-alt', iconColor: '#D97706', title: 'Sécurisé', desc: 'Vos fonds sont protégés', color: 'bg-[#FEF3C7] border-[#FDE68A]' },
+            { icon: 'fa-bolt', iconColor: '#7C3AED', title: 'Retrait facile', desc: 'Retirez vos gains quand vous voulez', color: 'bg-[#F3E8FF] border-[#E9D5FF]' },
           ].map((f, i) => (
             <div key={i} className={`rounded-xl p-3.5 border ${f.color} shadow-[0_1px_3px_rgba(0,0,0,0.04)]`}>
-              <div className="text-[1.3rem] mb-1.5">{f.emoji}</div>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-1.5" style={{ backgroundColor: f.iconColor + '15' }}><i className={`fas ${f.icon} text-[1rem]`} style={{ color: f.iconColor }}></i></div>
               <div className="text-[0.78rem] font-bold text-[#1A2332] mb-0.5">{f.title}</div>
               <div className="text-[0.65rem] text-[#64748B] leading-relaxed">{f.desc}</div>
             </div>
