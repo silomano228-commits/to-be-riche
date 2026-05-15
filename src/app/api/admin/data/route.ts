@@ -1,8 +1,18 @@
 import { db } from '@/lib/db';
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('br_token')?.value;
+    if (!token) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
+
+    const admin = await db.user.findUnique({ where: { id: token } });
+    if (!admin || admin.role !== 'admin') {
+      return NextResponse.json({ success: false, error: 'Accès refusé' }, { status: 403 });
+    }
+
     const users = await db.user.findMany({
       orderBy: { createdAt: 'desc' },
     });
@@ -19,7 +29,7 @@ export async function GET() {
     const projects = await db.project.findMany({ where: { status: 'active' } });
     activeProjects = projects.length;
 
-    const safeUsers = users.map(({ password: _, ...u }) => u);
+    const safeUsers = users.map(({ password: _, firstDepositAt: fda, lastClaimAt: lca, ...u }) => u);
 
     return NextResponse.json({
       success: true,
