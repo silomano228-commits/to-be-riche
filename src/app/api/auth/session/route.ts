@@ -22,14 +22,56 @@ export async function GET() {
       orderBy: { createdAt: 'desc' },
     });
 
-    const project = await db.project.findFirst({
-      where: { userId: user.id },
+    const projects = await db.project.findMany({
+      where: { userId: user.id, status: 'active' },
       orderBy: { createdAt: 'desc' },
     });
 
+    // Check if already claimed today
+    const today = new Date().toISOString().split('T')[0];
+    const todayGain = await db.dailyGain.findFirst({
+      where: { userId: user.id, date: today },
+    });
+
+    // Calculate potential gains
+    const projectGains = projects.map(p => ({
+      id: p.id,
+      name: p.name,
+      amount: p.amount,
+      dailyRate: p.dailyRate,
+      category: p.category,
+      potentialGain: Math.round(p.amount * p.dailyRate / 100 * 100) / 100,
+    }));
+
+    const totalPotentialGain = projectGains.reduce((sum, g) => sum + g.potentialGain, 0);
+
+    // Check 48h withdrawal eligibility
+    const firstDepositDate = user.firstDepositAt;
+    const now = new Date();
+    const canWithdraw = firstDepositDate
+      ? (now.getTime() - new Date(firstDepositDate).getTime()) >= 48 * 60 * 60 * 1000
+      : false;
+
+    const hoursUntilWithdrawal = firstDepositDate && !canWithdraw
+      ? Math.ceil(48 - (now.getTime() - new Date(firstDepositDate).getTime()) / (60 * 60 * 1000))
+      : 0;
+
+    // Use the most recent project as the "main" project for backward compat
+    const project = projects[0] || null;
+
     return NextResponse.json({
       success: true,
-      user: { ...safeUser, transactions, project },
+      user: {
+        ...safeUser,
+        transactions,
+        project,
+        projects: projectGains,
+        canClaimDailyGain: !todayGain && projects.length > 0,
+        alreadyClaimedToday: !!todayGain,
+        totalPotentialGain,
+        canWithdraw,
+        hoursUntilWithdrawal,
+      },
     });
   } catch {
     return NextResponse.json({ success: false });

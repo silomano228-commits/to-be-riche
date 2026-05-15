@@ -63,8 +63,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, message: 'Dépôt rejeté' });
     }
 
-    // Approuver — créditer le solde de l'utilisateur
-    const gain = Math.round(deposit.amountUsd * 0.1 * 100) / 100;
+    // Approuver — créditer le solde de l'utilisateur (no instant bonus)
+    const depositUser = await db.user.findUnique({ where: { id: deposit.userId } });
+    const isFirstDeposit = !depositUser?.hasInvested;
+
+    // Generate random daily rate between 7% and 15%
+    const dailyRate = Math.round((Math.random() * 8 + 7) * 100) / 100;
+    const categories = ['Tech', 'Énergie', 'Agro', 'Finance', 'Immobilier', 'Santé'];
+    const category = categories[Math.floor(Math.random() * categories.length)];
 
     await db.$transaction([
       db.pendingDeposit.update({
@@ -75,17 +81,29 @@ export async function POST(request: Request) {
         where: { id: deposit.userId },
         data: {
           invested: { increment: deposit.amountUsd },
-          balance: { increment: deposit.amountUsd + gain },
-          earnings: { increment: gain },
+          balance: { increment: deposit.amountUsd },
           hasInvested: true,
           depositCount: { increment: 1 },
+          firstDepositAt: isFirstDeposit ? new Date() : undefined,
+        },
+      }),
+      db.project.create({
+        data: {
+          name: `Projet ${category} #${(depositUser?.depositCount || 0) + 1}`,
+          amount: deposit.amountUsd,
+          receivedAmount: 0,
+          description: `Investissement de ${deposit.amountUsd.toFixed(2)} $ dans le secteur ${category}`,
+          dailyRate,
+          category,
+          status: 'active',
+          userId: deposit.userId,
         },
       }),
       db.transaction.create({
         data: {
           type: 'deposit',
           amount: deposit.amountUsd,
-          gain,
+          gain: 0,
           userId: deposit.userId,
         },
       }),

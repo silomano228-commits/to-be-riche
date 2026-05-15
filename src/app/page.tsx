@@ -279,7 +279,7 @@ function HomeScreen() {
           <div className="relative z-[1] text-center">
             <LogoImg className="w-[64px] h-[64px] mx-auto mb-3" style={{ filter: 'drop-shadow(0 4px 20px rgba(0,200,83,0.25))' }} />
             <h2 className="text-[1.5rem] font-black tracking-[-0.5px] mb-1 bg-gradient-to-r from-[#FCD34D] via-[#FBBF24] to-[#F59E0B] bg-[length:200%_auto] text-transparent bg-clip-text" style={{ animation: 'gs 3s linear infinite' }}>Investissez. Prospérez.</h2>
-            <p className="text-[rgba(255,255,255,0.5)] text-[0.78rem] leading-relaxed mt-2 mb-4">Be Rich vous permet d&apos;investir via TRX et de gagner jusqu&apos;à 10% de rendement sur vos dépôts. Suivez vos gains en temps réel et retirez quand vous voulez.</p>
+            <p className="text-[rgba(255,255,255,0.5)] text-[0.78rem] leading-relaxed mt-2 mb-4">Be Rich vous permet d&apos;investir via TRX et de gagner entre 7% et 15% de rendement journalier sur vos dépôts. Réclamez vos gains chaque jour et retirez quand vous voulez.</p>
             <button onClick={() => user.hasInvested ? setPage('wallet') : setPage('invest')} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(0,200,83,0.25)] font-[Inter] transition-transform active:scale-[0.97] flex items-center justify-center gap-2">
               <i className="fas fa-rocket"></i> Commencer
             </button>
@@ -290,7 +290,7 @@ function HomeScreen() {
         <h3 className="text-[0.9rem] font-bold text-[#1A2332] mb-3">Pourquoi Be Rich ?</h3>
         <div className="grid grid-cols-2 gap-2.5 mb-5">
           {[
-            { icon: 'fa-coins', iconColor: '#16A34A', title: 'Investissement simplifié', desc: 'Déposez via TRX et gagnez 10% de rendement', color: 'bg-[#DCFCE7] border-[#BBF7D0]' },
+            { icon: 'fa-coins', iconColor: '#16A34A', title: 'Investissement simplifié', desc: 'Déposez via TRX et gagnez 7-15% par jour', color: 'bg-[#DCFCE7] border-[#BBF7D0]' },
             { icon: 'fa-chart-line', iconColor: '#2563EB', title: 'Suivi en temps réel', desc: 'Suivez vos gains et votre portefeuille', color: 'bg-[#DBEAFE] border-[#BFDBFE]' },
             { icon: 'fa-shield-alt', iconColor: '#D97706', title: 'Sécurisé', desc: 'Vos fonds sont protégés', color: 'bg-[#FEF3C7] border-[#FDE68A]' },
             { icon: 'fa-bolt', iconColor: '#7C3AED', title: 'Retrait facile', desc: 'Retirez vos gains quand vous voulez', color: 'bg-[#F3E8FF] border-[#E9D5FF]' },
@@ -309,7 +309,7 @@ function HomeScreen() {
           {[
             { step: 1, title: 'Créez votre compte', desc: 'Inscrivez-vous en quelques secondes', icon: 'fa-user-plus', color: '#00C853' },
             { step: 2, title: 'Déposez via TRX', desc: 'Envoyez des TRX depuis Trust Wallet', icon: 'fa-wallet', color: '#FBBF24' },
-            { step: 3, title: 'Gagnez et retirez', desc: 'Gagnez 10% et retirez vos gains', icon: 'fa-coins', color: '#00C853' },
+            { step: 3, title: 'Gagnez chaque jour', desc: '7-15% de rendement journalier à réclamer', icon: 'fa-coins', color: '#00C853' },
           ].map((s, i) => (
             <div key={i} className={`flex items-start gap-3 ${i < 2 ? 'mb-4' : ''}`}>
               <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-[0.72rem] shrink-0 shadow-sm" style={{ background: `linear-gradient(135deg, ${s.color}, ${s.color}dd)` }}>{s.step}</div>
@@ -352,8 +352,10 @@ function WalletScreen() {
   const { user, setPage, setUser, addToast, addNotification } = useAppStore();
   const [flashBal, setFlashBal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+  const [claimSuccess, setClaimSuccess] = useState(false);
 
-  // Fake notifications — intervals: 7, 10, 13, 15 secondes — max retrait 30$
+  // Fake notifications — intervals: 7, 10, 13, 15 secondes
   useEffect(() => {
     if (!user) return;
     const fakeIds: string[] = [];
@@ -362,7 +364,7 @@ function WalletScreen() {
     let idx = 0;
     const showNotif = () => {
       const id = fakeIds[Math.floor(Math.random() * fakeIds.length)];
-      const amt = Math.round(Math.random() * 27 + 3); // 3$ – 30$
+      const amt = Math.round(Math.random() * 27 + 3);
       addNotification(id, `a retiré ${formatMoney(amt)}`);
       const next = intervals[idx % intervals.length];
       idx++;
@@ -392,30 +394,39 @@ function WalletScreen() {
     setRefreshing(false);
   };
 
-  const handleClaim = async () => {
-    if (!user?.project) return;
+  // Claim daily gains
+  const handleClaimDailyGain = async () => {
+    if (!user) return;
+    setClaiming(true);
     try {
-      const res = await fetch('/api/projects/claim', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId: user.project.id }) });
+      const res = await fetch('/api/gains/claim', { method: 'POST' });
       const data = await res.json();
       if (data.success) {
-        const upd = { ...user };
-        upd.project = { ...upd.project!, receivedAmount: upd.project!.receivedAmount + data.amount, status: upd.project!.receivedAmount + data.amount >= upd.project!.amount ? 'completed' : 'active' };
-        upd.balance += data.amount;
-        upd.earnings += data.amount;
-        upd.transactions = [{ id: Date.now().toString(), type: 'claim', amount: data.amount, gain: 0, createdAt: new Date().toISOString() }, ...upd.transactions];
-        setUser(upd);
-        addToast('+' + formatMoney(data.amount), 'success');
-      } else { addToast(data.error, 'error'); }
-    } catch { addToast('Erreur', 'error'); }
+        // Refresh user data
+        const sessRes = await fetch('/api/auth/session');
+        const sessData = await sessRes.json();
+        if (sessData.success && sessData.user) {
+          setUser(sessData.user);
+        }
+        addToast(`+${data.totalGain.toFixed(2)} $ réclamés !`, 'success');
+        setClaimSuccess(true);
+        setTimeout(() => setClaimSuccess(false), 3000);
+      } else {
+        addToast(data.error, 'error');
+      }
+    } catch { addToast('Erreur réseau', 'error'); }
+    setClaiming(false);
   };
 
   if (!user) return null;
-  const proj = user.project;
-  const hasProj = proj && proj.status !== 'completed';
-  const projDone = proj?.status === 'completed';
-  const pct = proj ? Math.min(100, Math.round((proj.receivedAmount / proj.amount) * 100)) : 0;
   const principalBalance = user.invested;
   const gainsBalance = user.earnings;
+  const canClaim = user.canClaimDailyGain;
+  const alreadyClaimed = user.alreadyClaimedToday;
+  const totalPotentialGain = user.totalPotentialGain || 0;
+  const projects = user.projects || [];
+  const canWithdraw = user.canWithdraw;
+  const hoursUntilWithdrawal = user.hoursUntilWithdrawal || 0;
 
   return (
     <>
@@ -432,7 +443,7 @@ function WalletScreen() {
             <div className="flex items-center justify-between mb-1">
               <div className="text-[0.7rem] opacity-40 font-semibold uppercase tracking-[1.5px]">Portefeuille</div>
               <button onClick={handleRefresh} className="w-8 h-8 rounded-lg flex items-center justify-center bg-[rgba(255,255,255,0.08)] border-none text-white cursor-pointer transition-transform active:scale-90" title="Rafraîchir">
-                <i className={`fas fa-sync-alt text-[0.7rem] ${refreshing ? '' : ''}`} style={refreshing ? { animation: 'spin 0.8s linear infinite' } : {}}></i>
+                <i className="fas fa-sync-alt text-[0.7rem]" style={refreshing ? { animation: 'spin 0.8s linear infinite' } : {}}></i>
               </button>
             </div>
             <div className={`text-[2rem] font-black tracking-[-1px] mb-4 ${flashBal ? 'text-[#BBF7D0]' : 'text-white'}`} style={{ transition: 'color 0.6s, transform 0.6s', transform: flashBal ? 'scale(1.04)' : 'scale(1)' }}>{formatMoney(user.balance)}</div>
@@ -462,12 +473,65 @@ function WalletScreen() {
           </div>
         </div>
 
+        {/* Daily Gains Claim Card */}
+        {user.hasInvested && projects.length > 0 && (
+          <div className={`rounded-2xl p-5 mb-[18px] border ${claimSuccess ? 'bg-[#F0FDF4] border-[#86EFAC]' : alreadyClaimed ? 'bg-[#F8FAFC] border-[rgba(0,0,0,0.05)]' : 'bg-gradient-to-br from-[#F0FDF4] to-[#DCFCE7] border-[#86EFAC]'}`} style={claimSuccess ? { animation: 'cbIn 0.4s ease' } : {}}>
+            <div className="flex items-center gap-2.5 mb-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${alreadyClaimed ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[#00C853]'}`}>
+                <i className={`fas ${alreadyClaimed ? 'fa-check' : 'fa-gift'} text-[1rem] ${alreadyClaimed ? 'text-[#94A3B8]' : 'text-white'}`}></i>
+              </div>
+              <div className="flex-1">
+                <h4 className="text-[0.88rem] font-bold text-[#1A2332]">{alreadyClaimed ? 'Gains réclamés' : 'Gains journaliers'}</h4>
+                <p className="text-[0.68rem] text-[#64748B]">{alreadyClaimed ? 'Revenez demain pour vos gains' : 'Réclamez vos gains du jour'}</p>
+              </div>
+            </div>
+
+            {/* Show potential gain */}
+            <div className="bg-white rounded-xl p-3.5 mb-3 border border-[rgba(0,0,0,0.04)]">
+              <div className="flex justify-between items-center mb-1.5">
+                <span className="text-[0.68rem] text-[#64748B] font-medium">Gain potentiel</span>
+                <span className="text-[0.68rem] text-[#00C853] font-bold">7% – 15% / jour</span>
+              </div>
+              <div className="text-[1.4rem] font-black text-[#009624]">{formatMoney(totalPotentialGain)}</div>
+            </div>
+
+            {/* Active projects with rates */}
+            {projects.length > 0 && (
+              <div className="space-y-1.5 mb-3">
+                {projects.slice(0, 3).map((p, i) => (
+                  <div key={i} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-[rgba(0,0,0,0.03)]">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-md bg-[#DCFCE7] flex items-center justify-center"><i className="fas fa-briefcase text-[#009624] text-[0.5rem]"></i></div>
+                      <span className="text-[0.72rem] font-semibold text-[#1A2332]">{esc(p.name)}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[0.65rem] text-[#64748B]">{formatMoney(p.amount)}</span>
+                      <span className="px-2 py-0.5 rounded-md text-[0.55rem] font-bold bg-[#DCFCE7] text-[#166534]">{p.dailyRate}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Claim button */}
+            {alreadyClaimed ? (
+              <div className="w-full py-3 rounded-xl bg-[rgba(0,0,0,0.03)] text-[#94A3B8] font-semibold text-[0.82rem] text-center flex items-center justify-center gap-2">
+                <i className="fas fa-check-circle"></i> Déjà réclamé aujourd&apos;hui
+              </div>
+            ) : (
+              <button onClick={handleClaimDailyGain} disabled={claiming} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(0,200,83,0.25)] font-[Inter] transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">
+                {claiming ? <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <><i className="fas fa-coins"></i> Réclamer mes gains</>}
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Stats */}
         <div className="grid grid-cols-3 gap-2 mb-5">
           {[
             { icon: 'fa-chart-line', color: 'bg-[#DCFCE7] text-[#166534]', val: formatMoney(user.earnings), label: 'Gains' },
             { icon: 'fa-hand-holding-usd', color: 'bg-[#DBEAFE] text-[#1E40AF]', val: formatMoney(user.invested), label: 'Investi' },
-            { icon: 'fa-percentage', color: 'bg-[#FEF3C7] text-[#92400E]', val: '10%', label: 'Rendement' },
+            { icon: 'fa-percentage', color: 'bg-[#FEF3C7] text-[#92400E]', val: '7-15%', label: 'Rendement' },
           ].map((s, i) => (
             <div key={i} className="bg-white rounded-xl p-3.5 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)] border border-[rgba(0,0,0,0.03)]">
               <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center mx-auto mb-1.5 text-[0.85rem] ${s.color}`}><i className={`fas ${s.icon}`}></i></div>
@@ -483,45 +547,30 @@ function WalletScreen() {
             <i className="fas fa-exclamation-circle text-[#B45309] mt-0.5 shrink-0 text-[0.9rem]"></i>
             <div className="flex-1">
               <h4 className="text-[0.82rem] mb-0.5 font-bold text-[#B45309]">Compte Limité</h4>
-              <p className="text-[0.78rem] leading-relaxed text-[#92400E]">Faites un premier dépôt de 10 $.</p>
+              <p className="text-[0.78rem] leading-relaxed text-[#92400E]">Faites un premier dépôt de 10 $ pour commencer à gagner.</p>
             </div>
             <button className="py-2.5 px-4 text-[0.76rem] bg-gradient-to-r from-[#00E676] to-[#00C853] text-white rounded-xl border-none cursor-pointer font-semibold font-[Inter] shadow-[0_4px_20px_rgba(0,200,83,0.2)] shrink-0" onClick={() => setPage('invest')}><i className="fas fa-rocket mr-1"></i>Investir</button>
           </div>
         )}
-        {user.hasInvested && !proj && (
+
+        {/* 48h Withdrawal Info */}
+        {user.hasInvested && !canWithdraw && hoursUntilWithdrawal > 0 && (
+          <div className="rounded-xl p-3.5 flex items-start gap-3 mb-[18px] bg-[#EFF6FF] border-l-[3px] border-[#3B82F6]">
+            <i className="fas fa-clock text-[#2563EB] mt-0.5 shrink-0 text-[0.9rem]"></i>
+            <div className="flex-1">
+              <h4 className="text-[0.82rem] mb-0.5 font-bold text-[#1E40AF]">Premier retrait dans {hoursUntilWithdrawal}h</h4>
+              <p className="text-[0.72rem] leading-relaxed text-[#3B82F6]">Vous pourrez retirer vos gains 48h après votre premier dépôt.</p>
+            </div>
+          </div>
+        )}
+        {user.hasInvested && canWithdraw && (
           <div className="rounded-xl p-3.5 flex items-start gap-3 mb-[18px] bg-[#F0FDF4] border-l-[3px] border-[#00C853]">
             <i className="fas fa-check-circle text-[#166534] mt-0.5 shrink-0 text-[0.9rem]"></i>
             <div className="flex-1">
-              <h4 className="text-[0.82rem] mb-0.5 font-bold text-[#166534]">Prêt à créer</h4>
-              <p className="text-[0.78rem] leading-relaxed text-[#15803D]">Soumettez votre premier projet.</p>
+              <h4 className="text-[0.82rem] mb-0.5 font-bold text-[#166534]">Retrait disponible</h4>
+              <p className="text-[0.72rem] leading-relaxed text-[#15803D]">Vous pouvez retirer vos gains vers votre wallet TRX.</p>
             </div>
-            <button className="py-2.5 px-4 text-[0.76rem] bg-gradient-to-r from-[#60A5FA] to-[#3B82F6] text-white rounded-xl border-none cursor-pointer font-semibold font-[Inter] shadow-[0_4px_20px_rgba(59,130,246,0.2)] shrink-0" onClick={() => setPage('add')}><i className="fas fa-plus mr-1"></i>Créer</button>
-          </div>
-        )}
-        {proj && (
-          <div className="bg-white rounded-2xl p-5 mb-[18px] shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)] border border-[#BBF7D0]">
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <h4 className="mb-1 font-extrabold">{esc(proj.name)}</h4>
-                <span className={`px-2.5 py-1 rounded-md text-[0.58rem] font-bold uppercase tracking-[0.5px] ${projDone ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#FEF3C7] text-[#92400E]'}`}>{projDone ? 'Terminé' : 'En cours'}</span>
-              </div>
-              <span className="font-black text-[1.1rem] text-[#1A2332]">{pct}%</span>
-            </div>
-            <div className="h-2 bg-[rgba(0,0,0,0.06)] rounded-full overflow-hidden mb-2.5">
-              <div className="h-full rounded-full bg-gradient-to-r from-[#00E676] via-[#4ADE80] to-[#00C853] transition-all duration-500" style={{ width: pct + '%', backgroundSize: '200% 100%', animation: 'shm 2.5s ease infinite' }} />
-            </div>
-            <div className="flex justify-between mb-3.5 text-[0.72rem] text-[#94A3B8] font-medium">
-              <span>{formatMoney(proj.receivedAmount)}</span>
-              <span>{formatMoney(proj.amount)}</span>
-            </div>
-            {projDone ? (
-              <div className="rounded-xl p-3.5 flex items-start gap-3 bg-[#F0FDF4] border-l-[3px] border-[#00C853]">
-                <i className="fas fa-trophy text-[#166534] mt-0.5 shrink-0 text-[0.9rem]"></i>
-                <div><h4 className="font-bold text-[#166534]">Projet financé !</h4></div>
-              </div>
-            ) : (
-              <button onClick={handleClaim} className="w-full py-3 bg-gradient-to-r from-[#00E676] to-[#00C853] text-white rounded-xl border-none cursor-pointer font-semibold text-[0.82rem] font-[Inter] shadow-[0_4px_20px_rgba(0,200,83,0.2)] transition-transform active:scale-[0.97] flex items-center justify-center gap-2"><i className="fas fa-coins"></i> Réclamer (10%)</button>
-            )}
+            <button className="py-2.5 px-4 text-[0.76rem] bg-gradient-to-r from-[#FBBF24] to-[#F59E0B] text-[#78350F] rounded-xl border-none cursor-pointer font-semibold font-[Inter] shadow-[0_4px_20px_rgba(251,191,36,0.2)] shrink-0" onClick={() => setPage('withdraw')}><i className="fas fa-arrow-up mr-1"></i>Retirer</button>
           </div>
         )}
 
@@ -632,7 +681,7 @@ function InvestScreen() {
             <i className="fas fa-info-circle text-[#1E40AF] mt-0.5 shrink-0 text-[0.9rem]"></i>
             <div>
               <h4 className="text-[0.82rem] mb-0.5 font-bold text-[#1E40AF]">Dépôt via Trust Wallet (TRX)</h4>
-              <p className="text-[0.72rem] leading-relaxed text-[#1E3A5F]">Envoyez des TRX depuis votre portefeuille Trust Wallet. Le dépôt est vérifié automatiquement et crédité avec <strong>10% de gains</strong>.</p>
+              <p className="text-[0.72rem] leading-relaxed text-[#1E3A5F]">Envoyez des TRX depuis votre portefeuille Trust Wallet. Le dépôt est vérifié automatiquement. Vous pourrez réclamer vos <strong>gains journaliers (7-15%)</strong> chaque jour.</p>
             </div>
           </div>
 
@@ -743,8 +792,8 @@ function InvestScreen() {
               <span className="text-[0.8rem] text-[#1A2332]">{depositInfo.trxPrice} $</span>
             </div>
             <div className="flex justify-between px-4 py-3">
-              <span className="text-[0.75rem] text-[#64748B]">Gains (10%)</span>
-              <span className="text-[0.8rem] font-bold text-[#00C853]">+{(depositInfo.amountUsd * 0.1).toFixed(2)} $</span>
+              <span className="text-[0.75rem] text-[#64748B]">Rendement</span>
+              <span className="text-[0.8rem] font-bold text-[#00C853]">7-15% / jour</span>
             </div>
             <div className="flex justify-between px-4 py-3">
               <span className="text-[0.75rem] text-[#64748B]">Réseau</span>
@@ -787,9 +836,9 @@ function InvestScreen() {
           <i className="fas fa-check text-[#00C853] text-[2rem]"></i>
         </div>
         <h3 className="text-[1.1rem] font-bold text-[#1A2332] mb-2">Paiement confirmé !</h3>
-        <p className="text-[0.82rem] text-[#64748B] mb-6 text-center">Votre dépôt a été vérifié et crédité sur votre solde avec 10% de gains.</p>
-        <button onClick={() => setPage('wallet')} className="w-full max-w-[200px] py-3.5 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(0,200,83,0.2)] font-[Inter] transition-transform active:scale-[0.97]">
-          Retour au portefeuille
+        <p className="text-[0.82rem] text-[#64748B] mb-6 text-center">Votre dépôt a été vérifié et crédité sur votre solde. Réclamez vos gains journaliers (7-15%) chaque jour !</p>
+        <button onClick={() => setPage('wallet')} className="w-full max-w-[260px] py-3.5 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(0,200,83,0.2)] font-[Inter] transition-transform active:scale-[0.97] flex items-center justify-center gap-2">
+          <i className="fas fa-coins"></i> Réclamer mes gains
         </button>
       </div>
     </>
@@ -942,11 +991,22 @@ function WithdrawalScreen() {
         <button className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90" onClick={() => setPage('wallet')}><i className="fas fa-times"></i></button>
       } />
       <div className="px-[18px] py-4 flex-1 w-full">
+        {/* 48h restriction check */}
+        {user.firstDepositAt && !user.canWithdraw && (user.hoursUntilWithdrawal || 0) > 0 && (
+          <div className="rounded-xl p-3.5 flex items-start gap-3 mb-[18px] bg-[#EFF6FF] border-l-[3px] border-[#3B82F6]">
+            <i className="fas fa-clock text-[#2563EB] mt-0.5 shrink-0 text-[0.9rem]"></i>
+            <div>
+              <h4 className="text-[0.82rem] mb-0.5 font-bold text-[#1E40AF]">Premier retrait dans {user.hoursUntilWithdrawal}h</h4>
+              <p className="text-[0.72rem] leading-relaxed text-[#3B82F6]">Vous devez attendre 48h après votre premier dépôt avant de pouvoir retirer vos gains.</p>
+            </div>
+          </div>
+        )}
+
         <div className="rounded-xl p-3.5 flex items-start gap-3 mb-[18px] bg-[#FFFBEB] border-l-[3px] border-[#F59E0B]">
           <i className="fas fa-info-circle text-[#B45309] mt-0.5 shrink-0 text-[0.9rem]"></i>
           <div>
             <h4 className="text-[0.82rem] mb-0.5 font-bold text-[#B45309]">Retrait depuis les gains</h4>
-            <p className="text-[0.72rem] leading-relaxed text-[#92400E]">Vous pouvez retirer uniquement depuis votre <strong>compte de gains</strong>. Le retrait sera envoyé en TRX à votre adresse Trust Wallet après validation par l&apos;admin.</p>
+            <p className="text-[0.72rem] leading-relaxed text-[#92400E]">Vous pouvez retirer uniquement depuis votre <strong>compte de gains</strong>. Le retrait sera envoyé en TRX à votre adresse Trust Wallet après validation par l&apos;admin. Premier retrait possible 48h après le premier dépôt.</p>
           </div>
         </div>
 
@@ -981,8 +1041,8 @@ function WithdrawalScreen() {
             <p className="text-[0.62rem] text-[#94A3B8] mt-1">L&apos;adresse où vous recevrez vos TRX</p>
           </div>
 
-          <button type="submit" disabled={loading || user.earnings < 5} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#FBBF24] to-[#F59E0B] text-[#78350F] font-bold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(251,191,36,0.2)] font-[Inter] transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">
-            {loading ? <div className="w-4 h-4 border-2 border-[rgba(120,53,15,0.3)] border-t-[#78350F] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <><i className="fas fa-paper-plane"></i> Demander le retrait</>}
+          <button type="submit" disabled={loading || user.earnings < 5 || !user.canWithdraw} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#FBBF24] to-[#F59E0B] text-[#78350F] font-bold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(251,191,36,0.2)] font-[Inter] transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">
+            {loading ? <div className="w-4 h-4 border-2 border-[rgba(120,53,15,0.3)] border-t-[#78350F] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : !user.canWithdraw ? <><i className="fas fa-clock"></i> Attente 48h</> : <><i className="fas fa-paper-plane"></i> Demander le retrait</>}
           </button>
         </form>
 

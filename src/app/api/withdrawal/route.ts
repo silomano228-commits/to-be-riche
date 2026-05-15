@@ -23,7 +23,7 @@ export async function GET() {
   }
 }
 
-// POST — Create a withdrawal request (only from gains/earnings account)
+// POST — Create a withdrawal request (only from gains/earnings account, 48h after first deposit)
 export async function POST(req: Request) {
   try {
     const cookieStore = await cookies();
@@ -42,9 +42,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'Minimum de retrait : 5 $' });
     }
 
-    // Can only withdraw from earnings
+    // Can only withdraw from earnings (gains balance)
     if (amt > user.earnings) {
-      return NextResponse.json({ success: false, error: 'Solde de gains insuffisant' });
+      return NextResponse.json({ success: false, error: 'Solde de gains insuffisant. Seul le solde de gains est retirable.' });
+    }
+
+    // 48h cooldown after first deposit
+    if (user.firstDepositAt) {
+      const hoursSinceFirstDeposit = (Date.now() - new Date(user.firstDepositAt).getTime()) / (1000 * 60 * 60);
+      if (hoursSinceFirstDeposit < 48) {
+        const hoursLeft = Math.ceil(48 - hoursSinceFirstDeposit);
+        return NextResponse.json({
+          success: false,
+          error: `Premier retrait possible dans ${hoursLeft}h après votre premier dépôt`,
+          hoursLeft,
+        });
+      }
+    } else {
+      return NextResponse.json({ success: false, error: 'Aucun dépôt trouvé' });
     }
 
     // Validate TRX address
@@ -60,6 +75,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'Vous avez déjà une demande de retrait en attente' });
     }
 
+    // Deduct from earnings and balance
+    await db.user.update({
+      where: { id: user.id },
+      data: {
+        earnings: { decrement: amt },
+        balance: { decrement: amt },
+      },
+    });
+
     // Create withdrawal request
     const withdrawal = await db.withdrawal.create({
       data: {
@@ -67,6 +91,16 @@ export async function POST(req: Request) {
         amount: amt,
         trxAddress,
         status: 'pending',
+      },
+    });
+
+    // Create transaction record
+    await db.transaction.create({
+      data: {
+        type: 'withdrawal',
+        amount: amt,
+        gain: 0,
+        userId: user.id,
       },
     });
 

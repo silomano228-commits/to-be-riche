@@ -15,6 +15,9 @@ export interface Project {
   receivedAmount: number;
   description: string;
   status: string;
+  dailyRate: number;
+  category: string;
+  potentialGain?: number;
 }
 
 export interface AppUser {
@@ -29,6 +32,14 @@ export interface AppUser {
   depositCount: number;
   transactions: Transaction[];
   project: Project | null;
+  projects?: Project[];
+  canClaimDailyGain?: boolean;
+  alreadyClaimedToday?: boolean;
+  totalPotentialGain?: number;
+  canWithdraw?: boolean;
+  hoursUntilWithdrawal?: number;
+  firstDepositAt?: string | null;
+  lastClaimAt?: string | null;
 }
 
 export interface Toast {
