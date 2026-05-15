@@ -62,7 +62,7 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set) => ({
   user: null,
-  currentPage: 'profile',
+  currentPage: 'home',
   isLoading: false,
   showSplash: true,
   toasts: [],

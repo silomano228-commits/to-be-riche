@@ -147,7 +147,7 @@ function AuthScreen() {
       if (data.success) {
         setUser(data.user);
         addToast('Bienvenue, ' + data.user.name, 'success');
-        setPage('home');
+        setPage('wallet');
       } else {
         addToast(data.error, 'error');
       }
@@ -175,7 +175,7 @@ function AuthScreen() {
       if (data.success) {
         setUser(data.user);
         addToast('Compte créé !', 'success');
-        setPage('home');
+        setPage('wallet');
       } else { addToast(data.error, 'error'); }
     } catch { addToast('Erreur réseau', 'error'); }
     setLoading(false);
@@ -260,8 +260,95 @@ function AuthScreen() {
   );
 }
 
-// ==================== HOME SCREEN ====================
+// ==================== HOME SCREEN (Landing Page) ====================
 function HomeScreen() {
+  const { user, setPage } = useAppStore();
+
+  if (!user) return null;
+
+  return (
+    <>
+      <Header title={<><LogoImg className="w-[26px] h-[26px] rounded-md" style={{ objectFit: 'contain', filter: 'none' }} /> Be Rich</>} rightElement={
+        <button className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90" onClick={() => setPage('profile')}><i className="far fa-user-circle"></i></button>
+      } />
+      <div className="px-[18px] py-4 flex-1 w-full">
+        {/* Hero Section */}
+        <div className="bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white rounded-2xl p-6 mb-5 relative overflow-hidden border border-[rgba(255,255,255,0.05)]">
+          <div className="absolute -top-12 -right-12 w-[180px] h-[180px] bg-[radial-gradient(circle,rgba(0,200,83,0.12),transparent_65%)]" />
+          <div className="absolute -bottom-10 -left-8 w-[120px] h-[120px] bg-[radial-gradient(circle,rgba(251,191,36,0.08),transparent_65%)]" />
+          <div className="relative z-[1] text-center">
+            <LogoImg className="w-[64px] h-[64px] mx-auto mb-3" style={{ filter: 'drop-shadow(0 4px 20px rgba(0,200,83,0.25))' }} />
+            <h2 className="text-[1.5rem] font-black tracking-[-0.5px] mb-1 bg-gradient-to-r from-[#FCD34D] via-[#FBBF24] to-[#F59E0B] bg-[length:200%_auto] text-transparent bg-clip-text" style={{ animation: 'gs 3s linear infinite' }}>Investissez. Prospérez.</h2>
+            <p className="text-[rgba(255,255,255,0.5)] text-[0.78rem] leading-relaxed mt-2 mb-4">Be Rich vous permet d&apos;investir via TRX et de gagner jusqu&apos;à 10% de rendement sur vos dépôts. Suivez vos gains en temps réel et retirez quand vous voulez.</p>
+            <button onClick={() => user.hasInvested ? setPage('wallet') : setPage('invest')} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(0,200,83,0.25)] font-[Inter] transition-transform active:scale-[0.97] flex items-center justify-center gap-2">
+              <i className="fas fa-rocket"></i> Commencer
+            </button>
+          </div>
+        </div>
+
+        {/* Features Section */}
+        <h3 className="text-[0.9rem] font-bold text-[#1A2332] mb-3">Pourquoi Be Rich ?</h3>
+        <div className="grid grid-cols-2 gap-2.5 mb-5">
+          {[
+            { emoji: '💰', title: 'Investissement simplifié', desc: 'Déposez via TRX et gagnez 10% de rendement', color: 'bg-[#DCFCE7] border-[#BBF7D0]' },
+            { emoji: '📊', title: 'Suivi en temps réel', desc: 'Suivez vos gains et votre portefeuille', color: 'bg-[#DBEAFE] border-[#BFDBFE]' },
+            { emoji: '🔒', title: 'Sécurisé', desc: 'Vos fonds sont protégés', color: 'bg-[#FEF3C7] border-[#FDE68A]' },
+            { emoji: '⚡', title: 'Retrait facile', desc: 'Retirez vos gains quand vous voulez', color: 'bg-[#F3E8FF] border-[#E9D5FF]' },
+          ].map((f, i) => (
+            <div key={i} className={`rounded-xl p-3.5 border ${f.color} shadow-[0_1px_3px_rgba(0,0,0,0.04)]`}>
+              <div className="text-[1.3rem] mb-1.5">{f.emoji}</div>
+              <div className="text-[0.78rem] font-bold text-[#1A2332] mb-0.5">{f.title}</div>
+              <div className="text-[0.65rem] text-[#64748B] leading-relaxed">{f.desc}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* How it Works Section */}
+        <h3 className="text-[0.9rem] font-bold text-[#1A2332] mb-3">Comment ça marche ?</h3>
+        <div className="bg-white rounded-2xl p-5 mb-5 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)] border border-[rgba(0,0,0,0.03)]">
+          {[
+            { step: 1, title: 'Créez votre compte', desc: 'Inscrivez-vous en quelques secondes', icon: 'fa-user-plus', color: '#00C853' },
+            { step: 2, title: 'Déposez via TRX', desc: 'Envoyez des TRX depuis Trust Wallet', icon: 'fa-wallet', color: '#FBBF24' },
+            { step: 3, title: 'Gagnez et retirez', desc: 'Gagnez 10% et retirez vos gains', icon: 'fa-coins', color: '#00C853' },
+          ].map((s, i) => (
+            <div key={i} className={`flex items-start gap-3 ${i < 2 ? 'mb-4' : ''}`}>
+              <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-[0.72rem] shrink-0 shadow-sm" style={{ background: `linear-gradient(135deg, ${s.color}, ${s.color}dd)` }}>{s.step}</div>
+              <div className="flex-1 pt-1">
+                <div className="text-[0.82rem] font-bold text-[#1A2332] mb-0.5">{s.title}</div>
+                <div className="text-[0.72rem] text-[#64748B]">{s.desc}</div>
+              </div>
+              <i className={`fas ${s.icon} text-[0.85rem] mt-1.5`} style={{ color: s.color }}></i>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA Button */}
+        <button onClick={() => user.hasInvested ? setPage('wallet') : setPage('invest')} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(0,200,83,0.25)] font-[Inter] transition-transform active:scale-[0.97] flex items-center justify-center gap-2 mb-5">
+          <i className="fas fa-arrow-right"></i> {user.hasInvested ? 'Voir mon portefeuille' : 'Commencer à investir'}
+        </button>
+
+        {/* Popular Projects */}
+        <div className="flex justify-between items-center mb-2.5">
+          <h3 className="text-[0.9rem] font-bold text-[#1A2332]">Projets Populaires</h3>
+          <span className="text-[0.68rem] text-[#00C853] font-semibold cursor-pointer">Voir tout</span>
+        </div>
+        {PROJECTS.map((p, i) => (
+          <div key={i} className="flex gap-3 p-3.5 bg-white rounded-xl mb-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)] items-center border border-[rgba(0,0,0,0.03)]">
+            <img src={p.img} className="w-[50px] h-[50px] rounded-lg object-cover shrink-0" loading="lazy" alt={p.n} />
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-[0.85rem] mb-0.5 text-[#1A2332]">{p.n}</div>
+              <div className="text-[0.68rem] text-[#94A3B8] font-medium">{p.s}</div>
+            </div>
+            <i className="fas fa-chevron-right text-gray-300 text-[0.65rem]"></i>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+// ==================== WALLET SCREEN ====================
+function WalletScreen() {
   const { user, setPage, setUser, addToast, addNotification } = useAppStore();
   const [flashBal, setFlashBal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -332,7 +419,7 @@ function HomeScreen() {
 
   return (
     <>
-      <Header title={<><LogoImg className="w-[26px] h-[26px] rounded-md" style={{ objectFit: 'contain', filter: 'none' }} /> Be Rich</>} rightElement={
+      <Header title="Portefeuille" icon="fa-wallet" iconColor="#00C853" rightElement={
         <button className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90" onClick={() => setPage('profile')}><i className="far fa-user-circle"></i></button>
       } />
       <div className="px-[18px] py-4 flex-1 w-full">
@@ -701,8 +788,8 @@ function InvestScreen() {
         </div>
         <h3 className="text-[1.1rem] font-bold text-[#1A2332] mb-2">Paiement confirmé !</h3>
         <p className="text-[0.82rem] text-[#64748B] mb-6 text-center">Votre dépôt a été vérifié et crédité sur votre solde avec 10% de gains.</p>
-        <button onClick={() => setPage('home')} className="w-full max-w-[200px] py-3.5 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(0,200,83,0.2)] font-[Inter] transition-transform active:scale-[0.97]">
-          Retour à l&apos;accueil
+        <button onClick={() => setPage('wallet')} className="w-full max-w-[200px] py-3.5 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(0,200,83,0.2)] font-[Inter] transition-transform active:scale-[0.97]">
+          Retour au portefeuille
         </button>
       </div>
     </>
@@ -792,7 +879,7 @@ function WithdrawalScreen() {
     return (
       <>
         <Header title="Retrait en attente" icon="fa-clock" iconColor="#F59E0B" rightElement={
-          <button className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90" onClick={() => setPage('home')}><i className="fas fa-times"></i></button>
+          <button className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90" onClick={() => setPage('wallet')}><i className="fas fa-times"></i></button>
         } />
         <div className="px-[18px] py-4 flex-1 w-full flex flex-col items-center justify-center">
           <div className="w-20 h-20 rounded-full bg-[#FEF3C7] flex items-center justify-center mb-4">
@@ -821,8 +908,8 @@ function WithdrawalScreen() {
             <span className="text-[0.72rem]">Vérification en cours...</span>
           </div>
 
-          <button onClick={() => setPage('home')} className="w-full max-w-[200px] py-3.5 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(0,200,83,0.2)] font-[Inter] transition-transform active:scale-[0.97]">
-            Retour à l&apos;accueil
+          <button onClick={() => setPage('wallet')} className="w-full max-w-[200px] py-3.5 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(0,200,83,0.2)] font-[Inter] transition-transform active:scale-[0.97]">
+            Retour au portefeuille
           </button>
         </div>
       </>
@@ -840,8 +927,8 @@ function WithdrawalScreen() {
           </div>
           <h3 className="text-[1.1rem] font-bold text-[#1A2332] mb-2">Retrait approuvé !</h3>
           <p className="text-[0.82rem] text-[#64748B] mb-6 text-center">Votre retrait a été approuvé. Les fonds seront envoyés à votre adresse TRX.</p>
-          <button onClick={() => setPage('home')} className="w-full max-w-[200px] py-3.5 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(0,200,83,0.2)] font-[Inter] transition-transform active:scale-[0.97]">
-            Retour à l&apos;accueil
+          <button onClick={() => setPage('wallet')} className="w-full max-w-[200px] py-3.5 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(0,200,83,0.2)] font-[Inter] transition-transform active:scale-[0.97]">
+            Retour au portefeuille
           </button>
         </div>
       </>
@@ -852,7 +939,7 @@ function WithdrawalScreen() {
   return (
     <>
       <Header title="Retrait" icon="fa-arrow-up" iconColor="#F59E0B" rightElement={
-        <button className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90" onClick={() => setPage('home')}><i className="fas fa-times"></i></button>
+        <button className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90" onClick={() => setPage('wallet')}><i className="fas fa-times"></i></button>
       } />
       <div className="px-[18px] py-4 flex-1 w-full">
         <div className="rounded-xl p-3.5 flex items-start gap-3 mb-[18px] bg-[#FFFBEB] border-l-[3px] border-[#F59E0B]">
@@ -955,7 +1042,7 @@ function AddProjectScreen() {
         const newProj: Project = { id: data.project_id, name, amount: parseFloat(amount), receivedAmount: 0, description: desc, status: 'active' };
         setUser({ ...user, project: newProj });
         addToast('Projet soumis !', 'success');
-        setPage('home');
+        setPage('wallet');
       } else { addToast(data.error, 'error'); }
     } catch { addToast('Erreur', 'error'); }
     setLoading(false);
@@ -963,7 +1050,7 @@ function AddProjectScreen() {
 
   return (
     <>
-      <Header title="Nouveau Projet" rightElement={<button className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90" onClick={() => setPage('home')}><i className="fas fa-times"></i></button>} />
+      <Header title="Nouveau Projet" rightElement={<button className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90" onClick={() => setPage('wallet')}><i className="fas fa-times"></i></button>} />
       <div className="px-[18px] py-4 flex-1 w-full">
         {!isUnlocked ? (
           <div className="text-center py-12 px-5">
@@ -1901,7 +1988,7 @@ function ProfileScreen() {
 
   return (
     <>
-      <Header title="Profil" rightElement={<button className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90" onClick={() => setPage('home')}><i className="fas fa-arrow-left"></i></button>} />
+      <Header title="Profil" rightElement={<button className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90" onClick={() => setPage('wallet')}><i className="fas fa-arrow-left"></i></button>} />
       <div className="px-[18px] py-4 flex-1 w-full text-center max-w-[380px] mx-auto">
         <div className="w-[88px] h-[88px] rounded-3xl bg-gradient-to-br from-[#DCFCE7] to-[#BBF7D0] mx-auto mb-4 flex items-center justify-center relative overflow-hidden shadow-[0_6px_20px_rgba(0,200,83,0.12)]">
           <LogoImg className="w-[50px] h-[50px] object-contain relative z-[1]" />
@@ -1965,8 +2052,7 @@ function BottomNav() {
 
   const items = [
     { id: 'home', icon: 'fa-home', label: 'Accueil' },
-    { id: 'invest', icon: 'fa-wallet', label: 'Investir' },
-    { id: 'add', icon: 'fa-plus', label: 'Ajouter', isFab: true },
+    { id: 'wallet', icon: 'fa-wallet', label: 'Wallet', isFab: true },
     { id: 'chat', icon: 'fa-comment-alt', label: 'Chat' },
     { id: 'profile', icon: 'fa-user', label: 'Profil' },
   ];
@@ -1974,17 +2060,17 @@ function BottomNav() {
   return (
     <nav className="absolute bottom-0 left-0 w-full h-[68px] bg-[rgba(255,255,255,0.92)] backdrop-blur-2xl flex justify-around items-center z-[100] border-t border-[rgba(0,0,0,0.04)] pb-2">
       {items.map((item) => (
-        <div key={item.id} className="flex flex-col items-center justify-center text-[#94A3B8] text-[0.58rem] font-medium gap-[3px] cursor-pointer transition-all py-1.5" style={{ width: '20%' }}
+        <div key={item.id} className="flex flex-col items-center justify-center text-[#94A3B8] text-[0.58rem] font-medium gap-[3px] cursor-pointer transition-all py-1.5" style={{ width: '25%' }}
           onClick={() => {
             if (item.id === 'admin' && user.role !== 'admin') return;
             setPage(item.id);
           }}>
           {item.isFab ? (
             <>
-              <div className={`w-12 h-12 bg-gradient-to-br from-[#60A5FA] to-[#3B82F6] rounded-[14px] flex items-center justify-center text-white shadow-[0_4px_16px_rgba(59,130,246,0.3)] -mt-6 border-[3.5px] border-[#F2F5F9] transition-transform active:scale-90 ${!user.hasInvested ? 'bg-gray-300 shadow-none pointer-events-none' : ''}`}>
-                <i className="fas fa-plus"></i>
+              <div className={`w-12 h-12 bg-gradient-to-br from-[#00E676] to-[#00C853] rounded-[14px] flex items-center justify-center text-white shadow-[0_4px_16px_rgba(0,200,83,0.3)] -mt-6 border-[3.5px] border-[#F2F5F9] transition-transform active:scale-90`}>
+                <i className="fas fa-wallet"></i>
               </div>
-              <span className="mt-1">Ajouter</span>
+              <span className="mt-1">Wallet</span>
             </>
           ) : (
             <>
@@ -2010,7 +2096,7 @@ export default function BeRichApp() {
         const data = await res.json();
         if (data.success && data.user) {
           setUser(data.user);
-          setPage('home');
+          setPage('wallet');
         }
       } catch { /* not logged in */ }
       setInitialized(true);
@@ -2043,6 +2129,7 @@ export default function BeRichApp() {
         {/* Pages */}
         <div className={`absolute inset-0 bg-[#F2F5F9] overflow-y-auto overflow-x-hidden flex flex-col transition-all duration-300 ${!showSplash && currentPage !== 'profile' ? 'opacity-100 translate-x-0 z-10' : 'opacity-0 translate-x-full pointer-events-none'}`}>
           {currentPage === 'home' && <HomeScreen />}
+          {currentPage === 'wallet' && <WalletScreen />}
           {currentPage === 'invest' && <InvestScreen />}
           {currentPage === 'withdraw' && <WithdrawalScreen />}
           {currentPage === 'add' && <AddProjectScreen />}

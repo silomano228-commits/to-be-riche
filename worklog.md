@@ -110,3 +110,27 @@ Stage Summary:
 - Withdrawals only possible from gains account (enforced in frontend and backend)
 - Admin panel has dedicated "Retraits" tab for managing withdrawal requests
 - Transaction history shows withdrawals with distinct styling
+
+---
+Task ID: 1
+Agent: full-stack-developer
+Task: Restructure Be Rich app - Home=landing page, Wallet=financial hub
+
+Work Log:
+- Read worklog.md to understand prior changes
+- Updated store.ts default currentPage from 'profile' to 'home'
+- Renamed HomeScreen → WalletScreen and changed header from "LogoImg Be Rich" to "Portefeuille" with fa-wallet icon and #00C853 color
+- Created new HomeScreen as a landing page with: Hero section (dark gradient card, Be Rich logo, tagline "Investissez. Prospérez."), Features section (4 cards: Investissement simplifié, Suivi en temps réel, Sécurisé, Retrait facile), How it Works section (3 steps with numbered circles), CTA button "Commencer" (navigates to wallet if invested, invest if not), Popular Projects section
+- Updated AuthScreen: handleLogin and handleRegister now navigate to 'wallet' instead of 'home' after login/register
+- Updated BottomNav: changed from 5 items to 4 items (removed invest tab, replaced add with wallet), FAB button uses green gradient (from-[#00E676] to-[#00C853]) instead of blue, shadow changed to rgba(0,200,83,0.3), icon changed from fa-plus to fa-wallet, label from "Ajouter" to "Wallet", removed disabled state for non-invested users, nav item width from 20% to 25%
+- Updated page routing: added {currentPage === 'wallet' && <WalletScreen />} after home
+- Kept BeRichApp session restore as setPage('home') (landing page)
+- ESLint passes clean for page.tsx and store.ts
+- Dev server returns 200 OK
+
+Stage Summary:
+- App restructured: Home (Accueil) is now a landing page about Be Rich, Wallet tab contains all financial content
+- All existing screens preserved (InvestScreen, WithdrawalScreen, AddProjectScreen, ChatScreen, AdminScreen, ProfileScreen)
+- Bottom nav simplified from 5 to 4 items with green wallet FAB
+- After login/register, users go directly to Wallet; after session restore, they see the landing page
+- Store default page is 'home' (landing page)
