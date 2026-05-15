@@ -2340,6 +2340,7 @@ function BottomNav() {
 
   const items = [
     { id: 'home', icon: 'fa-home', label: 'Accueil' },
+    { id: 'wallet', icon: 'fa-wallet', label: 'Wallet' },
     { id: 'projects', icon: 'fa-briefcase', label: 'Projets', isFab: true },
     { id: 'chat', icon: 'fa-comment-alt', label: 'Chat' },
     { id: 'profile', icon: 'fa-user', label: 'Profil' },
@@ -2348,21 +2349,21 @@ function BottomNav() {
   return (
     <nav className="absolute bottom-0 left-0 w-full h-[68px] bg-[rgba(255,255,255,0.92)] backdrop-blur-2xl flex justify-around items-center z-[100] border-t border-[rgba(0,0,0,0.04)] pb-2">
       {items.map((item) => (
-        <div key={item.id} className="flex flex-col items-center justify-center text-[#94A3B8] text-[0.58rem] font-medium gap-[3px] cursor-pointer transition-all py-1.5" style={{ width: '25%' }}
+        <div key={item.id} className="flex flex-col items-center justify-center text-[#94A3B8] text-[0.55rem] font-medium gap-[2px] cursor-pointer transition-all py-1.5" style={{ width: '20%' }}
           onClick={() => {
             if (item.id === 'admin' && user.role !== 'admin') return;
             setPage(item.id);
           }}>
           {item.isFab ? (
             <>
-              <div className={`w-12 h-12 bg-gradient-to-br from-[#00E676] to-[#00C853] rounded-[14px] flex items-center justify-center text-white shadow-[0_4px_16px_rgba(0,200,83,0.3)] -mt-6 border-[3.5px] border-[#F2F5F9] transition-transform active:scale-90`}>
-                <i className="fas fa-briefcase"></i>
+              <div className={`w-11 h-11 bg-gradient-to-br from-[#00E676] to-[#00C853] rounded-[13px] flex items-center justify-center text-white shadow-[0_4px_16px_rgba(0,200,83,0.3)] -mt-5 border-[3px] border-[#F2F5F9] transition-transform active:scale-90`}>
+                <i className="fas fa-briefcase text-[0.95rem]"></i>
               </div>
-              <span className="mt-1">Projets</span>
+              <span className="mt-0.5">Projets</span>
             </>
           ) : (
             <>
-              <i className={`fas ${item.icon} text-[1.15rem] transition-transform ${currentPage === item.id ? 'text-[#00C853] -translate-y-0.5 scale-105' : ''}`}></i>
+              <i className={`fas ${item.icon} text-[1.05rem] transition-transform ${currentPage === item.id ? 'text-[#00C853] -translate-y-0.5 scale-105' : ''}`}></i>
               <span className={currentPage === item.id ? 'text-[#00C853]' : ''}>{item.label}</span>
             </>
           )}
