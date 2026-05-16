@@ -1,11 +1,20 @@
 import { db } from '@/lib/db';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
+
+function getToken(request: Request): string | null {
+  const authHeader = request.headers.get('x-auth-token');
+  if (authHeader) return authHeader;
+  const cookieHeader = request.headers.get('cookie') || '';
+  const match = cookieHeader.match(/br_token=([^;]+)/);
+  if (match) return match[1];
+  return null;
+}
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('br_token')?.value;
+    const token = getToken(request);
     if (!token) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
 
     const admin = await db.user.findUnique({ where: { id: token } });

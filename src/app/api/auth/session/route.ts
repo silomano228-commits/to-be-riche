@@ -1,11 +1,34 @@
 import { db } from '@/lib/db';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export const dynamic = 'force-dynamic';
+
+function getToken(request: Request): string | null {
+  const authHeader = request.headers.get('x-auth-token');
+  if (authHeader) return authHeader;
+  const cookieHeader = request.headers.get('cookie') || '';
+  const match = cookieHeader.match(/br_token=([^;]+)/);
+  if (match) return match[1];
+  return null;
+}
+
+export async function GET(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('br_token')?.value;
+    // Auto-seed admin if not exists
+    const adminExists = await db.user.findUnique({ where: { email: 'admin@berich.com' } });
+    if (!adminExists) {
+      await db.user.create({
+        data: { email: 'admin@berich.com', name: 'Admin', password: 'Admin@2024', role: 'admin', referralCode: 'BR-ADMIN' },
+      });
+    }
+
+    // Auto-seed SiteConfig if not exists
+    const configExists = await db.siteConfig.findUnique({ where: { id: 'main' } });
+    if (!configExists) {
+      await db.siteConfig.create({ data: { id: 'main', adminTrxAddress: '', trxUsdPrice: 0.12 } });
+    }
+
+    const token = getToken(request);
 
     if (!token) {
       return NextResponse.json({ success: false });

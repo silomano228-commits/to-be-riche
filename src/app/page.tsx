@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useAppStore, formatMoney, esc, type AppUser, type Transaction, type Project } from '@/lib/store';
+import { useAppStore, formatMoney, esc, authFetch, type AppUser, type Transaction, type Project } from '@/lib/store';
 
 const LOGO_URL = 'https://z-cdn-media.chatglm.cn/files/1153c12e-46c2-4ff4-9bfb-9ee1ea9ad677.png?auth_key=1875725907-dba9b296a2b347a582e281f8c13d5dd1-0-abc6e2dfe8db025886d8c5cccb41f197';
 
@@ -835,7 +835,7 @@ function WithdrawalScreen() {
   // Load existing withdrawals
   useEffect(() => {
     if (!user) return;
-    fetch('/api/withdrawal').then(r => r.json()).then(data => {
+    authFetch('/api/withdrawal').then(r => r.json()).then(data => {
       if (data.success) {
         setWithdrawals(data.data || []);
         // If there's a pending withdrawal, show pending state
@@ -855,7 +855,7 @@ function WithdrawalScreen() {
 
     setLoading(true);
     try {
-      const res = await fetch('/api/withdrawal', {
+      const res = await authFetch('/api/withdrawal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount: amt, trxAddress }),
@@ -865,7 +865,7 @@ function WithdrawalScreen() {
         addToast('Demande de retrait envoyée !', 'success');
         setStep('pending');
         // Refresh withdrawals
-        const wRes = await fetch('/api/withdrawal');
+        const wRes = await authFetch('/api/withdrawal');
         const wData = await wRes.json();
         if (wData.success) setWithdrawals(wData.data || []);
       } else {
@@ -880,7 +880,7 @@ function WithdrawalScreen() {
     if (step !== 'pending') return;
     const interval = setInterval(async () => {
       try {
-        const res = await fetch('/api/withdrawal');
+        const res = await authFetch('/api/withdrawal');
         const data = await res.json();
         if (data.success) {
           setWithdrawals(data.data || []);
@@ -1382,7 +1382,7 @@ function AdminScreen() {
 
   const loadChats = useCallback(async () => {
     try {
-      const cRes = await fetch('/api/admin/chats');
+      const cRes = await authFetch('/api/admin/chats');
       const cData = await cRes.json();
       if (cData.success) setConversations(cData.conversations || []);
     } catch { /* ignore */ }
@@ -1390,7 +1390,7 @@ function AdminScreen() {
 
   const loadDeposits = useCallback(async () => {
     try {
-      const dRes = await fetch('/api/admin/deposits');
+      const dRes = await authFetch('/api/admin/deposits');
       const dData = await dRes.json();
       if (dData.success) {
         setPendingDeposits(dData.data || []);
@@ -1401,7 +1401,7 @@ function AdminScreen() {
 
   const loadWithdrawals = useCallback(async () => {
     try {
-      const wRes = await fetch('/api/admin/withdrawals');
+      const wRes = await authFetch('/api/admin/withdrawals');
       const wData = await wRes.json();
       if (wData.success) {
         setWithdrawals(wData.data || []);
@@ -1412,7 +1412,7 @@ function AdminScreen() {
 
   const handleWithdrawalAction = async (withdrawalId: string, action: 'approve' | 'reject') => {
     try {
-      const res = await fetch('/api/admin/withdrawals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ withdrawalId, action }) });
+      const res = await authFetch('/api/admin/withdrawals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ withdrawalId, action }) });
       const data = await res.json();
       if (data.success) {
         addToast(action === 'approve' ? 'Retrait approuvé et débité' : 'Retrait rejeté', action === 'approve' ? 'success' : 'info');
@@ -1423,7 +1423,7 @@ function AdminScreen() {
 
   const loadConfig = useCallback(async () => {
     try {
-      const cRes = await fetch('/api/admin/config');
+      const cRes = await authFetch('/api/admin/config');
       const cData = await cRes.json();
       if (cData.success) {
         setSiteConfig(cData.data);
@@ -1435,11 +1435,17 @@ function AdminScreen() {
 
   const loadData = useCallback(async () => {
     try {
-      const [dRes, cRes] = await Promise.all([fetch('/api/admin/data'), fetch('/api/admin/chats')]);
+      const [dRes, cRes] = await Promise.all([authFetch('/api/admin/data'), authFetch('/api/admin/chats')]);
       const [dData, cData] = await Promise.all([dRes.json(), cRes.json()]);
-      if (dData.success) setAdminData(dData);
-      if (cData.success) setConversations(cData.conversations || []);
-    } catch { addToast('Erreur', 'error'); }
+      if (dData.success) {
+        setAdminData(dData);
+      } else {
+        addToast('Admin data: ' + (dData.error || 'Erreur'), 'error');
+      }
+      if (cData.success) {
+        setConversations(cData.conversations || []);
+      }
+    } catch { addToast('Erreur réseau admin', 'error'); }
     setLoading(false);
   }, [addToast]);
 
@@ -1470,7 +1476,7 @@ function AdminScreen() {
     const content = replyText.trim();
     setReplySending(true);
     try {
-      const res = await fetch('/api/admin/reply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetUserId: activeConv, content }) });
+      const res = await authFetch('/api/admin/reply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetUserId: activeConv, content }) });
       const data = await res.json();
       if (data.success) {
         setReplyText('');
@@ -1485,7 +1491,7 @@ function AdminScreen() {
   const handleDeleteMessage = async (messageId: string) => {
     setDeletingMsgId(messageId);
     try {
-      const res = await fetch('/api/admin/messages/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messageId }) });
+      const res = await authFetch('/api/admin/messages/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messageId }) });
       const data = await res.json();
       if (data.success) {
         addToast('Message supprimé', 'success');
@@ -1497,7 +1503,7 @@ function AdminScreen() {
 
   const handleDepositAction = async (depositId: string, action: 'approve' | 'reject') => {
     try {
-      const res = await fetch('/api/admin/deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId, action }) });
+      const res = await authFetch('/api/admin/deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId, action }) });
       const data = await res.json();
       if (data.success) {
         addToast(action === 'approve' ? 'Dépôt approuvé et crédité' : 'Dépôt rejeté', action === 'approve' ? 'success' : 'info');
@@ -1509,7 +1515,7 @@ function AdminScreen() {
   const handleSaveConfig = async () => {
     setConfigSaving(true);
     try {
-      const res = await fetch('/api/admin/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminTrxAddress: configAddr, trxUsdPrice: configPrice }) });
+      const res = await authFetch('/api/admin/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminTrxAddress: configAddr, trxUsdPrice: configPrice }) });
       const data = await res.json();
       if (data.success) {
         setSiteConfig(data.data);
@@ -2244,7 +2250,7 @@ function ReferralScreen() {
   useEffect(() => {
     const fetchReferrals = async () => {
       try {
-        const res = await fetch('/api/referral/list');
+        const res = await authFetch('/api/referral/list');
         const data = await res.json();
         if (data.success) {
           setReferrals(data.referrals || []);
@@ -2461,7 +2467,7 @@ function ProjectDetailScreen() {
   const handleClaim = async () => {
     setClaiming(true);
     try {
-      const res = await fetch('/api/projects/claim-daily', {
+      const res = await authFetch('/api/projects/claim-daily', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ projectId: selectedProjectId }),

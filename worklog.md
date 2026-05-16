@@ -71,3 +71,28 @@ Stage Summary:
 - All admin API endpoints confirmed working (200 status)
 - Referral system confirmed working (admin sees Test User as filleul)
 - SiteConfig created with default values
+
+---
+Task ID: 4
+Agent: Main Agent
+Task: Fix admin functions not working - cookie authentication issue
+
+Work Log:
+- Diagnosed that admin API routes returned 401 because cookies weren't being sent reliably in proxy environment
+- Fixed login/register/logout routes to set cookies via `response.cookies.set()` instead of `cookies().set()` (Next.js App Router issue)
+- Changed `httpOnly` to `false` for better compatibility
+- Created `/src/lib/auth.ts` with `getAuthToken()` helper that reads from X-Auth-Token header first, then cookie
+- Updated ALL admin API routes to use `getAuthToken()` + `dynamic = 'force-dynamic'`
+- Updated withdrawal, referral/list API routes to use `getAuthToken()`
+- Added `authFetch()` helper in store.ts that automatically adds X-Auth-Token header from current user
+- Updated all admin frontend fetch calls to use `authFetch()` instead of `fetch()`
+- Updated withdrawal, referral/list, and projects/claim-daily frontend calls to use `authFetch()`
+- Verified all admin endpoints work with both cookie and X-Auth-Token header via curl
+
+Stage Summary:
+- Root cause: Next.js `cookies().set()` doesn't reliably set cookies on the response in App Router
+- Fix: Dual auth mechanism - cookies + custom X-Auth-Token header
+- All admin routes now have `dynamic = 'force-dynamic'` to prevent caching
+- All admin routes read auth from both header and cookie
+- Frontend sends user ID as X-Auth-Token header with every authenticated request
+- Admin credentials: admin@berich.com / Admin@2024

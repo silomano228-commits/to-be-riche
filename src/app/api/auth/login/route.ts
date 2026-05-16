@@ -1,5 +1,4 @@
 import { db } from '@/lib/db';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
@@ -28,8 +27,6 @@ export async function POST(request: Request) {
     }
 
     const { password: _, ...safeUser } = user;
-    const cookieStore = await cookies();
-    cookieStore.set('br_token', user.id, { path: '/', maxAge: 60 * 60 * 24 * 7, httpOnly: true, sameSite: 'lax' });
 
     const transactions = await db.transaction.findMany({
       where: { userId: user.id },
@@ -41,10 +38,21 @@ export async function POST(request: Request) {
       orderBy: { createdAt: 'desc' },
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       user: { ...safeUser, transactions, project },
     });
+
+    // Set cookie on the response object (reliable method)
+    response.cookies.set('br_token', user.id, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+      httpOnly: false,
+      sameSite: 'lax',
+      secure: false,
+    });
+
+    return response;
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
   }

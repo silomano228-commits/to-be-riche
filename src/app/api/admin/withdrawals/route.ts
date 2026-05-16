@@ -1,18 +1,30 @@
 import { db } from '@/lib/db';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-// GET — List all withdrawal requests (admin only)
-export async function GET() {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('br_token')?.value;
-    if (!token) return NextResponse.json({ success: false, error: 'Non autorisé' });
+export const dynamic = 'force-dynamic';
 
-    const admin = await db.user.findUnique({ where: { id: token } });
-    if (!admin || admin.role !== 'admin') {
-      return NextResponse.json({ success: false, error: 'Accès refusé' });
-    }
+function getToken(request: Request): string | null {
+  const authHeader = request.headers.get('x-auth-token');
+  if (authHeader) return authHeader;
+  const cookieHeader = request.headers.get('cookie') || '';
+  const match = cookieHeader.match(/br_token=([^;]+)/);
+  if (match) return match[1];
+  return null;
+}
+
+async function checkAdmin(request: Request) {
+  const token = getToken(request);
+  if (!token) return { error: NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 }), admin: null };
+  const admin = await db.user.findUnique({ where: { id: token } });
+  if (!admin || admin.role !== 'admin') return { error: NextResponse.json({ success: false, error: 'Accès refusé' }, { status: 403 }), admin: null };
+  return { error: null, admin };
+}
+
+// GET — List all withdrawal requests (admin only)
+export async function GET(request: Request) {
+  try {
+    const { error } = await checkAdmin(request);
+    if (error) return error;
 
     const withdrawals = await db.withdrawal.findMany({
       orderBy: { createdAt: 'desc' },
@@ -38,18 +50,12 @@ export async function GET() {
 }
 
 // POST — Approve or reject a withdrawal request (admin only)
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('br_token')?.value;
-    if (!token) return NextResponse.json({ success: false, error: 'Non autorisé' });
+    const { error } = await checkAdmin(request);
+    if (error) return error;
 
-    const admin = await db.user.findUnique({ where: { id: token } });
-    if (!admin || admin.role !== 'admin') {
-      return NextResponse.json({ success: false, error: 'Accès refusé' });
-    }
-
-    const body = await req.json();
+    const body = await request.json();
     const { withdrawalId, action, adminNote } = body;
 
     if (!withdrawalId || !action || !['approve', 'reject'].includes(action)) {

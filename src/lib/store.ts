@@ -120,3 +120,15 @@ export function esc(s: string): string {
   d.textContent = s;
   return d.innerHTML;
 }
+
+// Authenticated fetch — adds the user token as a custom header
+// This works alongside cookies as a fallback for proxy environments
+export function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  const store = useAppStore.getState();
+  const userId = store.user?.id;
+  const headers = new Headers(options.headers || {});
+  if (userId) {
+    headers.set('X-Auth-Token', userId);
+  }
+  return fetch(url, { ...options, headers });
+}

@@ -1,11 +1,12 @@
 import { db } from '@/lib/db';
-import { cookies } from 'next/headers';
+import { getAuthToken } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export const dynamic = 'force-dynamic';
+
+export async function GET(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('br_token')?.value;
+    const token = getAuthToken(request);
 
     if (!token) {
       return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });

@@ -1,5 +1,4 @@
 import { db } from '@/lib/db';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 function generateReferralCode(): string {
@@ -67,13 +66,21 @@ export async function POST(request: Request) {
     }
 
     const { password: _, ...safeUser } = user;
-    const cookieStore = await cookies();
-    cookieStore.set('br_token', user.id, { path: '/', maxAge: 60 * 60 * 24 * 7, httpOnly: true, sameSite: 'lax' });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       user: { ...safeUser, transactions: [], project: null },
     });
+
+    // Set cookie on the response object (reliable method)
+    response.cookies.set('br_token', user.id, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+      httpOnly: false,
+      sameSite: 'lax',
+    });
+
+    return response;
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
   }

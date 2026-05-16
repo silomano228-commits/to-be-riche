@@ -1,12 +1,13 @@
 import { db } from '@/lib/db';
-import { cookies } from 'next/headers';
+import { getAuthToken } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // GET — Check withdrawal status (pending withdrawals for current user)
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('br_token')?.value;
+    const token = getAuthToken(request);
     if (!token) return NextResponse.json({ success: false, error: 'Non autorisé' });
 
     const user = await db.user.findUnique({ where: { id: token } });
@@ -24,16 +25,15 @@ export async function GET() {
 }
 
 // POST — Create a withdrawal request (only from gains/earnings account, 48h after first deposit)
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('br_token')?.value;
+    const token = getAuthToken(request);
     if (!token) return NextResponse.json({ success: false, error: 'Non autorisé' });
 
     const user = await db.user.findUnique({ where: { id: token } });
     if (!user) return NextResponse.json({ success: false, error: 'Utilisateur introuvable' });
 
-    const body = await req.json();
+    const body = await request.json();
     const { amount, trxAddress } = body;
 
     // Validate amount

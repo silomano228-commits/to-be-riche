@@ -1,18 +1,30 @@
 import { db } from '@/lib/db';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-// GET — Liste tous les dépôts en attente (admin)
-export async function GET() {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('br_token')?.value;
-    if (!token) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
+export const dynamic = 'force-dynamic';
 
-    const admin = await db.user.findUnique({ where: { id: token } });
-    if (!admin || admin.role !== 'admin') {
-      return NextResponse.json({ success: false, error: 'Accès refusé' }, { status: 403 });
-    }
+function getToken(request: Request): string | null {
+  const authHeader = request.headers.get('x-auth-token');
+  if (authHeader) return authHeader;
+  const cookieHeader = request.headers.get('cookie') || '';
+  const match = cookieHeader.match(/br_token=([^;]+)/);
+  if (match) return match[1];
+  return null;
+}
+
+async function checkAdmin(request: Request) {
+  const token = getToken(request);
+  if (!token) return { error: NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 }), admin: null };
+  const admin = await db.user.findUnique({ where: { id: token } });
+  if (!admin || admin.role !== 'admin') return { error: NextResponse.json({ success: false, error: 'Accès refusé' }, { status: 403 }), admin: null };
+  return { error: null, admin };
+}
+
+// GET — Liste tous les dépôts en attente (admin)
+export async function GET(request: Request) {
+  try {
+    const { error } = await checkAdmin(request);
+    if (error) return error;
 
     const deposits = await db.pendingDeposit.findMany({
       orderBy: { createdAt: 'desc' },
@@ -36,14 +48,8 @@ export async function GET() {
 // POST — Approuver ou rejeter un dépôt (admin)
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('br_token')?.value;
-    if (!token) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
-
-    const admin = await db.user.findUnique({ where: { id: token } });
-    if (!admin || admin.role !== 'admin') {
-      return NextResponse.json({ success: false, error: 'Accès refusé' }, { status: 403 });
-    }
+    const { error } = await checkAdmin(request);
+    if (error) return error;
 
     const { depositId, action, txHash } = await request.json();
 
@@ -63,7 +69,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, message: 'Dépôt rejeté' });
     }
 
-    // Approuver — créditer le solde de l'utilisateur (no instant bonus)
+    // Approuver — créditer le solde de l'utilisateur
     const depositUser = await db.user.findUnique({ where: { id: deposit.userId } });
     const isFirstDeposit = !depositUser?.hasInvested;
 
