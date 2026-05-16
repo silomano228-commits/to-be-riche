@@ -1685,7 +1685,7 @@ function AdminScreen() {
   // ---- Main admin dashboard ----
   return (
     <>
-      <Header title="Admin" icon="fa-shield-alt" iconColor="#FBBF24" rightElement={<button className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90" onClick={() => useAppStore.getState().setPage('profile')}><i className="fas fa-arrow-left"></i></button>} />
+      <Header title="Admin" icon="fa-shield-alt" iconColor="#FBBF24" rightElement={<div className="flex items-center gap-1.5"><button className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90" onClick={async () => { setLoading(true); await loadData(); await loadDeposits(); await loadWithdrawals(); await loadConfig(); addToast('Données actualisées', 'success'); }} title="Actualiser"><i className="fas fa-sync-alt"></i></button><button className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90" onClick={() => useAppStore.getState().setPage('profile')}><i className="fas fa-arrow-left"></i></button></div>} />
       <div className="px-[18px] py-4 pb-[88px] flex-1 w-full">
         {/* Alert banner */}
         <div className="rounded-xl p-3.5 flex items-start gap-3 mb-[18px] bg-[#FFFBEB] border-l-[3px] border-[#F59E0B]">
@@ -1694,12 +1694,13 @@ function AdminScreen() {
         </div>
 
         {/* Stats grid */}
-        <div className="grid grid-cols-2 gap-2.5 mb-[18px]">
+        <div className="grid grid-cols-3 gap-2 mb-[18px]">
           {[
-            { val: stats.total_users || 0, label: 'Utilisateurs', icon: 'fa-users', color: 'text-[#3B82F6]' },
-            { val: formatMoney(stats.total_balance || 0), label: 'Volume total', icon: 'fa-coins', color: 'text-[#00C853]' },
-            { val: formatMoney(stats.total_invested || 0), label: 'Total investi', icon: 'fa-chart-line', color: 'text-[#8B5CF6]' },
-            { val: stats.active_projects || 0, label: 'Projets actifs', icon: 'fa-project-diagram', color: 'text-[#F59E0B]' },
+            { val: stats.total_users || 0, label: 'Users', icon: 'fa-users', color: 'text-[#3B82F6]' },
+            { val: formatMoney(stats.total_invested || 0), label: 'Investi', icon: 'fa-chart-line', color: 'text-[#8B5CF6]' },
+            { val: stats.active_projects || 0, label: 'Projets', icon: 'fa-project-diagram', color: 'text-[#F59E0B]' },
+            { val: stats.total_referrals || 0, label: 'Parrainages', icon: 'fa-user-friends', color: 'text-[#EC4899]' },
+            { val: formatMoney(stats.total_balance || 0), label: 'Volume', icon: 'fa-coins', color: 'text-[#00C853]' },
           ].map((s, i) => (
             <div key={i} className="bg-white rounded-xl p-4 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)] border border-[rgba(0,0,0,0.03)]">
               <i className={`fas ${s.icon} ${s.color} text-[0.85rem] mb-1.5 block`}></i>
@@ -1725,16 +1726,51 @@ function AdminScreen() {
             </div>
             <div className="max-h-[400px] overflow-y-auto px-[18px]">
               {users.length === 0 ? <p className="text-center text-[#94A3B8] py-7 text-[0.82rem]">Aucun utilisateur</p> : users.map((u: any) => (
-                <div key={u.id} className="flex justify-between items-center py-3 border-b border-[rgba(0,0,0,0.04)] last:border-none">
-                  <div className="flex-1 min-w-0">
-                    <h5 className="text-[0.84rem] mb-0.5 font-semibold">{esc(u.name)} {u.role === 'admin' && <i className="fas fa-shield-alt text-[#FBBF24] text-[0.5rem]"></i>}</h5>
-                    <span className="text-[0.66rem] text-[#64748B]">{esc(u.email)}</span><br />
-                    <small className="text-[0.56rem] text-[#94A3B8] font-mono">{u.id.slice(0, 10)}</small>
+                <div key={u.id} className="py-3 border-b border-[rgba(0,0,0,0.04)] last:border-none">
+                  <div className="flex justify-between items-center">
+                    <div className="flex-1 min-w-0">
+                      <h5 className="text-[0.84rem] mb-0.5 font-semibold">{esc(u.name)} {u.role === 'admin' && <i className="fas fa-shield-alt text-[#FBBF24] text-[0.5rem]"></i>}</h5>
+                      <span className="text-[0.66rem] text-[#64748B]">{esc(u.email)}</span><br />
+                      <small className="text-[0.56rem] text-[#94A3B8] font-mono">{u.id.slice(0, 10)}</small>
+                    </div>
+                    <div className="text-right shrink-0 ml-2.5">
+                      <strong className="block text-[#009624] text-[0.84rem] font-extrabold">{formatMoney(u.balance)}</strong>
+                      <small className="text-[0.62rem] text-[#64748B]">{u.hasInvested ? '✓ Investisseur' : '— Inactif'}</small>
+                    </div>
                   </div>
-                  <div className="text-right shrink-0 ml-2.5">
-                    <strong className="block text-[#009624] text-[0.84rem] font-extrabold">{formatMoney(u.balance)}</strong>
-                    <small className="text-[0.62rem] text-[#64748B]">{u.hasInvested ? '✓ Investisseur' : '— Inactif'}</small>
-                  </div>
+                  {/* Referral info row */}
+                  {(u.referralCount > 0 || u.referredByCode || (u.referredUsers && u.referredUsers.length > 0)) && (
+                    <div className="mt-2 pt-2 border-t border-[rgba(0,0,0,0.04)]">
+                      <div className="flex flex-wrap items-center gap-1.5 text-[0.6rem]">
+                        <span className="px-2 py-0.5 rounded-md bg-[#FEF3C7] text-[#92400E] font-bold">
+                          <i className="fas fa-user-friends mr-0.5"></i> Code: {u.referralCode}
+                        </span>
+                        {u.referralCount > 0 && (
+                          <span className="px-2 py-0.5 rounded-md bg-[#DCFCE7] text-[#166534] font-bold">
+                            {u.referralCount} filleul{u.referralCount > 1 ? 's' : ''}
+                          </span>
+                        )}
+                        {u.referredByCode && (
+                          <span className="px-2 py-0.5 rounded-md bg-[#DBEAFE] text-[#1E40AF] font-bold">
+                            <i className="fas fa-link mr-0.5"></i> Parrainé par {u.referredByCode}
+                          </span>
+                        )}
+                      </div>
+                      {u.referredUsers && u.referredUsers.length > 0 && (
+                        <div className="mt-1.5 space-y-1">
+                          {u.referredUsers.map((r: any, ri: number) => (
+                            <div key={ri} className="flex items-center gap-2 text-[0.6rem] text-[#64748B] bg-[#F8FAFC] rounded-lg px-2.5 py-1.5">
+                              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#FCD34D] to-[#F59E0B] flex items-center justify-center text-white text-[0.4rem] font-bold shrink-0">{r.name ? r.name[0].toUpperCase() : '?'}</div>
+                              <span className="font-semibold text-[#1A2332]">{esc(r.name)}</span>
+                              <span className="text-[#94A3B8]">·</span>
+                              <span>{r.date}</span>
+                              {r.hasInvested && <span className="text-[#00C853] font-bold">✓</span>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -2202,6 +2238,22 @@ function ProjectsScreen() {
 // ==================== REFERRAL SCREEN ====================
 function ReferralScreen() {
   const { user, setPage, addToast } = useAppStore();
+  const [referrals, setReferrals] = useState<{ id: string; name: string; email: string; hasInvested: boolean; date: string }[]>([]);
+  const [loadingReferrals, setLoadingReferrals] = useState(true);
+
+  useEffect(() => {
+    const fetchReferrals = async () => {
+      try {
+        const res = await fetch('/api/referral/list');
+        const data = await res.json();
+        if (data.success) {
+          setReferrals(data.referrals || []);
+        }
+      } catch { /* ignore */ }
+      setLoadingReferrals(false);
+    };
+    fetchReferrals();
+  }, []);
 
   if (!user) return null;
 
@@ -2300,6 +2352,43 @@ function ReferralScreen() {
             </div>
           </div>
         )}
+
+        {/* Referred Users List */}
+        <div className="bg-white rounded-2xl p-5 mb-4 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)] border border-[rgba(0,0,0,0.03)]">
+          <h4 className="text-[0.88rem] font-bold text-[#1A2332] mb-3 flex items-center gap-2"><i className="fas fa-list text-[#64748B]"></i> Mes filleuls</h4>
+          {loadingReferrals ? (
+            <div className="flex items-center justify-center py-5">
+              <div className="w-6 h-6 border-2 border-[rgba(0,0,0,0.06)] border-t-[#F59E0B] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
+            </div>
+          ) : referrals.length === 0 ? (
+            <div className="text-center py-5">
+              <div className="w-12 h-12 rounded-full bg-[#F1F5F9] flex items-center justify-center mx-auto mb-2">
+                <i className="fas fa-user-plus text-[#CBD5E1]"></i>
+              </div>
+              <p className="text-[0.78rem] text-[#94A3B8]">Aucun filleul pour le moment</p>
+              <p className="text-[0.68rem] text-[#CBD5E1] mt-1">Partagez votre code pour inviter des amis</p>
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {referrals.map((r, i) => (
+                <div key={r.id} className="flex items-center gap-3 p-2.5 bg-[#F8FAFC] rounded-xl border border-[rgba(0,0,0,0.03)]" style={{ animation: 'cbIn 0.3s cubic-bezier(0.34,1.56,0.64,1)', animationDelay: `${i * 50}ms` }}>
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#FCD34D] to-[#F59E0B] flex items-center justify-center text-white font-bold text-[0.6rem] shrink-0 shadow-sm">{r.name ? r.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : '?'}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[0.8rem] font-semibold text-[#1A2332] truncate">{esc(r.name)}</div>
+                    <div className="text-[0.62rem] text-[#94A3B8]">{r.date}</div>
+                  </div>
+                  <div className="shrink-0">
+                    {r.hasInvested ? (
+                      <span className="px-2 py-0.5 rounded-md text-[0.55rem] font-bold bg-[#DCFCE7] text-[#166534]">Investisseur</span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-md text-[0.55rem] font-bold bg-[#F1F5F9] text-[#94A3B8]">Inactif</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Rules */}
         <div className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)] border border-[rgba(0,0,0,0.03)]">

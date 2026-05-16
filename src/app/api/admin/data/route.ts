@@ -29,7 +29,28 @@ export async function GET() {
     const projects = await db.project.findMany({ where: { status: 'active' } });
     activeProjects = projects.length;
 
-    const safeUsers = users.map(({ password: _, firstDepositAt: fda, lastClaimAt: lca, ...u }) => u);
+    // Get referral info for each user - find who they referred
+    const referralMap = new Map<string, { name: string; email: string; hasInvested: boolean; date: string }[]>();
+    for (const u of users) {
+      if (u.referralCode) {
+        const referred = users
+          .filter(r => r.referredByCode === u.referralCode)
+          .map(r => ({
+            name: r.name,
+            email: r.email,
+            hasInvested: r.hasInvested,
+            date: new Date(r.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }),
+          }));
+        if (referred.length > 0) {
+          referralMap.set(u.id, referred);
+        }
+      }
+    }
+
+    const safeUsers = users.map(({ password: _, firstDepositAt: fda, lastClaimAt: lca, ...u }) => ({
+      ...u,
+      referredUsers: referralMap.get(u.id) || [],
+    }));
 
     return NextResponse.json({
       success: true,
@@ -39,6 +60,7 @@ export async function GET() {
         total_balance: Math.round(totalBalance * 100) / 100,
         total_invested: Math.round(totalInvested * 100) / 100,
         active_projects: activeProjects,
+        total_referrals: users.filter(u => u.referredByCode).length,
       },
     });
   } catch (error) {
