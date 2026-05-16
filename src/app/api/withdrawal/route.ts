@@ -62,6 +62,27 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'Aucun dépôt trouvé' });
     }
 
+    // Check referral requirement
+    const completedWithdrawals = await db.withdrawal.count({
+      where: { userId: user.id, status: 'approved' },
+    });
+    const nextWithdrawalNumber = completedWithdrawals + 1;
+    const requiredReferrals = nextWithdrawalNumber >= 3
+      ? Math.ceil((nextWithdrawalNumber - 2) / 2)
+      : 0;
+
+    if (requiredReferrals > user.referralCount) {
+      const needed = requiredReferrals - user.referralCount;
+      return NextResponse.json({
+        success: false,
+        error: `Parrainage obligatoire ! Vous devez parrainer au moins ${needed} personne${needed > 1 ? 's' : ''} supplémentaire${needed > 1 ? 's' : ''} pour effectuer ce retrait. Partagez votre code : ${user.referralCode}`,
+        needsReferral: true,
+        requiredReferrals,
+        currentReferrals: user.referralCount,
+        referralCode: user.referralCode,
+      });
+    }
+
     // Validate TRX address
     if (!trxAddress || trxAddress.length < 20) {
       return NextResponse.json({ success: false, error: 'Adresse TRX invalide' });

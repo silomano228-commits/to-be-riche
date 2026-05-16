@@ -20,6 +20,9 @@ model User {
   depositCount    Int           @default(0)
   firstDepositAt  DateTime?
   lastClaimAt     DateTime?
+  referralCode    String        @unique
+  referredByCode  String?
+  referralCount   Int           @default(0)
   transactions    Transaction[]
   projects        Project[]
   chatMessages    ChatMessage[]

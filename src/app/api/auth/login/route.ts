@@ -16,7 +16,7 @@ export async function POST(request: Request) {
       // Auto-seed admin on first login attempt
       if (email === 'admin@berich.com' && password === 'Admin@2024') {
         user = await db.user.create({
-          data: { email, name: 'Admin', password, role: 'admin' },
+          data: { email, name: 'Admin', password, role: 'admin', referralCode: 'BR-ADMIN' },
         });
       } else {
         return NextResponse.json({ success: false, error: 'Email ou mot de passe incorrect' });

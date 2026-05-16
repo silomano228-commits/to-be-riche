@@ -40,6 +40,12 @@ export interface AppUser {
   hoursUntilWithdrawal?: number;
   firstDepositAt?: string | null;
   lastClaimAt?: string | null;
+  referralCode?: string;
+  referredByCode?: string | null;
+  referralCount?: number;
+  completedWithdrawals?: number;
+  requiredReferrals?: number;
+  needsReferral?: boolean;
 }
 
 export interface Toast {
@@ -102,7 +108,7 @@ export const useAppStore = create<AppState>((set) => ({
       set((s) => ({ notifications: s.notifications.filter((n) => n.id !== nId) }));
     }, 4000);
   },
-  removeNotification: (id) => set((s) => ({ notifications: s.notifications.filter((n) => n.id !== id) })),
+  removeNotification: (id) => set((s) => ({ notifications: s.notifications.filter((n) => n.id !== nId) })),
 }));
 
 export function formatMoney(v: number): string {

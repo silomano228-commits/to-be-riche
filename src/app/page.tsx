@@ -175,6 +175,7 @@ function AuthScreen() {
     const email = (fd.get('email') as string)?.trim() || '';
     const password = fd.get('password') as string || '';
     const password2 = fd.get('password2') as string || '';
+    const referralCode = (fd.get('referralCode') as string)?.trim().toUpperCase() || '';
     const errs: Record<string, string> = {};
     if (name.length < 2) errs.name = 'Min. 2 caractères';
     if (password.length < 6) errs.password = 'Min. 6 caractères';
@@ -183,7 +184,7 @@ function AuthScreen() {
     setErrors({});
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password, password2 }), headers: { 'Content-Type': 'application/json' } });
+      const res = await fetch('/api/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password, password2, referralCode }), headers: { 'Content-Type': 'application/json' } });
       const data = await res.json();
       if (data.success) {
         setUser(data.user);
@@ -262,6 +263,11 @@ function AuthScreen() {
               <input name="password2" type={showPw.r2 ? 'text' : 'password'} required placeholder="•••••••••" className={`w-full py-2.5 px-3.5 pr-10 bg-[rgba(255,255,255,0.05)] border-[1.5px] ${errors.password2 ? 'border-red-500' : 'border-[rgba(255,255,255,0.08)]'} rounded-xl text-[0.85rem] outline-none transition-all font-[Inter] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:bg-[rgba(255,255,255,0.08)] focus:border-[#00C853]`} />
               <button type="button" onClick={() => setShowPw({ ...showPw, r2: !showPw.r2 })} className="absolute right-3 top-[32px] bg-transparent border-none text-[rgba(255,255,255,0.25)] cursor-pointer p-0.5"><i className={`fas ${showPw.r2 ? 'fa-eye-slash' : 'fa-eye'}`}></i></button>
               {errors.password2 && <p className="text-red-500 text-[0.65rem] mt-0.5 font-medium">{errors.password2}</p>}
+            </div>
+            <div className="mb-2.5 w-full">
+              <label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(255,255,255,0.35)]">Code de parrainage <span className="opacity-50">(optionnel)</span></label>
+              <input name="referralCode" type="text" placeholder="BR-XXXXXX" className="w-full py-2.5 px-3.5 bg-[rgba(255,255,255,0.05)] border-[1.5px] border-[rgba(255,255,255,0.08)] rounded-xl text-[0.85rem] outline-none transition-all font-[Inter] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:bg-[rgba(255,255,255,0.08)] focus:border-[#FBBF24]" />
+              <p className="text-[0.58rem] mt-0.5 text-left text-[rgba(255,255,255,0.25)]">Si un ami vous a invité, entrez son code</p>
             </div>
             <button type="submit" disabled={loading} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#FCD34D] to-[#FBBF24] text-[#78350F] font-bold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(251,191,36,0.2)] font-[Inter] transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">
               {loading ? <div className="w-4 h-4 border-2 border-[rgba(120,53,15,0.3)] border-t-[#78350F] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <><i className="fas fa-user-plus"></i> Créer mon compte</>}
@@ -523,7 +529,7 @@ function WalletScreen() {
             </div>
           </div>
         )}
-        {user.hasInvested && canWithdraw && (
+        {user.hasInvested && canWithdraw && !user.needsReferral && (
           <div className="rounded-xl p-3.5 flex items-start gap-3 mb-[18px] bg-[#F0FDF4] border-l-[3px] border-[#00C853]">
             <i className="fas fa-check-circle text-[#166534] mt-0.5 shrink-0 text-[0.9rem]"></i>
             <div className="flex-1">
@@ -531,6 +537,18 @@ function WalletScreen() {
               <p className="text-[0.72rem] leading-relaxed text-[#15803D]">Vous pouvez retirer vos gains vers votre wallet TRX.</p>
             </div>
             <button className="py-2.5 px-4 text-[0.76rem] bg-gradient-to-r from-[#FBBF24] to-[#F59E0B] text-[#78350F] rounded-xl border-none cursor-pointer font-semibold font-[Inter] shadow-[0_4px_20px_rgba(251,191,36,0.2)] shrink-0" onClick={() => setPage('withdraw')}><i className="fas fa-arrow-up mr-1"></i>Retirer</button>
+          </div>
+        )}
+
+        {/* Referral Required Warning */}
+        {user.needsReferral && (
+          <div className="rounded-xl p-3.5 flex items-start gap-3 mb-[18px] bg-[#FEF3C7] border-l-[3px] border-[#F59E0B]">
+            <i className="fas fa-user-friends text-[#92400E] mt-0.5 shrink-0 text-[0.9rem]"></i>
+            <div className="flex-1">
+              <h4 className="text-[0.82rem] mb-0.5 font-bold text-[#92400E]">Parrainage requis</h4>
+              <p className="text-[0.72rem] leading-relaxed text-[#92400E]">Vous devez parrainer au moins {user.requiredReferrals} personne{user.requiredReferrals && user.requiredReferrals > 1 ? 's' : ''} pour retirer. Actuel : {user.referralCount || 0}. Partagez votre code <strong className="font-mono">{user.referralCode}</strong></p>
+            </div>
+            <button className="py-2.5 px-3 text-[0.72rem] bg-gradient-to-r from-[#FBBF24] to-[#F59E0B] text-[#78350F] rounded-xl border-none cursor-pointer font-semibold font-[Inter] shadow-[0_4px_20px_rgba(251,191,36,0.2)] shrink-0" onClick={() => setPage('referral')}><i className="fas fa-share-alt mr-1"></i>Parrainer</button>
           </div>
         )}
 
@@ -970,6 +988,22 @@ function WithdrawalScreen() {
           </div>
         </div>
 
+        {/* Referral Required Warning in Withdrawal */}
+        {user.needsReferral && (
+          <div className="rounded-xl p-3.5 flex items-start gap-3 mb-[18px] bg-[#FEE2E2] border-l-[3px] border-[#DC2626]">
+            <i className="fas fa-user-friends text-[#DC2626] mt-0.5 shrink-0 text-[0.9rem]"></i>
+            <div className="flex-1">
+              <h4 className="text-[0.82rem] mb-0.5 font-bold text-[#991B1B]">Parrainage obligatoire</h4>
+              <p className="text-[0.72rem] leading-relaxed text-[#991B1B]">Après votre {user.completedWithdrawals && user.completedWithdrawals >= 2 ? (user.completedWithdrawals + 1) + 'e' : '3e'} retrait, vous devez parrainer au moins {user.requiredReferrals} personne{user.requiredReferrals && user.requiredReferrals > 1 ? 's' : ''}. Vous avez {user.referralCount || 0} filleul{user.referralCount === 1 ? '' : 's'}.</p>
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-[0.68rem] text-[#991B1B] font-semibold">Votre code :</span>
+                <span className="bg-[#991B1B] text-white px-3 py-1 rounded-lg text-[0.78rem] font-bold font-mono">{user.referralCode}</span>
+              </div>
+              <button onClick={() => setPage('referral')} className="mt-2 py-2 px-4 text-[0.72rem] bg-[#DC2626] text-white rounded-xl border-none cursor-pointer font-semibold font-[Inter] shadow-[0_4px_20px_rgba(220,38,38,0.2)] transition-transform active:scale-95"><i className="fas fa-share-alt mr-1"></i>Partager mon code</button>
+            </div>
+          </div>
+        )}
+
         {/* Available gains */}
         <div className="bg-[#F0FDF4] rounded-2xl p-5 mb-5 border border-[#BBF7D0] text-center">
           <div className="text-[0.68rem] text-[#166534] font-semibold uppercase tracking-[0.5px] mb-1">Gains disponibles</div>
@@ -1001,8 +1035,8 @@ function WithdrawalScreen() {
             <p className="text-[0.62rem] text-[#94A3B8] mt-1">L&apos;adresse où vous recevrez vos TRX</p>
           </div>
 
-          <button type="submit" disabled={loading || user.earnings < 5 || !user.canWithdraw} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#FBBF24] to-[#F59E0B] text-[#78350F] font-bold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(251,191,36,0.2)] font-[Inter] transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">
-            {loading ? <div className="w-4 h-4 border-2 border-[rgba(120,53,15,0.3)] border-t-[#78350F] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : !user.canWithdraw ? <><i className="fas fa-clock"></i> Attente 48h</> : <><i className="fas fa-paper-plane"></i> Demander le retrait</>}
+          <button type="submit" disabled={loading || user.earnings < 5 || !user.canWithdraw || !!user.needsReferral} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#FBBF24] to-[#F59E0B] text-[#78350F] font-bold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(251,191,36,0.2)] font-[Inter] transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">
+            {loading ? <div className="w-4 h-4 border-2 border-[rgba(120,53,15,0.3)] border-t-[#78350F] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : !user.canWithdraw ? <><i className="fas fa-clock"></i> Attente 48h</> : user.needsReferral ? <><i className="fas fa-user-friends"></i> Parrainage requis</> : <><i className="fas fa-paper-plane"></i> Demander le retrait</>}
           </button>
         </form>
 
@@ -2023,12 +2057,29 @@ function ProfileScreen() {
             ['Statut', <span key="st" className="px-2.5 py-1 rounded-md text-[0.58rem] font-bold uppercase tracking-[0.5px] bg-[#DCFCE7] text-[#166534]">Vérifié</span>],
             ['Rôle', <span key="r" className={`px-2.5 py-1 rounded-md text-[0.58rem] font-bold uppercase tracking-[0.5px] ${user.role === 'admin' ? 'bg-[#1a1a1a] text-[#FBBF24] border border-[rgba(251,191,36,0.25)]' : 'bg-[#FEF3C7] text-[#92400E]'}`}>{user.role === 'admin' ? 'Admin' : 'Membre'}</span>],
             ['Dépôts', <span key="c" className="font-bold text-[0.8rem] text-[#1A2332]">{user.depositCount} dépôt(s)</span>],
+            ['Filleuls', <span key="ref" className="font-bold text-[0.8rem] text-[#1A2332]">{user.referralCount || 0}</span>],
           ].map(([label, val], i) => (
-            <div key={i} className={`flex justify-between items-center ${i < 3 ? 'mb-3 pb-3 border-b border-[rgba(0,0,0,0.04)]' : ''}`}>
+            <div key={i} className={`flex justify-between items-center ${i < 4 ? 'mb-3 pb-3 border-b border-[rgba(0,0,0,0.04)]' : ''}`}>
               <span className="text-[0.8rem] text-[#64748B] font-medium">{label}</span>
               {val}
             </div>
           ))}
+        </div>
+
+        {/* Referral Code Card */}
+        <div className="bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] rounded-2xl p-5 mb-[18px] text-center text-white border border-[rgba(255,255,255,0.05)]">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <i className="fas fa-user-friends text-[#FBBF24]"></i>
+            <h4 className="text-[0.85rem] font-bold">Mon code de parrainage</h4>
+          </div>
+          <div className="bg-[rgba(255,255,255,0.08)] rounded-xl p-3 mb-3 border border-[rgba(255,255,255,0.1)]">
+            <span className="text-[1.3rem] font-black font-mono tracking-[3px] text-[#FBBF24]">{user.referralCode}</span>
+          </div>
+          <p className="text-[0.68rem] text-[rgba(255,255,255,0.4)] mb-3">Partagez ce code avec vos amis. Après le 3e retrait, le parrainage devient obligatoire.</p>
+          <div className="flex gap-2">
+            <button onClick={() => { navigator.clipboard.writeText(user.referralCode || ''); addToast('Code copié !', 'success'); }} className="flex-1 py-2.5 rounded-xl bg-[rgba(0,200,83,0.15)] text-[#86EFAC] text-[0.76rem] font-semibold border-none cursor-pointer font-[Inter] transition-transform active:scale-95 flex items-center justify-center gap-1.5"><i className="fas fa-copy"></i> Copier</button>
+            <button onClick={() => setPage('referral')} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[#FBBF24] to-[#F59E0B] text-[#78350F] text-[0.76rem] font-semibold border-none cursor-pointer font-[Inter] transition-transform active:scale-95 flex items-center justify-center gap-1.5"><i className="fas fa-share-alt"></i> Partager</button>
+          </div>
         </div>
 
         <div className="bg-[rgba(255,255,255,0.95)] rounded-2xl p-4 px-[18px] text-left mb-[18px] shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)]">
@@ -2143,6 +2194,130 @@ function ProjectsScreen() {
             </button>
           </div>
         )}
+      </div>
+    </>
+  );
+}
+
+// ==================== REFERRAL SCREEN ====================
+function ReferralScreen() {
+  const { user, setPage, addToast } = useAppStore();
+
+  if (!user) return null;
+
+  const referralCode = user.referralCode || '';
+  const referralCount = user.referralCount || 0;
+  const requiredReferrals = user.requiredReferrals || 0;
+  const needsReferral = user.needsReferral;
+  const completedWithdrawals = user.completedWithdrawals || 0;
+
+  const shareText = `Rejoins Be Rich et gagne jusqu'à 15% par jour ! Utilise mon code de parrainage : ${referralCode}`;
+  const shareUrl = typeof window !== 'undefined' ? window.location.origin : '';
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(referralCode);
+    addToast('Code copié !', 'success');
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Be Rich - Parrainage',
+          text: shareText,
+          url: shareUrl,
+        });
+      } catch {
+        // User cancelled share
+      }
+    } else {
+      navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+      addToast('Lien copié !', 'success');
+    }
+  };
+
+  return (
+    <>
+      <Header title="Parrainage" icon="fa-user-friends" iconColor="#F59E0B" rightElement={
+        <button className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90" onClick={() => setPage('wallet')}><i className="fas fa-times"></i></button>
+      } />
+      <div className="px-[18px] py-4 flex-1 w-full">
+        {/* Hero Card */}
+        <div className="bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white rounded-2xl p-6 mb-5 relative overflow-hidden border border-[rgba(255,255,255,0.05)] text-center">
+          <div className="absolute -top-12 -right-12 w-[180px] h-[180px] bg-[radial-gradient(circle,rgba(251,191,36,0.1),transparent_65%)]" />
+          <div className="relative z-[1]">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FBBF24] to-[#F59E0B] flex items-center justify-center mx-auto mb-4 shadow-[0_4px_20px_rgba(251,191,36,0.3)]">
+              <i className="fas fa-user-friends text-white text-[1.5rem]"></i>
+            </div>
+            <h3 className="text-[1.2rem] font-black mb-1">Parrainez vos amis</h3>
+            <p className="text-[rgba(255,255,255,0.5)] text-[0.78rem] leading-relaxed">Partagez votre code et gagnez ensemble. Après votre 3e retrait, le parrainage devient obligatoire pour continuer à retirer.</p>
+          </div>
+        </div>
+
+        {/* Referral Code */}
+        <div className="bg-white rounded-2xl p-5 mb-4 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)] border border-[rgba(0,0,0,0.03)] text-center">
+          <div className="text-[0.72rem] text-[#64748B] font-semibold uppercase tracking-[1px] mb-2">Votre code de parrainage</div>
+          <div className="bg-gradient-to-r from-[#FEF3C7] to-[#FDE68A] rounded-xl p-4 mb-3 border border-[rgba(251,191,36,0.2)]">
+            <span className="text-[1.6rem] font-black font-mono tracking-[4px] text-[#92400E]">{referralCode}</span>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleCopy} className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.82rem] border-none cursor-pointer font-[Inter] transition-transform active:scale-95 flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(0,200,83,0.2)]"><i className="fas fa-copy"></i> Copier le code</button>
+            <button onClick={handleShare} className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#FBBF24] to-[#F59E0B] text-[#78350F] font-bold text-[0.82rem] border-none cursor-pointer font-[Inter] transition-transform active:scale-95 flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(251,191,36,0.2)]"><i className="fas fa-share-alt"></i> Partager</button>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-2.5 mb-4">
+          <div className="bg-white rounded-xl p-4 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+            <div className="w-10 h-10 rounded-xl bg-[#DCFCE7] flex items-center justify-center mx-auto mb-1.5"><i className="fas fa-users text-[#166534]"></i></div>
+            <div className="font-extrabold text-[1.2rem] text-[#1A2332]">{referralCount}</div>
+            <div className="text-[0.58rem] text-[#94A3B8] font-medium uppercase tracking-[0.5px]">Filleuls</div>
+          </div>
+          <div className="bg-white rounded-xl p-4 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+            <div className="w-10 h-10 rounded-xl bg-[#FEF3C7] flex items-center justify-center mx-auto mb-1.5"><i className="fas fa-check-circle text-[#92400E]"></i></div>
+            <div className="font-extrabold text-[1.2rem] text-[#1A2332]">{completedWithdrawals}</div>
+            <div className="text-[0.58rem] text-[#94A3B8] font-medium uppercase tracking-[0.5px]">Retraits</div>
+          </div>
+        </div>
+
+        {/* Referral Requirement Status */}
+        {needsReferral && (
+          <div className="rounded-xl p-3.5 flex items-start gap-3 mb-4 bg-[#FEE2E2] border-l-[3px] border-[#DC2626]">
+            <i className="fas fa-exclamation-triangle text-[#DC2626] mt-0.5 shrink-0 text-[0.9rem]"></i>
+            <div className="flex-1">
+              <h4 className="text-[0.82rem] mb-0.5 font-bold text-[#991B1B]">Parrainage obligatoire</h4>
+              <p className="text-[0.72rem] leading-relaxed text-[#991B1B]">Vous devez avoir au moins <strong>{requiredReferrals}</strong> filleul{requiredReferrals > 1 ? 's' : ''} pour effectuer votre prochain retrait. Actuellement : <strong>{referralCount}</strong> filleul{referralCount > 1 ? 's' : ''}. Il vous manque <strong>{requiredReferrals - referralCount}</strong> filleul{requiredReferrals - referralCount > 1 ? 's' : ''}.</p>
+            </div>
+          </div>
+        )}
+
+        {!needsReferral && completedWithdrawals >= 1 && (
+          <div className="rounded-xl p-3.5 flex items-start gap-3 mb-4 bg-[#F0FDF4] border-l-[3px] border-[#00C853]">
+            <i className="fas fa-check-circle text-[#166534] mt-0.5 shrink-0 text-[0.9rem]"></i>
+            <div className="flex-1">
+              <h4 className="text-[0.82rem] mb-0.5 font-bold text-[#166534]">Parrainage OK</h4>
+              <p className="text-[0.72rem] leading-relaxed text-[#15803D]">Vous remplissez les conditions de parrainage pour votre prochain retrait.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Rules */}
+        <div className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)] border border-[rgba(0,0,0,0.03)]">
+          <h4 className="text-[0.88rem] font-bold text-[#1A2332] mb-3 flex items-center gap-2"><i className="fas fa-info-circle text-[#64748B]"></i> Règles de parrainage</h4>
+          <div className="space-y-3">
+            {[
+              { icon: 'fa-1', color: '#00C853', text: 'Les 2 premiers retraits sont libres.' },
+              { icon: 'fa-2', color: '#F59E0B', text: 'À partir du 3e retrait, vous devez avoir au moins 1 filleul.' },
+              { icon: 'fa-3', color: '#DC2626', text: 'Après chaque 2 retraits supplémentaires, un nouveau filleul est requis.' },
+              { icon: 'fa-share-alt', color: '#7C3AED', text: 'Partagez votre code pour que vos amis s\'inscrivent.' },
+            ].map((rule, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[0.6rem] shrink-0" style={{ background: rule.color }}><i className={`fas ${rule.icon}`}></i></div>
+                <p className="text-[0.75rem] text-[#475569] leading-relaxed pt-0.5">{rule.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </>
   );
@@ -2431,6 +2606,7 @@ export default function BeRichApp() {
           {currentPage === 'add' && <AddProjectScreen />}
           {currentPage === 'chat' && <ChatScreen />}
           {currentPage === 'admin' && <AdminScreen />}
+          {currentPage === 'referral' && <ReferralScreen />}
           {currentPage === 'profile' && user && <ProfileScreen />}
         </div>
 
