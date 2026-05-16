@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
+  serverExternalPackages: ['@prisma/client'],
   allowedDevOrigins: [
     'preview-chat-807a8f1d-e561-4ed9-9e1f-9666c43df414.space-z.ai',
     '.space-z.ai',

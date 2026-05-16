@@ -2393,6 +2393,7 @@ export default function BeRichApp() {
         setPage('profile');
       }
       setInitialized(true);
+      setShowSplash(false);
     };
     init();
   }, []);
