@@ -13,8 +13,7 @@ model User {
   name            String
   password        String
   balance         Float         @default(0)
-  invested        Float         @default(0)
-  earnings        Float         @default(0)
+  investBalance   Float         @default(0)
   hasInvested     Boolean       @default(false)
   role            String        @default("user")
   depositCount    Int           @default(0)
@@ -23,13 +22,16 @@ model User {
   referralCode    String        @unique
   referredByCode  String?
   referralCount   Int           @default(0)
+  totalProfit     Float         @default(0)
+  totalLoss       Float         @default(0)
   transactions    Transaction[]
-  projects        Project[]
+  investments     Investment[]
+  trades          Trade[]
+  enterprises     Enterprise[]
   chatMessages    ChatMessage[]
   pendingDeposits PendingDeposit[]
   passwordResetTokens PasswordResetToken[]
   withdrawals     Withdrawal[]
-  dailyGains      DailyGain[]
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
@@ -38,41 +40,64 @@ model Transaction {
   id        String   @id @default(cuid())
   type      String
   amount    Float
-  gain      Float    @default(0)
+  detail    String?
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  projectId String?
-  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
 }
 
-model Project {
-  id             String        @id @default(cuid())
-  name           String
-  amount         Float
-  receivedAmount Float         @default(0)
-  description    String
-  status         String        @default("active")
-  dailyRate      Float         @default(10)
-  category       String        @default("general")
-  userId         String
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions   Transaction[]
-  dailyGains     DailyGain[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+model Investment {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  level       Int
+  amount      Float
+  rate        Float
+  totalCycles Int
+  doneCycles  Int      @default(0)
+  earned      Float    @default(0)
+  status      String   @default("active")
+  lastClaimAt DateTime?
+  nextClaimAt DateTime?
+  finishesAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
-model DailyGain {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  rate      Float
-  amount    Float
-  date      String
-  createdAt DateTime @default(now())
+model Trade {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount      Float
+  direction   String
+  durationSec Int
+  result      String?
+  profit      Float?
+  entryPrice  Float    @default(0)
+  exitPrice   Float?
+  endsAt      DateTime
+  resolved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Enterprise {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  category     String
+  amount       Float
+  durationDays Int
+  daysElapsed  Int      @default(0)
+  minReturn    Float
+  maxReturn    Float
+  finalReturn  Float?
+  status       String   @default("active")
+  riskEvents   String?
+  finishesAt   DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model ChatMessage {

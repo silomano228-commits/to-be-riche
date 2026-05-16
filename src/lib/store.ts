@@ -4,20 +4,8 @@ export interface Transaction {
   id: string;
   type: string;
   amount: number;
-  gain: number;
+  detail?: string;
   createdAt: string;
-}
-
-export interface Project {
-  id: string;
-  name: string;
-  amount: number;
-  receivedAmount: number;
-  description: string;
-  status: string;
-  dailyRate: number;
-  category: string;
-  potentialGain?: number;
 }
 
 export interface AppUser {
@@ -25,27 +13,25 @@ export interface AppUser {
   email: string;
   name: string;
   balance: number;
-  invested: number;
-  earnings: number;
+  investBalance: number;
   hasInvested: boolean;
   role: string;
   depositCount: number;
   transactions: Transaction[];
-  project: Project | null;
-  projects?: Project[];
-  canClaimDailyGain?: boolean;
-  alreadyClaimedToday?: boolean;
-  totalPotentialGain?: number;
+  totalProfit: number;
+  totalLoss: number;
   canWithdraw?: boolean;
   hoursUntilWithdrawal?: number;
-  firstDepositAt?: string | null;
-  lastClaimAt?: string | null;
   referralCode?: string;
   referredByCode?: string | null;
   referralCount?: number;
   completedWithdrawals?: number;
   requiredReferrals?: number;
   needsReferral?: boolean;
+  investments?: any[];
+  activeTradesCount?: number;
+  activeEnterprisesCount?: number;
+  claimableInvestments?: number;
 }
 
 export interface Toast {
@@ -64,15 +50,13 @@ interface AppState {
   currentPage: string;
   isLoading: boolean;
   showSplash: boolean;
-  selectedProjectId: string | null;
   toasts: Toast[];
   notifications: Notification[];
   setUser: (user: AppUser | null) => void;
   clearUser: () => void;
   setPage: (page: string) => void;
   setLoading: (loading: boolean) => void;
-  setShowSplash: (show: boolean) => void;
-  setSelectedProjectId: (id: string | null) => void;
+  setShowSplash: (showSplash: boolean) => void;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
   removeToast: (id: string) => void;
   addNotification: (id: string, text: string) => void;
@@ -84,15 +68,13 @@ export const useAppStore = create<AppState>((set) => ({
   currentPage: 'home',
   isLoading: false,
   showSplash: true,
-  selectedProjectId: null,
   toasts: [],
   notifications: [],
   setUser: (user) => set({ user }),
-  clearUser: () => set({ user: null, currentPage: 'profile', selectedProjectId: null }),
+  clearUser: () => set({ user: null, currentPage: 'auth', toasts: [] }),
   setPage: (page) => set({ currentPage: page }),
   setLoading: (isLoading) => set({ isLoading }),
   setShowSplash: (showSplash) => set({ showSplash }),
-  setSelectedProjectId: (id) => set({ selectedProjectId: id }),
   addToast: (message, type) => {
     const id = Math.random().toString(36).slice(2);
     set((s) => ({ toasts: [...s.toasts, { id, message, type }] }));
@@ -121,8 +103,6 @@ export function esc(s: string): string {
   return d.innerHTML;
 }
 
-// Authenticated fetch — adds the user token as a custom header
-// This works alongside cookies as a fallback for proxy environments
 export function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const store = useAppStore.getState();
   const userId = store.user?.id;

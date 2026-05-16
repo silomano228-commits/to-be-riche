@@ -33,14 +33,31 @@ export async function POST(request: Request) {
       orderBy: { createdAt: 'desc' },
     });
 
-    const project = await db.project.findFirst({
+    const investments = await db.investment.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: 'desc' },
     });
 
+    const activeTradesCount = await db.trade.count({
+      where: { userId: user.id, resolved: false },
+    });
+
+    const activeEnterprisesCount = await db.enterprise.count({
+      where: { userId: user.id, status: 'active' },
+    });
+
     const response = NextResponse.json({
       success: true,
-      user: { ...safeUser, transactions, project },
+      user: {
+        ...safeUser,
+        investBalance: user.investBalance,
+        totalProfit: user.totalProfit,
+        totalLoss: user.totalLoss,
+        transactions,
+        investments,
+        activeTradesCount,
+        activeEnterprisesCount,
+      },
     });
 
     // Set cookie on the response object (reliable method)

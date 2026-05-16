@@ -175,6 +175,42 @@
   50% { opacity: 0.3; }
 }
 
+/* Pulse animation for claimable items */
+@keyframes claimPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 200, 83, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(0, 200, 83, 0); }
+}
+
+/* Slide up animation for cards appearing */
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Chart line animation for trading */
+@keyframes chartDraw {
+  from { stroke-dashoffset: 200; }
+  to { stroke-dashoffset: 0; }
+}
+
+/* Glow pulse for gold elements */
+@keyframes goldPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.3); }
+  50% { box-shadow: 0 0 12px 4px rgba(251, 191, 36, 0.15); }
+}
+
+/* Trading chart shimmer */
+@keyframes chartShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Countdown blink */
+@keyframes countBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 /* Scrollbar hide */
 #app ::-webkit-scrollbar {
   width: 0;
