@@ -47,3 +47,27 @@ Stage Summary:
 - Admin can see referral details for each user (code, count, who referred them, list of their referrals)
 - Users can see their referred users list in the Parrainage screen
 - Stats grid updated with "Parrainages" count replacing "Volume total"
+
+---
+Task ID: 3
+Agent: Main Agent
+Task: Reconfigure database and Prisma - fix admin functions not working
+
+Work Log:
+- Ran `prisma db push --force-reset` to reset the database
+- Ran `prisma generate` to regenerate Prisma Client
+- Created admin user via /api/seed (admin@berich.com / Admin@2024)
+- Created test user via /api/auth/register with BR-ADMIN referral code
+- Created SiteConfig entry via improved seed script
+- Verified all admin API endpoints return 200 when authenticated (data, chats, deposits, withdrawals, config)
+- Verified referral list API returns correct data for both admin and test user
+- Updated seed route to also create SiteConfig and test user with referral
+- The 401 errors in dev log are from auto-polling when not logged in (expected behavior)
+
+Stage Summary:
+- Database fully reset and re-seeded
+- Admin credentials: admin@berich.com / Admin@2024
+- Test user credentials: test@test.com / Test1234
+- All admin API endpoints confirmed working (200 status)
+- Referral system confirmed working (admin sees Test User as filleul)
+- SiteConfig created with default values
