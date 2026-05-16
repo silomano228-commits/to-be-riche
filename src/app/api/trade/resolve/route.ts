@@ -64,7 +64,7 @@ export async function POST(request: Request) {
         db.user.update({
           where: { id: user.id },
           data: {
-            investBalance: { increment: totalReturn },
+            tradeBalance: { increment: totalReturn },
             totalProfit: { increment: trade.profit || 0 },
           },
         }),
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
         message: `You lost. -$${trade.amount.toFixed(2)}`,
       });
     } else {
-      // Draw — return amount to investBalance
+      // Draw — return amount to tradeBalance
       await db.$transaction([
         db.trade.update({
           where: { id: tradeId },
@@ -127,7 +127,7 @@ export async function POST(request: Request) {
         db.user.update({
           where: { id: user.id },
           data: {
-            investBalance: { increment: trade.amount },
+            tradeBalance: { increment: trade.amount },
           },
         }),
         db.transaction.create({

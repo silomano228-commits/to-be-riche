@@ -83,8 +83,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: `Minimum amount is $${config.minAmount}` }, { status: 400 });
     }
 
-    if (user.investBalance < investAmount) {
-      return NextResponse.json({ success: false, error: `Insufficient invest balance. Need $${investAmount.toFixed(2)}, have $${user.investBalance.toFixed(2)}` }, { status: 400 });
+    if (user.projectBalance < investAmount) {
+      return NextResponse.json({ success: false, error: `Transférez des fonds vers votre Compte de Projet depuis le Portefeuille` }, { status: 400 });
     }
 
     const now = new Date();
@@ -116,11 +116,11 @@ export async function POST(request: Request) {
       },
     });
 
-    // Deduct from investBalance
+    // Deduct from projectBalance
     await db.user.update({
       where: { id: user.id },
       data: {
-        investBalance: { decrement: investAmount },
+        projectBalance: { decrement: investAmount },
         ...(isCrashed ? { totalLoss: { increment: investAmount } } : {}),
       },
     });

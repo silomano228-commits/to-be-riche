@@ -51,6 +51,8 @@ export async function POST(request: Request) {
       user: {
         ...safeUser,
         investBalance: user.investBalance,
+        tradeBalance: user.tradeBalance,
+        projectBalance: user.projectBalance,
         totalProfit: user.totalProfit,
         totalLoss: user.totalLoss,
         transactions,

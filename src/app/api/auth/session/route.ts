@@ -95,6 +95,8 @@ export async function GET(request: Request) {
       user: {
         ...safeUser,
         investBalance: user.investBalance,
+        tradeBalance: user.tradeBalance,
+        projectBalance: user.projectBalance,
         totalProfit: user.totalProfit,
         totalLoss: user.totalLoss,
         transactions,

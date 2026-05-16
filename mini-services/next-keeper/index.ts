@@ -7,11 +7,10 @@ const PORT = 3000;
 function startNext() {
   console.log(`[keeper] Starting Next.js on port ${PORT}...`);
   
-  const child = spawn('node', ['node_modules/.bin/next', 'dev', '-p', String(PORT)], {
+  const child = spawn('node', ['node_modules/.bin/next', 'dev', '-p', String(PORT), '--turbopack'], {
     cwd: PROJECT_DIR,
     env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=4096' },
     stdio: ['ignore', 'pipe', 'pipe'],
-    detached: true,
   });
 
   child.stdout?.on('data', (data: Buffer) => {
@@ -27,7 +26,11 @@ function startNext() {
     setTimeout(startNext, 5000);
   });
 
-  child.unref();
+  child.on('error', (err) => {
+    console.error(`[keeper] Failed to start Next.js:`, err);
+    setTimeout(startNext, 5000);
+  });
+
   console.log(`[keeper] Next.js spawned with PID=${child.pid}`);
 }
 

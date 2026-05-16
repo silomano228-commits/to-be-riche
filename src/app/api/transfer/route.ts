@@ -18,8 +18,36 @@ async function getUser(request: Request) {
   return db.user.findUnique({ where: { id: token } });
 }
 
-const FEE_RATE = 0.02; // 2% fee on transfers TO invest account
+const VALID_ACCOUNTS = ['principal', 'invest', 'trade', 'project'] as const;
+type AccountType = typeof VALID_ACCOUNTS[number];
+
+const ACCOUNT_LABELS: Record<AccountType, string> = {
+  principal: 'Compte Principal',
+  invest: "Compte d'Investissement",
+  trade: 'Compte de Trading',
+  project: 'Compte de Projet',
+};
+
+const FEE_RATE = 0.02; // 2% fee on transfers TO invest, trade, or project accounts
 const MIN_TRANSFER = 2;
+
+function getBalance(user: Record<string, unknown>, account: AccountType): number {
+  switch (account) {
+    case 'principal': return user.balance as number;
+    case 'invest': return user.investBalance as number;
+    case 'trade': return user.tradeBalance as number;
+    case 'project': return user.projectBalance as number;
+  }
+}
+
+function getFieldName(account: AccountType): string {
+  switch (account) {
+    case 'principal': return 'balance';
+    case 'invest': return 'investBalance';
+    case 'trade': return 'tradeBalance';
+    case 'project': return 'projectBalance';
+  }
+}
 
 export async function POST(request: Request) {
   try {
@@ -35,11 +63,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Missing fields: from, to, amount' }, { status: 400 });
     }
 
-    if (!['principal', 'invest'].includes(from) || !['principal', 'invest'].includes(to)) {
-      return NextResponse.json({ success: false, error: 'Invalid account type. Use "principal" or "invest".' }, { status: 400 });
+    if (!VALID_ACCOUNTS.includes(from) || !VALID_ACCOUNTS.includes(to)) {
+      return NextResponse.json({ success: false, error: 'Invalid account type. Use "principal", "invest", "trade", or "project".' }, { status: 400 });
     }
 
-    if (from === to) {
+    const fromAccount = from as AccountType;
+    const toAccount = to as AccountType;
+
+    if (fromAccount === toAccount) {
       return NextResponse.json({ success: false, error: 'Source and destination cannot be the same' }, { status: 400 });
     }
 
@@ -49,15 +80,15 @@ export async function POST(request: Request) {
     }
 
     // Check source balance
-    const sourceBalance = from === 'principal' ? user.balance : user.investBalance;
+    const sourceBalance = getBalance(user, fromAccount);
     if (sourceBalance < transferAmount) {
-      return NextResponse.json({ success: false, error: `Insufficient balance in ${from} account. Have $${sourceBalance.toFixed(2)}` }, { status: 400 });
+      return NextResponse.json({ success: false, error: `Insufficient balance in ${ACCOUNT_LABELS[fromAccount]}. Have $${sourceBalance.toFixed(2)}` }, { status: 400 });
     }
 
-    // Calculate fee for transfers TO invest account
+    // Calculate fee for transfers TO invest, trade, or project accounts (not back to principal)
     let fee = 0;
     let receivedAmount = transferAmount;
-    if (to === 'invest') {
+    if (toAccount !== 'principal') {
       fee = Math.round(transferAmount * FEE_RATE * 100) / 100;
       receivedAmount = Math.round((transferAmount - fee) * 100) / 100;
     }
@@ -65,17 +96,8 @@ export async function POST(request: Request) {
     // Perform the transfer
     const updateData: Record<string, { decrement: number } | { increment: number }> = {};
 
-    if (from === 'principal') {
-      updateData.balance = { decrement: transferAmount };
-    } else {
-      updateData.investBalance = { decrement: transferAmount };
-    }
-
-    if (to === 'principal') {
-      updateData.balance = { increment: transferAmount };
-    } else {
-      updateData.investBalance = { increment: receivedAmount };
-    }
+    updateData[getFieldName(fromAccount)] = { decrement: transferAmount };
+    updateData[getFieldName(toAccount)] = { increment: receivedAmount };
 
     await db.$transaction([
       db.user.update({
@@ -86,7 +108,7 @@ export async function POST(request: Request) {
         data: {
           type: 'transfer',
           amount: -transferAmount,
-          detail: `Transfer $${transferAmount.toFixed(2)} from ${from} to ${to}${fee > 0 ? ` (fee: $${fee.toFixed(2)}, received: $${receivedAmount.toFixed(2)})` : ''}`,
+          detail: `Transfer $${transferAmount.toFixed(2)} from ${ACCOUNT_LABELS[fromAccount]} to ${ACCOUNT_LABELS[toAccount]}${fee > 0 ? ` (fee: $${fee.toFixed(2)}, received: $${receivedAmount.toFixed(2)})` : ''}`,
           userId: user.id,
         },
       }),
@@ -94,7 +116,7 @@ export async function POST(request: Request) {
         data: {
           type: 'transfer_fee',
           amount: -fee,
-          detail: `2% transfer fee on $${transferAmount.toFixed(2)} transfer to invest account`,
+          detail: `2% transfer fee on $${transferAmount.toFixed(2)} transfer to ${ACCOUNT_LABELS[toAccount]}`,
           userId: user.id,
         },
       })] : []),
@@ -103,13 +125,13 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       transfer: {
-        from,
-        to,
+        from: fromAccount,
+        to: toAccount,
         amount: transferAmount,
         fee,
         received: receivedAmount,
       },
-      message: `Transferred $${transferAmount.toFixed(2)} from ${from} to ${to}${fee > 0 ? ` (fee: $${fee.toFixed(2)})` : ''}`,
+      message: `Transferred $${transferAmount.toFixed(2)} from ${ACCOUNT_LABELS[fromAccount]} to ${ACCOUNT_LABELS[toAccount]}${fee > 0 ? ` (fee: $${fee.toFixed(2)})` : ''}`,
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });

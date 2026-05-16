@@ -51,8 +51,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Duration must be between 60 and 600 seconds' }, { status: 400 });
     }
 
-    if (user.investBalance < tradeAmount) {
-      return NextResponse.json({ success: false, error: `Insufficient invest balance. Need $${tradeAmount.toFixed(2)}, have $${user.investBalance.toFixed(2)}` }, { status: 400 });
+    if (user.tradeBalance < tradeAmount) {
+      return NextResponse.json({ success: false, error: `Transférez des fonds vers votre Compte de Trading depuis le Portefeuille` }, { status: 400 });
     }
 
     // Generate random entry price
@@ -108,10 +108,10 @@ export async function POST(request: Request) {
       },
     });
 
-    // Deduct from investBalance
+    // Deduct from tradeBalance
     await db.user.update({
       where: { id: user.id },
-      data: { investBalance: { decrement: tradeAmount } },
+      data: { tradeBalance: { decrement: tradeAmount } },
     });
 
     // Create transaction

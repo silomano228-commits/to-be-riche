@@ -14,6 +14,8 @@ export interface AppUser {
   name: string;
   balance: number;
   investBalance: number;
+  tradeBalance: number;
+  projectBalance: number;
   hasInvested: boolean;
   role: string;
   depositCount: number;

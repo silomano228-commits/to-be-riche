@@ -1,9 +1,12 @@
 import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
-import { Resend } from 'resend';
 import crypto from 'crypto';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  if (!process.env.RESEND_API_KEY) return null;
+  const { Resend } = require('resend');
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 export async function POST(request: Request) {
   try {
@@ -43,11 +46,13 @@ export async function POST(request: Request) {
 
     // Send email via Resend
     try {
-      await resend.emails.send({
-        from: 'Be Rich <onboarding@resend.dev>',
-        to: email,
-        subject: 'Réinitialisation de votre mot de passe - Be Rich',
-        html: `
+      const resend = getResend();
+      if (resend) {
+        await resend.emails.send({
+          from: 'Be Rich <onboarding@resend.dev>',
+          to: email,
+          subject: 'Réinitialisation de votre mot de passe - Be Rich',
+          html: `
           <div style="font-family: 'Inter', Arial, sans-serif; max-width: 480px; margin: 0 auto; background: #f8fafc; border-radius: 16px; overflow: hidden;">
             <div style="background: linear-gradient(135deg, #0F172A, #1E293B); padding: 40px 32px; text-align: center;">
               <h1 style="color: #FBBF24; font-size: 28px; font-weight: 900; letter-spacing: 2px; margin: 0;">BE RICH</h1>
@@ -78,10 +83,10 @@ export async function POST(request: Request) {
             </div>
           </div>
         `,
-      });
+        });
+      }
     } catch (emailError) {
       console.error('Failed to send email:', emailError);
-      // Still return success to not reveal email existence
     }
 
     return NextResponse.json({ success: true, message: 'Si un compte existe avec cet email, un lien de réinitialisation a été envoyé.' });

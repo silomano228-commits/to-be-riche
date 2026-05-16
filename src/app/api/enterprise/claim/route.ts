@@ -71,7 +71,7 @@ export async function POST(request: Request) {
       db.user.update({
         where: { id: user.id },
         data: {
-          balance: { increment: totalReturn },
+          projectBalance: { increment: totalReturn },
           totalProfit: { increment: returnAmount },
         },
       }),

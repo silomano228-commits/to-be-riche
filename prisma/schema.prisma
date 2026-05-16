@@ -14,6 +14,8 @@ model User {
   password        String
   balance         Float         @default(0)
   investBalance   Float         @default(0)
+  tradeBalance    Float         @default(0)
+  projectBalance  Float         @default(0)
   hasInvested     Boolean       @default(false)
   role            String        @default("user")
   depositCount    Int           @default(0)
