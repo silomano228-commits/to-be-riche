@@ -1385,8 +1385,9 @@ function AdminScreen() {
       const cRes = await authFetch('/api/admin/chats');
       const cData = await cRes.json();
       if (cData.success) setConversations(cData.conversations || []);
+      else if (cData.error) addToast('Chats: ' + cData.error, 'error');
     } catch { /* ignore */ }
-  }, []);
+  }, [addToast]);
 
   const loadDeposits = useCallback(async () => {
     try {
@@ -1395,9 +1396,11 @@ function AdminScreen() {
       if (dData.success) {
         setPendingDeposits(dData.data || []);
         setDepositStats(dData.stats || {});
+      } else if (dData.error) {
+        addToast('Dépôts: ' + dData.error, 'error');
       }
     } catch { /* ignore */ }
-  }, []);
+  }, [addToast]);
 
   const loadWithdrawals = useCallback(async () => {
     try {
@@ -1406,9 +1409,11 @@ function AdminScreen() {
       if (wData.success) {
         setWithdrawals(wData.data || []);
         setWithdrawalStats(wData.stats || {});
+      } else if (wData.error) {
+        addToast('Retraits: ' + wData.error, 'error');
       }
     } catch { /* ignore */ }
-  }, []);
+  }, [addToast]);
 
   const handleWithdrawalAction = async (withdrawalId: string, action: 'approve' | 'reject') => {
     try {
@@ -1429,9 +1434,11 @@ function AdminScreen() {
         setSiteConfig(cData.data);
         setConfigAddr(cData.data.adminTrxAddress || '');
         setConfigPrice(String(cData.data.trxUsdPrice || ''));
+      } else if (cData.error) {
+        addToast('Config: ' + cData.error, 'error');
       }
     } catch { /* ignore */ }
-  }, []);
+  }, [addToast]);
 
   const loadData = useCallback(async () => {
     try {
