@@ -118,6 +118,65 @@ export default function AdminScreen() {
                       <div className="text-[rgba(255,255,255,0.7)] text-[0.65rem]">Approuvez pour créditer et envoyer les TRX</div>
                     </div>
                   </div>
+
+                  {/* Yas Config Section - Admin's own Yas number + CFA rate */}
+                  <div className="bg-[#F5F3FF] rounded-xl p-3.5 mb-4 border border-[#C4B5FD]/30">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-7 h-7 rounded-lg bg-[#7C3AED] flex items-center justify-center shrink-0">
+                        <i className="fas fa-cog text-white text-[0.65rem]"></i>
+                      </div>
+                      <div className="text-[0.78rem] font-bold text-[#4C1D95]">Configuration Yas</div>
+                    </div>
+                    <div className="mb-2.5">
+                      <label className="block mb-1 text-[0.7rem] font-semibold text-[#6D28D9]">Votre numéro Yas (affiché aux utilisateurs)</label>
+                      <input
+                        type="text"
+                        value={configYasAddr}
+                        onChange={(e) => setConfigYasAddr(e.target.value)}
+                        placeholder="90XXXXXX ou 70XXXXXX"
+                        maxLength={8}
+                        className="w-full py-2.5 px-3 bg-white border-[1.5px] border-[rgba(124,58,237,0.2)] rounded-lg text-[0.82rem] outline-none focus:border-[#7C3AED]"
+                      />
+                      {configYasAddr && !/^(9[0-3]|7[0-3])\d{6}$/.test(configYasAddr.trim()) && (
+                        <p className="text-[0.6rem] text-[#EF4444] mt-1">Format: 8 chiffres, commence par 90-93 ou 70-73</p>
+                      )}
+                    </div>
+                    <div className="mb-3">
+                      <label className="block mb-1 text-[0.7rem] font-semibold text-[#6D28D9]">Taux CFA/USD (1 USD = ? CFA)</label>
+                      <input
+                        type="number"
+                        step="1"
+                        value={configCfaRate}
+                        onChange={(e) => setConfigCfaRate(e.target.value)}
+                        className="w-full py-2.5 px-3 bg-white border-[1.5px] border-[rgba(124,58,237,0.2)] rounded-lg text-[0.82rem] outline-none focus:border-[#7C3AED]"
+                      />
+                    </div>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const r = await authFetch('/api/admin/config', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ adminYasAccount: configYasAddr, cfaUsdRate: configCfaRate })
+                          });
+                          const d = await r.json();
+                          if (d.success) {
+                            addToast('Config Yas sauvegardée !', 'success');
+                            loadConfig();
+                          } else {
+                            addToast(d.error || 'Erreur de sauvegarde', 'error');
+                          }
+                        } catch (e) {
+                          addToast('Erreur réseau', 'error');
+                        }
+                      }}
+                      className="w-full py-2.5 rounded-lg bg-gradient-to-r from-[#7C3AED] to-[#9333EA] text-white text-[0.78rem] font-semibold border-none cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <i className="fas fa-save text-[0.7rem]"></i>
+                      Sauvegarder la config Yas
+                    </button>
+                  </div>
+
                   <div className="grid grid-cols-3 gap-2 mb-4">
                     {[{ label: 'En attente', value: yasStats.pending || 0, color: '#F59E0B' }, { label: 'Approuvées', value: yasStats.approved || 0, color: '#00C853' }, { label: 'Rejetées', value: yasStats.rejected || 0, color: '#EF4444' }].map((s, i) => (
                       <div key={i} className="bg-white rounded-xl p-2.5 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]"><div className="text-[0.85rem] font-bold" style={{ color: s.color }}>{s.value}</div><div className="text-[0.55rem] text-[#94A3B8] uppercase">{s.label}</div></div>

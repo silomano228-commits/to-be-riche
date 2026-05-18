@@ -397,7 +397,7 @@ function FinanceScreen() {
         ))}
       </div>
       {/* Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {subTab === 'invest' && <InvestHubScreen />}
         {subTab === 'trading' && <TradingScreen />}
         {subTab === 'projects' && <EnterpriseScreen />}
