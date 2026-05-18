@@ -10,17 +10,15 @@ function generateChartPath(tradeId: string, direction: 'up' | 'down', elapsed: n
   const steps = 30;
   const stepW = width / steps;
   let y = height * 0.5;
-  /* Use tradeId chars as seed for deterministic randomness */
   let seed = 0;
   for (let i = 0; i < tradeId.length; i++) seed = ((seed << 5) - seed + tradeId.charCodeAt(i)) | 0;
   const rand = () => { seed = (seed * 16807 + 0) % 2147483647; return (seed & 0x7fffffff) / 0x7fffffff; };
 
-  const progress = Math.min(1, elapsed / 600); /* full draw over ~10min */
+  const progress = Math.min(1, elapsed / 600);
   const visibleSteps = Math.max(2, Math.floor(steps * Math.min(1, progress * 3 + 0.15)));
 
   for (let i = 0; i <= visibleSteps; i++) {
     const x = i * stepW;
-    /* Bias the movement based on direction but keep it random-ish */
     const bias = direction === 'up' ? -0.3 : 0.3;
     const move = (rand() - 0.5 + bias) * (height * 0.12);
     y = Math.max(height * 0.1, Math.min(height * 0.9, y + move));
@@ -40,7 +38,6 @@ export default function TradingScreen() {
   const [now, setNow] = useState(Date.now());
   const [chartTick, setChartTick] = useState(0);
 
-  /* Tick chart more frequently for animation */
   useEffect(() => { const t = setInterval(() => setChartTick(c => c + 1), 2000); return () => clearInterval(t); }, []);
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
 
@@ -54,7 +51,6 @@ export default function TradingScreen() {
 
   useEffect(() => { loadTrades(); }, [loadTrades]);
 
-  // Auto-resolve finished trades
   useEffect(() => {
     activeTrades.forEach((trade) => {
       if (new Date(trade.endsAt).getTime() <= now && !trade.resolved) {
@@ -92,12 +88,8 @@ export default function TradingScreen() {
     <>
       <style>{`
         @keyframes tradeCardGlow {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); }
-          50% { box-shadow: 0 0 20px rgba(59,130,246,0.1); }
-        }
-        @keyframes directionPulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.02); }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(184,155,94,0); }
+          50% { box-shadow: 0 0 20px rgba(184,155,94,0.08); }
         }
         @keyframes chartLineMove {
           0% { stroke-dashoffset: 200; }
@@ -110,13 +102,6 @@ export default function TradingScreen() {
         @keyframes countBlink {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.4; }
-        }
-        @keyframes balanceBlueGlow {
-          0%, 100% { box-shadow: 0 0 20px rgba(147,197,253,0.1); }
-          50% { box-shadow: 0 0 40px rgba(147,197,253,0.2); }
-        }
-        .balance-blue-glow {
-          animation: balanceBlueGlow 3s ease-in-out infinite;
         }
         .live-dot {
           animation: liveDot 1.2s ease-in-out infinite;
@@ -132,83 +117,81 @@ export default function TradingScreen() {
           animation: chartLineMove 2s ease-out forwards;
         }
       `}</style>
-      <Header title="Ultra Market" icon="fa-bolt" iconColor="#3B82F6" leftElement={<button onClick={() => useAppStore.getState().setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none mr-1"><i className="fas fa-arrow-left text-[0.8rem]"></i></button>} />
-      <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto">
-        {/* Balance - Blue theme enhanced */}
-        <div className="balance-blue-glow bg-gradient-to-br from-[#1E3A5F] via-[#162D4A] to-[#0F172A] text-white rounded-2xl p-5 mb-4 border border-[rgba(59,130,246,0.15)] relative overflow-hidden">
-          <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-[rgba(147,197,253,0.06)]"></div>
-          <div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full bg-[rgba(59,130,246,0.04)]"></div>
-          <div className="absolute top-3 right-4 text-[0.65rem] opacity-30 font-mono">TRADE·HUB</div>
+      <Header title="Ultra Market" icon="fa-bolt" iconColor="#B89B5E" leftElement={<button onClick={() => useAppStore.getState().setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] cursor-pointer border-none mr-1"><i className="fas fa-arrow-left text-[0.8rem]"></i></button>} />
+      <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto bg-[#050506]">
+        {/* Balance - Dark card with gold accent */}
+        <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-5 mb-4 relative overflow-hidden">
+          <div className="absolute top-3 right-4 text-[0.65rem] text-[rgba(255,255,255,0.15)] font-mono">TRADE·HUB</div>
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 rounded-lg bg-[rgba(147,197,253,0.15)] flex items-center justify-center">
-              <i className="fas fa-bolt text-[0.85rem] text-[#93C5FD]"></i>
+            <div className="w-8 h-8 rounded-lg bg-[rgba(184,155,94,0.12)] flex items-center justify-center">
+              <i className="fas fa-bolt text-[0.85rem] text-[#B89B5E]"></i>
             </div>
-            <div className="text-[0.7rem] opacity-50 font-semibold uppercase tracking-[1.5px]">Compte de Trading</div>
+            <div className="text-[0.7rem] text-[rgba(255,255,255,0.4)] font-semibold uppercase tracking-[1.5px]">Compte de Trading</div>
           </div>
-          <div className="text-[2rem] font-black text-[#93C5FD] mb-2 tracking-tight">{formatMoney(user.tradeBalance)}</div>
-          <button onClick={() => useAppStore.getState().setPage('wallet')} className="flex items-center gap-1.5 text-[0.75rem] text-[#93C5FD] font-semibold bg-[rgba(147,197,253,0.1)] hover:bg-[rgba(147,197,253,0.2)] transition-colors py-1.5 px-3 rounded-lg border border-[rgba(147,197,253,0.15)]">
+          <div className="text-[2rem] font-black text-[#B89B5E] mb-2 tracking-tight">{formatMoney(user.tradeBalance)}</div>
+          <button onClick={() => useAppStore.getState().setPage('wallet')} className="flex items-center gap-1.5 text-[0.75rem] text-[#B89B5E] font-semibold bg-[rgba(184,155,94,0.1)] hover:bg-[rgba(184,155,94,0.15)] transition-colors py-1.5 px-3 rounded-lg border border-[rgba(184,155,94,0.15)]">
             <i className="fas fa-plus text-[0.65rem]"></i>Verser des fonds
           </button>
         </div>
 
-        {/* Trade Form - Professional layout */}
-        <div className="bg-white rounded-2xl p-5 mb-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+        {/* Trade Form - Dark themed */}
+        <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-5 mb-4">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-1.5 h-5 rounded-full bg-[#3B82F6]"></div>
-            <h4 className="text-[0.88rem] font-bold text-[#1A2332]">Nouveau trade</h4>
+            <div className="w-1.5 h-5 rounded-full bg-[#B89B5E]"></div>
+            <h4 className="text-[0.88rem] font-bold text-[#EDEDEF]">Nouveau trade</h4>
           </div>
 
           {/* Amount input */}
           <div className="relative mb-4">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[0.75rem] font-bold text-[#94A3B8]">$</div>
-            <input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="1 - 5" className="w-full py-3.5 pl-8 pr-4 bg-[#F8FAFC] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[1rem] font-semibold outline-none focus:border-[#3B82F6] focus:ring-[3px] focus:ring-[rgba(59,130,246,0.1)] transition-all text-[#1A2332]" />
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[0.75rem] font-bold text-[rgba(255,255,255,0.35)]">$</div>
+            <input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="1 - 5" className="w-full py-3.5 pl-8 pr-4 bg-[rgba(255,255,255,0.04)] border-[1.5px] border-[rgba(255,255,255,0.08)] rounded-xl text-[1rem] font-semibold outline-none focus:border-[#B89B5E] focus:ring-[3px] focus:ring-[rgba(184,155,94,0.1)] transition-all text-[#EDEDEF] placeholder:text-[rgba(255,255,255,0.2)]" />
           </div>
 
-          {/* Direction - Larger, more distinct */}
+          {/* Direction */}
           <div className="grid grid-cols-2 gap-3 mb-4">
-            <button onClick={() => setDirection('up')} className={`py-4 rounded-xl font-bold text-[0.95rem] border-none cursor-pointer transition-all active:scale-[0.97] flex items-center justify-center gap-2 ${direction === 'up' ? 'bg-gradient-to-br from-[#00E676] to-[#00C853] text-white shadow-[0_6px_24px_rgba(0,200,83,0.25)]' : 'bg-[#F1F5F9] text-[#64748B] hover:bg-[#E8EDF2]'}`}>
+            <button onClick={() => setDirection('up')} className={`py-4 rounded-xl font-bold text-[0.95rem] border-none cursor-pointer transition-all active:scale-[0.97] flex items-center justify-center gap-2 ${direction === 'up' ? 'bg-[rgba(184,155,94,0.15)] text-[#B89B5E] border border-[rgba(184,155,94,0.2)]' : 'bg-[rgba(255,255,255,0.04)] text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.06)]'}`}>
               <i className="fas fa-arrow-trend-up text-[1rem]"></i>
               <span>HAUT</span>
             </button>
-            <button onClick={() => setDirection('down')} className={`py-4 rounded-xl font-bold text-[0.95rem] border-none cursor-pointer transition-all active:scale-[0.97] flex items-center justify-center gap-2 ${direction === 'down' ? 'bg-gradient-to-br from-[#EF4444] to-[#DC2626] text-white shadow-[0_6px_24px_rgba(239,68,68,0.25)]' : 'bg-[#F1F5F9] text-[#64748B] hover:bg-[#E8EDF2]'}`}>
+            <button onClick={() => setDirection('down')} className={`py-4 rounded-xl font-bold text-[0.95rem] border-none cursor-pointer transition-all active:scale-[0.97] flex items-center justify-center gap-2 ${direction === 'down' ? 'bg-[rgba(248,113,113,0.15)] text-[#F87171] border border-[rgba(248,113,113,0.2)]' : 'bg-[rgba(255,255,255,0.04)] text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.06)]'}`}>
               <i className="fas fa-arrow-trend-down text-[1rem]"></i>
               <span>BAS</span>
             </button>
           </div>
 
-          {/* Duration - Better visual feedback */}
+          {/* Duration - gold selected state */}
           <div className="mb-4">
-            <div className="text-[0.7rem] font-semibold text-[#94A3B8] uppercase tracking-[0.5px] mb-2">Durée</div>
+            <div className="text-[0.7rem] font-semibold text-[rgba(255,255,255,0.4)] uppercase tracking-[0.5px] mb-2">Durée</div>
             <div className="grid grid-cols-4 gap-2">
               {durations.map((d) => (
-                <button key={d.sec} onClick={() => setDuration(d.sec)} className={`py-2.5 rounded-xl text-[0.78rem] font-semibold border-none cursor-pointer transition-all active:scale-[0.97] ${duration === d.sec ? 'bg-[#3B82F6] text-white shadow-[0_4px_16px_rgba(59,130,246,0.25)] ring-2 ring-[rgba(59,130,246,0.2)]' : 'bg-[#F1F5F9] text-[#64748B] hover:bg-[#E8EDF2]'}`}>{d.label}</button>
+                <button key={d.sec} onClick={() => setDuration(d.sec)} className={`py-2.5 rounded-xl text-[0.78rem] font-semibold border-none cursor-pointer transition-all active:scale-[0.97] ${duration === d.sec ? 'bg-[rgba(184,155,94,0.15)] text-[#B89B5E] ring-2 ring-[rgba(184,155,94,0.15)]' : 'bg-[rgba(255,255,255,0.04)] text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.06)]'}`}>{d.label}</button>
               ))}
             </div>
           </div>
 
-          {/* Gain/Loss info section */}
-          <div className="flex items-center justify-center gap-4 mb-4 py-2.5 bg-[#F8FAFC] rounded-xl border border-[rgba(0,0,0,0.03)]">
+          {/* Gain/Loss info */}
+          <div className="flex items-center justify-center gap-4 mb-4 py-2.5 bg-[rgba(255,255,255,0.03)] rounded-xl border border-[rgba(255,255,255,0.04)]">
             <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-[#00C853]"></div>
-              <span className="text-[0.72rem] font-semibold text-[#00C853]">Gain: +85%</span>
+              <div className="w-2 h-2 rounded-full bg-[#4ADE80]"></div>
+              <span className="text-[0.72rem] font-semibold text-[#4ADE80]">Gain: +85%</span>
             </div>
-            <div className="w-[1px] h-3 bg-[#E2E8F0]"></div>
+            <div className="w-[1px] h-3 bg-[rgba(255,255,255,0.08)]"></div>
             <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-[#EF4444]"></div>
-              <span className="text-[0.72rem] font-semibold text-[#EF4444]">Perte: -100%</span>
+              <div className="w-2 h-2 rounded-full bg-[#F87171]"></div>
+              <span className="text-[0.72rem] font-semibold text-[#F87171]">Perte: -100%</span>
             </div>
           </div>
 
-          <button onClick={handleCreateTrade} disabled={creating} className="w-full py-4 rounded-xl bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white font-bold text-[0.92rem] border-none cursor-pointer disabled:opacity-60 shadow-[0_6px_24px_rgba(59,130,246,0.25)] hover:shadow-[0_8px_32px_rgba(59,130,246,0.35)] transition-shadow flex items-center justify-center gap-2">
+          <button onClick={handleCreateTrade} disabled={creating} className="w-full py-4 rounded-xl bg-[#B89B5E] text-[#050506] font-bold text-[0.92rem] border-none cursor-pointer disabled:opacity-60 hover:bg-[#D4B87A] transition-colors flex items-center justify-center gap-2">
             <i className="fas fa-bolt"></i>
             <span>{creating ? 'Chargement...' : 'Lancer le trade'}</span>
           </button>
         </div>
 
-        {/* Active Trades - Enhanced with chart */}
+        {/* Active Trades - Dark themed */}
         {activeTrades.filter(t => !t.resolved).length > 0 && (
           <>
-            <h3 className="text-[0.88rem] font-bold text-[#1A2332] mb-2.5">Trades en cours</h3>
+            <h3 className="text-[0.88rem] font-bold text-[#EDEDEF] mb-2.5">Trades en cours</h3>
             {activeTrades.filter(t => !t.resolved).map((trade) => {
               const remaining = new Date(trade.endsAt).getTime() - now;
               const totalDuration = trade.durationSec * 1000;
@@ -217,44 +200,40 @@ export default function TradingScreen() {
               const mins = Math.max(0, Math.floor(remaining / 60000));
               const secs = Math.max(0, Math.floor((remaining % 60000) / 1000));
               const isUp = trade.direction === 'up';
-              const lineColor = isUp ? '#00E676' : '#EF4444';
-              const fillColor = isUp ? 'rgba(0,230,118,0.08)' : 'rgba(239,68,68,0.08)';
+              const lineColor = isUp ? '#B89B5E' : '#F87171';
+              const fillColor = isUp ? 'rgba(184,155,94,0.08)' : 'rgba(248,113,113,0.08)';
 
               return (
-                <div key={trade.id} className="trade-card-glow bg-[#1E293B] text-white rounded-xl p-4 mb-2.5 border border-[rgba(255,255,255,0.05)]" style={{ animation: 'slideUp 0.3s ease-out' }}>
-                  {/* Header */}
+                <div key={trade.id} className="trade-card-glow bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 mb-2.5" style={{ animation: 'slideUp 0.3s ease-out' }}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2.5">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isUp ? 'bg-[rgba(0,230,118,0.15)]' : 'bg-[rgba(239,68,68,0.15)]'}`}>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isUp ? 'bg-[rgba(184,155,94,0.12)]' : 'bg-[rgba(248,113,113,0.12)]'}`}>
                         <i className={`fas fa-arrow-trend-${isUp ? 'up' : 'down'} text-[0.95rem]`} style={{ color: lineColor }}></i>
                       </div>
                       <div>
-                        <div className="text-[0.85rem] font-bold flex items-center gap-2">
+                        <div className="text-[0.85rem] font-bold text-[#EDEDEF] flex items-center gap-2">
                           {isUp ? 'HAUT' : 'BAS'}
-                          <span className="live-dot inline-block w-2 h-2 rounded-full bg-[#3B82F6]"></span>
+                          <span className="live-dot inline-block w-2 h-2 rounded-full bg-[#B89B5E]"></span>
                         </div>
                         <div className="text-[0.68rem] text-[rgba(255,255,255,0.45)]">{formatMoney(trade.amount)}</div>
                       </div>
                     </div>
-                    {/* Countdown - Prominent */}
                     <div className="text-right">
-                      <div className="text-[0.6rem] text-[rgba(255,255,255,0.4)] uppercase tracking-[0.5px] mb-0.5">Temps restant</div>
-                      <div className="text-[1.4rem] font-mono font-black tracking-wide">
+                      <div className="text-[0.6rem] text-[rgba(255,255,255,0.35)] uppercase tracking-[0.5px] mb-0.5">Temps restant</div>
+                      <div className="text-[1.4rem] font-mono font-black tracking-wide text-[#EDEDEF]">
                         {mins}<span className="timer-colon-blink">:</span>{secs.toString().padStart(2, '0')}
                       </div>
                     </div>
                   </div>
 
                   {/* Animated chart */}
-                  <div className="relative h-[60px] rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] overflow-hidden mb-3">
-                    {/* Grid lines */}
+                  <div className="relative h-[60px] rounded-lg bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.04)] overflow-hidden mb-3">
                     <div className="absolute inset-0 flex flex-col justify-between py-1.5">
-                      <div className="border-t border-[rgba(255,255,255,0.04)]"></div>
-                      <div className="border-t border-[rgba(255,255,255,0.04)]"></div>
-                      <div className="border-t border-[rgba(255,255,255,0.04)]"></div>
+                      <div className="border-t border-[rgba(255,255,255,0.03)]"></div>
+                      <div className="border-t border-[rgba(255,255,255,0.03)]"></div>
+                      <div className="border-t border-[rgba(255,255,255,0.03)]"></div>
                     </div>
                     <svg className="w-full h-full" viewBox="0 0 280 60" preserveAspectRatio="none">
-                      {/* Chart line */}
                       <path
                         d={generateChartPath(trade.id, trade.direction, elapsed, 280, 60)}
                         fill="none"
@@ -265,7 +244,6 @@ export default function TradingScreen() {
                         className="chart-svg-line"
                         key={chartTick}
                       />
-                      {/* Fill under line */}
                       <path
                         d={(() => {
                           const linePath = generateChartPath(trade.id, trade.direction, elapsed, 280, 60);
@@ -281,7 +259,7 @@ export default function TradingScreen() {
                   </div>
 
                   {/* Progress bar */}
-                  <div className="w-full h-[3px] bg-[rgba(255,255,255,0.08)] rounded-full">
+                  <div className="w-full h-[3px] bg-[rgba(255,255,255,0.06)] rounded-full">
                     <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${progress * 100}%`, background: `linear-gradient(90deg, ${lineColor}, ${lineColor}88)` }}></div>
                   </div>
                 </div>
@@ -290,14 +268,14 @@ export default function TradingScreen() {
           </>
         )}
 
-        {/* No active trades info */}
+        {/* No active trades */}
         {activeTrades.filter(t => !t.resolved).length === 0 && (
           <div className="text-center py-8">
-            <div className="w-16 h-16 rounded-2xl bg-[#EFF6FF] flex items-center justify-center mx-auto mb-4">
-              <i className="fas fa-chart-area text-[1.5rem] text-[#93C5FD]"></i>
+            <div className="w-16 h-16 rounded-2xl bg-[rgba(184,155,94,0.08)] flex items-center justify-center mx-auto mb-4">
+              <i className="fas fa-chart-area text-[1.5rem] text-[#B89B5E]"></i>
             </div>
-            <p className="text-[0.85rem] text-[#64748B] font-medium">Aucun trade actif</p>
-            <p className="text-[0.72rem] text-[#94A3B8]">Lancez-en un pour commencer !</p>
+            <p className="text-[0.85rem] text-[rgba(255,255,255,0.6)] font-medium">Aucun trade actif</p>
+            <p className="text-[0.72rem] text-[rgba(255,255,255,0.35)]">Lancez-en un pour commencer !</p>
           </div>
         )}
       </div>

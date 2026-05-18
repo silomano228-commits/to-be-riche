@@ -34,8 +34,7 @@ export default function EnterpriseScreen() {
       const res = await authFetch('/api/enterprise/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, amount: amt }) });
       const data = await res.json();
       if (data.success) {
-        if (data.crashed) { addToast('Crash ! Le projet a échoué.', 'error'); }
-        else { addToast('Projet créé !', 'success'); }
+        addToast('Projet créé !', 'success');
         setShowCreate(null); setCreateAmt(''); loadEnterprises(); refreshUser();
       } else { addToast(data.error, 'error'); }
     } catch { addToast('Erreur', 'error'); }
@@ -51,140 +50,106 @@ export default function EnterpriseScreen() {
     } catch { addToast('Erreur', 'error'); }
   };
 
-  // Map risk string to numeric value for bar width
-  const riskToPercent = (risk: string) => {
-    const val = parseFloat(risk);
-    return isNaN(val) ? 10 : val * 5; // 5% → 25%, 10% → 50%, 15% → 75%, 20% → 100%
-  };
-
-  // Risk color based on severity
-  const riskColor = (risk: string) => {
-    const val = parseFloat(risk);
-    if (val <= 5) return '#22C55E';
-    if (val <= 10) return '#EAB308';
-    if (val <= 15) return '#F97316';
-    return '#EF4444';
+  // Map enterprise types to new guaranteed return tiers
+  const TYPE_INFO: Record<string, { icon: string; label: string; retRange: string }> = {
+    short: { icon: 'fa-bolt', label: 'Court terme', retRange: '+15-28%' },
+    medium: { icon: 'fa-building', label: 'Moyen terme', retRange: '+30-48%' },
+    long: { icon: 'fa-industry', label: 'Long terme', retRange: '+50-68%' },
+    ultralong: { icon: 'fa-rocket', label: 'Ultra long', retRange: '+70-95%' },
   };
 
   if (!user) return null;
 
   return (
     <>
-      <Header title="Entreprises" icon="fa-building" iconColor="#F97316" leftElement={<button onClick={() => useAppStore.getState().setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none mr-1"><i className="fas fa-arrow-left text-[0.8rem]"></i></button>} />
-      <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto">
-        {/* Balance */}
-        <div className="bg-gradient-to-br from-[#7C2D12] to-[#0F172A] text-white rounded-2xl p-4 mb-4 border border-[rgba(249,115,22,0.15)]">
-          <div className="text-[0.7rem] opacity-40 uppercase tracking-[1.5px] mb-1">Compte de Projet</div>
-          <div className="text-[1.5rem] font-black text-[#FDBA74]">{formatMoney(user.projectBalance)}</div>
-          <button onClick={() => useAppStore.getState().setPage('wallet')} className="text-[0.72rem] text-[#FDBA74] font-semibold mt-1"><i className="fas fa-plus mr-1"></i>Verser des fonds</button>
+      <Header title="Entreprises" icon="fa-building" iconColor="#B89B5E" leftElement={<button onClick={() => useAppStore.getState().setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] cursor-pointer border-none mr-1"><i className="fas fa-arrow-left text-[0.8rem]"></i></button>} />
+      <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto bg-[#050506]">
+        {/* Balance - Dark card with gold accent */}
+        <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-4 mb-4">
+          <div className="text-[0.7rem] text-[rgba(255,255,255,0.35)] uppercase tracking-[1.5px] mb-1">Compte de Projet</div>
+          <div className="text-[1.5rem] font-black text-[#B89B5E]">{formatMoney(user.projectBalance)}</div>
+          <button onClick={() => useAppStore.getState().setPage('wallet')} className="text-[0.72rem] text-[#B89B5E] font-semibold mt-1"><i className="fas fa-plus mr-1"></i>Verser des fonds</button>
         </div>
 
-        {/* Risk Warning - More Prominent */}
-        <div className="bg-gradient-to-r from-[#FEF3C7] to-[#FFFBEB] rounded-xl p-3.5 mb-4 flex items-start gap-2.5 border border-[#F59E0B] shadow-[0_2px_12px_rgba(245,158,11,0.12)]">
-          <div className="w-8 h-8 rounded-full bg-[#F59E0B] flex items-center justify-center shrink-0">
-            <i className="fas fa-exclamation-triangle text-white text-[0.7rem]"></i>
-          </div>
-          <div>
-            <div className="text-[0.78rem] font-bold text-[#92400E] mb-0.5">Attention aux risques</div>
-            <p className="text-[0.72rem] text-[#A16207] leading-relaxed">Plus la durée est longue, plus le risque de crash augmente. Investissez prudemment !</p>
-          </div>
-        </div>
-
-        {/* Enterprise Types */}
-        <h3 className="text-[0.88rem] font-bold text-[#1A2332] mb-2.5">Types de projets</h3>
+        {/* Enterprise Types - Dark cards, NO risk bars, guaranteed returns */}
+        <h3 className="text-[0.88rem] font-bold text-[#EDEDEF] mb-2.5">Types de projets</h3>
         <div className="space-y-2.5 mb-5">
-          {ENTERPRISE_TYPES.map((ent) => (
-            <button key={ent.type} onClick={() => setShowCreate(ent.type)} className="w-full bg-white rounded-xl p-3.5 text-left shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)] cursor-pointer transition-transform active:scale-[0.98]">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: ent.color + '15' }}>
-                    <i className={`fas ${ent.icon}`} style={{ color: ent.color }}></i>
+          {ENTERPRISE_TYPES.map((ent) => {
+            const info = TYPE_INFO[ent.type];
+            return (
+              <button key={ent.type} onClick={() => setShowCreate(ent.type)} className="w-full bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-xl p-3.5 text-left cursor-pointer transition-transform active:scale-[0.98]">
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[rgba(184,155,94,0.12)]">
+                      <i className={`fas ${info?.icon || ent.icon} text-[#B89B5E]`}></i>
+                    </div>
+                    <div>
+                      <div className="text-[0.82rem] font-bold text-[#EDEDEF]">{ent.name}</div>
+                      <div className="text-[0.65rem] text-[rgba(255,255,255,0.4)]">{ent.days} jours</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-[0.82rem] font-bold text-[#1A2332]">{ent.name}</div>
-                    <div className="text-[0.65rem] text-[#64748B]">{ent.days} jours · +{ent.minRet}-{ent.maxRet}%</div>
+                  <div className="text-right">
+                    <div className="text-[0.82rem] font-bold text-[#B89B5E]">{info?.retRange || `+${ent.minRet}-${ent.maxRet}%`}</div>
+                    <div className="text-[0.55rem] text-[rgba(255,255,255,0.3)]">Rendement garanti</div>
                   </div>
                 </div>
-                <i className="fas fa-chevron-right text-[#CBD5E1] text-[0.65rem]"></i>
-              </div>
-              {/* Color-coded risk bar */}
-              <div className="flex items-center gap-2">
-                <div className="flex-1 h-2 bg-[#F1F5F9] rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{ width: `${riskToPercent(ent.risk)}%`, backgroundColor: riskColor(ent.risk) }}
-                  ></div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[0.58rem] text-[rgba(255,255,255,0.3)]">Rendement garanti à l&apos;échéance</span>
+                  <i className="fas fa-chevron-right text-[rgba(255,255,255,0.2)] text-[0.65rem]"></i>
                 </div>
-                <span className="text-[0.65rem] font-bold shrink-0" style={{ color: riskColor(ent.risk) }}>Risque {ent.risk}</span>
-              </div>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Active Enterprises */}
+        {/* Active Enterprises - Dark cards, NO crash styling */}
         {enterprises.length > 0 && (
           <>
-            <h3 className="text-[0.88rem] font-bold text-[#1A2332] mb-2.5">Mes entreprises</h3>
+            <h3 className="text-[0.88rem] font-bold text-[#EDEDEF] mb-2.5">Mes entreprises</h3>
             {enterprises.map((ent) => {
               const progress = Math.min(100, (ent.daysElapsed / ent.durationDays) * 100);
               const isFinished = ent.isFinished || ent.status === 'completed';
-              const isCrashed = ent.status === 'crashed';
               const isClaimable = isFinished && ent.canClaim;
 
               return (
-                <div key={ent.id} className={`rounded-xl p-4 mb-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border-2 transition-all ${
-                  isCrashed
-                    ? 'bg-[#FEF2F2] border-[#F87171]'
-                    : isClaimable
-                    ? 'bg-white border-[#00C853] shadow-[0_2px_16px_rgba(0,200,83,0.12)]'
-                    : isFinished
-                    ? 'bg-white border-[#86EFAC]'
-                    : 'bg-white border-[rgba(0,0,0,0.03)]'
+                <div key={ent.id} className={`bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 mb-2.5 transition-all ${
+                  isClaimable ? 'border-[rgba(184,155,94,0.3)]' : ''
                 }`}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      {/* Status dot */}
                       <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                        isCrashed ? 'bg-[#EF4444]' : isClaimable ? 'bg-[#00C853]' : isFinished ? 'bg-[#86EFAC]' : 'bg-[#3B82F6]'
+                        isClaimable ? 'bg-[#B89B5E]' : isFinished ? 'bg-[#4ADE80]' : 'bg-[rgba(184,155,94,0.5)]'
                       }`} style={isClaimable ? { animation: 'pulseGlow 1.5s ease-in-out infinite' } : undefined}></div>
                       <div className="min-w-0">
-                        <div className={`text-[0.82rem] font-bold ${isCrashed ? 'text-[#991B1B] line-through' : 'text-[#1A2332]'}`}>{esc(ent.name)}</div>
-                        <div className={`text-[0.65rem] ${isCrashed ? 'text-[#F87171]' : 'text-[#94A3B8]'}`}>{formatMoney(ent.amount)} · {ent.durationDays}j · +{ent.minReturn}-{ent.maxReturn}%</div>
+                        <div className="text-[0.82rem] font-bold text-[#EDEDEF]">{esc(ent.name)}</div>
+                        <div className="text-[0.65rem] text-[rgba(255,255,255,0.4)]">{formatMoney(ent.amount)} · {ent.durationDays}j · +{ent.minReturn}-{ent.maxReturn}%</div>
                       </div>
                     </div>
                     <span className={`text-[0.65rem] font-semibold px-2.5 py-1 rounded-full shrink-0 ${
-                      isCrashed ? 'bg-[#FEE2E2] text-[#991B1B]' :
-                      isClaimable ? 'bg-[#DCFCE7] text-[#166534]' :
-                      isFinished ? 'bg-[#DCFCE7] text-[#166534]' :
-                      'bg-[#DBEAFE] text-[#1E40AF]'
+                      isClaimable ? 'bg-[rgba(184,155,94,0.15)] text-[#B89B5E]' :
+                      isFinished ? 'bg-[rgba(74,222,128,0.1)] text-[#4ADE80]' :
+                      'bg-[rgba(255,255,255,0.04)] text-[rgba(255,255,255,0.5)]'
                     }`}>
-                      {isCrashed ? '💥 Crash' : isClaimable ? '✅ Réclamer' : isFinished ? 'Terminé' : 'En cours'}
+                      {isClaimable ? '✅ Réclamer' : isFinished ? 'Terminé' : 'En cours'}
                     </span>
                   </div>
-                  {!isCrashed && (
-                    <div className="w-full h-2 bg-[#F1F5F9] rounded-full mb-2 overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-700"
-                        style={{
-                          width: `${progress}%`,
-                          background: isFinished
-                            ? 'linear-gradient(90deg, #00E676, #00C853)'
-                            : 'linear-gradient(90deg, #60A5FA, #3B82F6)'
-                        }}
-                      ></div>
-                    </div>
-                  )}
-                  {isCrashed && (
-                    <div className="w-full h-2 bg-[#FEE2E2] rounded-full mb-2 overflow-hidden">
-                      <div className="h-full rounded-full bg-[#F87171]" style={{ width: `${progress}%` }}></div>
-                    </div>
-                  )}
+                  <div className="w-full h-2 bg-[rgba(255,255,255,0.06)] rounded-full mb-2 overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{
+                        width: `${progress}%`,
+                        background: isFinished
+                          ? '#B89B5E'
+                          : 'linear-gradient(90deg, rgba(184,155,94,0.6), #B89B5E)'
+                      }}
+                    ></div>
+                  </div>
                   <div className="flex items-center justify-between">
-                    <span className={`text-[0.65rem] ${isCrashed ? 'text-[#F87171]' : 'text-[#64748B]'}`}>{ent.daysElapsed}/{ent.durationDays} jours</span>
+                    <span className="text-[0.65rem] text-[rgba(255,255,255,0.4)]">{ent.daysElapsed}/{ent.durationDays} jours</span>
                     {isClaimable && (
                       <button
                         onClick={() => handleClaim(ent.id)}
-                        className="py-2 px-4 rounded-lg bg-gradient-to-r from-[#00E676] to-[#00C853] text-white text-[0.78rem] font-bold border-none cursor-pointer shadow-[0_4px_16px_rgba(0,200,83,0.3)]"
+                        className="py-2 px-4 rounded-lg bg-[#B89B5E] text-[#050506] text-[0.78rem] font-bold border-none cursor-pointer hover:bg-[#D4B87A] transition-colors"
                         style={{ animation: 'claimPulse 2s ease-in-out infinite' }}
                       >
                         <i className="fas fa-hand-holding-usd mr-1"></i>Réclamer
@@ -198,32 +163,35 @@ export default function EnterpriseScreen() {
         )}
 
         {enterprises.length === 0 && !loading && (
-          <div className="text-center py-8"><i className="fas fa-building text-[2rem] text-[#CBD5E1] mb-3"></i><p className="text-[0.82rem] text-[#94A3B8]">Aucune entreprise. Lancez votre premier projet !</p></div>
+          <div className="text-center py-8">
+            <i className="fas fa-building text-[2rem] text-[rgba(255,255,255,0.15)] mb-3"></i>
+            <p className="text-[0.82rem] text-[rgba(255,255,255,0.45)]">Aucune entreprise. Lancez votre premier projet !</p>
+          </div>
         )}
       </div>
 
-      {/* Create Enterprise Modal */}
+      {/* Create Enterprise Modal - Dark themed */}
       {showCreate && (
-        <div className="fixed inset-0 bg-[rgba(6,10,20,0.55)] backdrop-blur-sm z-[6000] flex items-center justify-center" onClick={() => setShowCreate(null)}>
-          <div className="bg-white rounded-2xl p-6 w-[88%] max-w-[320px] shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-[rgba(0,0,0,0.7)] backdrop-blur-sm z-[6000] flex items-center justify-center" onClick={() => setShowCreate(null)}>
+          <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-6 w-[88%] max-w-[320px]" onClick={(e) => e.stopPropagation()}>
             {(() => {
               const et = ENTERPRISE_TYPES.find(e => e.type === showCreate);
+              const info = et ? TYPE_INFO[et.type] : null;
               if (!et) return null;
               return (
                 <>
-                  <div className="flex items-center gap-2 mb-1"><i className={`fas ${et.icon}`} style={{ color: et.color }}></i><h3 className="text-[1rem] font-bold text-[#1A2332]">{et.name}</h3></div>
-                  <p className="text-[0.75rem] text-[#64748B] mb-1">{et.days} jours · +{et.minRet}-{et.maxRet}%</p>
-                  {/* Risk bar in modal too */}
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="flex-1 h-2 bg-[#F1F5F9] rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${riskToPercent(et.risk)}%`, backgroundColor: riskColor(et.risk) }}></div>
-                    </div>
-                    <span className="text-[0.68rem] font-bold" style={{ color: riskColor(et.risk) }}>⚠️ Risque: {et.risk}</span>
+                  <div className="flex items-center gap-2 mb-1">
+                    <i className={`fas ${info?.icon || et.icon} text-[#B89B5E]`}></i>
+                    <h3 className="text-[1rem] font-bold text-[#EDEDEF]">{et.name}</h3>
                   </div>
-                  <input type="number" step="0.01" value={createAmt} onChange={(e) => setCreateAmt(e.target.value)} placeholder={`Montant (min ${et.minAmount} $)`} className="w-full py-3 px-4 bg-[#F8FAFC] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.88rem] outline-none mb-4 focus:border-[#F97316]" />
+                  <p className="text-[0.75rem] text-[rgba(255,255,255,0.45)] mb-1">{et.days} jours · {info?.retRange || `+${et.minRet}-${et.maxRet}%`}</p>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-[0.68rem] text-[#B89B5E] font-semibold">Rendement garanti à l&apos;échéance</span>
+                  </div>
+                  <input type="number" step="0.01" value={createAmt} onChange={(e) => setCreateAmt(e.target.value)} placeholder={`Montant (min ${et.minAmount} $)`} className="w-full py-3 px-4 bg-[rgba(255,255,255,0.04)] border-[1.5px] border-[rgba(255,255,255,0.08)] rounded-xl text-[0.88rem] outline-none mb-4 text-[#EDEDEF] placeholder:text-[rgba(255,255,255,0.2)] focus:border-[#B89B5E]" />
                   <div className="flex gap-2">
-                    <button onClick={() => setShowCreate(null)} className="flex-1 py-3 rounded-xl border-[1.5px] border-[rgba(0,0,0,0.08)] bg-transparent text-[#64748B] font-semibold text-[0.82rem] cursor-pointer">Annuler</button>
-                    <button onClick={() => handleCreate(showCreate)} disabled={creating} className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#F97316] to-[#EA580C] text-white font-semibold text-[0.82rem] border-none cursor-pointer disabled:opacity-60">{creating ? '...' : 'Investir'}</button>
+                    <button onClick={() => setShowCreate(null)} className="flex-1 py-3 rounded-xl border-[1.5px] border-[rgba(255,255,255,0.08)] bg-transparent text-[rgba(255,255,255,0.5)] font-semibold text-[0.82rem] cursor-pointer hover:bg-[rgba(255,255,255,0.04)]">Annuler</button>
+                    <button onClick={() => handleCreate(showCreate)} disabled={creating} className="flex-1 py-3 rounded-xl bg-[#B89B5E] text-[#050506] font-semibold text-[0.82rem] border-none cursor-pointer disabled:opacity-60 hover:bg-[#D4B87A] transition-colors">{creating ? '...' : 'Investir'}</button>
                   </div>
                 </>
               );

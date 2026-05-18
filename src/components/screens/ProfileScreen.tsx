@@ -55,124 +55,309 @@ export default function ProfileScreen() {
 
   return (
     <>
-      <Header title="Profil" icon="fa-user" iconColor="#64748B" leftElement={<button onClick={() => setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none mr-1"><i className="fas fa-arrow-left text-[0.8rem]"></i></button>} />
-      <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto">
-        {/* User Card */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white rounded-2xl p-5 mb-4 border border-[rgba(255,255,255,0.05)]">
-          {/* Decorative background circles */}
-          <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-gradient-to-br from-[#00E676]/10 to-transparent pointer-events-none"></div>
-          <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-gradient-to-br from-[#F97316]/8 to-transparent pointer-events-none"></div>
+      <style>{`
+        @keyframes avatarBreathe {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(184,155,94,0.3); }
+          50% { box-shadow: 0 0 20px 4px rgba(184,155,94,0.15); }
+        }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+
+      <Header title="Profil" icon="fa-user" iconColor="#B89B5E" leftElement={<button onClick={() => setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer border-none mr-1" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' }}><i className="fas fa-arrow-left text-[0.8rem]"></i></button>} />
+      <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto" style={{ background: '#050506' }}>
+
+        {/* User Card — dark with gold avatar */}
+        <div
+          className="relative overflow-hidden rounded-2xl p-5 mb-4"
+          style={{
+            background: '#0E0F11',
+            border: '1px solid rgba(255,255,255,0.06)',
+          }}
+        >
+          {/* Decorative subtle elements */}
+          <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full" style={{ background: 'rgba(184,155,94,0.04)' }}></div>
+          <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full" style={{ background: 'rgba(184,155,94,0.03)' }}></div>
 
           <div className="flex items-center gap-4 mb-4 relative">
-            {/* Gradient Avatar with animation */}
+            {/* Gold avatar */}
             <div className="relative">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#00E676] via-[#00C853] to-[#009624] flex items-center justify-center text-white font-bold text-[1.3rem] shadow-[0_4px_24px_rgba(0,200,83,0.35)]"
-                style={{ animation: 'avatarBreathe 3s ease-in-out infinite' }}>
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center font-bold text-[1.3rem]"
+                style={{
+                  background: 'linear-gradient(135deg, #B89B5E, #D4B87A)',
+                  color: '#050506',
+                  boxShadow: '0 4px 20px rgba(184,155,94,0.3)',
+                  animation: 'avatarBreathe 3s ease-in-out infinite',
+                }}
+              >
                 {esc(user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2))}
               </div>
               {/* Online indicator */}
-              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-[#00E676] rounded-full border-2 border-[#0F172A]"></div>
+              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full" style={{ background: '#B89B5E', border: '2px solid #0E0F11' }}></div>
             </div>
             <div>
-              <div className="text-[1.1rem] font-bold">{esc(user.name)}</div>
-              <div className="text-[0.75rem] text-[rgba(255,255,255,0.5)]">{esc(user.email)}</div>
+              <div className="text-[1.1rem] font-bold" style={{ color: '#EDEDEF' }}>{esc(user.name)}</div>
+              <div className="text-[0.75rem]" style={{ color: 'rgba(255,255,255,0.35)' }}>{esc(user.email)}</div>
               {user.role === 'admin' && (
-                <span className="inline-flex items-center gap-1 text-[0.6rem] bg-[rgba(251,191,36,0.2)] text-[#FCD34D] px-2 py-0.5 rounded-full mt-1 font-semibold">
+                <span
+                  className="inline-flex items-center gap-1 text-[0.6rem] px-2 py-0.5 rounded-full mt-1 font-semibold"
+                  style={{
+                    background: 'rgba(184,155,94,0.12)',
+                    color: '#D4B87A',
+                  }}
+                >
                   <i className="fas fa-shield-alt text-[0.5rem]"></i>Admin
                 </span>
               )}
             </div>
           </div>
+
+          {/* Account grid — all same dark bg with gold numbers */}
           <div className="grid grid-cols-2 gap-2">
-            <div className="bg-[rgba(255,255,255,0.06)] rounded-xl p-3 text-center"><div className="text-[0.6rem] text-[rgba(255,255,255,0.4)] uppercase">Principal</div><div className="text-[0.95rem] font-black">{formatMoney(user.balance)}</div></div>
-            <div className="bg-[rgba(255,255,255,0.06)] rounded-xl p-3 text-center"><div className="text-[0.6rem] text-[rgba(255,255,255,0.4)] uppercase">Investissement</div><div className="text-[0.95rem] font-black text-[#86EFAC]">{formatMoney(user.investBalance)}</div></div>
-            <div className="bg-[rgba(255,255,255,0.06)] rounded-xl p-3 text-center"><div className="text-[0.6rem] text-[rgba(255,255,255,0.4)] uppercase">Trading</div><div className="text-[0.95rem] font-black text-[#93C5FD]">{formatMoney(user.tradeBalance)}</div></div>
-            <div className="bg-[rgba(255,255,255,0.06)] rounded-xl p-3 text-center"><div className="text-[0.6rem] text-[rgba(255,255,255,0.4)] uppercase">Projet</div><div className="text-[0.95rem] font-black text-[#FDBA74]">{formatMoney(user.projectBalance)}</div></div>
+            <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.04)' }}>
+              <div className="text-[0.6rem] uppercase" style={{ color: 'rgba(255,255,255,0.25)' }}>Principal</div>
+              <div className="text-[0.95rem] font-black" style={{ color: '#D4B87A' }}>{formatMoney(user.balance)}</div>
+            </div>
+            <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.04)' }}>
+              <div className="text-[0.6rem] uppercase" style={{ color: 'rgba(255,255,255,0.25)' }}>Investissement</div>
+              <div className="text-[0.95rem] font-black" style={{ color: '#D4B87A' }}>{formatMoney(user.investBalance)}</div>
+            </div>
+            <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.04)' }}>
+              <div className="text-[0.6rem] uppercase" style={{ color: 'rgba(255,255,255,0.25)' }}>Trading</div>
+              <div className="text-[0.95rem] font-black" style={{ color: '#D4B87A' }}>{formatMoney(user.tradeBalance)}</div>
+            </div>
+            <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.04)' }}>
+              <div className="text-[0.6rem] uppercase" style={{ color: 'rgba(255,255,255,0.25)' }}>Projet</div>
+              <div className="text-[0.95rem] font-black" style={{ color: '#D4B87A' }}>{formatMoney(user.projectBalance)}</div>
+            </div>
           </div>
         </div>
 
-        {/* Referral */}
-        <div className="bg-white rounded-2xl p-4 mb-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
-          <div className="flex items-center gap-2.5 mb-3"><i className="fas fa-users text-[#FBBF24]"></i><h4 className="text-[0.88rem] font-bold text-[#1A2332]">Parrainage</h4></div>
+        {/* Referral Section — dark cards, gold accent */}
+        <div
+          className="rounded-2xl p-4 mb-4"
+          style={{
+            background: '#0E0F11',
+            border: '1px solid rgba(255,255,255,0.06)',
+          }}
+        >
+          <div className="flex items-center gap-2.5 mb-3">
+            <i className="fas fa-users" style={{ color: '#B89B5E' }}></i>
+            <h4 className="text-[0.88rem] font-bold" style={{ color: '#EDEDEF' }}>Parrainage</h4>
+          </div>
 
-          {/* Referral Code with Copy Button */}
-          <div className="bg-gradient-to-r from-[#FEF9C3] to-[#FEF08A] rounded-xl p-3 mb-3 flex items-center justify-between">
+          {/* Referral Code — dark bg, gold accent */}
+          <div
+            className="rounded-xl p-3 mb-3 flex items-center justify-between"
+            style={{
+              background: 'rgba(184,155,94,0.06)',
+              border: '1px solid rgba(184,155,94,0.1)',
+            }}
+          >
             <div>
-              <div className="text-[0.68rem] text-[#92400E] mb-0.5">Votre code</div>
-              <div className="text-[1.1rem] font-mono font-black text-[#78350F]">{user.referralCode}</div>
+              <div className="text-[0.68rem] mb-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>Votre code</div>
+              <div className="text-[1.1rem] font-mono font-black" style={{ color: '#D4B87A' }}>{user.referralCode}</div>
             </div>
             <button
               onClick={handleCopyCode}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center border-none cursor-pointer transition-all ${
-                copied ? 'bg-[#00C853] text-white' : 'bg-[#78350F]/10 text-[#78350F] hover:bg-[#78350F]/20'
-              }`}
+              className="w-10 h-10 rounded-xl flex items-center justify-center border-none cursor-pointer transition-all"
+              style={{
+                background: copied ? 'rgba(184,155,94,0.3)' : '#B89B5E',
+                color: copied ? '#D4B87A' : '#050506',
+                boxShadow: copied ? 'none' : '0 2px 12px rgba(184,155,94,0.25)',
+              }}
             >
               <i className={`fas ${copied ? 'fa-check' : 'fa-copy'} text-[0.85rem]`}></i>
             </button>
           </div>
 
-          {/* Referral Progress */}
+          {/* Referral Progress — dark bg, gold bar */}
           {requiredReferrals > 0 && (
-            <div className="bg-[#F8FAFC] rounded-xl p-3 mb-3">
+            <div
+              className="rounded-xl p-3 mb-3"
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.04)',
+              }}
+            >
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[0.72rem] text-[#64748B]">Progrès pour retrait</span>
-                <span className="text-[0.72rem] font-bold text-[#1A2332]">{currentReferrals}/{requiredReferrals}</span>
+                <span className="text-[0.72rem]" style={{ color: 'rgba(255,255,255,0.35)' }}>Progrès pour retrait</span>
+                <span className="text-[0.72rem] font-bold" style={{ color: '#B89B5E' }}>{currentReferrals}/{requiredReferrals}</span>
               </div>
-              <div className="w-full h-2.5 bg-[#E2E8F0] rounded-full overflow-hidden mb-1.5">
+              <div className="w-full h-2.5 rounded-full overflow-hidden mb-1.5" style={{ background: 'rgba(255,255,255,0.06)' }}>
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{
                     width: `${referralProgress}%`,
                     background: referralProgress >= 100
-                      ? 'linear-gradient(90deg, #00E676, #00C853)'
-                      : 'linear-gradient(90deg, #FBBF24, #F59E0B)'
+                      ? 'linear-gradient(90deg, #B89B5E, #D4B87A)'
+                      : 'linear-gradient(90deg, #B89B5E, #D4B87A)',
                   }}
                 ></div>
               </div>
               {needsMore > 0 ? (
-                <p className="text-[0.65rem] text-[#F59E0B]"><i className="fas fa-info-circle mr-1"></i>Encore <strong>{needsMore}</strong> filleul{needsMore > 1 ? 's' : ''} requis pour le retrait</p>
+                <p className="text-[0.65rem]" style={{ color: 'rgba(184,155,94,0.7)' }}>
+                  <i className="fas fa-info-circle mr-1"></i>Encore <strong>{needsMore}</strong> filleul{needsMore > 1 ? 's' : ''} requis pour le retrait
+                </p>
               ) : (
-                <p className="text-[0.65rem] text-[#00C853]"><i className="fas fa-check-circle mr-1"></i>Condition de parrainage remplie !</p>
+                <p className="text-[0.65rem]" style={{ color: '#B89B5E' }}>
+                  <i className="fas fa-check-circle mr-1"></i>Condition de parrainage remplie !
+                </p>
               )}
             </div>
           )}
 
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[0.75rem] text-[#64748B]">Filleuls actifs</span>
-            <span className="text-[0.75rem] font-bold">{user.referralCount || 0}</span>
+            <span className="text-[0.75rem]" style={{ color: 'rgba(255,255,255,0.35)' }}>Filleuls actifs</span>
+            <span className="text-[0.75rem] font-bold" style={{ color: '#B89B5E' }}>{user.referralCount || 0}</span>
           </div>
-          <button onClick={loadReferrals} className="w-full py-2.5 rounded-xl bg-[#FEF9C3] text-[#78350F] font-semibold text-[0.82rem] border-none cursor-pointer"><i className="fas fa-list mr-1"></i>Voir mes filleuls</button>
+          <button
+            onClick={loadReferrals}
+            className="w-full py-2.5 rounded-xl font-semibold text-[0.82rem] border-none cursor-pointer transition-all active:scale-[0.98]"
+            style={{
+              background: 'rgba(184,155,94,0.1)',
+              color: '#B89B5E',
+              border: '1px solid rgba(184,155,94,0.15)',
+            }}
+          >
+            <i className="fas fa-list mr-1"></i>Voir mes filleuls
+          </button>
         </div>
 
-        {/* Referral List */}
+        {/* Referral List — dark cards */}
         {showReferrals && (
-          <div className="bg-white rounded-2xl p-4 mb-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
-            <h4 className="text-[0.82rem] font-bold text-[#1A2332] mb-2">Mes filleuls ({referrals.length})</h4>
-            {referrals.length === 0 ? <p className="text-[0.75rem] text-[#94A3B8]">Aucun filleul pour le moment.</p> : referrals.map((r, i) => (
-              <div key={i} className="flex items-center justify-between py-2 border-b border-[rgba(0,0,0,0.04)] last:border-none"><div><div className="text-[0.78rem] font-semibold">{esc(r.name)}</div><div className="text-[0.65rem] text-[#94A3B8]">{esc(r.email)}</div></div><span className={`text-[0.65rem] font-semibold px-2 py-0.5 rounded-full ${r.hasInvested ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#F1F5F9] text-[#64748B]'}`}>{r.hasInvested ? 'Actif' : 'Inactif'}</span></div>
+          <div
+            className="rounded-2xl p-4 mb-4"
+            style={{
+              background: '#0E0F11',
+              border: '1px solid rgba(255,255,255,0.06)',
+            }}
+          >
+            <h4 className="text-[0.82rem] font-bold mb-2" style={{ color: '#EDEDEF' }}>Mes filleuls ({referrals.length})</h4>
+            {referrals.length === 0 ? (
+              <p className="text-[0.75rem]" style={{ color: 'rgba(255,255,255,0.25)' }}>Aucun filleul pour le moment.</p>
+            ) : referrals.map((r, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between py-2"
+                style={{ borderBottom: i < referrals.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
+              >
+                <div>
+                  <div className="text-[0.78rem] font-semibold" style={{ color: '#EDEDEF' }}>{esc(r.name)}</div>
+                  <div className="text-[0.65rem]" style={{ color: 'rgba(255,255,255,0.25)' }}>{esc(r.email)}</div>
+                </div>
+                <span
+                  className="text-[0.65rem] font-semibold px-2 py-0.5 rounded-full"
+                  style={{
+                    background: r.hasInvested ? 'rgba(184,155,94,0.12)' : 'rgba(255,255,255,0.04)',
+                    color: r.hasInvested ? '#B89B5E' : 'rgba(255,255,255,0.35)',
+                  }}
+                >
+                  {r.hasInvested ? 'Actif' : 'Inactif'}
+                </span>
+              </div>
             ))}
           </div>
         )}
 
-        {/* Analytics Button */}
-        <button onClick={() => setPage('analytics')} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#0F172A] to-[#1E293B] text-white font-bold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(15,23,42,0.2)] mb-3 flex items-center justify-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-[rgba(59,130,246,0.2)] flex items-center justify-center"><i className="fas fa-chart-bar text-[#60A5FA] text-[0.75rem]"></i></div>
+        {/* Analytics Button — dark bg with gold icon */}
+        <button
+          onClick={() => setPage('analytics')}
+          className="w-full py-3.5 rounded-xl font-bold text-[0.88rem] border-none cursor-pointer mb-3 flex items-center justify-center gap-2.5 transition-all active:scale-[0.98]"
+          style={{
+            background: '#0E0F11',
+            color: '#EDEDEF',
+            border: '1px solid rgba(255,255,255,0.06)',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.2)',
+          }}
+        >
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(184,155,94,0.12)' }}>
+            <i className="fas fa-chart-bar text-[0.75rem]" style={{ color: '#B89B5E' }}></i>
+          </div>
           Analyses
         </button>
 
-        {/* Admin Button */}
+        {/* Admin Button — dark bg with gold icon */}
         {user.role === 'admin' && (
-          <button onClick={() => setPage('admin')} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#0F172A] to-[#1E293B] text-white font-bold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(15,23,42,0.2)] mb-3 flex items-center justify-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[rgba(251,191,36,0.2)] flex items-center justify-center"><i className="fas fa-shield-alt text-[#FCD34D] text-[0.75rem]"></i></div>
+          <button
+            onClick={() => setPage('admin')}
+            className="w-full py-3.5 rounded-xl font-bold text-[0.88rem] border-none cursor-pointer mb-3 flex items-center justify-center gap-2.5 transition-all active:scale-[0.98]"
+            style={{
+              background: '#0E0F11',
+              color: '#EDEDEF',
+              border: '1px solid rgba(255,255,255,0.06)',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.2)',
+            }}
+          >
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(184,155,94,0.12)' }}>
+              <i className="fas fa-shield-alt text-[0.75rem]" style={{ color: '#D4B87A' }}></i>
+            </div>
             Panneau Admin
           </button>
         )}
 
-        {/* Logout */}
-        <button onClick={() => setModalOpen(true)} className="w-full py-3.5 rounded-xl border-[1.5px] border-[rgba(239,68,68,0.15)] bg-transparent text-red-500 font-semibold text-[0.88rem] cursor-pointer flex items-center justify-center gap-2"><i className="fas fa-sign-out-alt"></i> Déconnexion</button>
+        {/* Logout — dark bg with subtle red text */}
+        <button
+          onClick={() => setModalOpen(true)}
+          className="w-full py-3.5 rounded-xl font-semibold text-[0.88rem] cursor-pointer flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+          style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '1.5px solid rgba(239,68,68,0.12)',
+            color: 'rgba(239,68,68,0.6)',
+          }}
+        >
+          <i className="fas fa-sign-out-alt"></i> Déconnexion
+        </button>
       </div>
-      {modalOpen && <Modal title="Déconnexion" text="Voulez-vous vous déconnecter ?" okText="Se déconnecter" okClass="bg-gradient-to-r from-[#F87171] to-[#EF4444]" onOk={handleLogout} onCancel={() => setModalOpen(false)} />}
 
+      {modalOpen && (
+        <div
+          className="fixed inset-0 backdrop-blur-sm z-[6000] flex items-center justify-center"
+          style={{ background: 'rgba(5,5,6,0.75)' }}
+          onClick={() => setModalOpen(false)}
+        >
+          <div
+            className="rounded-2xl p-7 w-[88%] max-w-[320px] text-center"
+            style={{
+              background: '#0E0F11',
+              border: '1px solid rgba(255,255,255,0.06)',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+              animation: 'modalIn 0.25s ease-out',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="mb-2 text-[1.05rem] font-extrabold" style={{ color: '#EDEDEF' }}>Déconnexion</h3>
+            <p className="text-[0.82rem] mb-5 leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)' }}>Voulez-vous vous déconnecter ?</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setModalOpen(false)}
+                className="flex-1 py-3 rounded-xl font-semibold text-[0.82rem] cursor-pointer transition-all active:scale-95"
+                style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1.5px solid rgba(255,255,255,0.08)',
+                  color: 'rgba(255,255,255,0.45)',
+                }}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex-1 py-3 rounded-xl text-white font-semibold text-[0.82rem] cursor-pointer transition-all active:scale-95"
+                style={{
+                  background: 'rgba(239,68,68,0.2)',
+                  border: '1px solid rgba(239,68,68,0.2)',
+                  color: '#F87171',
+                }}
+              >
+                Se déconnecter
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

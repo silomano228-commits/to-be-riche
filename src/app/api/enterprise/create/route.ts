@@ -18,40 +18,37 @@ async function getUser(request: Request) {
   return db.user.findUnique({ where: { id: token } });
 }
 
+// Updated: projects always win, tiered returns with max slightly below next tier's min
 const ENTERPRISE_CONFIG: Record<string, {
   durationDays: number; minAmount: number; minReturn: number; maxReturn: number;
-  crashChance: number; categories: string[];
+  categories: string[];
 }> = {
   short: {
     durationDays: 5,
     minAmount: 5,
-    minReturn: 40,
-    maxReturn: 60,
-    crashChance: 5,
+    minReturn: 15,
+    maxReturn: 28,
     categories: ['Tech Startup', 'App Development', 'Digital Marketing'],
   },
   medium: {
     durationDays: 10,
     minAmount: 5,
-    minReturn: 60,
-    maxReturn: 75,
-    crashChance: 10,
+    minReturn: 30,
+    maxReturn: 48,
     categories: ['GreenEnergy Ltd', 'Logistics Corp', 'FoodChain Inc', 'Real Estate Fund'],
   },
   long: {
     durationDays: 20,
     minAmount: 5,
-    minReturn: 80,
-    maxReturn: 100,
-    crashChance: 15,
+    minReturn: 50,
+    maxReturn: 68,
     categories: ['BioTech Holdings', 'Aerospace Ventures', 'Infrastructure Group', 'Mining Corp'],
   },
   ultralong: {
     durationDays: 30,
     minAmount: 5,
-    minReturn: 100,
-    maxReturn: 150,
-    crashChance: 20,
+    minReturn: 70,
+    maxReturn: 95,
     categories: ['DeepTech Labs', 'Quantum Industries', 'Space Ventures', 'Neural AI Corp', 'Fusion Energy'],
   },
 };
@@ -95,11 +92,8 @@ export async function POST(request: Request) {
     const category = config.categories[Math.floor(Math.random() * config.categories.length)];
     const enterpriseName = `${prefix} ${category}`;
 
-    // Check for crash risk
-    const crashRoll = Math.random() * 100;
-    const isCrashed = crashRoll < config.crashChance;
-
-    const status = isCrashed ? 'crashed' : 'active';
+    // Projects always succeed now (no crash)
+    const status = 'active';
 
     const enterprise = await db.enterprise.create({
       data: {
@@ -111,7 +105,7 @@ export async function POST(request: Request) {
         minReturn: config.minReturn,
         maxReturn: config.maxReturn,
         status,
-        riskEvents: isCrashed ? 'Enterprise crashed at launch' : null,
+        riskEvents: null,
         finishesAt,
       },
     });
@@ -121,18 +115,15 @@ export async function POST(request: Request) {
       where: { id: user.id },
       data: {
         projectBalance: { decrement: investAmount },
-        ...(isCrashed ? { totalLoss: { increment: investAmount } } : {}),
       },
     });
 
     // Create transaction
     await db.transaction.create({
       data: {
-        type: isCrashed ? 'enterprise_crashed' : 'enterprise_create',
+        type: 'enterprise_create',
         amount: -investAmount,
-        detail: isCrashed
-          ? `Enterprise CRASHED at launch: ${enterpriseName} ($${investAmount.toFixed(2)}) — ${type} term`
-          : `Enterprise created: ${enterpriseName} ($${investAmount.toFixed(2)}) — ${type} term, ${config.durationDays} days, ${config.minReturn}-${config.maxReturn}% return`,
+        detail: `Projet créé: ${enterpriseName} ($${investAmount.toFixed(2)}) — ${config.durationDays} jours, +${config.minReturn}-${config.maxReturn}% de rendement`,
         userId: user.id,
       },
     });
@@ -150,10 +141,8 @@ export async function POST(request: Request) {
         status: enterprise.status,
         finishesAt: enterprise.finishesAt,
       },
-      crashed: isCrashed,
-      message: isCrashed
-        ? `Bad news! ${enterpriseName} crashed at launch. You lost $${investAmount.toFixed(2)}.`
-        : `Enterprise created: ${enterpriseName} — $${investAmount.toFixed(2)} for ${config.durationDays} days (${config.minReturn}-${config.maxReturn}% potential return).`,
+      crashed: false,
+      message: `Projet créé: ${enterpriseName} — $${investAmount.toFixed(2)} pour ${config.durationDays} jours (+${config.minReturn}-${config.maxReturn}% de rendement garanti).`,
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
