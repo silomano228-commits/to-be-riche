@@ -208,6 +208,189 @@ function HomeScreen() {
           </div>
         </div>
 
+        {/* ===== GUIDE COMPLET ===== */}
+        <div className="mb-4">
+          <h3 className="text-[0.95rem] font-black text-[#1A2332] mb-3 flex items-center gap-2">
+            <i className="fas fa-book-open text-[#FBBF24]"></i>
+            Guide Be Rich
+          </h3>
+
+          {/* Étape 1 : Dépôt */}
+          <div className="bg-white rounded-2xl p-4 mb-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border-l-[3px] border-[#00C853]">
+            <div className="flex items-center gap-2.5 mb-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#F0FDF4] flex items-center justify-center shrink-0 border border-[rgba(0,200,83,0.15)]">
+                <span className="text-[0.85rem] font-black text-[#009624]">1</span>
+              </div>
+              <div>
+                <div className="text-[0.85rem] font-bold text-[#1A2332]">Faire un dépôt</div>
+                <div className="text-[0.62rem] text-[#94A3B8]">Approvisionnez votre compte</div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="bg-[#F0FDF4] rounded-xl p-2.5">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <i className="fab fa-gg-circle text-[#00C853] text-[0.7rem]"></i>
+                  <span className="text-[0.72rem] font-bold text-[#166534]">Méthode TRX (Dollars)</span>
+                </div>
+                <ol className="space-y-1 text-[0.65rem] text-[#166534]/80 pl-4">
+                  <li className="flex items-start gap-1.5"><span className="text-[#009624] font-bold">•</span>Allez dans <strong>Portefeuille → Déposer</strong></li>
+                  <li className="flex items-start gap-1.5"><span className="text-[#009624] font-bold">•</span>Choisissez <strong>Dépôt en Dollars (TRX)</strong></li>
+                  <li className="flex items-start gap-1.5"><span className="text-[#009624] font-bold">•</span>Entrez le montant en $ (min 10 $)</li>
+                  <li className="flex items-start gap-1.5"><span className="text-[#009624] font-bold">•</span>Envoyez les TRX à l'adresse admin affichée</li>
+                  <li className="flex items-start gap-1.5"><span className="text-[#009624] font-bold">•</span>Entrez votre adresse TRX pour confirmer</li>
+                  <li className="flex items-start gap-1.5"><span className="text-[#009624] font-bold">•</span>Attendez la validation par l'admin</li>
+                </ol>
+              </div>
+              <div className="bg-[#F5F3FF] rounded-xl p-2.5">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <i className="fas fa-exchange-alt text-[#7C3AED] text-[0.7rem]"></i>
+                  <span className="text-[0.72rem] font-bold text-[#4C1D95]">Méthode Yas du Togo (FCFA)</span>
+                </div>
+                <ol className="space-y-1 text-[0.65rem] text-[#4C1D95]/80 pl-4">
+                  <li className="flex items-start gap-1.5"><span className="text-[#7C3AED] font-bold">•</span>Choisissez <strong>Conversion Yas du Togo</strong></li>
+                  <li className="flex items-start gap-1.5"><span className="text-[#7C3AED] font-bold">•</span>Entrez le montant en FCFA (min 6 000)</li>
+                  <li className="flex items-start gap-1.5"><span className="text-[#7C3AED] font-bold">•</span>Le montant est converti automatiquement en $ et TRX</li>
+                  <li className="flex items-start gap-1.5"><span className="text-[#7C3AED] font-bold">•</span>Entrez votre numéro Yas (8 chiffres, 90-93 ou 70-73)</li>
+                  <li className="flex items-start gap-1.5"><span className="text-[#7C3AED] font-bold">•</span>Envoyez l'argent au numéro Yas de l'admin</li>
+                  <li className="flex items-start gap-1.5"><span className="text-[#7C3AED] font-bold">•</span>Téléchargez Trust Wallet, créez un portefeuille TRX</li>
+                  <li className="flex items-start gap-1.5"><span className="text-[#7C3AED] font-bold">•</span>Entrez votre adresse TRX Trust Wallet</li>
+                  <li className="flex items-start gap-1.5"><span className="text-[#7C3AED] font-bold">•</span>L'admin vous enverra les TRX sur votre Trust Wallet</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+
+          {/* Étape 2 : Transférer vers les comptes */}
+          <div className="bg-white rounded-2xl p-4 mb-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border-l-[3px] border-[#3B82F6]">
+            <div className="flex items-center gap-2.5 mb-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#EFF6FF] flex items-center justify-center shrink-0 border border-[rgba(59,130,246,0.15)]">
+                <span className="text-[0.85rem] font-black text-[#2563EB]">2</span>
+              </div>
+              <div>
+                <div className="text-[0.85rem] font-bold text-[#1A2332]">Verser dans les comptes</div>
+                <div className="text-[0.62rem] text-[#94A3B8]">Répartissez vos fonds selon vos objectifs</div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2">
+                <div className="w-6 h-6 rounded-md bg-[rgba(0,200,83,0.1)] flex items-center justify-center shrink-0 mt-0.5"><i className="fas fa-chart-line text-[0.55rem] text-[#00C853]"></i></div>
+                <div>
+                  <div className="text-[0.72rem] font-bold text-[#1A2332]">Compte d'Investissement</div>
+                  <div className="text-[0.62rem] text-[#64748B]">Choisissez un palier (Bronze à Platinum), gagnez 1.15% à 2% par 24h. Réclamez vos gains chaque jour !</div>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <div className="w-6 h-6 rounded-md bg-[rgba(59,130,246,0.1)] flex items-center justify-center shrink-0 mt-0.5"><i className="fas fa-bolt text-[0.55rem] text-[#3B82F6]"></i></div>
+                <div>
+                  <div className="text-[0.72rem] font-bold text-[#1A2332]">Compte de Trading</div>
+                  <div className="text-[0.62rem] text-[#64748B]">Pariez sur la hausse ou la baisse des actifs. Durée de 30s à 5min. Gagnez jusqu'à +80% si votre prédiction est correcte !</div>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <div className="w-6 h-6 rounded-md bg-[rgba(249,115,22,0.1)] flex items-center justify-center shrink-0 mt-0.5"><i className="fas fa-building text-[0.55rem] text-[#F97316]"></i></div>
+                <div>
+                  <div className="text-[0.72rem] font-bold text-[#1A2332]">Compte de Projet</div>
+                  <div className="text-[0.62rem] text-[#64748B]">Investissez dans des entreprises virtuelles. Rendement de 5% à 50% sur 3-30 jours. Attention au risque de crash !</div>
+                </div>
+              </div>
+              <div className="bg-[#EFF6FF] rounded-lg p-2 mt-1">
+                <p className="text-[0.62rem] text-[#2563EB]"><i className="fas fa-info-circle mr-1"></i>Allez dans <strong>Portefeuille</strong> puis cliquez sur <strong>Verser</strong> sur le compte de votre choix. Frais de 2% pour les transferts vers les sous-comptes.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Étape 3 : Gagner & Réclamer */}
+          <div className="bg-white rounded-2xl p-4 mb-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border-l-[3px] border-[#FBBF24]">
+            <div className="flex items-center gap-2.5 mb-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#FFFBEB] flex items-center justify-center shrink-0 border border-[rgba(251,191,36,0.15)]">
+                <span className="text-[0.85rem] font-black text-[#92400E]">3</span>
+              </div>
+              <div>
+                <div className="text-[0.85rem] font-bold text-[#1A2332]">Gagner et réclamer</div>
+                <div className="text-[0.62rem] text-[#94A3B8]">Collectez vos gains régulièrement</div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2">
+                <i className="fas fa-hand-holding-usd text-[#FBBF24] text-[0.65rem] mt-1"></i>
+                <div className="text-[0.65rem] text-[#64748B]"><strong className="text-[#1A2332]">Investissements :</strong> Cliquez sur "Réclamer" dans l'onglet Finance → Invest pour collecter vos gains quotidiens. Chaque cycle dure 24h.</div>
+              </div>
+              <div className="flex items-start gap-2">
+                <i className="fas fa-chart-line text-[#FBBF24] text-[0.65rem] mt-1"></i>
+                <div className="text-[0.65rem] text-[#64748B]"><strong className="text-[#1A2332]">Trading :</strong> Les gains sont automatiquement crédités après la fin du trade. Pas besoin de réclamer.</div>
+              </div>
+              <div className="flex items-start gap-2">
+                <i className="fas fa-building text-[#FBBF24] text-[0.65rem] mt-1"></i>
+                <div className="text-[0.65rem] text-[#64748B]"><strong className="text-[#1A2332]">Projets :</strong> Cliquez sur "Réclamer" dans Finance → Projets quand l'entreprise a terminé sa durée. Le rendement final est calculé automatiquement.</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Étape 4 : Retirer */}
+          <div className="bg-white rounded-2xl p-4 mb-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border-l-[3px] border-[#EF4444]">
+            <div className="flex items-center gap-2.5 mb-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#FEF2F2] flex items-center justify-center shrink-0 border border-[rgba(239,68,68,0.15)]">
+                <span className="text-[0.85rem] font-black text-[#EF4444]">4</span>
+              </div>
+              <div>
+                <div className="text-[0.85rem] font-bold text-[#1A2332]">Retirer vos gains</div>
+                <div className="text-[0.62rem] text-[#94A3B8]">Transformez vos gains en TRX</div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2">
+                <i className="fas fa-arrow-up text-[#EF4444] text-[0.65rem] mt-1"></i>
+                <div className="text-[0.65rem] text-[#64748B]">D'abord, transférez vos gains depuis les sous-comptes vers le <strong className="text-[#1A2332]">Compte Principal</strong> (sans frais)</div>
+              </div>
+              <div className="flex items-start gap-2">
+                <i className="fas fa-paper-plane text-[#EF4444] text-[0.65rem] mt-1"></i>
+                <div className="text-[0.65rem] text-[#64748B]">Allez dans <strong className="text-[#1A2332]">Portefeuille → Retirer</strong> et entrez votre adresse TRX</div>
+              </div>
+              <div className="flex items-start gap-2">
+                <i className="fas fa-clock text-[#EF4444] text-[0.65rem] mt-1"></i>
+                <div className="text-[0.65rem] text-[#64748B]"><strong className="text-[#1A2332]">Attention :</strong> Le premier retrait nécessite 48h après le 1er dépôt + 10 filleuls (parrainages)</div>
+              </div>
+              <div className="bg-[#FEF2F2] rounded-lg p-2 mt-1">
+                <p className="text-[0.62rem] text-[#991B1B]"><i className="fas fa-exclamation-triangle mr-1"></i>Seuls les <strong>gains</strong> peuvent être retirés, pas le capital investi.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Étape 5 : Parrainage */}
+          <div className="bg-white rounded-2xl p-4 mb-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border-l-[3px] border-[#8B5CF6]">
+            <div className="flex items-center gap-2.5 mb-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#F5F3FF] flex items-center justify-center shrink-0 border border-[rgba(139,92,246,0.15)]">
+                <span className="text-[0.85rem] font-black text-[#7C3AED]">5</span>
+              </div>
+              <div>
+                <div className="text-[0.85rem] font-bold text-[#1A2332]">Parrainer et gagner</div>
+                <div className="text-[0.62rem] text-[#94A3B8]">Invitez vos amis pour débloquer les retraits</div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2">
+                <i className="fas fa-users text-[#8B5CF6] text-[0.65rem] mt-1"></i>
+                <div className="text-[0.65rem] text-[#64748B]">Partagez votre <strong className="text-[#1A2332]">code de parrainage</strong> (visible dans Profil) avec vos amis</div>
+              </div>
+              <div className="flex items-start gap-2">
+                <i className="fas fa-lock-open text-[#8B5CF6] text-[0.65rem] mt-1"></i>
+                <div className="text-[0.65rem] text-[#64748B]">Avoir <strong className="text-[#1A2332]">10 filleuls</strong> est obligatoire pour débloquer votre premier retrait</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Astuce Chat IA */}
+          <div className="rounded-xl p-[1px] mb-3 bg-gradient-to-r from-[#1E3A5F] via-[#3B82F6] to-[#1E3A5F]" style={{ backgroundSize: '200% 100%', animation: 'gs 4s linear infinite' }}>
+            <div className="bg-gradient-to-br from-[#0F172A] via-[#1a2744] to-[#0F172A] text-white rounded-[11px] p-3 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[rgba(59,130,246,0.25)] to-[rgba(139,92,246,0.25)] flex items-center justify-center shrink-0 border border-[rgba(59,130,246,0.15)]"><i className="fas fa-robot text-[#A5B4FC] text-[0.85rem]"></i></div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[0.6rem] text-[rgba(165,180,252,0.7)] font-bold uppercase tracking-[1px] mb-0.5">Besoin d'aide ?</div>
+                <div className="text-[0.7rem] leading-relaxed text-[rgba(255,255,255,0.8)]">Utilisez le <strong>Chat IA</strong> en bas de l'écran pour poser vos questions. Si le problème est complexe, l'IA vous mettra en contact avec l'administrateur.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Recent Activity */}
         {txs.length > 0 && (
           <>
