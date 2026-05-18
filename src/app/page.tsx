@@ -13,6 +13,7 @@ const ProfileScreen = dynamic(() => import('@/components/screens/ProfileScreen')
 const AnalyticsScreen = dynamic(() => import('@/components/screens/AnalyticsScreen'), { ssr: false });
 const WithdrawScreen = dynamic(() => import('@/components/screens/WithdrawScreen'), { ssr: false });
 const AdminScreen = dynamic(() => import('@/components/screens/AdminScreen'), { ssr: false });
+const ChatScreen = dynamic(() => import('@/components/screens/ChatScreen'), { ssr: false });
 
 // ==================== SPLASH ====================
 function SplashScreen({ onDone }: { onDone: () => void }) {
@@ -341,7 +342,7 @@ function BottomNav() {
     { id: 'home', icon: 'fa-home', label: 'Accueil' },
     { id: 'invest', icon: 'fa-chart-line', label: 'Invest' },
     { id: 'trading', icon: 'fa-bolt', label: 'Trading' },
-    { id: 'enterprise', icon: 'fa-building', label: 'Projets' },
+    { id: 'chat', icon: 'fa-robot', label: 'Chat IA' },
     { id: 'profile', icon: 'fa-user', label: 'Profil' },
   ];
   return (
@@ -408,6 +409,7 @@ export default function BeRichApp() {
           {user && currentPage === 'analytics' && <AnalyticsScreen />}
           {user && currentPage === 'withdraw' && <WithdrawScreen />}
           {user && currentPage === 'admin' && <AdminScreen />}
+          {user && currentPage === 'chat' && <ChatScreen />}
           {showNav && <BottomNav />}
         </div>
         <ToastContainer />
