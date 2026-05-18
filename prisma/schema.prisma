@@ -34,6 +34,7 @@ model User {
   pendingDeposits PendingDeposit[]
   passwordResetTokens PasswordResetToken[]
   withdrawals     Withdrawal[]
+  yasDeposits     YasDeposit[]
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
@@ -152,4 +153,19 @@ model Withdrawal {
   adminNote   String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model YasDeposit {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amountUsd     Float
+  amountTrx     Float
+  trxPrice      Float
+  yasAccount    String
+  trxAddress    String
+  status        String   @default("pending")
+  adminNote     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
