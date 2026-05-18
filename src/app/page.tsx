@@ -189,9 +189,9 @@ function HomeScreen() {
           {[
             { icon: 'fa-wallet', label: 'Wallet', page: 'wallet', color: '#00C853' },
             { icon: 'fa-arrow-down', label: 'Déposer', page: 'deposit', color: '#10B981' },
-            { icon: 'fa-chart-line', label: 'Investir', page: 'invest', color: '#FBBF24' },
-            { icon: 'fa-bolt', label: 'Trader', page: 'trading', color: '#3B82F6' },
-            { icon: 'fa-building', label: 'Projets', page: 'enterprise', color: '#F97316' },
+            { icon: 'fa-chart-line', label: 'Investir', page: 'finance', color: '#FBBF24' },
+            { icon: 'fa-bolt', label: 'Trader', page: 'finance', color: '#3B82F6' },
+            { icon: 'fa-building', label: 'Projets', page: 'finance', color: '#F97316' },
           ].map((a, i) => (
             <button key={i} onClick={() => setPage(a.page)} className="flex-1 bg-white rounded-xl py-2.5 px-1 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)] cursor-pointer transition-transform active:scale-95">
               <div className="w-9 h-9 rounded-xl mx-auto mb-1 flex items-center justify-center" style={{ backgroundColor: a.color + '15' }}><i className={`fas ${a.icon} text-[0.8rem]`} style={{ color: a.color }}></i></div>
@@ -368,20 +368,61 @@ function WalletScreen() {
   );
 }
 
+// ==================== FINANCE SCREEN ====================
+function FinanceScreen() {
+  const [subTab, setSubTab] = useState<'invest' | 'trading' | 'projects'>('invest');
+
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Sub-header with 3 pill tabs */}
+      <div className="flex gap-2 px-[18px] py-2.5 bg-white border-b border-[rgba(0,0,0,0.04)]">
+        {[
+          { id: 'invest', label: 'Invest', icon: 'fa-chart-line', color: '#22C55E' },
+          { id: 'trading', label: 'Trading', icon: 'fa-bolt', color: '#3B82F6' },
+          { id: 'projects', label: 'Projets', icon: 'fa-building', color: '#F97316' },
+        ].map(t => (
+          <button
+            key={t.id}
+            onClick={() => setSubTab(t.id as 'invest' | 'trading' | 'projects')}
+            className={`flex-1 py-2 rounded-xl text-[0.75rem] font-semibold border-none cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
+              subTab === t.id
+                ? 'text-white shadow-[0_2px_8px_rgba(0,0,0,0.1)]'
+                : 'bg-[#F1F5F9] text-[#64748B]'
+            }`}
+            style={subTab === t.id ? { backgroundColor: t.color } : undefined}
+          >
+            <i className={`fas ${t.icon} text-[0.65rem]`}></i>
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {/* Content */}
+      <div className="flex-1 overflow-hidden">
+        {subTab === 'invest' && <InvestHubScreen />}
+        {subTab === 'trading' && <TradingScreen />}
+        {subTab === 'projects' && <EnterpriseScreen />}
+      </div>
+    </div>
+  );
+}
+
 // ==================== BOTTOM NAV ====================
 function BottomNav() {
   const { currentPage, setPage } = useAppStore();
   const tabs = [
     { id: 'home', icon: 'fa-home', label: 'Accueil' },
-    { id: 'invest', icon: 'fa-chart-line', label: 'Invest' },
-    { id: 'trading', icon: 'fa-bolt', label: 'Trading' },
+    { id: 'finance', icon: 'fa-chart-line', label: 'Finance' },
     { id: 'chat', icon: 'fa-robot', label: 'Chat IA' },
     { id: 'profile', icon: 'fa-user', label: 'Profil' },
   ];
+  const isActive = (tabId: string) => {
+    if (tabId === 'finance') return ['finance', 'invest', 'trading', 'enterprise'].includes(currentPage);
+    return currentPage === tabId;
+  };
   return (
     <nav className="h-[60px] bg-white border-t border-[rgba(0,0,0,0.04)] flex items-center justify-around px-2 shrink-0 safe-area-bottom">
       {tabs.map(t => (
-        <button key={t.id} onClick={() => setPage(t.id)} className={`flex flex-col items-center justify-center py-1.5 px-2 border-none cursor-pointer transition-all ${currentPage === t.id ? 'text-[#00C853]' : 'text-[#94A3B8]'}`}>
+        <button key={t.id} onClick={() => setPage(t.id)} className={`flex flex-col items-center justify-center py-1.5 px-2 border-none cursor-pointer transition-all ${isActive(t.id) ? 'text-[#00C853]' : 'text-[#94A3B8]'}`}>
           <i className={`fas ${t.icon} text-[0.95rem] mb-0.5`}></i>
           <span className="text-[0.55rem] font-semibold">{t.label}</span>
         </button>
@@ -436,9 +477,10 @@ export default function BeRichApp() {
           {!user && <AuthScreen />}
           {user && currentPage === 'home' && <HomeScreen />}
           {user && currentPage === 'wallet' && <WalletScreen />}
-          {user && currentPage === 'invest' && <InvestHubScreen />}
-          {user && currentPage === 'trading' && <TradingScreen />}
-          {user && currentPage === 'enterprise' && <EnterpriseScreen />}
+          {user && currentPage === 'finance' && <FinanceScreen />}
+          {user && currentPage === 'invest' && <FinanceScreen />}
+          {user && currentPage === 'trading' && <FinanceScreen />}
+          {user && currentPage === 'enterprise' && <FinanceScreen />}
           {user && currentPage === 'profile' && <ProfileScreen />}
           {user && currentPage === 'analytics' && <AnalyticsScreen />}
           {user && currentPage === 'withdraw' && <WithdrawScreen />}

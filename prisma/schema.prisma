@@ -129,7 +129,9 @@ model PendingDeposit {
 model SiteConfig {
   id              String   @id @default("main")
   adminTrxAddress String   @default("")
+  adminYasAccount String   @default("")
   trxUsdPrice     Float    @default(0.12)
+  cfaUsdRate      Float    @default(600)
   updatedAt       DateTime @updatedAt
 }
 
@@ -159,6 +161,7 @@ model YasDeposit {
   id            String   @id @default(cuid())
   userId        String
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amountCfa     Float    @default(0)
   amountUsd     Float
   amountTrx     Float
   trxPrice      Float

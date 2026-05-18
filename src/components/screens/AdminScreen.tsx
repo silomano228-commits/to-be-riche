@@ -17,6 +17,8 @@ export default function AdminScreen() {
   const [siteConfig, setSiteConfig] = useState<any>(null);
   const [configAddr, setConfigAddr] = useState('');
   const [configPrice, setConfigPrice] = useState('');
+  const [configYasAddr, setConfigYasAddr] = useState('');
+  const [configCfaRate, setConfigCfaRate] = useState('');
   const [loading, setLoading] = useState(true);
   const [yasNote, setYasNote] = useState<Record<string, string>>({});
 
@@ -38,7 +40,7 @@ export default function AdminScreen() {
   }, []);
 
   const loadConfig = useCallback(async () => {
-    try { const r = await authFetch('/api/admin/config'); const d = await r.json(); if (d.success) { setSiteConfig(d.data); setConfigAddr(d.data.adminTrxAddress || ''); setConfigPrice(String(d.data.trxUsdPrice || '')); } } catch { /* */ }
+    try { const r = await authFetch('/api/admin/config'); const d = await r.json(); if (d.success) { setSiteConfig(d.data); setConfigAddr(d.data.adminTrxAddress || ''); setConfigPrice(String(d.data.trxUsdPrice || '')); setConfigYasAddr(d.data.adminYasAccount || ''); setConfigCfaRate(String(d.data.cfaUsdRate || '600')); } } catch { /* */ }
   }, []);
 
   useEffect(() => { const t = setTimeout(() => { loadData(); loadDeposits(); loadYasDeposits(); loadWithdrawals(); loadConfig(); }, 0); return () => clearTimeout(t); }, [loadData, loadDeposits, loadYasDeposits, loadWithdrawals, loadConfig]);
@@ -126,13 +128,14 @@ export default function AdminScreen() {
                       <div className="flex items-center justify-between mb-2">
                         <div>
                           <div className="text-[0.78rem] font-bold text-[#1A2332]">{esc(d.user?.name || '?')}</div>
-                          <div className="text-[0.65rem] text-[#64748B]">{formatMoney(d.amountUsd)} → {d.amountTrx?.toFixed(2)} TRX</div>
+                          <div className="text-[0.65rem] text-[#64748B]">{d.amountCfa ? `${d.amountCfa.toLocaleString()} FCFA` : formatMoney(d.amountUsd)} → {d.amountTrx?.toFixed(2)} TRX</div>
+                          {d.amountCfa > 0 && <div className="text-[0.6rem] text-[#7C3AED]">{formatMoney(d.amountUsd)} USD</div>}
                         </div>
                         <span className="text-[0.6rem] bg-[#EDE9FE] text-[#4C1D95] px-2 py-0.5 rounded-full font-semibold">Yas 🇹🇬</span>
                       </div>
                       <div className="bg-[#F8FAFC] rounded-lg p-2.5 mb-2 space-y-1">
                         <div className="flex justify-between items-center">
-                          <span className="text-[0.65rem] text-[#64748B]">Compte Yas</span>
+                          <span className="text-[0.65rem] text-[#64748B]">Compte Yas client</span>
                           <span className="text-[0.7rem] font-bold text-[#1A2332]">{esc(d.yasAccount)}</span>
                         </div>
                         <div className="flex justify-between items-center">
@@ -208,8 +211,13 @@ export default function AdminScreen() {
               {tab === 'config' && siteConfig && (
                 <div className="bg-white rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
                   <div className="mb-3"><label className="block mb-1 text-[0.75rem] font-semibold text-[#64748B]">Adresse TRX Admin</label><input type="text" value={configAddr} onChange={(e) => setConfigAddr(e.target.value)} className="w-full py-3 px-4 bg-[#F8FAFC] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.85rem] outline-none focus:border-[#FBBF24]" /></div>
-                  <div className="mb-4"><label className="block mb-1 text-[0.75rem] font-semibold text-[#64748B]">Prix TRX (USD)</label><input type="number" step="0.001" value={configPrice} onChange={(e) => setConfigPrice(e.target.value)} className="w-full py-3 px-4 bg-[#F8FAFC] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.85rem] outline-none focus:border-[#FBBF24]" /></div>
-                  <button onClick={async () => { try { const r = await authFetch('/api/admin/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminTrxAddress: configAddr, trxUsdPrice: configPrice }) }); const d = await r.json(); if (d.success) addToast('Config sauvegardée', 'success'); else addToast(d.error, 'error'); } catch { addToast('Erreur', 'error'); } }} className="w-full py-3 rounded-xl bg-gradient-to-r from-[#FCD34D] to-[#FBBF24] text-[#78350F] font-bold text-[0.85rem] border-none cursor-pointer"><i className="fas fa-save mr-1"></i>Sauvegarder</button>
+                  <div className="mb-3"><label className="block mb-1 text-[0.75rem] font-semibold text-[#64748B]">Prix TRX (USD)</label><input type="number" step="0.001" value={configPrice} onChange={(e) => setConfigPrice(e.target.value)} className="w-full py-3 px-4 bg-[#F8FAFC] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.85rem] outline-none focus:border-[#FBBF24]" /></div>
+                  <div className="bg-[#F5F3FF] rounded-xl p-3 mb-3 border border-[#C4B5FD]/30">
+                    <div className="text-[0.72rem] font-bold text-[#4C1D95] mb-2"><i className="fas fa-exchange-alt mr-1"></i>Config Yas du Togo</div>
+                    <div className="mb-3"><label className="block mb-1 text-[0.72rem] font-semibold text-[#6D28D9]">Numéro Yas Admin</label><input type="text" value={configYasAddr} onChange={(e) => setConfigYasAddr(e.target.value)} placeholder="90XXXXXX ou 70XXXXXX" className="w-full py-3 px-4 bg-white border-[1.5px] border-[rgba(124,58,237,0.2)] rounded-xl text-[0.85rem] outline-none focus:border-[#7C3AED]" /></div>
+                    <div><label className="block mb-1 text-[0.72rem] font-semibold text-[#6D28D9]">Taux CFA/USD (1 USD = ? CFA)</label><input type="number" step="1" value={configCfaRate} onChange={(e) => setConfigCfaRate(e.target.value)} className="w-full py-3 px-4 bg-white border-[1.5px] border-[rgba(124,58,237,0.2)] rounded-xl text-[0.85rem] outline-none focus:border-[#7C3AED]" /></div>
+                  </div>
+                  <button onClick={async () => { try { const r = await authFetch('/api/admin/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminTrxAddress: configAddr, trxUsdPrice: configPrice, adminYasAccount: configYasAddr, cfaUsdRate: configCfaRate }) }); const d = await r.json(); if (d.success) addToast('Config sauvegardée', 'success'); else addToast(d.error, 'error'); } catch { addToast('Erreur', 'error'); } }} className="w-full py-3 rounded-xl bg-gradient-to-r from-[#FCD34D] to-[#FBBF24] text-[#78350F] font-bold text-[0.85rem] border-none cursor-pointer"><i className="fas fa-save mr-1"></i>Sauvegarder</button>
                 </div>
               )}
             </>

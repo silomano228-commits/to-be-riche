@@ -6,7 +6,19 @@ import { Header } from '@/components/shared';
 
 type DepositMethod = 'choose' | 'trx' | 'yas';
 type TrxStep = 'amount' | 'address' | 'success';
-type YasStep = 'guide' | 'amount' | 'wallet' | 'success';
+type YasStep = 'amount' | 'guide' | 'wallet' | 'success';
+
+// Yas number validation
+function validateYasAccount(account: string): string | null {
+  const trimmed = account.trim();
+  if (!trimmed) return 'Numéro de compte Yas requis';
+  if (!/^\d{8}$/.test(trimmed)) return 'Le numéro doit contenir exactement 8 chiffres';
+  const prefix = trimmed.substring(0, 2);
+  if (!['90', '91', '92', '93', '70', '71', '72', '73'].includes(prefix)) {
+    return 'Le numéro doit commencer par 90-93 ou 70-73';
+  }
+  return null;
+}
 
 export default function DepositScreen() {
   const { user, setUser, setPage, addToast } = useAppStore();
@@ -24,13 +36,15 @@ export default function DepositScreen() {
   const [copied, setCopied] = useState(false);
 
   // Yas deposit state
-  const [yasStep, setYasStep] = useState<YasStep>('guide');
-  const [yasAmount, setYasAmount] = useState('');
+  const [yasStep, setYasStep] = useState<YasStep>('amount');
+  const [yasAmount, setYasAmount] = useState(''); // CFA amount
   const [yasAccount, setYasAccount] = useState('');
   const [yasTrxAddress, setYasTrxAddress] = useState('');
   const [yasSubmitting, setYasSubmitting] = useState(false);
   const [yasPendingDeposit, setYasPendingDeposit] = useState<any>(null);
-  const [yasLoading, setYasLoading] = useState(false);
+  const [cfaUsdRate, setCfaUsdRate] = useState(600);
+  const [adminYasAccount, setAdminYasAccount] = useState('');
+  const [yasCopied, setYasCopied] = useState(false);
 
   // Load deposit info on mount
   useEffect(() => {
@@ -52,6 +66,8 @@ export default function DepositScreen() {
         const data = await res.json();
         if (data.success) {
           if (!trxPrice && data.data.trxPrice) setTrxPrice(data.data.trxPrice);
+          if (data.data.cfaUsdRate) setCfaUsdRate(data.data.cfaUsdRate);
+          if (data.data.adminYasAccount) setAdminYasAccount(data.data.adminYasAccount);
           if (data.data.pendingDeposit) {
             setYasPendingDeposit(data.data.pendingDeposit);
           }
@@ -63,21 +79,26 @@ export default function DepositScreen() {
     loadInfo();
   }, []);
 
-  // Calculate TRX amount
-  const calculatedAmountTrx = (() => {
-    const amt = parseFloat(depositAmt || yasAmount);
+  // Calculate TRX amount for TRX flow
+  const trxCalculatedAmountTrx = (() => {
+    const amt = parseFloat(depositAmt);
     if (amt > 0 && trxPrice > 0) {
       return Math.round((amt / trxPrice) * 100) / 100;
     }
     return 0;
   })();
 
-  const handleCopyAddress = async (addr: string) => {
+  // Calculate CFA → USD → TRX for Yas flow
+  const yasAmountCfa = parseFloat(yasAmount) || 0;
+  const yasAmountUsd = cfaUsdRate > 0 ? Math.round((yasAmountCfa / cfaUsdRate) * 100) / 100 : 0;
+  const yasAmountTrx = trxPrice > 0 && yasAmountUsd > 0 ? Math.round((yasAmountUsd / trxPrice) * 100) / 100 : 0;
+
+  const handleCopyAddress = async (addr: string, setCopyState: (v: boolean) => void) => {
     if (!addr) return;
     try {
       await navigator.clipboard.writeText(addr);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopyState(true);
+      setTimeout(() => setCopyState(false), 2000);
     } catch {
       const textarea = document.createElement('textarea');
       textarea.value = addr;
@@ -85,8 +106,8 @@ export default function DepositScreen() {
       textarea.select();
       document.execCommand('copy');
       document.body.removeChild(textarea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopyState(true);
+      setTimeout(() => setCopyState(false), 2000);
     }
   };
 
@@ -127,9 +148,11 @@ export default function DepositScreen() {
 
   // Yas deposit submit
   const handleYasSubmit = async () => {
-    const amt = parseFloat(yasAmount);
-    if (!amt || amt < 10) { addToast('Minimum 10 $', 'error'); return; }
-    if (!yasAccount.trim()) { addToast('Numéro de compte Yas requis', 'error'); return; }
+    const amtCfa = parseFloat(yasAmount);
+    if (!amtCfa || amtCfa < 6000) { addToast('Minimum 6 000 FCFA', 'error'); return; }
+
+    const yasErr = validateYasAccount(yasAccount);
+    if (yasErr) { addToast(yasErr, 'error'); return; }
     if (!yasTrxAddress.trim()) { addToast('Adresse TRX requise', 'error'); return; }
 
     setYasSubmitting(true);
@@ -138,7 +161,7 @@ export default function DepositScreen() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amountUsd: amt,
+          amountCfa: parseFloat(yasAmount),
           yasAccount: yasAccount.trim(),
           trxAddress: yasTrxAddress.trim(),
         }),
@@ -228,6 +251,12 @@ export default function DepositScreen() {
               </div>
             </div>
             <div className="bg-white/60 rounded-xl p-4 mb-3">
+              {yasPendingDeposit.amountCfa > 0 && (
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[0.72rem] text-[#4C1D95]">Montant CFA</span>
+                  <span className="text-[0.88rem] font-bold text-[#4C1D95]">{Math.round(yasPendingDeposit.amountCfa).toLocaleString('fr-FR')} FCFA</span>
+                </div>
+              )}
               <div className="flex justify-between items-center mb-2">
                 <span className="text-[0.72rem] text-[#4C1D95]">Montant USD</span>
                 <span className="text-[0.88rem] font-bold text-[#4C1D95]">{formatMoney(yasPendingDeposit.amountUsd)}</span>
@@ -313,7 +342,7 @@ export default function DepositScreen() {
 
               {/* Yas du Togo Conversion Card */}
               <button
-                onClick={() => { if (hasPendingYas) return; setMethod('yas'); setYasStep('guide'); }}
+                onClick={() => { if (hasPendingYas) return; setMethod('yas'); setYasStep('amount'); }}
                 disabled={hasPendingYas}
                 className={`w-full text-left rounded-2xl p-5 mb-5 border-2 transition-all ${
                   hasPendingYas
@@ -438,7 +467,7 @@ export default function DepositScreen() {
                       <div className="bg-[#F0FDF4] rounded-xl p-3 border border-[#86EFAC]">
                         <div className="flex justify-between items-center">
                           <span className="text-[0.72rem] text-[#166534]">Équivalent TRX</span>
-                          <span className="text-[1rem] font-black text-[#009624]">{calculatedAmountTrx.toFixed(2)} TRX</span>
+                          <span className="text-[1rem] font-black text-[#009624]">{trxCalculatedAmountTrx.toFixed(2)} TRX</span>
                         </div>
                         <div className="flex justify-between items-center mt-1">
                           <span className="text-[0.65rem] text-[#166534]/70">Taux TRX/USD</span>
@@ -499,7 +528,7 @@ export default function DepositScreen() {
                       </div>
                     </div>
                     <button
-                      onClick={() => handleCopyAddress(adminAddress)}
+                      onClick={() => handleCopyAddress(adminAddress, setCopied)}
                       className={`w-full py-2.5 rounded-xl text-[0.78rem] font-semibold border-none cursor-pointer transition-all flex items-center justify-center gap-2 ${
                         copied ? 'bg-[#00C853] text-white' : 'bg-[rgba(0,200,83,0.15)] text-[#86EFAC]'
                       }`}
@@ -514,7 +543,7 @@ export default function DepositScreen() {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="bg-[#F0FDF4] rounded-xl p-3 text-center border border-[#86EFAC]">
                         <div className="text-[0.6rem] text-[#166534] uppercase font-semibold mb-1">TRX</div>
-                        <div className="text-[1.3rem] font-black text-[#009624]">{calculatedAmountTrx.toFixed(2)}</div>
+                        <div className="text-[1.3rem] font-black text-[#009624]">{trxCalculatedAmountTrx.toFixed(2)}</div>
                       </div>
                       <div className="bg-[#EFF6FF] rounded-xl p-3 text-center border border-[#93C5FD]">
                         <div className="text-[0.6rem] text-[#1E40AF] uppercase font-semibold mb-1">USD</div>
@@ -534,7 +563,7 @@ export default function DepositScreen() {
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="w-5 h-5 rounded-full bg-[#F59E0B] text-white flex items-center justify-center text-[0.55rem] font-bold shrink-0 mt-0.5">2</span>
-                        <span>Envoyez <strong>{calculatedAmountTrx.toFixed(2)} TRX</strong> à l&apos;adresse ci-dessus</span>
+                        <span>Envoyez <strong>{trxCalculatedAmountTrx.toFixed(2)} TRX</strong> à l&apos;adresse ci-dessus</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="w-5 h-5 rounded-full bg-[#F59E0B] text-white flex items-center justify-center text-[0.55rem] font-bold shrink-0 mt-0.5">3</span>
@@ -618,6 +647,9 @@ export default function DepositScreen() {
 
   // ===================== YAS DU TOGO FLOW =====================
   if (method === 'yas') {
+    // Yas number validation state
+    const yasAccountError = yasAccount ? validateYasAccount(yasAccount) : null;
+
     return (
       <>
         <Header title="Conversion Yas du Togo" icon="fa-exchange-alt" iconColor="#7C3AED" leftElement={backBtn} />
@@ -631,14 +663,14 @@ export default function DepositScreen() {
               {/* Step indicator */}
               <div className="flex items-center justify-center gap-2 mb-6">
                 {[
-                  { s: 'guide', label: '1' },
-                  { s: 'amount', label: '2' },
+                  { s: 'amount', label: '1' },
+                  { s: 'guide', label: '2' },
                   { s: 'wallet', label: '3' },
                   { s: 'success', label: '4' },
                 ].map((st, i) => {
-                  const stepOrder = ['guide', 'amount', 'wallet', 'success'];
+                  const stepOrder: YasStep[] = ['amount', 'guide', 'wallet', 'success'];
                   const currentIdx = stepOrder.indexOf(yasStep);
-                  const thisIdx = stepOrder.indexOf(st.s);
+                  const thisIdx = stepOrder.indexOf(st.s as YasStep);
                   const isActive = yasStep === st.s;
                   const isDone = currentIdx > thisIdx;
                   return (
@@ -654,7 +686,117 @@ export default function DepositScreen() {
                 })}
               </div>
 
-              {/* ===================== YAS STEP 1: GUIDE ===================== */}
+              {/* ===================== YAS STEP 1: AMOUNT (CFA) ===================== */}
+              {yasStep === 'amount' && (
+                <div style={{ animation: 'tIn 0.3s ease-out' }}>
+                  <div className="bg-white rounded-2xl p-5 mb-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+                    <h3 className="text-[1rem] font-bold text-[#1A2332] mb-1">Montant en FCFA</h3>
+                    <p className="text-[0.75rem] text-[#64748B] mb-4">Entrez le montant en CFA que vous souhaitez convertir. Minimum 6 000 FCFA.</p>
+
+                    <div className="relative mb-3">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[0.85rem] font-bold text-[#94A3B8]">FCFA</span>
+                      <input
+                        type="number"
+                        step="1"
+                        min="6000"
+                        value={yasAmount}
+                        onChange={(e) => setYasAmount(e.target.value)}
+                        placeholder="0"
+                        className="w-full py-4 pl-[4.5rem] pr-4 bg-[#F8FAFC] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[1.5rem] font-black outline-none focus:border-[#7C3AED] text-[#1A2332]"
+                      />
+                    </div>
+
+                    {yasAmountCfa >= 6000 && (
+                      <div className="bg-[#F5F3FF] rounded-xl p-3 border border-[#C4B5FD]">
+                        <div className="flex justify-between items-center mb-1.5">
+                          <span className="text-[0.72rem] text-[#4C1D95]">Montant CFA</span>
+                          <span className="text-[0.95rem] font-black text-[#4C1D95]">{Math.round(yasAmountCfa).toLocaleString('fr-FR')} FCFA</span>
+                        </div>
+                        <div className="flex justify-between items-center mb-1.5">
+                          <span className="text-[0.72rem] text-[#4C1D95]">Équivalent USD</span>
+                          <span className="text-[0.95rem] font-black text-[#2563EB]">{yasAmountUsd.toFixed(2)} $</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-[0.72rem] text-[#4C1D95]">Vous recevrez</span>
+                          <span className="text-[1rem] font-black text-[#7C3AED]">{yasAmountTrx.toFixed(2)} TRX</span>
+                        </div>
+                        <div className="border-t border-[#C4B5FD]/40 mt-2 pt-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[0.65rem] text-[#4C1D95]/70">Taux CFA/USD</span>
+                            <span className="text-[0.72rem] font-semibold text-[#4C1D95]">1 USD = {cfaUsdRate} FCFA</span>
+                          </div>
+                          <div className="flex justify-between items-center mt-0.5">
+                            <span className="text-[0.65rem] text-[#4C1D95]/70">Taux TRX/USD</span>
+                            <span className="text-[0.72rem] font-semibold text-[#4C1D95]">1 TRX = {trxPrice.toFixed(4)} $</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-4 gap-2 mt-3">
+                      {[6000, 12000, 30000, 60000].map(amt => (
+                        <button
+                          key={amt}
+                          onClick={() => setYasAmount(String(amt))}
+                          className={`py-2 rounded-lg text-[0.72rem] font-semibold border-none cursor-pointer transition-all ${
+                            yasAmount === String(amt)
+                              ? 'bg-[#7C3AED] text-white'
+                              : 'bg-[#F1F5F9] text-[#64748B]'
+                          }`}
+                        >
+                          {amt.toLocaleString('fr-FR')}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Admin Yas Account - Show where to send money */}
+                  {adminYasAccount && (
+                    <div className="bg-gradient-to-br from-[#1E293B] via-[#2D1B69] to-[#1E293B] rounded-2xl p-4 mb-4 border border-[rgba(124,58,237,0.2)] relative overflow-hidden">
+                      <div className="absolute -top-8 -right-8 w-[100px] h-[100px] bg-[radial-gradient(circle,rgba(124,58,237,0.15),transparent_60%)]" />
+                      <div className="relative z-[1]">
+                        <div className="text-[0.65rem] text-[rgba(255,255,255,0.4)] uppercase font-semibold tracking-[1px] mb-2">
+                          <i className="fas fa-university mr-1"></i> Envoyez l'argent à ce compte Yas
+                        </div>
+                        <div className="bg-[rgba(255,255,255,0.06)] rounded-xl p-3 mb-3 border border-[rgba(255,255,255,0.08)]">
+                          <div className="text-[1.1rem] font-mono font-bold text-[#A78BFA] tracking-wide">
+                            {esc(adminYasAccount)}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleCopyAddress(adminYasAccount, setYasCopied)}
+                          className={`w-full py-2.5 rounded-xl text-[0.78rem] font-semibold border-none cursor-pointer transition-all flex items-center justify-center gap-2 ${
+                            yasCopied ? 'bg-[#7C3AED] text-white' : 'bg-[rgba(124,58,237,0.15)] text-[#A78BFA]'
+                          }`}
+                        >
+                          <i className={`fas ${yasCopied ? 'fa-check' : 'fa-copy'}`}></i>
+                          {yasCopied ? 'Copié !' : 'Copier le numéro'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {!adminYasAccount && (
+                    <div className="bg-[#FEF2F2] rounded-xl p-3 mb-4 border border-[#FCA5A5] flex items-center gap-2">
+                      <i className="fas fa-exclamation-triangle text-[#EF4444] text-[0.8rem]"></i>
+                      <p className="text-[0.72rem] text-[#991B1B]">Compte Yas admin non configuré. Contactez le support.</p>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      if (!yasAmountCfa || yasAmountCfa < 6000) { addToast('Minimum 6 000 FCFA', 'error'); return; }
+                      setYasStep('guide');
+                    }}
+                    disabled={!yasAmount || parseFloat(yasAmount) < 6000}
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#A78BFA] to-[#7C3AED] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(124,58,237,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Continuer <i className="fas fa-arrow-right ml-2"></i>
+                  </button>
+                </div>
+              )}
+
+              {/* ===================== YAS STEP 2: GUIDE ===================== */}
               {yasStep === 'guide' && (
                 <div style={{ animation: 'tIn 0.3s ease-out' }}>
                   {/* Trust Wallet Guide */}
@@ -697,108 +839,31 @@ export default function DepositScreen() {
                       <div>
                         <h4 className="text-[0.78rem] font-bold text-[#92400E] mb-1">Important</h4>
                         <p className="text-[0.68rem] text-[#A16207] leading-relaxed">
-                          L'administrateur convertira votre argent Yas du Togo et vous enverra les TRX sur votre adresse Trust Wallet. 
+                          L'administrateur convertira votre argent Yas du Togo et vous enverra les TRX sur votre adresse Trust Wallet.
                           Vous devrez attendre que l'admin traite votre demande.
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => setYasStep('amount')}
-                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#A78BFA] to-[#7C3AED] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(124,58,237,0.2)]"
-                  >
-                    J'ai compris, continuer <i className="fas fa-arrow-right ml-2"></i>
-                  </button>
-                </div>
-              )}
-
-              {/* ===================== YAS STEP 2: AMOUNT & ACCOUNT ===================== */}
-              {yasStep === 'amount' && (
-                <div style={{ animation: 'tIn 0.3s ease-out' }}>
-                  <div className="bg-white rounded-2xl p-5 mb-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
-                    <h3 className="text-[1rem] font-bold text-[#1A2332] mb-1">Montant à convertir</h3>
-                    <p className="text-[0.75rem] text-[#64748B] mb-4">Entrez le montant en dollars que vous souhaitez convertir depuis votre compte Yas du Togo.</p>
-
-                    <div className="relative mb-3">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[1rem] font-bold text-[#94A3B8]">$</span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="10"
-                        value={yasAmount}
-                        onChange={(e) => setYasAmount(e.target.value)}
-                        placeholder="0.00"
-                        className="w-full py-4 pl-9 pr-4 bg-[#F8FAFC] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[1.5rem] font-black outline-none focus:border-[#7C3AED] text-[#1A2332]"
-                      />
-                    </div>
-
-                    {parseFloat(yasAmount) >= 10 && (
-                      <div className="bg-[#F5F3FF] rounded-xl p-3 border border-[#C4B5FD]">
-                        <div className="flex justify-between items-center">
-                          <span className="text-[0.72rem] text-[#4C1D95]">Vous recevrez</span>
-                          <span className="text-[1rem] font-black text-[#7C3AED]">{calculatedAmountTrx.toFixed(2)} TRX</span>
-                        </div>
-                        <div className="flex justify-between items-center mt-1">
-                          <span className="text-[0.65rem] text-[#4C1D95]/70">Taux TRX/USD</span>
-                          <span className="text-[0.72rem] font-semibold text-[#4C1D95]">1 TRX = {trxPrice.toFixed(4)} $</span>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-4 gap-2 mt-3">
-                      {[10, 25, 50, 100].map(amt => (
-                        <button
-                          key={amt}
-                          onClick={() => setYasAmount(String(amt))}
-                          className={`py-2 rounded-lg text-[0.78rem] font-semibold border-none cursor-pointer transition-all ${
-                            yasAmount === String(amt)
-                              ? 'bg-[#7C3AED] text-white'
-                              : 'bg-[#F1F5F9] text-[#64748B]'
-                          }`}
-                        >
-                          {amt} $
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-2xl p-5 mb-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
-                    <h3 className="text-[0.95rem] font-bold text-[#1A2332] mb-1">Compte Yas du Togo</h3>
-                    <p className="text-[0.72rem] text-[#64748B] mb-3">Entrez votre numéro de compte Yas du Togo</p>
-                    <input
-                      type="text"
-                      value={yasAccount}
-                      onChange={(e) => setYasAccount(e.target.value)}
-                      placeholder="Numéro de compte Yas"
-                      className="w-full py-3.5 px-4 bg-[#F8FAFC] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.88rem] outline-none focus:border-[#7C3AED] text-[#1A2332] placeholder:text-[#CBD5E1]"
-                    />
-                  </div>
-
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setYasStep('guide')}
+                      onClick={() => setYasStep('amount')}
                       className="flex-1 py-3.5 rounded-xl border-[1.5px] border-[rgba(0,0,0,0.08)] bg-transparent text-[#64748B] font-semibold text-[0.82rem] cursor-pointer"
                     >
                       <i className="fas fa-arrow-left mr-1"></i> Retour
                     </button>
                     <button
-                      onClick={() => {
-                        const amt = parseFloat(yasAmount);
-                        if (!amt || amt < 10) { addToast('Minimum 10 $', 'error'); return; }
-                        if (!yasAccount.trim()) { addToast('Numéro de compte Yas requis', 'error'); return; }
-                        setYasStep('wallet');
-                      }}
-                      disabled={!yasAmount || parseFloat(yasAmount) < 10 || !yasAccount.trim()}
-                      className="flex-[2] py-3.5 rounded-xl bg-gradient-to-r from-[#A78BFA] to-[#7C3AED] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(124,58,237,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => setYasStep('wallet')}
+                      className="flex-[2] py-3.5 rounded-xl bg-gradient-to-r from-[#A78BFA] to-[#7C3AED] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(124,58,237,0.2)]"
                     >
-                      Continuer <i className="fas fa-arrow-right ml-2"></i>
+                      J'ai compris, continuer <i className="fas fa-arrow-right ml-2"></i>
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* ===================== YAS STEP 3: WALLET ADDRESS ===================== */}
+              {/* ===================== YAS STEP 3: YAS ACCOUNT + TRX ADDRESS ===================== */}
               {yasStep === 'wallet' && (
                 <div style={{ animation: 'tIn 0.3s ease-out' }}>
                   {/* Summary card */}
@@ -806,21 +871,59 @@ export default function DepositScreen() {
                     <h4 className="text-[0.82rem] font-bold text-[#4C1D95] mb-2">Récapitulatif</h4>
                     <div className="space-y-1.5">
                       <div className="flex justify-between items-center">
-                        <span className="text-[0.72rem] text-[#6D28D9]">Montant</span>
-                        <span className="text-[0.88rem] font-bold text-[#4C1D95]">{formatMoney(parseFloat(yasAmount))}</span>
+                        <span className="text-[0.72rem] text-[#6D28D9]">Montant CFA</span>
+                        <span className="text-[0.88rem] font-bold text-[#4C1D95]">{Math.round(yasAmountCfa).toLocaleString('fr-FR')} FCFA</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[0.72rem] text-[#6D28D9]">Équivalent USD</span>
+                        <span className="text-[0.88rem] font-bold text-[#2563EB]">{yasAmountUsd.toFixed(2)} $</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-[0.72rem] text-[#6D28D9]">TRX à recevoir</span>
-                        <span className="text-[0.88rem] font-bold text-[#7C3AED]">{calculatedAmountTrx.toFixed(2)} TRX</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-[0.72rem] text-[#6D28D9]">Compte Yas</span>
-                        <span className="text-[0.78rem] font-bold text-[#4C1D95]">{esc(yasAccount)}</span>
+                        <span className="text-[0.88rem] font-bold text-[#7C3AED]">{yasAmountTrx.toFixed(2)} TRX</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* TRX Address input */}
+                  {/* Yas Account Input */}
+                  <div className="bg-white rounded-2xl p-5 mb-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#A78BFA] to-[#7C3AED] flex items-center justify-center shrink-0">
+                        <i className="fas fa-phone text-white text-[0.8rem]"></i>
+                      </div>
+                      <div>
+                        <h3 className="text-[0.95rem] font-bold text-[#1A2332]">Numéro Yas du Togo</h3>
+                        <p className="text-[0.68rem] text-[#64748B]">8 chiffres, commence par 90-93 ou 70-73</p>
+                      </div>
+                    </div>
+                    <input
+                      type="text"
+                      value={yasAccount}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^\d]/g, '').slice(0, 8);
+                        setYasAccount(val);
+                      }}
+                      placeholder="Ex: 90123456"
+                      className={`w-full py-3.5 px-4 bg-[#F8FAFC] border-[1.5px] rounded-xl text-[0.95rem] font-mono outline-none text-[#1A2332] placeholder:text-[#CBD5E1] ${
+                        yasAccount && yasAccountError ? 'border-[#EF4444] focus:border-[#EF4444]' : 'border-[rgba(0,0,0,0.08)] focus:border-[#7C3AED]'
+                      }`}
+                      maxLength={8}
+                    />
+                    {yasAccount && yasAccountError && (
+                      <p className="text-[0.68rem] text-[#EF4444] mt-1.5 flex items-center gap-1">
+                        <i className="fas fa-exclamation-circle text-[0.6rem]"></i>
+                        {yasAccountError}
+                      </p>
+                    )}
+                    {yasAccount && !yasAccountError && (
+                      <p className="text-[0.68rem] text-[#009624] mt-1.5 flex items-center gap-1">
+                        <i className="fas fa-check-circle text-[0.6rem]"></i>
+                        Numéro valide
+                      </p>
+                    )}
+                  </div>
+
+                  {/* TRX Address Input */}
                   <div className="bg-white rounded-2xl p-5 mb-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#00E676] to-[#00C853] flex items-center justify-center shrink-0">
@@ -856,25 +959,25 @@ export default function DepositScreen() {
                       </li>
                       <li className="flex items-start gap-1.5">
                         <i className="fas fa-check text-[0.5rem] mt-1"></i>
-                        <span>L'admin convertira votre argent et vous enverra les TRX</span>
+                        <span>Envoyez <strong>{Math.round(yasAmountCfa).toLocaleString('fr-FR')} FCFA</strong> au compte Yas de l'admin</span>
                       </li>
                       <li className="flex items-start gap-1.5">
                         <i className="fas fa-check text-[0.5rem] mt-1"></i>
-                        <span>Le traitement peut prendre <strong>un peu de temps</strong></span>
+                        <span>L'admin convertira votre argent et vous enverra <strong>{yasAmountTrx.toFixed(2)} TRX</strong></span>
                       </li>
                     </ul>
                   </div>
 
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setYasStep('amount')}
+                      onClick={() => setYasStep('guide')}
                       className="flex-1 py-3.5 rounded-xl border-[1.5px] border-[rgba(0,0,0,0.08)] bg-transparent text-[#64748B] font-semibold text-[0.82rem] cursor-pointer"
                     >
                       <i className="fas fa-arrow-left mr-1"></i> Retour
                     </button>
                     <button
                       onClick={handleYasSubmit}
-                      disabled={yasSubmitting || !yasTrxAddress.trim()}
+                      disabled={yasSubmitting || !yasTrxAddress.trim() || !!yasAccountError || !yasAccount.trim()}
                       className="flex-[2] py-3.5 rounded-xl bg-gradient-to-r from-[#A78BFA] to-[#7C3AED] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(124,58,237,0.2)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                       {yasSubmitting ? (
@@ -903,7 +1006,7 @@ export default function DepositScreen() {
                   </div>
                   <h3 className="text-[1.2rem] font-bold text-[#1A2332] mb-2">Demande soumise !</h3>
                   <p className="text-[0.82rem] text-[#64748B] mb-4 max-w-[300px] mx-auto">
-                    Votre demande de conversion de <strong>{formatMoney(parseFloat(yasAmount))}</strong> a été envoyée. L&apos;administrateur convertira votre argent et vous enverra <strong>{calculatedAmountTrx.toFixed(2)} TRX</strong> sur votre Trust Wallet.
+                    Votre demande de conversion de <strong>{Math.round(yasAmountCfa).toLocaleString('fr-FR')} FCFA</strong> ({yasAmountUsd.toFixed(2)} $) a été envoyée. L&apos;administrateur convertira votre argent et vous enverra <strong>{yasAmountTrx.toFixed(2)} TRX</strong> sur votre Trust Wallet.
                   </p>
                   <div className="bg-[#F5F3FF] rounded-xl p-4 mb-6 max-w-[300px] mx-auto">
                     <div className="flex items-center gap-2 justify-center">

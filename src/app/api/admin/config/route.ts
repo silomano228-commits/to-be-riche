@@ -28,7 +28,7 @@ export async function GET(request: Request) {
 
     let config = await db.siteConfig.findUnique({ where: { id: 'main' } });
     if (!config) {
-      config = await db.siteConfig.create({ data: { id: 'main', adminTrxAddress: '', trxUsdPrice: 0.12 } });
+      config = await db.siteConfig.create({ data: { id: 'main', adminTrxAddress: '', adminYasAccount: '', trxUsdPrice: 0.12, cfaUsdRate: 600 } });
     }
 
     return NextResponse.json({ success: true, data: config });
@@ -43,15 +43,17 @@ export async function POST(request: Request) {
     const { error } = await checkAdmin(request);
     if (error) return error;
 
-    const { adminTrxAddress, trxUsdPrice } = await request.json();
+    const { adminTrxAddress, adminYasAccount, trxUsdPrice, cfaUsdRate } = await request.json();
 
     const config = await db.siteConfig.upsert({
       where: { id: 'main' },
       update: {
         ...(adminTrxAddress !== undefined ? { adminTrxAddress: adminTrxAddress.trim() } : {}),
+        ...(adminYasAccount !== undefined ? { adminYasAccount: adminYasAccount.trim() } : {}),
         ...(trxUsdPrice !== undefined ? { trxUsdPrice: parseFloat(trxUsdPrice) } : {}),
+        ...(cfaUsdRate !== undefined ? { cfaUsdRate: parseFloat(cfaUsdRate) } : {}),
       },
-      create: { id: 'main', adminTrxAddress: adminTrxAddress?.trim() || '', trxUsdPrice: parseFloat(trxUsdPrice) || 0.12 },
+      create: { id: 'main', adminTrxAddress: adminTrxAddress?.trim() || '', adminYasAccount: adminYasAccount?.trim() || '', trxUsdPrice: parseFloat(trxUsdPrice) || 0.12, cfaUsdRate: parseFloat(cfaUsdRate) || 600 },
     });
 
     return NextResponse.json({ success: true, data: config });

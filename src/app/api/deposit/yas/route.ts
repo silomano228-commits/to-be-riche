@@ -9,6 +9,10 @@ function getToken(request: Request): string | null {
   return null;
 }
 
+async function getSiteConfig() {
+  return db.siteConfig.findUnique({ where: { id: 'main' } });
+}
+
 // POST — Crée une demande de conversion Yas du Togo
 export async function POST(request: Request) {
   try {
@@ -19,24 +23,42 @@ export async function POST(request: Request) {
     }
     if (!token) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
 
-    const { amountUsd, yasAccount, trxAddress } = await request.json();
-    const amt = parseFloat(amountUsd);
-    if (isNaN(amt) || amt < 10) {
-      return NextResponse.json({ success: false, error: 'Minimum 10 $' });
+    const { amountCfa, yasAccount, trxAddress } = await request.json();
+    const amtCfa = parseFloat(amountCfa);
+
+    // Get CFA rate from config
+    const config = await getSiteConfig();
+    const cfaUsdRate = config?.cfaUsdRate || 600;
+
+    if (isNaN(amtCfa) || amtCfa < 6000) {
+      return NextResponse.json({ success: false, error: 'Minimum 6 000 FCFA' });
     }
     if (!yasAccount || !yasAccount.trim()) {
       return NextResponse.json({ success: false, error: 'Numéro de compte Yas du Togo requis' });
     }
+    // Validate Yas account: 8 digits, starts with 90-93 or 70-73
+    const yasNum = yasAccount.trim();
+    if (!/^\d{8}$/.test(yasNum)) {
+      return NextResponse.json({ success: false, error: 'Le numéro Yas doit contenir exactement 8 chiffres' });
+    }
+    const prefix = yasNum.substring(0, 2);
+    if (!['90', '91', '92', '93', '70', '71', '72', '73'].includes(prefix)) {
+      return NextResponse.json({ success: false, error: 'Le numéro Yas doit commencer par 90-93 ou 70-73' });
+    }
+
     if (!trxAddress || !trxAddress.trim()) {
       return NextResponse.json({ success: false, error: 'Adresse TRX Trust Wallet requise' });
     }
+
+    // Calculate amounts
+    const amountUsd = Math.round((amtCfa / cfaUsdRate) * 100) / 100;
 
     // Prix TRX
     let trxPrice = await getTrxPrice();
     const configPrice = await getTrxUsdPrice();
     if (configPrice > 0) trxPrice = configPrice;
 
-    const amountTrx = Math.round((amt / trxPrice) * 100) / 100;
+    const amountTrx = Math.round((amountUsd / trxPrice) * 100) / 100;
 
     // Vérifier s'il y a déjà une demande en attente
     const existingPending = await db.yasDeposit.findFirst({
@@ -49,7 +71,8 @@ export async function POST(request: Request) {
     const deposit = await db.yasDeposit.create({
       data: {
         userId: token,
-        amountUsd: amt,
+        amountCfa: amtCfa,
+        amountUsd,
         amountTrx,
         trxPrice,
         yasAccount: yasAccount.trim(),
@@ -62,9 +85,11 @@ export async function POST(request: Request) {
       success: true,
       data: {
         depositId: deposit.id,
+        amountCfa: amtCfa,
         amountTrx: amountTrx.toFixed(2),
-        amountUsd: amt,
+        amountUsd,
         trxPrice: trxPrice.toFixed(4),
+        cfaUsdRate,
       },
     });
   } catch (error) {
@@ -72,7 +97,7 @@ export async function POST(request: Request) {
   }
 }
 
-// GET — Info: prix TRX, dépôt Yas en attente
+// GET — Info: prix TRX, dépôt Yas en attente, cfaUsdRate, adminYasAccount
 export async function GET(request: Request) {
   try {
     let token = getToken(request);
@@ -85,6 +110,11 @@ export async function GET(request: Request) {
     let trxPrice = await getTrxPrice();
     const configPrice = await getTrxUsdPrice();
     if (configPrice > 0) trxPrice = configPrice;
+
+    // Get site config for cfaUsdRate and adminYasAccount
+    const config = await getSiteConfig();
+    const cfaUsdRate = config?.cfaUsdRate || 600;
+    const adminYasAccount = config?.adminYasAccount || '';
 
     const deposit = await db.yasDeposit.findFirst({
       where: { userId: token, status: 'pending' },
@@ -101,8 +131,11 @@ export async function GET(request: Request) {
       success: true,
       data: {
         trxPrice,
+        cfaUsdRate,
+        adminYasAccount,
         pendingDeposit: deposit ? {
           id: deposit.id,
+          amountCfa: deposit.amountCfa,
           amountUsd: deposit.amountUsd,
           amountTrx: deposit.amountTrx,
           yasAccount: deposit.yasAccount,
@@ -112,6 +145,7 @@ export async function GET(request: Request) {
         } : null,
         lastProcessed: lastProcessed ? {
           id: lastProcessed.id,
+          amountCfa: lastProcessed.amountCfa,
           amountUsd: lastProcessed.amountUsd,
           status: lastProcessed.status,
           adminNote: lastProcessed.adminNote,
