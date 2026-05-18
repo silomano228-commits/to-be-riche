@@ -21,6 +21,18 @@ export default function AdminScreen() {
   const [configCfaRate, setConfigCfaRate] = useState('');
   const [loading, setLoading] = useState(true);
   const [yasNote, setYasNote] = useState<Record<string, string>>({});
+  const [savingYas, setSavingYas] = useState(false);
+  const [savingConfig, setSavingConfig] = useState(false);
+
+  // Ensure spin animation is available
+  useEffect(() => {
+    if (!document.getElementById('admin-spin-style')) {
+      const style = document.createElement('style');
+      style.id = 'admin-spin-style';
+      style.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`;
+      document.head.appendChild(style);
+    }
+  }, []);
 
   const loadData = useCallback(async () => {
     try { const r = await authFetch('/api/admin/data'); const d = await r.json(); if (d.success) setAdminData(d); } catch { /* */ }
@@ -153,6 +165,7 @@ export default function AdminScreen() {
                     </div>
                     <button
                       onClick={async () => {
+                        setSavingYas(true);
                         try {
                           const r = await authFetch('/api/admin/config', {
                             method: 'POST',
@@ -162,18 +175,20 @@ export default function AdminScreen() {
                           const d = await r.json();
                           if (d.success) {
                             addToast('Config Yas sauvegardée !', 'success');
-                            loadConfig();
+                            await loadConfig();
                           } else {
                             addToast(d.error || 'Erreur de sauvegarde', 'error');
                           }
                         } catch (e) {
                           addToast('Erreur réseau', 'error');
                         }
+                        setSavingYas(false);
                       }}
-                      className="w-full py-2.5 rounded-lg bg-gradient-to-r from-[#7C3AED] to-[#9333EA] text-white text-[0.78rem] font-semibold border-none cursor-pointer flex items-center justify-center gap-1.5"
+                      disabled={savingYas}
+                      className="w-full py-2.5 rounded-lg bg-gradient-to-r from-[#7C3AED] to-[#9333EA] text-white text-[0.78rem] font-semibold border-none cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-60"
                     >
-                      <i className="fas fa-save text-[0.7rem]"></i>
-                      Sauvegarder la config Yas
+                      {savingYas ? <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <i className="fas fa-save text-[0.7rem]"></i>}
+                      {savingYas ? 'Sauvegarde...' : 'Sauvegarder la config Yas'}
                     </button>
                   </div>
 
@@ -276,7 +291,7 @@ export default function AdminScreen() {
                     <div className="mb-3"><label className="block mb-1 text-[0.72rem] font-semibold text-[#6D28D9]">Numéro Yas Admin</label><input type="text" value={configYasAddr} onChange={(e) => setConfigYasAddr(e.target.value)} placeholder="90XXXXXX ou 70XXXXXX" className="w-full py-3 px-4 bg-white border-[1.5px] border-[rgba(124,58,237,0.2)] rounded-xl text-[0.85rem] outline-none focus:border-[#7C3AED]" /></div>
                     <div><label className="block mb-1 text-[0.72rem] font-semibold text-[#6D28D9]">Taux CFA/USD (1 USD = ? CFA)</label><input type="number" step="1" value={configCfaRate} onChange={(e) => setConfigCfaRate(e.target.value)} className="w-full py-3 px-4 bg-white border-[1.5px] border-[rgba(124,58,237,0.2)] rounded-xl text-[0.85rem] outline-none focus:border-[#7C3AED]" /></div>
                   </div>
-                  <button onClick={async () => { try { const r = await authFetch('/api/admin/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminTrxAddress: configAddr, trxUsdPrice: configPrice, adminYasAccount: configYasAddr, cfaUsdRate: configCfaRate }) }); const d = await r.json(); if (d.success) addToast('Config sauvegardée', 'success'); else addToast(d.error, 'error'); } catch { addToast('Erreur', 'error'); } }} className="w-full py-3 rounded-xl bg-gradient-to-r from-[#FCD34D] to-[#FBBF24] text-[#78350F] font-bold text-[0.85rem] border-none cursor-pointer"><i className="fas fa-save mr-1"></i>Sauvegarder</button>
+                  <button onClick={async () => { setSavingConfig(true); try { const r = await authFetch('/api/admin/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminTrxAddress: configAddr, trxUsdPrice: configPrice, adminYasAccount: configYasAddr, cfaUsdRate: configCfaRate }) }); const d = await r.json(); if (d.success) { addToast('Config sauvegardée', 'success'); await loadConfig(); } else addToast(d.error, 'error'); } catch { addToast('Erreur', 'error'); } setSavingConfig(false); }} disabled={savingConfig} className="w-full py-3 rounded-xl bg-gradient-to-r from-[#FCD34D] to-[#FBBF24] text-[#78350F] font-bold text-[0.85rem] border-none cursor-pointer disabled:opacity-60 flex items-center justify-center gap-1.5">{savingConfig ? <div className="w-4 h-4 border-2 border-[rgba(120,53,15,0.3)] border-t-[#78350F] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <i className="fas fa-save mr-1"></i>}{savingConfig ? 'Sauvegarde...' : 'Sauvegarder'}</button>
                 </div>
               )}
             </>
