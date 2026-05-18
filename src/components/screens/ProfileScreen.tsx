@@ -9,6 +9,7 @@ export default function ProfileScreen() {
   const [modalOpen, setModalOpen] = useState(false);
   const [referrals, setReferrals] = useState<any[]>([]);
   const [showReferrals, setShowReferrals] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const loadReferrals = async () => {
     try {
@@ -16,6 +17,27 @@ export default function ProfileScreen() {
       const data = await res.json();
       if (data.success) { setReferrals(data.referrals || []); setShowReferrals(true); }
     } catch { /* */ }
+  };
+
+  const handleCopyCode = async () => {
+    if (!user?.referralCode) return;
+    try {
+      await navigator.clipboard.writeText(user.referralCode);
+      setCopied(true);
+      addToast('Code copié !', 'success');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback
+      const ta = document.createElement('textarea');
+      ta.value = user.referralCode;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      setCopied(true);
+      addToast('Code copié !', 'success');
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const handleLogout = async () => {
@@ -26,15 +48,40 @@ export default function ProfileScreen() {
 
   if (!user) return null;
 
+  const requiredReferrals = user.requiredReferrals || 0;
+  const currentReferrals = user.referralCount || 0;
+  const needsMore = Math.max(0, requiredReferrals - currentReferrals);
+  const referralProgress = requiredReferrals > 0 ? Math.min(100, (currentReferrals / requiredReferrals) * 100) : 100;
+
   return (
     <>
       <Header title="Profil" icon="fa-user" iconColor="#64748B" leftElement={<button onClick={() => setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none mr-1"><i className="fas fa-arrow-left text-[0.8rem]"></i></button>} />
       <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto">
         {/* User Card */}
-        <div className="bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white rounded-2xl p-5 mb-4 border border-[rgba(255,255,255,0.05)]">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#00E676] to-[#00C853] flex items-center justify-center text-white font-bold text-[1.2rem] shadow-[0_4px_20px_rgba(0,200,83,0.3)]">{esc(user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2))}</div>
-            <div><div className="text-[1.05rem] font-bold">{esc(user.name)}</div><div className="text-[0.75rem] text-[rgba(255,255,255,0.5)]">{esc(user.email)}</div></div>
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white rounded-2xl p-5 mb-4 border border-[rgba(255,255,255,0.05)]">
+          {/* Decorative background circles */}
+          <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-gradient-to-br from-[#00E676]/10 to-transparent pointer-events-none"></div>
+          <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-gradient-to-br from-[#F97316]/8 to-transparent pointer-events-none"></div>
+
+          <div className="flex items-center gap-4 mb-4 relative">
+            {/* Gradient Avatar with animation */}
+            <div className="relative">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#00E676] via-[#00C853] to-[#009624] flex items-center justify-center text-white font-bold text-[1.3rem] shadow-[0_4px_24px_rgba(0,200,83,0.35)]"
+                style={{ animation: 'avatarBreathe 3s ease-in-out infinite' }}>
+                {esc(user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2))}
+              </div>
+              {/* Online indicator */}
+              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-[#00E676] rounded-full border-2 border-[#0F172A]"></div>
+            </div>
+            <div>
+              <div className="text-[1.1rem] font-bold">{esc(user.name)}</div>
+              <div className="text-[0.75rem] text-[rgba(255,255,255,0.5)]">{esc(user.email)}</div>
+              {user.role === 'admin' && (
+                <span className="inline-flex items-center gap-1 text-[0.6rem] bg-[rgba(251,191,36,0.2)] text-[#FCD34D] px-2 py-0.5 rounded-full mt-1 font-semibold">
+                  <i className="fas fa-shield-alt text-[0.5rem]"></i>Admin
+                </span>
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-[rgba(255,255,255,0.06)] rounded-xl p-3 text-center"><div className="text-[0.6rem] text-[rgba(255,255,255,0.4)] uppercase">Principal</div><div className="text-[0.95rem] font-black">{formatMoney(user.balance)}</div></div>
@@ -47,8 +94,53 @@ export default function ProfileScreen() {
         {/* Referral */}
         <div className="bg-white rounded-2xl p-4 mb-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
           <div className="flex items-center gap-2.5 mb-3"><i className="fas fa-users text-[#FBBF24]"></i><h4 className="text-[0.88rem] font-bold text-[#1A2332]">Parrainage</h4></div>
-          <div className="bg-[#FEF9C3] rounded-xl p-3 mb-3"><div className="text-[0.68rem] text-[#92400E] mb-1">Votre code</div><div className="text-[1.1rem] font-mono font-black text-[#78350F]">{user.referralCode}</div></div>
-          <div className="flex items-center justify-between mb-2"><span className="text-[0.75rem] text-[#64748B]">Filleuls actifs</span><span className="text-[0.75rem] font-bold">{user.referralCount || 0}</span></div>
+
+          {/* Referral Code with Copy Button */}
+          <div className="bg-gradient-to-r from-[#FEF9C3] to-[#FEF08A] rounded-xl p-3 mb-3 flex items-center justify-between">
+            <div>
+              <div className="text-[0.68rem] text-[#92400E] mb-0.5">Votre code</div>
+              <div className="text-[1.1rem] font-mono font-black text-[#78350F]">{user.referralCode}</div>
+            </div>
+            <button
+              onClick={handleCopyCode}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center border-none cursor-pointer transition-all ${
+                copied ? 'bg-[#00C853] text-white' : 'bg-[#78350F]/10 text-[#78350F] hover:bg-[#78350F]/20'
+              }`}
+            >
+              <i className={`fas ${copied ? 'fa-check' : 'fa-copy'} text-[0.85rem]`}></i>
+            </button>
+          </div>
+
+          {/* Referral Progress */}
+          {requiredReferrals > 0 && (
+            <div className="bg-[#F8FAFC] rounded-xl p-3 mb-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[0.72rem] text-[#64748B]">Progrès pour retrait</span>
+                <span className="text-[0.72rem] font-bold text-[#1A2332]">{currentReferrals}/{requiredReferrals}</span>
+              </div>
+              <div className="w-full h-2.5 bg-[#E2E8F0] rounded-full overflow-hidden mb-1.5">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${referralProgress}%`,
+                    background: referralProgress >= 100
+                      ? 'linear-gradient(90deg, #00E676, #00C853)'
+                      : 'linear-gradient(90deg, #FBBF24, #F59E0B)'
+                  }}
+                ></div>
+              </div>
+              {needsMore > 0 ? (
+                <p className="text-[0.65rem] text-[#F59E0B]"><i className="fas fa-info-circle mr-1"></i>Encore <strong>{needsMore}</strong> filleul{needsMore > 1 ? 's' : ''} requis pour le retrait</p>
+              ) : (
+                <p className="text-[0.65rem] text-[#00C853]"><i className="fas fa-check-circle mr-1"></i>Condition de parrainage remplie !</p>
+              )}
+            </div>
+          )}
+
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[0.75rem] text-[#64748B]">Filleuls actifs</span>
+            <span className="text-[0.75rem] font-bold">{user.referralCount || 0}</span>
+          </div>
           <button onClick={loadReferrals} className="w-full py-2.5 rounded-xl bg-[#FEF9C3] text-[#78350F] font-semibold text-[0.82rem] border-none cursor-pointer"><i className="fas fa-list mr-1"></i>Voir mes filleuls</button>
         </div>
 
@@ -63,17 +155,24 @@ export default function ProfileScreen() {
         )}
 
         {/* Analytics Button */}
-        <button onClick={() => setPage('analytics')} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white font-bold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(59,130,246,0.2)] mb-3 flex items-center justify-center gap-2"><i className="fas fa-chart-bar"></i> Analyses</button>
+        <button onClick={() => setPage('analytics')} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#0F172A] to-[#1E293B] text-white font-bold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(15,23,42,0.2)] mb-3 flex items-center justify-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-[rgba(59,130,246,0.2)] flex items-center justify-center"><i className="fas fa-chart-bar text-[#60A5FA] text-[0.75rem]"></i></div>
+          Analyses
+        </button>
 
         {/* Admin Button */}
         {user.role === 'admin' && (
-          <button onClick={() => setPage('admin')} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#FCD34D] to-[#FBBF24] text-[#78350F] font-bold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(251,191,36,0.2)] mb-3 flex items-center justify-center gap-2"><i className="fas fa-shield-alt"></i> Panneau Admin</button>
+          <button onClick={() => setPage('admin')} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#0F172A] to-[#1E293B] text-white font-bold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(15,23,42,0.2)] mb-3 flex items-center justify-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[rgba(251,191,36,0.2)] flex items-center justify-center"><i className="fas fa-shield-alt text-[#FCD34D] text-[0.75rem]"></i></div>
+            Panneau Admin
+          </button>
         )}
 
         {/* Logout */}
         <button onClick={() => setModalOpen(true)} className="w-full py-3.5 rounded-xl border-[1.5px] border-[rgba(239,68,68,0.15)] bg-transparent text-red-500 font-semibold text-[0.88rem] cursor-pointer flex items-center justify-center gap-2"><i className="fas fa-sign-out-alt"></i> Déconnexion</button>
       </div>
       {modalOpen && <Modal title="Déconnexion" text="Voulez-vous vous déconnecter ?" okText="Se déconnecter" okClass="bg-gradient-to-r from-[#F87171] to-[#EF4444]" onOk={handleLogout} onCancel={() => setModalOpen(false)} />}
+
     </>
   );
 }

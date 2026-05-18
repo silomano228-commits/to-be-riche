@@ -1,98 +1,85 @@
 ---
 Task ID: 1
-Agent: Main Agent
-Task: Implement referral (parrainage) system for Be Rich app
+Agent: Main
+Task: Fix deposit flow - redesign as multi-step page with admin TRX address shown BEFORE user enters their address
 
 Work Log:
-- Added referralCode, referredByCode, and referralCount fields to User model in Prisma schema
-- Ran db:push --force-reset to apply schema changes
-- Updated /api/auth/register to generate unique referral codes (BR-XXXXXX format) and accept optional referralCode input
-- Updated /api/auth/session to compute completedWithdrawals, requiredReferrals, and needsReferral
-- Updated /api/withdrawal to check referral requirements before allowing withdrawal
-- Updated seed script and login auto-seed to include referralCode
-- Updated store.ts AppUser interface with referral fields
-- Added referral code input field to registration form
-- Added referral code display card in profile screen with copy and share buttons
-- Added referral requirement warnings in wallet screen and withdrawal screen
-- Updated withdrawal button to be disabled when referral is required
-- Added dedicated ReferralScreen with share, copy, stats, rules, and status display
-- Added 'referral' page routing in BeRichApp
-- Added 'Filleuls' count to profile info section
+- Identified the root cause: frontend sends { amountUsd } but API requires { amountUsd, userAddress }
+- Created new DepositScreen component with 3-step flow: Amount → TRX Address → Success
+- Updated deposit API GET endpoint to return admin address + TRX price even without pending deposit
+- Made userAddress optional in POST (defaults to 'Non renseigné' if not provided)
+- Added X-Auth-Token header support to deposit API (in addition to cookie)
+- Connected DepositScreen to page.tsx as 'deposit' route
+- Updated WalletScreen "Déposer" button to navigate to 'deposit' page
+- Removed old deposit modal from WalletScreen
+- Fixed lint error: replaced useEffect-based setState with derived calculatedAmountTrx
 
 Stage Summary:
-- Referral system fully implemented with BR-XXXXXX format codes
-- Rules: After 3rd withdrawal, 1 referral required; every 2nd withdrawal after that requires 1 more referral
-- Formula: requiredReferrals = ceil((nextWithdrawalNumber - 2) / 2) for nextWithdrawalNumber >= 3
-- Registration accepts optional referral code that increments referrer's referralCount
-- Withdrawal API blocks requests when referral requirement not met
-- UI shows warnings and referral code prominently in wallet, withdrawal, and profile screens
-- Dedicated ReferralScreen accessible from multiple points in the app
+- Deposit flow now works correctly: user sees admin address BEFORE submitting
+- Multi-step: Step 1 (enter amount) → Step 2 (see admin address + enter your TRX address) → Step 3 (success)
+- API now returns admin address + TRX price in GET for display before deposit creation
+- If user already has pending deposit, shows its status directly
 
 ---
-Task ID: 2
-Agent: Main Agent
-Task: Add admin refresh button and referral list display
+Task ID: 3-a
+Agent: Subagent (full-stack-developer)
+Task: Update HomeScreen and WalletScreen with visual refresh
 
 Work Log:
-- Added refresh button (sync-alt icon) to admin panel header that reloads all data (users, deposits, withdrawals, config)
-- Created /api/referral/list endpoint to fetch all users referred by the current user's referral code
-- Updated /api/admin/data to include referredUsers list for each user and total_referrals stat
-- Added "Parrainages" stat to admin dashboard stats grid (2x2 layout: Users, Total Invested, Projects, Referrals)
-- Enhanced admin users tab to show referral info per user: code, filleuls count, parrainé par badge, and list of referred users with name/date/investor status
-- Updated ReferralScreen to fetch and display referred users list with avatar, name, date, and investor status badges
-- Added loading state and empty state for the referred users list in ReferralScreen
+- Added glassmorphism effects to welcome card and principal card
+- Added shimmer animation overlay
+- Added deposit count badge next to greeting
+- Redesigned compact account grid in HomeScreen
+- Added "Déposer" quick action button (5th button)
+- Premium AI tip card with animated gradient border
+- Themed account icons in WalletScreen
+- Redesigned transfer modal with From→To visual flow
+- Premium stats cards with gradient backgrounds
 
 Stage Summary:
-- Admin panel now has a manual refresh button in the header
-- Admin can see referral details for each user (code, count, who referred them, list of their referrals)
-- Users can see their referred users list in the Parrainage screen
-- Stats grid updated with "Parrainages" count replacing "Volume total"
+- HomeScreen has more premium feel with glassmorphism and animations
+- WalletScreen has better visual hierarchy and themed icons
+- Both "Déposer" buttons navigate to new deposit page
 
 ---
-Task ID: 3
-Agent: Main Agent
-Task: Reconfigure database and Prisma - fix admin functions not working
+Task ID: 3-b
+Agent: Subagent (full-stack-developer)
+Task: Update InvestHubScreen and TradingScreen with visual refresh
 
 Work Log:
-- Ran `prisma db push --force-reset` to reset the database
-- Ran `prisma generate` to regenerate Prisma Client
-- Created admin user via /api/seed (admin@berich.com / Admin@2024)
-- Created test user via /api/auth/register with BR-ADMIN referral code
-- Created SiteConfig entry via improved seed script
-- Verified all admin API endpoints return 200 when authenticated (data, chats, deposits, withdrawals, config)
-- Verified referral list API returns correct data for both admin and test user
-- Updated seed route to also create SiteConfig and test user with referral
-- The 401 errors in dev log are from auto-polling when not logged in (expected behavior)
+- InvestHub: Balance card with glow animation, icon badge, watermark
+- InvestHub: Investment cards with hover effects and gradient progress bars
+- InvestHub: Countdown timer more prominent with blinking colon
+- InvestHub: Claim button with pulse animation
+- Trading: Professional trade form with blue accent
+- Trading: Larger HAUT/BAS buttons with glow shadows
+- Trading: Animated SVG chart for active trades
+- Trading: Enlarged countdown timer with LIVE indicator
 
 Stage Summary:
-- Database fully reset and re-seeded
-- Admin credentials: admin@berich.com / Admin@2024
-- Test user credentials: test@test.com / Test1234
-- All admin API endpoints confirmed working (200 status)
-- Referral system confirmed working (admin sees Test User as filleul)
-- SiteConfig created with default values
+- Both screens significantly improved visually
+- Trading now has animated chart visualization
+- Investment claim buttons more visible
 
 ---
-Task ID: 4
-Agent: Main Agent
-Task: Fix admin functions not working - cookie authentication issue
+Task ID: 3-c
+Agent: Subagent (full-stack-developer)
+Task: Update EnterpriseScreen, ProfileScreen, and AnalyticsScreen with visual refresh
 
 Work Log:
-- Diagnosed that admin API routes returned 401 because cookies weren't being sent reliably in proxy environment
-- Fixed login/register/logout routes to set cookies via `response.cookies.set()` instead of `cookies().set()` (Next.js App Router issue)
-- Changed `httpOnly` to `false` for better compatibility
-- Created `/src/lib/auth.ts` with `getAuthToken()` helper that reads from X-Auth-Token header first, then cookie
-- Updated ALL admin API routes to use `getAuthToken()` + `dynamic = 'force-dynamic'`
-- Updated withdrawal, referral/list API routes to use `getAuthToken()`
-- Added `authFetch()` helper in store.ts that automatically adds X-Auth-Token header from current user
-- Updated all admin frontend fetch calls to use `authFetch()` instead of `fetch()`
-- Updated withdrawal, referral/list, and projects/claim-daily frontend calls to use `authFetch()`
-- Verified all admin endpoints work with both cookie and X-Auth-Token header via curl
+- Enterprise: Color-coded risk bars on type cards
+- Enterprise: Crashed projects with red border and strikethrough
+- Enterprise: Claimable projects with green pulse animation
+- Profile: Gradient avatar with breathing animation
+- Profile: Copy button for referral code
+- Profile: Referral progress indicator
+- Analytics: Section headers with colored icons
+- Analytics: Gradient P/L cards
+- Analytics: CSS bar chart for recent transactions
+- Added global keyframes: pulseGlow, claimPulse, avatarBreathe
 
 Stage Summary:
-- Root cause: Next.js `cookies().set()` doesn't reliably set cookies on the response in App Router
-- Fix: Dual auth mechanism - cookies + custom X-Auth-Token header
-- All admin routes now have `dynamic = 'force-dynamic'` to prevent caching
-- All admin routes read auth from both header and cookie
-- Frontend sends user ID as X-Auth-Token header with every authenticated request
-- Admin credentials: admin@berich.com / Admin@2024
+- All three screens visually refreshed
+- Enterprise risk more visible
+- Profile has referral progress tracking
+- Analytics has bar chart visualization

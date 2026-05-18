@@ -14,6 +14,7 @@ const AnalyticsScreen = dynamic(() => import('@/components/screens/AnalyticsScre
 const WithdrawScreen = dynamic(() => import('@/components/screens/WithdrawScreen'), { ssr: false });
 const AdminScreen = dynamic(() => import('@/components/screens/AdminScreen'), { ssr: false });
 const ChatScreen = dynamic(() => import('@/components/screens/ChatScreen'), { ssr: false });
+const DepositScreen = dynamic(() => import('@/components/screens/DepositScreen'), { ssr: false });
 
 // ==================== SPLASH ====================
 function SplashScreen({ onDone }: { onDone: () => void }) {
@@ -132,52 +133,79 @@ function HomeScreen() {
         <button onClick={refresh} className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90"><i className={`fas fa-sync-alt ${refreshing ? 'animate-spin' : ''}`} /></button>
       } />
       <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto">
-        {/* Welcome + Balance */}
-        <div className="bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white rounded-2xl p-5 mb-4 relative overflow-hidden border border-[rgba(255,255,255,0.05)]">
-          <div className="absolute -top-12 -right-12 w-[180px] h-[180px] bg-[radial-gradient(circle,rgba(0,200,83,0.1),transparent_65%)]" />
+        {/* Welcome + Balance - Premium Glassmorphism Card */}
+        <div className="rounded-2xl p-5 mb-4 relative overflow-hidden border border-[rgba(255,255,255,0.08)] bg-gradient-to-br from-[#0F172A] via-[#1a2744] to-[#0F172A] shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.06)]" style={{ backdropFilter: 'blur(20px)' }}>
+          {/* Animated shimmer overlay */}
+          <div className="absolute inset-0 z-[0] opacity-30" style={{ background: 'linear-gradient(110deg, transparent 25%, rgba(255,255,255,0.04) 37%, transparent 50%)', backgroundSize: '200% 100%', animation: 'shimmer 3.5s ease-in-out infinite' }} />
+          {/* Decorative orbs */}
+          <div className="absolute -top-16 -right-16 w-[200px] h-[200px] bg-[radial-gradient(circle,rgba(0,200,83,0.12),transparent_60%)]" style={{ animation: 'orbFloat 8s ease-in-out infinite' }} />
+          <div className="absolute -bottom-10 -left-10 w-[140px] h-[140px] bg-[radial-gradient(circle,rgba(251,191,36,0.08),transparent_60%)]" style={{ animation: 'orbFloat 8s ease-in-out infinite 4s reverse' }} />
           <div className="relative z-[1]">
-            <p className="text-[rgba(255,255,255,0.5)] text-[0.75rem] mb-1">Bienvenue, <span className="text-white font-semibold">{esc(user.name)}</span></p>
-            <div className="text-[1.8rem] font-black tracking-[-1px] mb-3">{formatMoney(user.balance)}</div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="bg-[rgba(255,255,255,0.06)] rounded-xl p-3 border border-[rgba(255,255,255,0.05)]">
-                <div className="text-[0.6rem] text-[rgba(255,255,255,0.4)] uppercase tracking-[0.5px] mb-1">Compte d&apos;Investissement</div>
-                <div className="text-[1rem] font-black text-[#86EFAC]">{formatMoney(user.investBalance)}</div>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[rgba(255,255,255,0.5)] text-[0.75rem]">Bienvenue, <span className="text-white font-semibold">{esc(user.name)}</span></p>
+              {user.depositCount > 0 && (
+                <span className="bg-[rgba(0,200,83,0.15)] text-[#86EFAC] text-[0.6rem] font-bold px-2.5 py-[3px] rounded-full border border-[rgba(0,200,83,0.2)]">{user.depositCount} dépôt{user.depositCount > 1 ? 's' : ''}</span>
+              )}
+            </div>
+            <div className="flex items-baseline gap-2 mb-3">
+              <div className="text-[1.8rem] font-black tracking-[-1px]">{formatMoney(user.balance)}</div>
+            </div>
+            {/* Compact 2x2 Account Grid */}
+            <div className="grid grid-cols-2 gap-1.5">
+              <div className="bg-[rgba(255,255,255,0.05)] rounded-lg p-2.5 border border-[rgba(255,255,255,0.04)] flex items-center gap-2">
+                <div className="w-7 h-7 rounded-md bg-[rgba(0,200,83,0.15)] flex items-center justify-center shrink-0"><i className="fas fa-chart-line text-[0.6rem] text-[#86EFAC]"></i></div>
+                <div className="min-w-0">
+                  <div className="text-[0.5rem] text-[rgba(255,255,255,0.35)] uppercase tracking-[0.3px] leading-tight">Invest.</div>
+                  <div className="text-[0.8rem] font-black text-[#86EFAC] leading-tight">{formatMoney(user.investBalance)}</div>
+                </div>
               </div>
-              <div className="bg-[rgba(255,255,255,0.06)] rounded-xl p-3 border border-[rgba(255,255,255,0.05)]">
-                <div className="text-[0.6rem] text-[rgba(255,255,255,0.4)] uppercase tracking-[0.5px] mb-1">Compte de Trading</div>
-                <div className="text-[1rem] font-black text-[#93C5FD]">{formatMoney(user.tradeBalance)}</div>
+              <div className="bg-[rgba(255,255,255,0.05)] rounded-lg p-2.5 border border-[rgba(255,255,255,0.04)] flex items-center gap-2">
+                <div className="w-7 h-7 rounded-md bg-[rgba(59,130,246,0.15)] flex items-center justify-center shrink-0"><i className="fas fa-bolt text-[0.6rem] text-[#93C5FD]"></i></div>
+                <div className="min-w-0">
+                  <div className="text-[0.5rem] text-[rgba(255,255,255,0.35)] uppercase tracking-[0.3px] leading-tight">Trading</div>
+                  <div className="text-[0.8rem] font-black text-[#93C5FD] leading-tight">{formatMoney(user.tradeBalance)}</div>
+                </div>
               </div>
-              <div className="bg-[rgba(255,255,255,0.06)] rounded-xl p-3 border border-[rgba(255,255,255,0.05)]">
-                <div className="text-[0.6rem] text-[rgba(255,255,255,0.4)] uppercase tracking-[0.5px] mb-1">Compte de Projet</div>
-                <div className="text-[1rem] font-black text-[#FDBA74]">{formatMoney(user.projectBalance)}</div>
+              <div className="bg-[rgba(255,255,255,0.05)] rounded-lg p-2.5 border border-[rgba(255,255,255,0.04)] flex items-center gap-2">
+                <div className="w-7 h-7 rounded-md bg-[rgba(249,115,22,0.15)] flex items-center justify-center shrink-0"><i className="fas fa-building text-[0.6rem] text-[#FDBA74]"></i></div>
+                <div className="min-w-0">
+                  <div className="text-[0.5rem] text-[rgba(255,255,255,0.35)] uppercase tracking-[0.3px] leading-tight">Projets</div>
+                  <div className="text-[0.8rem] font-black text-[#FDBA74] leading-tight">{formatMoney(user.projectBalance)}</div>
+                </div>
               </div>
-              <div className="bg-[rgba(255,255,255,0.06)] rounded-xl p-3 border border-[rgba(255,255,255,0.05)]">
-                <div className="text-[0.6rem] text-[rgba(255,255,255,0.4)] uppercase tracking-[0.5px] mb-1">Profit total</div>
-                <div className={`text-[1rem] font-black ${(user.totalProfit || 0) >= 0 ? 'text-[#86EFAC]' : 'text-[#FCA5A5]'}`}>{formatMoney(user.totalProfit - (user.totalLoss || 0))}</div>
+              <div className="bg-[rgba(255,255,255,0.05)] rounded-lg p-2.5 border border-[rgba(255,255,255,0.04)] flex items-center gap-2">
+                <div className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${(user.totalProfit || 0) >= 0 ? 'bg-[rgba(0,200,83,0.15)]' : 'bg-[rgba(239,68,68,0.15)]'}`}><i className={`fas fa-coins text-[0.6rem] ${(user.totalProfit || 0) >= 0 ? 'text-[#86EFAC]' : 'text-[#FCA5A5]'}`}></i></div>
+                <div className="min-w-0">
+                  <div className="text-[0.5rem] text-[rgba(255,255,255,0.35)] uppercase tracking-[0.3px] leading-tight">Profit</div>
+                  <div className={`text-[0.8rem] font-black leading-tight ${(user.totalProfit || 0) >= 0 ? 'text-[#86EFAC]' : 'text-[#FCA5A5]'}`}>{formatMoney(user.totalProfit - (user.totalLoss || 0))}</div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-4 gap-2 mb-4">
+        <div className="flex gap-2 mb-4">
           {[
             { icon: 'fa-wallet', label: 'Wallet', page: 'wallet', color: '#00C853' },
+            { icon: 'fa-arrow-down', label: 'Déposer', page: 'deposit', color: '#10B981' },
             { icon: 'fa-chart-line', label: 'Investir', page: 'invest', color: '#FBBF24' },
             { icon: 'fa-bolt', label: 'Trader', page: 'trading', color: '#3B82F6' },
             { icon: 'fa-building', label: 'Projets', page: 'enterprise', color: '#F97316' },
           ].map((a, i) => (
-            <button key={i} onClick={() => setPage(a.page)} className="bg-white rounded-xl p-3 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)] cursor-pointer transition-transform active:scale-95">
-              <div className="w-10 h-10 rounded-xl mx-auto mb-1.5 flex items-center justify-center" style={{ backgroundColor: a.color + '15' }}><i className={`fas ${a.icon} text-[0.9rem]`} style={{ color: a.color }}></i></div>
-              <div className="text-[0.68rem] font-semibold text-[#1A2332]">{a.label}</div>
+            <button key={i} onClick={() => setPage(a.page)} className="flex-1 bg-white rounded-xl py-2.5 px-1 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)] cursor-pointer transition-transform active:scale-95">
+              <div className="w-9 h-9 rounded-xl mx-auto mb-1 flex items-center justify-center" style={{ backgroundColor: a.color + '15' }}><i className={`fas ${a.icon} text-[0.8rem]`} style={{ color: a.color }}></i></div>
+              <div className="text-[0.6rem] font-semibold text-[#1A2332] leading-tight">{a.label}</div>
             </button>
           ))}
         </div>
 
-        {/* AI Tip */}
-        <div className="bg-gradient-to-r from-[#1E293B] to-[#0F172A] text-white rounded-xl p-3.5 mb-4 flex items-center gap-3 border border-[rgba(255,255,255,0.05)]">
-          <div className="w-9 h-9 rounded-xl bg-[rgba(59,130,246,0.2)] flex items-center justify-center shrink-0"><i className="fas fa-robot text-[#60A5FA] text-[0.85rem]"></i></div>
-          <div className="flex-1 min-w-0"><div className="text-[0.65rem] text-[rgba(255,255,255,0.4)] font-semibold uppercase tracking-[0.5px] mb-0.5">IA Be Rich</div><div className="text-[0.75rem] leading-relaxed">{tip}</div></div>
+        {/* AI Tip - Premium gradient card */}
+        <div className="rounded-xl p-[1px] mb-4 bg-gradient-to-r from-[#1E3A5F] via-[#3B82F6] to-[#1E3A5F]" style={{ backgroundSize: '200% 100%', animation: 'gs 4s linear infinite' }}>
+          <div className="bg-gradient-to-br from-[#0F172A] via-[#1a2744] to-[#0F172A] text-white rounded-[11px] p-3.5 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[rgba(59,130,246,0.25)] to-[rgba(139,92,246,0.25)] flex items-center justify-center shrink-0 border border-[rgba(59,130,246,0.15)]"><i className="fas fa-robot text-[#A5B4FC] text-[0.9rem]"></i></div>
+            <div className="flex-1 min-w-0"><div className="text-[0.6rem] text-[rgba(165,180,252,0.7)] font-bold uppercase tracking-[1px] mb-0.5">IA Be Rich</div><div className="text-[0.75rem] leading-relaxed text-[rgba(255,255,255,0.8)]">{tip}</div></div>
+          </div>
         </div>
 
         {/* Recent Activity */}
@@ -210,15 +238,13 @@ function HomeScreen() {
 }
 
 // ==================== WALLET SCREEN ====================
-type TransferTarget = { from: string; to: string; label: string; fee: boolean };
+type TransferTarget = { from: string; to: string; label: string; fee: boolean; fromColor: string; toColor: string; fromIcon: string; toIcon: string };
 
 function WalletScreen() {
   const { user, setUser, setPage, addToast } = useAppStore();
   const [transferTarget, setTransferTarget] = useState<TransferTarget | null>(null);
   const [transferAmt, setTransferAmt] = useState('');
   const [transferring, setTransferring] = useState(false);
-  const [depositAmt, setDepositAmt] = useState('');
-  const [showDeposit, setShowDeposit] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const refresh = async () => { setRefreshing(true); try { const r = await fetch('/api/auth/session'); const d = await r.json(); if (d.success) setUser(d.user); } catch { /* */ } setRefreshing(false); };
@@ -240,94 +266,101 @@ function WalletScreen() {
   if (!user) return null;
 
   const accounts = [
-    { key: 'principal', label: 'Compte Principal', balance: user.balance, gradient: 'from-[#0F172A] via-[#1E293B] to-[#0F172A]', border: 'border-[rgba(255,255,255,0.05)]', textColor: 'text-white', icon: 'fa-wallet', iconColor: '#00C853' },
-    { key: 'invest', label: "Compte d'Investissement", balance: user.investBalance, gradient: 'from-[#064E3B] to-[#0F172A]', border: 'border-[rgba(0,200,83,0.15)]', textColor: 'text-[#86EFAC]', icon: 'fa-chart-line', iconColor: '#00C853' },
-    { key: 'trade', label: 'Compte de Trading', balance: user.tradeBalance, gradient: 'from-[#1E3A5F] to-[#0F172A]', border: 'border-[rgba(59,130,246,0.15)]', textColor: 'text-[#93C5FD]', icon: 'fa-bolt', iconColor: '#3B82F6' },
-    { key: 'project', label: 'Compte de Projet', balance: user.projectBalance, gradient: 'from-[#7C2D12] to-[#0F172A]', border: 'border-[rgba(249,115,22,0.15)]', textColor: 'text-[#FDBA74]', icon: 'fa-building', iconColor: '#F97316' },
+    { key: 'principal', label: 'Compte Principal', balance: user.balance, gradient: 'from-[#0F172A] via-[#1a2744] to-[#0F172A]', border: 'border-[rgba(255,255,255,0.08)]', textColor: 'text-white', icon: 'fa-wallet', iconColor: '#00C853', iconBg: 'bg-[rgba(0,200,83,0.15)]' },
+    { key: 'invest', label: "Compte d'Investissement", balance: user.investBalance, gradient: 'from-[#064E3B] to-[#0F172A]', border: 'border-[rgba(0,200,83,0.15)]', textColor: 'text-[#86EFAC]', icon: 'fa-chart-line', iconColor: '#00C853', iconBg: 'bg-[rgba(0,200,83,0.15)]' },
+    { key: 'trade', label: 'Compte de Trading', balance: user.tradeBalance, gradient: 'from-[#1E3A5F] to-[#0F172A]', border: 'border-[rgba(59,130,246,0.15)]', textColor: 'text-[#93C5FD]', icon: 'fa-bolt', iconColor: '#3B82F6', iconBg: 'bg-[rgba(59,130,246,0.15)]' },
+    { key: 'project', label: 'Compte de Projet', balance: user.projectBalance, gradient: 'from-[#7C2D12] to-[#0F172A]', border: 'border-[rgba(249,115,22,0.15)]', textColor: 'text-[#FDBA74]', icon: 'fa-building', iconColor: '#F97316', iconBg: 'bg-[rgba(249,115,22,0.15)]' },
   ] as const;
 
   return (
     <>
       <Header title="Portefeuille" icon="fa-wallet" iconColor="#00C853" leftElement={<button onClick={() => setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none mr-1"><i className="fas fa-arrow-left text-[0.8rem]"></i></button>} rightElement={<button onClick={refresh} className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none"><i className={`fas fa-sync-alt text-[0.7rem] ${refreshing ? 'animate-spin' : ''}`} /></button>} />
       <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto">
-        {/* Principal Balance - Main Card */}
-        <div className={`bg-gradient-to-br ${accounts[0].gradient} text-white rounded-2xl p-5 mb-3 relative overflow-hidden ${accounts[0].border}`}>
-          <div className="absolute -top-12 -right-12 w-[180px] h-[180px] bg-[radial-gradient(circle,rgba(0,200,83,0.1),transparent_65%)]" />
+        {/* Principal Balance - Main Card with glassmorphism */}
+        <div className={`bg-gradient-to-br ${accounts[0].gradient} text-white rounded-2xl p-5 mb-3 relative overflow-hidden ${accounts[0].border} shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.06)]`} style={{ backdropFilter: 'blur(20px)' }}>
+          <div className="absolute -top-16 -right-16 w-[200px] h-[200px] bg-[radial-gradient(circle,rgba(0,200,83,0.12),transparent_60%)]" style={{ animation: 'orbFloat 8s ease-in-out infinite' }} />
+          <div className="absolute -bottom-10 -left-10 w-[140px] h-[140px] bg-[radial-gradient(circle,rgba(251,191,36,0.08),transparent_60%)]" style={{ animation: 'orbFloat 8s ease-in-out infinite 4s reverse' }} />
+          <div className="absolute inset-0 z-[0] opacity-20" style={{ background: 'linear-gradient(110deg, transparent 25%, rgba(255,255,255,0.04) 37%, transparent 50%)', backgroundSize: '200% 100%', animation: 'shimmer 3.5s ease-in-out infinite' }} />
           <div className="relative z-[1]">
-            <div className="text-[0.7rem] opacity-40 font-semibold uppercase tracking-[1.5px] mb-1">{accounts[0].label}</div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className={`w-9 h-9 rounded-xl ${accounts[0].iconBg} flex items-center justify-center`}><i className={`fas ${accounts[0].icon} text-[0.85rem]`} style={{ color: accounts[0].iconColor }}></i></div>
+              <div className="text-[0.7rem] opacity-40 font-semibold uppercase tracking-[1.5px]">{accounts[0].label}</div>
+            </div>
             <div className="text-[2rem] font-black tracking-[-1px] mb-3">{formatMoney(user.balance)}</div>
             <div className="flex gap-2">
-              <button onClick={() => setShowDeposit(true)} className="flex-1 py-[11px] rounded-lg text-[0.78rem] font-semibold cursor-pointer flex items-center justify-center gap-1.5 border-none bg-[rgba(0,200,83,0.15)] text-[#86EFAC]"><i className="fas fa-arrow-down"></i> Déposer</button>
-              <button onClick={() => setPage('withdraw')} className="flex-1 py-[11px] rounded-lg text-[0.78rem] font-semibold cursor-pointer flex items-center justify-center gap-1.5 border-none bg-[rgba(251,191,36,0.15)] text-[#FDE68A]"><i className="fas fa-arrow-up"></i> Retirer</button>
+              <button onClick={() => setPage('deposit')} className="flex-1 py-[11px] rounded-xl text-[0.78rem] font-semibold cursor-pointer flex items-center justify-center gap-1.5 border-none bg-gradient-to-r from-[rgba(0,200,83,0.2)] to-[rgba(0,200,83,0.12)] text-[#86EFAC] shadow-[0_2px_8px_rgba(0,200,83,0.1)]"><i className="fas fa-arrow-down"></i> Déposer</button>
+              <button onClick={() => setPage('withdraw')} className="flex-1 py-[11px] rounded-xl text-[0.78rem] font-semibold cursor-pointer flex items-center justify-center gap-1.5 border-none bg-gradient-to-r from-[rgba(251,191,36,0.2)] to-[rgba(251,191,36,0.12)] text-[#FDE68A] shadow-[0_2px_8px_rgba(251,191,36,0.1)]"><i className="fas fa-arrow-up"></i> Retirer</button>
             </div>
           </div>
         </div>
 
         {/* Other Accounts */}
         {accounts.slice(1).map((acc) => (
-          <div key={acc.key} className={`bg-gradient-to-br ${acc.gradient} text-white rounded-2xl p-4 mb-3 ${acc.border}`}>
+          <div key={acc.key} className={`bg-gradient-to-br ${acc.gradient} text-white rounded-2xl p-4 mb-3 ${acc.border} shadow-[0_4px_16px_rgba(0,0,0,0.15)]`}>
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[rgba(255,255,255,0.1)]"><i className={`fas ${acc.icon} text-[0.8rem]`} style={{ color: acc.iconColor }}></i></div>
+              <div className="flex items-center gap-2.5">
+                <div className={`w-10 h-10 rounded-xl ${acc.iconBg} flex items-center justify-center border border-[rgba(255,255,255,0.08)]`}><i className={`fas ${acc.icon} text-[0.9rem]`} style={{ color: acc.iconColor }}></i></div>
                 <div className="text-[0.7rem] opacity-40 font-semibold uppercase tracking-[1.5px]">{acc.label}</div>
               </div>
               <div className={`text-[1.3rem] font-black ${acc.textColor}`}>{formatMoney(acc.balance)}</div>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setTransferTarget({ from: 'principal', to: acc.key, label: `Verser vers ${acc.label}`, fee: true })} className="flex-1 py-[9px] rounded-lg text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(255,255,255,0.1)] text-white"><i className="fas fa-arrow-right text-[0.65rem]"></i> Verser</button>
-              <button onClick={() => setTransferTarget({ from: acc.key, to: 'principal', label: `Retirer vers Principal`, fee: false })} className="flex-1 py-[9px] rounded-lg text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(251,191,36,0.15)] text-[#FDE68A]"><i className="fas fa-arrow-left text-[0.65rem]"></i> Retirer</button>
+              <button onClick={() => setTransferTarget({ from: 'principal', to: acc.key, label: `Verser vers ${acc.label}`, fee: true, fromColor: '#00C853', toColor: acc.iconColor, fromIcon: 'fa-wallet', toIcon: acc.icon })} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(255,255,255,0.08)] text-white hover:bg-[rgba(255,255,255,0.12)] transition-colors"><i className="fas fa-arrow-right text-[0.65rem]"></i> Verser</button>
+              <button onClick={() => setTransferTarget({ from: acc.key, to: 'principal', label: `Retirer vers Principal`, fee: false, fromColor: acc.iconColor, toColor: '#00C853', fromIcon: acc.icon, toIcon: 'fa-wallet' })} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-gradient-to-r from-[rgba(251,191,36,0.2)] to-[rgba(251,191,36,0.12)] text-[#FDE68A]"><i className="fas fa-arrow-left text-[0.65rem]"></i> Retirer</button>
             </div>
           </div>
         ))}
 
-        {/* Transfer Modal */}
+        {/* Transfer Modal - Premium Design */}
         {transferTarget && (
-          <div className="fixed inset-0 bg-[rgba(6,10,20,0.55)] backdrop-blur-sm z-[6000] flex items-center justify-center" onClick={() => setTransferTarget(null)}>
-            <div className="bg-white rounded-2xl p-6 w-[88%] max-w-[320px] shadow-xl" onClick={(e) => e.stopPropagation()}>
-              <h3 className="text-[1rem] font-bold text-[#1A2332] mb-1">{transferTarget.label}</h3>
-              <p className="text-[0.75rem] text-[#64748B] mb-4">{transferTarget.fee ? 'Frais de 2% sur le transfert' : 'Sans frais'}</p>
-              <input type="number" step="0.01" value={transferAmt} onChange={(e) => setTransferAmt(e.target.value)} placeholder="Montant (min 2 $)" className="w-full py-3 px-4 bg-[#F8FAFC] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.88rem] outline-none mb-4 focus:border-[#00C853]" />
-              <div className="flex gap-2">
-                <button onClick={() => setTransferTarget(null)} className="flex-1 py-3 rounded-xl border-[1.5px] border-[rgba(0,0,0,0.08)] bg-transparent text-[#64748B] font-semibold text-[0.82rem] cursor-pointer">Annuler</button>
-                <button onClick={handleTransfer} disabled={transferring} className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.82rem] border-none cursor-pointer disabled:opacity-60">{transferring ? '...' : 'Confirmer'}</button>
+          <div className="fixed inset-0 bg-[rgba(6,10,20,0.6)] backdrop-blur-md z-[6000] flex items-center justify-center" onClick={() => setTransferTarget(null)}>
+            <div className="bg-white rounded-2xl w-[88%] max-w-[340px] shadow-[0_20px_60px_rgba(0,0,0,0.3)] overflow-hidden" style={{ animation: 'modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1)' }} onClick={(e) => e.stopPropagation()}>
+              {/* Modal Header with gradient */}
+              <div className="bg-gradient-to-br from-[#0F172A] via-[#1a2744] to-[#0F172A] p-5 relative overflow-hidden">
+                <div className="absolute inset-0 opacity-20" style={{ background: 'linear-gradient(110deg, transparent 25%, rgba(255,255,255,0.04) 37%, transparent 50%)', backgroundSize: '200% 100%', animation: 'shimmer 3.5s ease-in-out infinite' }} />
+                <div className="relative z-[1]">
+                  <h3 className="text-[1rem] font-bold text-white mb-2">{transferTarget.label}</h3>
+                  {/* From → To visual */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 bg-[rgba(255,255,255,0.08)] rounded-lg px-2.5 py-1.5">
+                      <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ backgroundColor: transferTarget.fromColor + '25' }}><i className={`fas ${transferTarget.fromIcon} text-[0.5rem]`} style={{ color: transferTarget.fromColor }}></i></div>
+                      <span className="text-[0.65rem] font-medium text-[rgba(255,255,255,0.6)]">{transferTarget.from === 'principal' ? 'Principal' : transferTarget.from === 'invest' ? 'Invest.' : transferTarget.from === 'trade' ? 'Trading' : 'Projets'}</span>
+                    </div>
+                    <i className="fas fa-arrow-right text-[0.6rem] text-[rgba(255,255,255,0.3)]"></i>
+                    <div className="flex items-center gap-1.5 bg-[rgba(255,255,255,0.08)] rounded-lg px-2.5 py-1.5">
+                      <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ backgroundColor: transferTarget.toColor + '25' }}><i className={`fas ${transferTarget.toIcon} text-[0.5rem]`} style={{ color: transferTarget.toColor }}></i></div>
+                      <span className="text-[0.65rem] font-medium text-[rgba(255,255,255,0.6)]">{transferTarget.to === 'principal' ? 'Principal' : transferTarget.to === 'invest' ? 'Invest.' : transferTarget.to === 'trade' ? 'Trading' : 'Projets'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Modal Body */}
+              <div className="p-5">
+                <div className="flex items-center gap-1.5 mb-3">
+                  <i className={`fas ${transferTarget.fee ? 'fa-percentage text-[#FBBF24]' : 'fa-check-circle text-[#00C853]'} text-[0.7rem]`}></i>
+                  <p className="text-[0.75rem] text-[#64748B]">{transferTarget.fee ? 'Frais de 2% sur le transfert' : 'Transfert sans frais'}</p>
+                </div>
+                <input type="number" step="0.01" value={transferAmt} onChange={(e) => setTransferAmt(e.target.value)} placeholder="Montant (min 2 $)" className="w-full py-3.5 px-4 bg-[#F8FAFC] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.88rem] outline-none mb-4 focus:border-[#00C853] font-semibold" />
+                <div className="flex gap-2">
+                  <button onClick={() => { setTransferTarget(null); setTransferAmt(''); }} className="flex-1 py-3.5 rounded-xl border-[1.5px] border-[rgba(0,0,0,0.08)] bg-transparent text-[#64748B] font-semibold text-[0.82rem] cursor-pointer transition-transform active:scale-95">Annuler</button>
+                  <button onClick={handleTransfer} disabled={transferring} className="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.82rem] border-none cursor-pointer disabled:opacity-60 transition-transform active:scale-95 shadow-[0_4px_16px_rgba(0,200,83,0.2)]">{transferring ? '...' : 'Confirmer'}</button>
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Deposit Modal */}
-        {showDeposit && (
-          <div className="fixed inset-0 bg-[rgba(6,10,20,0.55)] backdrop-blur-sm z-[6000] flex items-center justify-center" onClick={() => setShowDeposit(false)}>
-            <div className="bg-white rounded-2xl p-6 w-[88%] max-w-[340px] shadow-xl" onClick={(e) => e.stopPropagation()}>
-              <h3 className="text-[1rem] font-bold text-[#1A2332] mb-2">Déposer via TRX</h3>
-              <p className="text-[0.75rem] text-[#64748B] mb-3">Minimum 10 $. Envoyez des TRX à l&apos;adresse admin puis soumettez.</p>
-              <input type="number" step="0.01" value={depositAmt} onChange={(e) => setDepositAmt(e.target.value)} placeholder="Montant en USD" className="w-full py-3 px-4 bg-[#F8FAFC] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.88rem] outline-none mb-3 focus:border-[#00C853]" />
-              <button onClick={async () => {
-                const amt = parseFloat(depositAmt);
-                if (!amt || amt < 10) { addToast('Minimum 10 $', 'error'); return; }
-                try {
-                  const res = await authFetch('/api/deposit/trx', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amountUsd: amt }) });
-                  const data = await res.json();
-                  if (data.success) { addToast('Dépôt soumis ! En attente de confirmation.', 'success'); setShowDeposit(false); setDepositAmt(''); }
-                  else { addToast(data.error, 'error'); }
-                } catch { addToast('Erreur', 'error'); }
-              }} className="w-full py-3 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.88rem] border-none cursor-pointer"><i className="fas fa-paper-plane mr-2"></i>Soumettre</button>
-              <button onClick={() => setShowDeposit(false)} className="w-full py-2.5 mt-2 text-[0.82rem] text-[#64748B] bg-transparent border-none cursor-pointer">Annuler</button>
-            </div>
-          </div>
-        )}
-
-        {/* Stats */}
+        {/* Stats - Premium gradient cards */}
         <div className="grid grid-cols-2 gap-2.5 mb-4">
-          <div className="bg-white rounded-xl p-3.5 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
-            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center mx-auto mb-1.5 bg-[#DCFCE7] text-[#166534]"><i className="fas fa-chart-line text-[0.85rem]"></i></div>
-            <div className="font-extrabold text-[0.84rem] text-[#009624]">{formatMoney(user.totalProfit)}</div>
-            <div className="text-[0.56rem] text-[#94A3B8] uppercase tracking-[0.4px]">Gains</div>
+          <div className="rounded-xl p-3.5 text-center border border-[rgba(0,200,83,0.1)] bg-gradient-to-br from-[#F0FDF4] to-white shadow-[0_2px_8px_rgba(0,200,83,0.06)]">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-1.5 bg-gradient-to-br from-[#DCFCE7] to-[#BBF7D0] border border-[rgba(0,200,83,0.1)]"><i className="fas fa-chart-line text-[0.85rem] text-[#166534]"></i></div>
+            <div className="font-extrabold text-[0.9rem] text-[#009624]">{formatMoney(user.totalProfit)}</div>
+            <div className="text-[0.58rem] text-[#6B8E7B] uppercase tracking-[0.5px] font-semibold mt-0.5">Gains</div>
           </div>
-          <div className="bg-white rounded-xl p-3.5 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
-            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center mx-auto mb-1.5 bg-[#FEE2E2] text-[#991B1B]"><i className="fas fa-arrow-down text-[0.85rem]"></i></div>
-            <div className="font-extrabold text-[0.84rem] text-[#EF4444]">{formatMoney(user.totalLoss)}</div>
-            <div className="text-[0.56rem] text-[#94A3B8] uppercase tracking-[0.4px]">Pertes</div>
+          <div className="rounded-xl p-3.5 text-center border border-[rgba(239,68,68,0.1)] bg-gradient-to-br from-[#FEF2F2] to-white shadow-[0_2px_8px_rgba(239,68,68,0.06)]">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-1.5 bg-gradient-to-br from-[#FEE2E2] to-[#FECACA] border border-[rgba(239,68,68,0.1)]"><i className="fas fa-arrow-down text-[0.85rem] text-[#991B1B]"></i></div>
+            <div className="font-extrabold text-[0.9rem] text-[#EF4444]">{formatMoney(user.totalLoss)}</div>
+            <div className="text-[0.58rem] text-[#8E6B6B] uppercase tracking-[0.5px] font-semibold mt-0.5">Pertes</div>
           </div>
         </div>
       </div>
@@ -396,6 +429,7 @@ export default function BeRichApp() {
           @keyframes nIn { from { opacity: 0; transform: translateY(-12px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
           @keyframes modalIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
           @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+          @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         `}</style>
         {showSplash && <SplashScreen onDone={handleSplashDone} />}
         <div className="h-full flex flex-col">
@@ -410,6 +444,7 @@ export default function BeRichApp() {
           {user && currentPage === 'withdraw' && <WithdrawScreen />}
           {user && currentPage === 'admin' && <AdminScreen />}
           {user && currentPage === 'chat' && <ChatScreen />}
+          {user && currentPage === 'deposit' && <DepositScreen />}
           {showNav && <BottomNav />}
         </div>
         <ToastContainer />
