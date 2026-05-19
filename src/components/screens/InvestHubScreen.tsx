@@ -4,6 +4,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAppStore, formatMoney, esc, authFetch, type AppUser } from '@/lib/store';
 import { Header, LogoImg, Modal, INVEST_LEVELS, ENTERPRISE_TYPES, ENTERPRISE_NAMES } from '@/components/shared';
 
+const hexToRgba = (hex: string, alpha: number) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+};
+
 export default function InvestHubScreen() {
   const { user, setUser, addToast } = useAppStore();
   const [investments, setInvestments] = useState<any[]>([]);
@@ -64,8 +71,8 @@ export default function InvestHubScreen() {
           100% { transform: translateY(-2px); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
         }
         @keyframes claimBtnPulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.4); transform: scale(1); }
-          50% { box-shadow: 0 0 0 8px rgba(59,130,246,0); transform: scale(1.02); }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); transform: scale(1); }
+          50% { box-shadow: 0 0 0 8px rgba(34,197,94,0); transform: scale(1.02); }
         }
         @keyframes balanceGlow {
           0%, 100% { box-shadow: 0 0 20px rgba(59,130,246,0.08); }
@@ -136,7 +143,7 @@ export default function InvestHubScreen() {
             </div>
             <div className="text-[0.7rem] font-semibold uppercase tracking-[1.5px]" style={{ color: 'rgba(0,0,0,0.45)' }}>Solde Investissement</div>
           </div>
-          <div className="text-[2rem] font-black mb-2 tracking-tight" style={{ color: '#60A5FA' }}>{formatMoney(user.investBalance)}</div>
+          <div className="text-[2rem] font-black mb-2 tracking-tight" style={{ color: '#22C55E' }}>{formatMoney(user.investBalance)}</div>
           <div className="flex items-center gap-3">
             <button
               onClick={() => useAppStore.getState().setPage('wallet')}
@@ -157,25 +164,25 @@ export default function InvestHubScreen() {
           <div
             className="rounded-xl p-3.5 mb-4 flex items-center gap-3 relative overflow-hidden"
             style={{
-              background: 'rgba(59,130,246,0.1)',
-              border: '1px solid rgba(59,130,246,0.15)',
+              background: 'rgba(34,197,94,0.1)',
+              border: '1px solid rgba(34,197,94,0.15)',
               animation: 'slideUp 0.3s ease-out',
             }}
           >
             <div
               className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
               style={{
-                background: 'rgba(59,130,246,0.15)',
-                boxShadow: '0 4px 12px rgba(59,130,246,0.15)',
+                background: 'rgba(34,197,94,0.15)',
+                boxShadow: '0 4px 12px rgba(34,197,94,0.15)',
               }}
             >
-              <i className="fas fa-gift text-[1rem]" style={{ color: '#3B82F6' }}></i>
+              <i className="fas fa-gift text-[1rem]" style={{ color: '#22C55E' }}></i>
             </div>
             <div className="flex-1">
-              <h4 className="text-[0.85rem] font-bold" style={{ color: '#60A5FA' }}>Gains à réclamer !</h4>
+              <h4 className="text-[0.85rem] font-bold" style={{ color: '#22C55E' }}>Gains à réclamer !</h4>
               <p className="text-[0.72rem]" style={{ color: 'rgba(0,0,0,0.55)' }}>Vous avez des gains prêts à être collectés.</p>
             </div>
-            <i className="fas fa-chevron-right text-[0.7rem]" style={{ color: 'rgba(59,130,246,0.4)' }}></i>
+            <i className="fas fa-chevron-right text-[0.7rem]" style={{ color: 'rgba(34,197,94,0.4)' }}></i>
           </div>
         )}
 
@@ -193,17 +200,17 @@ export default function InvestHubScreen() {
               }}
             >
               <div className="flex items-center gap-1.5 mb-2">
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.12)' }}>
-                  <i className={`fas ${lvl.icon} text-[0.75rem]`} style={{ color: '#3B82F6' }}></i>
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: hexToRgba(lvl.color, 0.12) }}>
+                  <i className={`fas ${lvl.icon} text-[0.75rem]`} style={{ color: lvl.color }}></i>
                 </div>
-                <span className="text-[0.72rem] font-bold" style={{ color: '#3B82F6' }}>Niv. {lvl.level}</span>
+                <span className="text-[0.72rem] font-bold" style={{ color: lvl.color }}>Niv. {lvl.level}</span>
               </div>
               <div className="text-[0.88rem] font-bold mb-0.5" style={{ color: '#1F2937' }}>{lvl.name}</div>
               <div className="text-[0.65rem] mb-1" style={{ color: 'rgba(0,0,0,0.45)' }}>{lvl.min}-{lvl.max} $</div>
               <div className="flex items-center gap-1">
                 <span
                   className="text-[0.68rem] font-bold px-1.5 py-0.5 rounded-md"
-                  style={{ background: 'rgba(59,130,246,0.1)', color: '#3B82F6' }}
+                  style={{ background: hexToRgba(lvl.color, 0.1), color: lvl.color }}
                 >
                   {lvl.rate}%/cycle
                 </span>
@@ -239,7 +246,7 @@ export default function InvestHubScreen() {
                     <div className="flex items-center gap-2.5">
                       <div
                         className="w-10 h-10 rounded-xl flex items-center justify-center text-[0.85rem]"
-                        style={{ background: 'rgba(59,130,246,0.12)', color: '#3B82F6' }}
+                        style={{ background: hexToRgba(lvl.color, 0.12), color: lvl.color }}
                       >
                         <i className={`fas ${lvl.icon}`}></i>
                       </div>
@@ -250,7 +257,7 @@ export default function InvestHubScreen() {
                     </div>
                     <div className="text-right">
                       <div className="text-[0.6rem] uppercase tracking-[0.5px]" style={{ color: 'rgba(0,0,0,0.35)' }}>Gagné</div>
-                      <div className="text-[0.95rem] font-black" style={{ color: '#60A5FA' }}>+{formatMoney(inv.earned)}</div>
+                      <div className="text-[0.95rem] font-black" style={{ color: '#22C55E' }}>+{formatMoney(inv.earned)}</div>
                     </div>
                   </div>
 
@@ -260,7 +267,7 @@ export default function InvestHubScreen() {
                       className="h-full rounded-full relative progress-shine transition-all duration-500"
                       style={{
                         width: `${progress}%`,
-                        background: 'linear-gradient(90deg, #3B82F6, #60A5FA)',
+                        background: `linear-gradient(90deg, ${lvl.color}, #22C55E)`,
                       }}
                     ></div>
                   </div>
@@ -272,9 +279,9 @@ export default function InvestHubScreen() {
                         onClick={() => handleClaim(inv.id)}
                         className="claim-btn-pulse py-2 px-4 rounded-xl text-[0.78rem] font-bold border-none cursor-pointer flex items-center gap-1.5 transition-all active:scale-[0.97]"
                         style={{
-                          background: '#3B82F6',
+                          background: '#22C55E',
                           color: '#FFFFFF',
-                          boxShadow: '0 4px 16px rgba(59,130,246,0.3)',
+                          boxShadow: '0 4px 16px rgba(34,197,94,0.3)',
                         }}
                       >
                         <i className="fas fa-hand-holding-dollar text-[0.7rem]"></i>Réclamer
@@ -314,12 +321,12 @@ export default function InvestHubScreen() {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.1)' }}>
-                        <i className={`fas ${lvl.icon} text-[0.55rem]`} style={{ color: '#3B82F6' }}></i>
+                      <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: hexToRgba(lvl.color, 0.1) }}>
+                        <i className={`fas ${lvl.icon} text-[0.55rem]`} style={{ color: lvl.color }}></i>
                       </div>
                       <div className="text-[0.75rem] font-semibold" style={{ color: '#1F2937' }}>Niv. {inv.level} - {lvl.name}</div>
                     </div>
-                    <div className="text-[0.75rem] font-bold" style={{ color: '#3B82F6' }}>+{formatMoney(inv.earned)}</div>
+                    <div className="text-[0.75rem] font-bold" style={{ color: lvl.color }}>+{formatMoney(inv.earned)}</div>
                   </div>
                   <div className="text-[0.6rem] ml-8" style={{ color: 'rgba(0,0,0,0.35)' }}>{formatMoney(inv.amount)} investi · {inv.totalCycles} cycles</div>
                 </div>
@@ -367,9 +374,9 @@ export default function InvestHubScreen() {
                   <div className="flex items-center gap-3 mb-2">
                     <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center"
-                      style={{ background: 'rgba(59,130,246,0.12)' }}
+                      style={{ background: hexToRgba(lvl.color, 0.12) }}
                     >
-                      <i className={`fas ${lvl.icon}`} style={{ color: '#3B82F6' }}></i>
+                      <i className={`fas ${lvl.icon}`} style={{ color: lvl.color }}></i>
                     </div>
                     <div>
                       <h3 className="text-[1rem] font-bold" style={{ color: '#1F2937' }}>Niveau {lvl.level} - {lvl.name}</h3>
@@ -379,11 +386,11 @@ export default function InvestHubScreen() {
                   <div
                     className="rounded-lg p-3 mb-4"
                     style={{
-                      background: 'rgba(59,130,246,0.08)',
-                      border: '1px solid rgba(59,130,246,0.1)',
+                      background: hexToRgba(lvl.color, 0.08),
+                      border: `1px solid ${hexToRgba(lvl.color, 0.1)}`,
                     }}
                   >
-                    <div className="text-[0.68rem]" style={{ color: '#60A5FA' }}>
+                    <div className="text-[0.68rem]" style={{ color: '#22C55E' }}>
                       <i className="fas fa-calculator mr-1"></i>Gain potentiel max: <span className="font-bold">{formatMoney(lvl.max * lvl.rate / 100 * lvl.cycles)}</span>
                     </div>
                   </div>
@@ -399,7 +406,7 @@ export default function InvestHubScreen() {
                       border: '1.5px solid rgba(0,0,0,0.1)',
                       color: '#1F2937',
                     }}
-                    onFocus={(e) => { e.target.style.borderColor = 'rgba(59,130,246,0.4)'; }}
+                    onFocus={(e) => { e.target.style.borderColor = hexToRgba(lvl.color, 0.4); }}
                     onBlur={(e) => { e.target.style.borderColor = 'rgba(0,0,0,0.1)'; }}
                   />
                   <div className="flex gap-2">
@@ -419,9 +426,9 @@ export default function InvestHubScreen() {
                       disabled={creating}
                       className="flex-1 py-3 rounded-xl font-semibold text-[0.82rem] border-none cursor-pointer disabled:opacity-50 transition-all active:scale-[0.97]"
                       style={{
-                        background: '#3B82F6',
+                        background: lvl.color,
                         color: '#FFFFFF',
-                        boxShadow: '0 4px 16px rgba(59,130,246,0.25)',
+                        boxShadow: `0 4px 16px ${hexToRgba(lvl.color, 0.25)}`,
                       }}
                     >
                       {creating ? '...' : 'Investir'}

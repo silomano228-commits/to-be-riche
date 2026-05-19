@@ -62,7 +62,7 @@ export default function GuideScreen() {
 
   return (
     <>
-      <Header title="Guide & Analyses" icon="fa-compass" iconColor="#3B82F6" leftElement={
+      <Header title="Guide & Analyses" icon="fa-compass" iconColor="#14B8A6" leftElement={
         <button onClick={() => useAppStore.getState().setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] cursor-pointer border-none mr-1">
           <i className="fas fa-arrow-left text-[0.8rem]"></i>
         </button>
@@ -78,7 +78,7 @@ export default function GuideScreen() {
           <button key={t.id} onClick={() => setSection(t.id)}
             className={`flex-1 py-2 rounded-xl text-[0.72rem] font-semibold border-none cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
               section === t.id
-                ? 'bg-[rgba(59,130,246,0.15)] text-[#3B82F6]'
+                ? 'bg-[rgba(20,184,166,0.15)] text-[#14B8A6]'
                 : 'bg-[rgba(0,0,0,0.05)] text-[rgba(0,0,0,0.55)]'
             }`}
           >
@@ -93,11 +93,11 @@ export default function GuideScreen() {
           {/* ============ GUIDE SECTION ============ */}
           {section === 'guide' && (
             <>
-              {/* Step 1: Dépôt */}
+              {/* Step 1: Dépôt - Green for basics */}
               <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4 mb-3">
                 <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-[rgba(59,130,246,0.12)] flex items-center justify-center shrink-0 border border-[rgba(59,130,246,0.15)]">
-                    <span className="text-[0.85rem] font-black text-[#3B82F6]">1</span>
+                  <div className="w-9 h-9 rounded-xl bg-[rgba(34,197,94,0.12)] flex items-center justify-center shrink-0 border border-[rgba(34,197,94,0.15)]">
+                    <span className="text-[0.85rem] font-black text-[#22C55E]">1</span>
                   </div>
                   <div>
                     <div className="text-[0.85rem] font-bold text-[#1F2937]">Faire un dépôt</div>
@@ -107,42 +107,42 @@ export default function GuideScreen() {
                 <div className="space-y-2">
                   <div className="bg-[rgba(0,0,0,0.04)] rounded-xl p-2.5 border border-[rgba(0,0,0,0.05)]">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <i className="fab fa-gg-circle text-[#3B82F6] text-[0.7rem]"></i>
+                      <i className="fab fa-gg-circle text-[#22C55E] text-[0.7rem]"></i>
                       <span className="text-[0.72rem] font-bold text-[#1F2937]">Méthode TRX (Dollars)</span>
                     </div>
                     <ol className="space-y-1 text-[0.65rem] text-[rgba(0,0,0,0.65)] pl-4">
-                      <li className="flex items-start gap-1.5"><span className="text-[#3B82F6] font-bold">•</span>Allez dans <strong className="text-[#1F2937]">Portefeuille → Déposer</strong></li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#3B82F6] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">Dépôt en Dollars (TRX)</strong></li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#3B82F6] font-bold">•</span>Entrez le montant en $ (min 10 $)</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#3B82F6] font-bold">•</span>Envoyez les TRX à l&apos;adresse admin affichée</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#3B82F6] font-bold">•</span>Entrez votre adresse TRX pour confirmer</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#3B82F6] font-bold">•</span>Attendez la validation par l&apos;admin</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Allez dans <strong className="text-[#1F2937]">Portefeuille → Déposer</strong></li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">Dépôt en Dollars (TRX)</strong></li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez le montant en $ (min 10 $)</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Envoyez les TRX à l&apos;adresse admin affichée</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez votre adresse TRX pour confirmer</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Attendez la validation par l&apos;admin</li>
                     </ol>
                   </div>
                   <div className="bg-[rgba(0,0,0,0.04)] rounded-xl p-2.5 border border-[rgba(0,0,0,0.05)]">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <i className="fas fa-exchange-alt text-[#3B82F6] text-[0.7rem]"></i>
+                      <i className="fas fa-exchange-alt text-[#22C55E] text-[0.7rem]"></i>
                       <span className="text-[0.72rem] font-bold text-[#1F2937]">Méthode Yas du Togo (FCFA)</span>
                     </div>
                     <ol className="space-y-1 text-[0.65rem] text-[rgba(0,0,0,0.65)] pl-4">
-                      <li className="flex items-start gap-1.5"><span className="text-[#3B82F6] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">Conversion Yas du Togo</strong></li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#3B82F6] font-bold">•</span>Entrez le montant en FCFA (min 6 000)</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#3B82F6] font-bold">•</span>Le montant est converti automatiquement en $ et TRX</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#3B82F6] font-bold">•</span>Entrez votre numéro Yas (8 chiffres, 90-93 ou 70-73)</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#3B82F6] font-bold">•</span>Envoyez l&apos;argent au numéro Yas de l&apos;admin</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#3B82F6] font-bold">•</span>Téléchargez Trust Wallet, créez un portefeuille TRX</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#3B82F6] font-bold">•</span>Entrez votre adresse TRX Trust Wallet</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#3B82F6] font-bold">•</span>L&apos;admin vous enverra les TRX sur votre Trust Wallet</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">Conversion Yas du Togo</strong></li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez le montant en FCFA (min 6 000)</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Le montant est converti automatiquement en $ et TRX</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez votre numéro Yas (8 chiffres, 90-93 ou 70-73)</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Envoyez l&apos;argent au numéro Yas de l&apos;admin</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Téléchargez Trust Wallet, créez un portefeuille TRX</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez votre adresse TRX Trust Wallet</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>L&apos;admin vous enverra les TRX sur votre Trust Wallet</li>
                     </ol>
                   </div>
                 </div>
               </div>
 
-              {/* Step 2: Verser dans les comptes */}
+              {/* Step 2: Verser - Teal for accounts */}
               <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4 mb-3">
                 <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-[rgba(59,130,246,0.12)] flex items-center justify-center shrink-0 border border-[rgba(59,130,246,0.15)]">
-                    <span className="text-[0.85rem] font-black text-[#3B82F6]">2</span>
+                  <div className="w-9 h-9 rounded-xl bg-[rgba(20,184,166,0.12)] flex items-center justify-center shrink-0 border border-[rgba(20,184,166,0.15)]">
+                    <span className="text-[0.85rem] font-black text-[#14B8A6]">2</span>
                   </div>
                   <div>
                     <div className="text-[0.85rem] font-bold text-[#1F2937]">Verser dans les comptes</div>
@@ -151,37 +151,37 @@ export default function GuideScreen() {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-start gap-2">
-                    <div className="w-6 h-6 rounded-md bg-[rgba(59,130,246,0.12)] flex items-center justify-center shrink-0 mt-0.5"><i className="fas fa-chart-line text-[0.55rem] text-[#3B82F6]"></i></div>
+                    <div className="w-6 h-6 rounded-md bg-[rgba(20,184,166,0.12)] flex items-center justify-center shrink-0 mt-0.5"><i className="fas fa-chart-line text-[0.55rem] text-[#14B8A6]"></i></div>
                     <div>
                       <div className="text-[0.72rem] font-bold text-[#1F2937]">Compte d&apos;Investissement</div>
                       <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">Choisissez un palier (Micro à Elite), gagnez 5% à 12.5% par cycle. Réclamez vos gains chaque jour !</div>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
-                    <div className="w-6 h-6 rounded-md bg-[rgba(59,130,246,0.12)] flex items-center justify-center shrink-0 mt-0.5"><i className="fas fa-bolt text-[0.55rem] text-[#3B82F6]"></i></div>
+                    <div className="w-6 h-6 rounded-md bg-[rgba(20,184,166,0.12)] flex items-center justify-center shrink-0 mt-0.5"><i className="fas fa-bolt text-[0.55rem] text-[#14B8A6]"></i></div>
                     <div>
                       <div className="text-[0.72rem] font-bold text-[#1F2937]">Compte de Trading</div>
                       <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">Pariez sur la hausse ou la baisse des actifs. Durée de 1 à 10 min. Consultez les analyses avant de trader !</div>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
-                    <div className="w-6 h-6 rounded-md bg-[rgba(59,130,246,0.12)] flex items-center justify-center shrink-0 mt-0.5"><i className="fas fa-building text-[0.55rem] text-[#3B82F6]"></i></div>
+                    <div className="w-6 h-6 rounded-md bg-[rgba(20,184,166,0.12)] flex items-center justify-center shrink-0 mt-0.5"><i className="fas fa-building text-[0.55rem] text-[#14B8A6]"></i></div>
                     <div>
                       <div className="text-[0.72rem] font-bold text-[#1F2937]">Compte de Projet</div>
                       <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">Investissez dans des entreprises. Rendement garanti à l&apos;échéance. Adaptez la durée selon vos objectifs !</div>
                     </div>
                   </div>
-                  <div className="bg-[rgba(59,130,246,0.1)] rounded-lg p-2 mt-1 border border-[rgba(59,130,246,0.1)]">
-                    <p className="text-[0.62rem] text-[#3B82F6]"><i className="fas fa-info-circle mr-1"></i>Allez dans <strong>Portefeuille</strong> puis cliquez sur <strong>Verser</strong> sur le compte de votre choix. Frais de 2% pour les transferts vers les sous-comptes.</p>
+                  <div className="bg-[rgba(20,184,166,0.1)] rounded-lg p-2 mt-1 border border-[rgba(20,184,166,0.1)]">
+                    <p className="text-[0.62rem] text-[#14B8A6]"><i className="fas fa-info-circle mr-1"></i>Allez dans <strong>Portefeuille</strong> puis cliquez sur <strong>Verser</strong> sur le compte de votre choix. Frais de 2% pour les transferts vers les sous-comptes.</p>
                   </div>
                 </div>
               </div>
 
-              {/* Step 3: Gagner & Réclamer */}
+              {/* Step 3: Gagner - Amber for rewards */}
               <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4 mb-3">
                 <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-[rgba(59,130,246,0.12)] flex items-center justify-center shrink-0 border border-[rgba(59,130,246,0.15)]">
-                    <span className="text-[0.85rem] font-black text-[#3B82F6]">3</span>
+                  <div className="w-9 h-9 rounded-xl bg-[rgba(245,158,11,0.12)] flex items-center justify-center shrink-0 border border-[rgba(245,158,11,0.15)]">
+                    <span className="text-[0.85rem] font-black text-[#F59E0B]">3</span>
                   </div>
                   <div>
                     <div className="text-[0.85rem] font-bold text-[#1F2937]">Gagner et réclamer</div>
@@ -190,25 +190,25 @@ export default function GuideScreen() {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-start gap-2">
-                    <i className="fas fa-hand-holding-usd text-[#3B82F6] text-[0.65rem] mt-1"></i>
+                    <i className="fas fa-hand-holding-usd text-[#F59E0B] text-[0.65rem] mt-1"></i>
                     <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]"><strong className="text-[#1F2937]">Investissements :</strong> Cliquez sur &quot;Réclamer&quot; dans Finance → Invest pour collecter vos gains quotidiens.</div>
                   </div>
                   <div className="flex items-start gap-2">
-                    <i className="fas fa-chart-line text-[#3B82F6] text-[0.65rem] mt-1"></i>
+                    <i className="fas fa-chart-line text-[#F59E0B] text-[0.65rem] mt-1"></i>
                     <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]"><strong className="text-[#1F2937]">Trading :</strong> Les gains sont automatiquement crédités après la fin du trade.</div>
                   </div>
                   <div className="flex items-start gap-2">
-                    <i className="fas fa-building text-[#3B82F6] text-[0.65rem] mt-1"></i>
+                    <i className="fas fa-building text-[#F59E0B] text-[0.65rem] mt-1"></i>
                     <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]"><strong className="text-[#1F2937]">Projets :</strong> Cliquez sur &quot;Réclamer&quot; quand l&apos;entreprise a terminé sa durée.</div>
                   </div>
                 </div>
               </div>
 
-              {/* Step 4: Retirer */}
+              {/* Step 4: Retirer - Red for risks/withdrawal */}
               <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4 mb-3">
                 <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-[rgba(59,130,246,0.12)] flex items-center justify-center shrink-0 border border-[rgba(59,130,246,0.15)]">
-                    <span className="text-[0.85rem] font-black text-[#3B82F6]">4</span>
+                  <div className="w-9 h-9 rounded-xl bg-[rgba(239,68,68,0.12)] flex items-center justify-center shrink-0 border border-[rgba(239,68,68,0.15)]">
+                    <span className="text-[0.85rem] font-black text-[#EF4444]">4</span>
                   </div>
                   <div>
                     <div className="text-[0.85rem] font-bold text-[#1F2937]">Retirer vos gains</div>
@@ -217,28 +217,28 @@ export default function GuideScreen() {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-start gap-2">
-                    <i className="fas fa-arrow-up text-[#3B82F6] text-[0.65rem] mt-1"></i>
+                    <i className="fas fa-arrow-up text-[#EF4444] text-[0.65rem] mt-1"></i>
                     <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Transférez vos gains depuis les sous-comptes vers le <strong className="text-[#1F2937]">Compte Principal</strong> (sans frais)</div>
                   </div>
                   <div className="flex items-start gap-2">
-                    <i className="fas fa-paper-plane text-[#3B82F6] text-[0.65rem] mt-1"></i>
+                    <i className="fas fa-paper-plane text-[#EF4444] text-[0.65rem] mt-1"></i>
                     <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Allez dans <strong className="text-[#1F2937]">Portefeuille → Retirer</strong> et entrez votre adresse TRX</div>
                   </div>
                   <div className="flex items-start gap-2">
-                    <i className="fas fa-clock text-[#3B82F6] text-[0.65rem] mt-1"></i>
+                    <i className="fas fa-clock text-[#EF4444] text-[0.65rem] mt-1"></i>
                     <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]"><strong className="text-[#1F2937]">Attention :</strong> Le premier retrait nécessite 48h après le 1er dépôt + 10 filleuls</div>
                   </div>
-                  <div className="bg-[rgba(59,130,246,0.1)] rounded-lg p-2 mt-1 border border-[rgba(59,130,246,0.1)]">
-                    <p className="text-[0.62rem] text-[#3B82F6]"><i className="fas fa-info-circle mr-1"></i>Seuls les <strong>gains</strong> peuvent être retirés, pas le capital investi.</p>
+                  <div className="bg-[rgba(239,68,68,0.1)] rounded-lg p-2 mt-1 border border-[rgba(239,68,68,0.1)]">
+                    <p className="text-[0.62rem] text-[#EF4444]"><i className="fas fa-info-circle mr-1"></i>Seuls les <strong>gains</strong> peuvent être retirés, pas le capital investi.</p>
                   </div>
                 </div>
               </div>
 
-              {/* Step 5: Parrainer */}
+              {/* Step 5: Parrainer - Purple for social/advanced */}
               <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4 mb-3">
                 <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-[rgba(59,130,246,0.12)] flex items-center justify-center shrink-0 border border-[rgba(59,130,246,0.15)]">
-                    <span className="text-[0.85rem] font-black text-[#3B82F6]">5</span>
+                  <div className="w-9 h-9 rounded-xl bg-[rgba(139,92,246,0.12)] flex items-center justify-center shrink-0 border border-[rgba(139,92,246,0.15)]">
+                    <span className="text-[0.85rem] font-black text-[#8B5CF6]">5</span>
                   </div>
                   <div>
                     <div className="text-[0.85rem] font-bold text-[#1F2937]">Parrainer et gagner</div>
@@ -247,21 +247,21 @@ export default function GuideScreen() {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-start gap-2">
-                    <i className="fas fa-users text-[#3B82F6] text-[0.65rem] mt-1"></i>
+                    <i className="fas fa-users text-[#8B5CF6] text-[0.65rem] mt-1"></i>
                     <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Partagez votre <strong className="text-[#1F2937]">code de parrainage</strong> (visible dans Profil) avec vos amis</div>
                   </div>
                   <div className="flex items-start gap-2">
-                    <i className="fas fa-lock-open text-[#3B82F6] text-[0.65rem] mt-1"></i>
+                    <i className="fas fa-lock-open text-[#8B5CF6] text-[0.65rem] mt-1"></i>
                     <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Avoir <strong className="text-[#1F2937]">10 filleuls</strong> est obligatoire pour débloquer votre premier retrait</div>
                   </div>
                 </div>
               </div>
 
               {/* Chat IA tip - Dark card with subtle gold border */}
-              <div className="bg-[#FFFFFF] border border-[rgba(59,130,246,0.2)] rounded-2xl p-3 mb-3 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-[rgba(59,130,246,0.12)] flex items-center justify-center shrink-0 border border-[rgba(59,130,246,0.15)]"><i className="fas fa-robot text-[#3B82F6] text-[0.85rem]"></i></div>
+              <div className="bg-[#FFFFFF] border border-[rgba(20,184,166,0.2)] rounded-2xl p-3 mb-3 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[rgba(20,184,166,0.12)] flex items-center justify-center shrink-0 border border-[rgba(20,184,166,0.15)]"><i className="fas fa-robot text-[#14B8A6] text-[0.85rem]"></i></div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-[0.6rem] text-[rgba(59,130,246,0.7)] font-bold uppercase tracking-[1px] mb-0.5">Besoin d&apos;aide ?</div>
+                  <div className="text-[0.6rem] text-[rgba(20,184,166,0.7)] font-bold uppercase tracking-[1px] mb-0.5">Besoin d&apos;aide ?</div>
                   <div className="text-[0.7rem] leading-relaxed text-[rgba(0,0,0,0.3)]">Utilisez le <strong className="text-[#1F2937]">Chat IA</strong> pour poser vos questions. L&apos;IA vous mettra en contact avec l&apos;admin si besoin.</div>
                 </div>
               </div>
@@ -274,7 +274,7 @@ export default function GuideScreen() {
               {/* Market Pulse Header - Calm dark card */}
               <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4 mb-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-2 h-2 rounded-full bg-[#3B82F6]" style={{ animation: 'pulse 2s ease-in-out infinite' }} />
+                  <div className="w-2 h-2 rounded-full bg-[#14B8A6]" style={{ animation: 'pulse 2s ease-in-out infinite' }} />
                   <span className="text-[0.65rem] text-[rgba(0,0,0,0.5)] uppercase tracking-[1px] font-bold">Marché en direct</span>
                 </div>
                 <div className="text-[1.1rem] font-black text-[#1F2937] mb-1">Tableau de Bord Trading</div>
@@ -282,8 +282,9 @@ export default function GuideScreen() {
               </div>
 
               {/* Market Mood - Simple emoji cards */}
+              {/* Trading section - Blue accent for trading */}
               <h3 className="text-[0.85rem] font-bold text-[#1F2937] mb-2.5 flex items-center gap-2">
-                <i className="fas fa-heart text-[#3B82F6] text-[0.75rem]"></i>
+                <i className="fas fa-heart text-[#14B8A6] text-[0.75rem]"></i>
                 Humeur du Marché
               </h3>
               <div className="grid grid-cols-2 gap-2 mb-4">
@@ -300,7 +301,7 @@ export default function GuideScreen() {
 
               {/* Asset Cards - Simplified */}
               <h3 className="text-[0.85rem] font-bold text-[#1F2937] mb-2.5 flex items-center gap-2">
-                <i className="fas fa-chart-area text-[#3B82F6] text-[0.75rem]"></i>
+                <i className="fas fa-chart-area text-[#14B8A6] text-[0.75rem]"></i>
                 Actifs
               </h3>
               <div className="space-y-2.5 mb-4">
@@ -308,15 +309,15 @@ export default function GuideScreen() {
                   const isUp = asset.change >= 0;
                   const conseilConfig = {
                     favorable: { emoji: '🟢', label: 'Moment favorable', color: '#4ADE80' },
-                    attentif: { emoji: '🟡', label: 'Restez attentif', color: '#3B82F6' },
+                    attentif: { emoji: '🟡', label: 'Restez attentif', color: '#14B8A6' },
                     eviter: { emoji: '🔴', label: 'Évitez pour l\'instant', color: '#F87171' },
                   }[asset.conseil];
                   return (
                     <div key={asset.id} className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-xl p-3.5">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-[rgba(59,130,246,0.1)]">
-                            <i className={`fas fa-${isUp ? 'trending-up' : 'trending-down'} text-[0.75rem] text-[#3B82F6]`}></i>
+                          <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-[rgba(20,184,166,0.1)]">
+                            <i className={`fas fa-${isUp ? 'trending-up' : 'trending-down'} text-[0.75rem] text-[#14B8A6]`}></i>
                           </div>
                           <div>
                             <div className="text-[0.8rem] font-bold text-[#1F2937]">{asset.name}</div>
@@ -340,15 +341,15 @@ export default function GuideScreen() {
 
               {/* Strategy Tips - Dark cards with gold left border */}
               <h3 className="text-[0.85rem] font-bold text-[#1F2937] mb-2.5 flex items-center gap-2">
-                <i className="fas fa-lightbulb text-[#3B82F6] text-[0.75rem]"></i>
+                <i className="fas fa-lightbulb text-[#14B8A6] text-[0.75rem]"></i>
                 Conseils Stratégiques
               </h3>
               <div className="space-y-2 mb-4">
                 {TRADING_TIPS.map((tip, i) => (
-                  <div key={i} className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] border-l-[3px] border-l-[#3B82F6] rounded-xl p-3">
+                  <div key={i} className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] border-l-[3px] border-l-[#14B8A6] rounded-xl p-3">
                     <div className="flex items-start gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-[rgba(59,130,246,0.12)] flex items-center justify-center shrink-0">
-                        <i className={`fas ${tip.icon} text-[#3B82F6] text-[0.6rem]`}></i>
+                      <div className="w-7 h-7 rounded-lg bg-[rgba(20,184,166,0.12)] flex items-center justify-center shrink-0">
+                        <i className={`fas ${tip.icon} text-[#14B8A6] text-[0.6rem]`}></i>
                       </div>
                       <div>
                         <div className="text-[0.72rem] font-bold text-[#1F2937]">{tip.title}</div>
@@ -375,7 +376,7 @@ export default function GuideScreen() {
               {/* Header - Clean dark card */}
               <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4 mb-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-2 h-2 rounded-full bg-[#3B82F6]" style={{ animation: 'pulse 2s ease-in-out infinite' }} />
+                  <div className="w-2 h-2 rounded-full bg-[#14B8A6]" style={{ animation: 'pulse 2s ease-in-out infinite' }} />
                   <span className="text-[0.65rem] text-[rgba(0,0,0,0.5)] uppercase tracking-[1px] font-bold">Projets</span>
                 </div>
                 <div className="text-[1.1rem] font-black text-[#1F2937] mb-1">Analyse des Projets</div>
@@ -384,7 +385,7 @@ export default function GuideScreen() {
 
               {/* Sector Overview - Simple cards with confidence bar */}
               <h3 className="text-[0.85rem] font-bold text-[#1F2937] mb-2.5 flex items-center gap-2">
-                <i className="fas fa-industry text-[#3B82F6] text-[0.75rem]"></i>
+                <i className="fas fa-industry text-[#14B8A6] text-[0.75rem]"></i>
                 Secteurs
               </h3>
               <div className="space-y-2 mb-4">
@@ -392,19 +393,19 @@ export default function GuideScreen() {
                   <div key={i} className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-xl p-3.5">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        {sector.hot && <div className="w-2 h-2 rounded-full bg-[#3B82F6]"></div>}
+                        {sector.hot && <div className="w-2 h-2 rounded-full bg-[#14B8A6]"></div>}
                         <div>
                           <div className="text-[0.8rem] font-bold text-[#1F2937]">{sector.name}</div>
                           <div className="text-[0.58rem] text-[rgba(0,0,0,0.5)]">Tendance : <span className="text-[rgba(0,0,0,0.3)]">{sector.trend}</span></div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-[0.78rem] font-bold text-[#3B82F6]">{sector.confidence}%</div>
+                        <div className="text-[0.78rem] font-bold text-[#14B8A6]">{sector.confidence}%</div>
                         <div className="text-[0.5rem] text-[rgba(0,0,0,0.4)]">Confiance</div>
                       </div>
                     </div>
                     <div className="w-full h-1.5 bg-[rgba(0,0,0,0.06)] rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all duration-700 bg-[#3B82F6]" style={{ width: `${sector.confidence}%` }} />
+                      <div className="h-full rounded-full transition-all duration-700 bg-[#14B8A6]" style={{ width: `${sector.confidence}%` }} />
                     </div>
                   </div>
                 ))}
@@ -412,7 +413,7 @@ export default function GuideScreen() {
 
               {/* Project Types - Clean cards, always wins presentation */}
               <h3 className="text-[0.85rem] font-bold text-[#1F2937] mb-2.5 flex items-center gap-2">
-                <i className="fas fa-layer-group text-[#3B82F6] text-[0.75rem]"></i>
+                <i className="fas fa-layer-group text-[#14B8A6] text-[0.75rem]"></i>
                 Types de Projets
               </h3>
               <div className="space-y-2 mb-4">
@@ -420,8 +421,8 @@ export default function GuideScreen() {
                   <div key={i} className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-xl p-3.5">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-[rgba(59,130,246,0.12)]">
-                          <i className={`fas ${tier.icon} text-[0.75rem] text-[#3B82F6]`}></i>
+                        <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-[rgba(20,184,166,0.12)]">
+                          <i className={`fas ${tier.icon} text-[0.75rem] text-[#14B8A6]`}></i>
                         </div>
                         <div>
                           <div className="text-[0.8rem] font-bold text-[#1F2937]">{tier.name}</div>
@@ -429,7 +430,7 @@ export default function GuideScreen() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-[0.82rem] font-bold text-[#3B82F6]">+{tier.minRet}-{tier.maxRet}%</div>
+                        <div className="text-[0.82rem] font-bold text-[#14B8A6]">+{tier.minRet}-{tier.maxRet}%</div>
                         <div className="text-[0.5rem] text-[rgba(0,0,0,0.4)]">Rendement garanti</div>
                       </div>
                     </div>
@@ -440,15 +441,15 @@ export default function GuideScreen() {
 
               {/* Investment Philosophy - Dark cards with gold accent */}
               <h3 className="text-[0.85rem] font-bold text-[#1F2937] mb-2.5 flex items-center gap-2">
-                <i className="fas fa-graduation-cap text-[#3B82F6] text-[0.75rem]"></i>
+                <i className="fas fa-graduation-cap text-[#14B8A6] text-[0.75rem]"></i>
                 Conseils d&apos;Investissement
               </h3>
               <div className="space-y-2 mb-4">
                 {INVEST_TIPS.map((tip, i) => (
-                  <div key={i} className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] border-l-[3px] border-l-[#3B82F6] rounded-xl p-3">
+                  <div key={i} className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] border-l-[3px] border-l-[#14B8A6] rounded-xl p-3">
                     <div className="flex items-start gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-[rgba(59,130,246,0.12)] flex items-center justify-center shrink-0">
-                        <i className={`fas ${tip.icon} text-[#3B82F6] text-[0.6rem]`}></i>
+                      <div className="w-7 h-7 rounded-lg bg-[rgba(20,184,166,0.12)] flex items-center justify-center shrink-0">
+                        <i className={`fas ${tip.icon} text-[#14B8A6] text-[0.6rem]`}></i>
                       </div>
                       <div>
                         <div className="text-[0.72rem] font-bold text-[#1F2937]">{tip.title}</div>

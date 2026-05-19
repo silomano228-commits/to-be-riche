@@ -7,8 +7,8 @@ import { Header, LogoImg, Modal, INVEST_LEVELS, ENTERPRISE_TYPES, ENTERPRISE_NAM
 function SectionHeader({ icon, title }: { icon: string; title: string; color?: string }) {
   return (
     <div className="flex items-center gap-2 mb-3">
-      <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-[rgba(59,130,246,0.12)]">
-        <i className={`fas ${icon} text-[0.65rem] text-[#3B82F6]`}></i>
+      <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-[rgba(99,102,241,0.12)]">
+        <i className={`fas ${icon} text-[0.65rem] text-[#6366F1]`}></i>
       </div>
       <h3 className="text-[0.82rem] font-bold text-[#1F2937]">{title}</h3>
     </div>
@@ -56,7 +56,7 @@ export default function AnalyticsScreen() {
       <Header
         title="Analyses"
         icon="fa-chart-bar"
-        iconColor="#3B82F6"
+        iconColor="#6366F1"
         leftElement={
           <button
             onClick={() => setPage('profile')}
@@ -72,8 +72,8 @@ export default function AnalyticsScreen() {
         <div className="grid grid-cols-2 gap-2.5 mb-5">
           <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4">
             <div className="flex items-center gap-1.5 mb-1.5">
-              <div className="w-5 h-5 rounded-md bg-[rgba(59,130,246,0.12)] flex items-center justify-center">
-                <i className="fas fa-coins text-[0.45rem] text-[#3B82F6]"></i>
+              <div className="w-5 h-5 rounded-md bg-[rgba(99,102,241,0.12)] flex items-center justify-center">
+                <i className="fas fa-coins text-[0.45rem] text-[#6366F1]"></i>
               </div>
               <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)] uppercase font-semibold">Principal</div>
             </div>
@@ -81,8 +81,8 @@ export default function AnalyticsScreen() {
           </div>
           <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4">
             <div className="flex items-center gap-1.5 mb-1.5">
-              <div className="w-5 h-5 rounded-md bg-[rgba(59,130,246,0.12)] flex items-center justify-center">
-                <i className="fas fa-chart-line text-[0.45rem] text-[#3B82F6]"></i>
+              <div className="w-5 h-5 rounded-md bg-[rgba(99,102,241,0.12)] flex items-center justify-center">
+                <i className="fas fa-chart-line text-[0.45rem] text-[#6366F1]"></i>
               </div>
               <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)] uppercase font-semibold">Investissement</div>
             </div>
@@ -90,21 +90,21 @@ export default function AnalyticsScreen() {
           </div>
           <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4">
             <div className="flex items-center gap-1.5 mb-1.5">
-              <div className="w-5 h-5 rounded-md bg-[rgba(59,130,246,0.12)] flex items-center justify-center">
-                <i className="fas fa-bolt text-[0.45rem] text-[#3B82F6]"></i>
+              <div className="w-5 h-5 rounded-md bg-[rgba(99,102,241,0.12)] flex items-center justify-center">
+                <i className="fas fa-bolt text-[0.45rem] text-[#6366F1]"></i>
               </div>
               <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)] uppercase font-semibold">Trading</div>
             </div>
-            <div className="text-[1.1rem] font-black text-[#60A5FA]">{formatMoney(user.tradeBalance)}</div>
+            <div className="text-[1.1rem] font-black text-[#818CF8]">{formatMoney(user.tradeBalance)}</div>
           </div>
           <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4">
             <div className="flex items-center gap-1.5 mb-1.5">
-              <div className="w-5 h-5 rounded-md bg-[rgba(59,130,246,0.12)] flex items-center justify-center">
-                <i className="fas fa-building text-[0.45rem] text-[#3B82F6]"></i>
+              <div className="w-5 h-5 rounded-md bg-[rgba(99,102,241,0.12)] flex items-center justify-center">
+                <i className="fas fa-building text-[0.45rem] text-[#6366F1]"></i>
               </div>
               <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)] uppercase font-semibold">Projet</div>
             </div>
-            <div className="text-[1.1rem] font-black text-[#60A5FA]">{formatMoney(user.projectBalance)}</div>
+            <div className="text-[1.1rem] font-black text-[#818CF8]">{formatMoney(user.projectBalance)}</div>
           </div>
         </div>
 
@@ -153,8 +153,8 @@ export default function AnalyticsScreen() {
             { label: 'Entreprises', value: a.activeEnterprises ?? '-', icon: 'fa-building' },
           ].map((s, i) => (
             <div key={i} className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-3 text-center">
-              <div className="w-9 h-9 rounded-xl mx-auto mb-1.5 flex items-center justify-center bg-[rgba(59,130,246,0.12)]">
-                <i className={`fas ${s.icon} text-[0.8rem] text-[#3B82F6]`}></i>
+              <div className="w-9 h-9 rounded-xl mx-auto mb-1.5 flex items-center justify-center bg-[rgba(99,102,241,0.12)]">
+                <i className={`fas ${s.icon} text-[0.8rem] text-[#6366F1]`}></i>
               </div>
               <div className="text-[0.95rem] font-bold text-[#1F2937]">{s.value}</div>
               <div className="text-[0.56rem] text-[rgba(0,0,0,0.35)] uppercase">{s.label}</div>
@@ -196,14 +196,14 @@ export default function AnalyticsScreen() {
 
         {/* AI Recommendation */}
         <SectionHeader icon="fa-robot" title="Recommandation IA" />
-        <div className="relative overflow-hidden bg-[#FFFFFF] text-[#1F2937] rounded-2xl p-5 mb-4 border border-[rgba(59,130,246,0.15)]">
+        <div className="relative overflow-hidden bg-[#FFFFFF] text-[#1F2937] rounded-2xl p-5 mb-4 border border-[rgba(99,102,241,0.15)]">
           {/* Decorative glow */}
-          <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-[rgba(59,130,246,0.1)] blur-2xl pointer-events-none"></div>
-          <div className="absolute -bottom-8 -left-8 w-24 h-24 rounded-full bg-[rgba(59,130,246,0.08)] blur-xl pointer-events-none"></div>
+          <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-[rgba(99,102,241,0.1)] blur-2xl pointer-events-none"></div>
+          <div className="absolute -bottom-8 -left-8 w-24 h-24 rounded-full bg-[rgba(99,102,241,0.08)] blur-xl pointer-events-none"></div>
 
           <div className="flex items-center gap-2.5 mb-3 relative">
-            <div className="w-10 h-10 rounded-xl bg-[rgba(59,130,246,0.15)] flex items-center justify-center border border-[rgba(59,130,246,0.2)]">
-              <i className="fas fa-brain text-[0.9rem] text-[#3B82F6]"></i>
+            <div className="w-10 h-10 rounded-xl bg-[rgba(99,102,241,0.15)] flex items-center justify-center border border-[rgba(99,102,241,0.2)]">
+              <i className="fas fa-brain text-[0.9rem] text-[#6366F1]"></i>
             </div>
             <div>
               <span className="text-[0.82rem] font-bold text-[#1F2937]">Assistant IA</span>
@@ -215,7 +215,7 @@ export default function AnalyticsScreen() {
 
         {loading && (
           <div className="text-center py-4">
-            <div className="w-6 h-6 border-2 border-[rgba(0,0,0,0.1)] border-t-[#3B82F6] rounded-full mx-auto" style={{ animation: 'spin 0.7s linear infinite' }} />
+            <div className="w-6 h-6 border-2 border-[rgba(0,0,0,0.1)] border-t-[#6366F1] rounded-full mx-auto" style={{ animation: 'spin 0.7s linear infinite' }} />
           </div>
         )}
       </div>

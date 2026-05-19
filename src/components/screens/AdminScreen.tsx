@@ -68,7 +68,7 @@ export default function AdminScreen() {
       <Header
         title="Admin"
         icon="fa-shield-alt"
-        iconColor="#3B82F6"
+        iconColor="#6366F1"
         leftElement={
           <button
             onClick={() => useAppStore.getState().setPage('profile')}
@@ -101,7 +101,7 @@ export default function AdminScreen() {
               onClick={() => setTab(t.k as any)}
               className={`flex-1 min-w-0 py-3 text-[0.65rem] font-semibold border-none cursor-pointer transition-all whitespace-nowrap px-1 rounded-none ${
                 tab === t.k
-                  ? 'text-[#3B82F6] border-b-2 border-[#3B82F6]'
+                  ? 'text-[#6366F1] border-b-2 border-[#6366F1]'
                   : 'text-[rgba(255,255,255,0.45)]'
               }`}
             >
@@ -113,7 +113,7 @@ export default function AdminScreen() {
         <div className="px-[18px] py-4">
           {loading ? (
             <div className="flex justify-center py-8">
-              <div className="w-8 h-8 border-3 border-[rgba(255,255,255,0.1)] border-t-[#3B82F6] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
+              <div className="w-8 h-8 border-3 border-[rgba(255,255,255,0.1)] border-t-[#6366F1] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
             </div>
           ) : (
             <>
@@ -122,7 +122,7 @@ export default function AdminScreen() {
                 <>
                   <div className="grid grid-cols-2 gap-2 mb-4">
                     {[
-                      { label: 'Utilisateurs', value: stats.total_users || 0, color: '#60A5FA' },
+                      { label: 'Utilisateurs', value: stats.total_users || 0, color: '#818CF8' },
                       { label: 'Total investi', value: formatMoney(stats.total_balance || 0), color: '#4ADE80' },
                     ].map((s, i) => (
                       <div key={i} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 text-center">
@@ -138,7 +138,7 @@ export default function AdminScreen() {
                           <div className="text-[0.78rem] font-bold text-[#EDEDEF]">
                             {esc(u.name)}{' '}
                             {u.role === 'admin' && (
-                              <span className="text-[0.6rem] bg-[rgba(59,130,246,0.12)] text-[#3B82F6] px-1.5 py-0.5 rounded-full ml-1">Admin</span>
+                              <span className="text-[0.6rem] bg-[rgba(99,102,241,0.12)] text-[#6366F1] px-1.5 py-0.5 rounded-full ml-1">Admin</span>
                             )}
                           </div>
                           <div className="text-[0.65rem] text-[rgba(255,255,255,0.25)]">{esc(u.email)}</div>
@@ -158,7 +158,7 @@ export default function AdminScreen() {
                 <>
                   <div className="grid grid-cols-3 gap-2 mb-4">
                     {[
-                      { label: 'En attente', value: depositStats.pending || 0, color: '#60A5FA' },
+                      { label: 'En attente', value: depositStats.pending || 0, color: '#818CF8' },
                       { label: 'Approuvés', value: depositStats.approved || 0, color: '#4ADE80' },
                       { label: 'Rejetés', value: depositStats.rejected || 0, color: '#F87171' },
                     ].map((s, i) => (
@@ -169,14 +169,14 @@ export default function AdminScreen() {
                     ))}
                   </div>
                   {pendingDeposits.filter(d => d.status === 'pending').map((d: any) => (
-                    <div key={d.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] border-l-[3px] border-l-[#3B82F6] rounded-2xl p-3 mb-2">
+                    <div key={d.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] border-l-[3px] border-l-[#6366F1] rounded-2xl p-3 mb-2">
                       <div className="flex items-center justify-between mb-2">
                         <div>
                           <div className="text-[0.78rem] font-bold text-[#EDEDEF]">{esc(d.user?.name || '?')}</div>
                           <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">{formatMoney(d.amountUsd)} → {d.amountTrx?.toFixed(2)} TRX</div>
                           <div className="text-[0.6rem] text-[rgba(255,255,255,0.25)] mt-0.5">Adresse: {esc(d.userAddress?.slice(0, 12))}...</div>
                         </div>
-                        <span className="text-[0.6rem] bg-[rgba(59,130,246,0.12)] text-[#3B82F6] px-2 py-0.5 rounded-full">TRX</span>
+                        <span className="text-[0.6rem] bg-[rgba(99,102,241,0.12)] text-[#6366F1] px-2 py-0.5 rounded-full">TRX</span>
                       </div>
                       <div className="flex gap-2">
                         <button
@@ -190,7 +190,7 @@ export default function AdminScreen() {
                             if (data.success) { addToast('Approuvé', 'success'); loadDeposits(); }
                             else addToast(data.error, 'error');
                           }}
-                          className="flex-1 py-2 rounded-lg bg-[#3B82F6] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer"
+                          className="flex-1 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer"
                         >
                           Approuver
                         </button>
@@ -221,9 +221,9 @@ export default function AdminScreen() {
               {/* Yas du Togo Tab */}
               {tab === 'yas' && (
                 <>
-                  <div className="bg-[#0E0F11] border border-[rgba(59,130,246,0.15)] rounded-2xl p-3 mb-4 flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-[rgba(59,130,246,0.12)] flex items-center justify-center shrink-0">
-                      <i className="fas fa-exchange-alt text-[#3B82F6] text-[0.9rem]"></i>
+                  <div className="bg-[#0E0F11] border border-[rgba(99,102,241,0.15)] rounded-2xl p-3 mb-4 flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center shrink-0">
+                      <i className="fas fa-exchange-alt text-[#6366F1] text-[0.9rem]"></i>
                     </div>
                     <div>
                       <div className="text-[#EDEDEF] text-[0.85rem] font-bold">Conversions Yas du Togo</div>
@@ -232,10 +232,10 @@ export default function AdminScreen() {
                   </div>
 
                   {/* Yas Config Section */}
-                  <div className="bg-[#0E0F11] border border-[rgba(59,130,246,0.12)] rounded-2xl p-3.5 mb-4">
+                  <div className="bg-[#0E0F11] border border-[rgba(99,102,241,0.12)] rounded-2xl p-3.5 mb-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-7 h-7 rounded-lg bg-[rgba(59,130,246,0.12)] flex items-center justify-center shrink-0">
-                        <i className="fas fa-cog text-[#3B82F6] text-[0.65rem]"></i>
+                      <div className="w-7 h-7 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center shrink-0">
+                        <i className="fas fa-cog text-[#6366F1] text-[0.65rem]"></i>
                       </div>
                       <div className="text-[0.78rem] font-bold text-[#EDEDEF]">Configuration Yas</div>
                     </div>
@@ -247,7 +247,7 @@ export default function AdminScreen() {
                         onChange={(e) => setConfigYasAddr(e.target.value)}
                         placeholder="90XXXXXX ou 70XXXXXX"
                         maxLength={8}
-                        className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.82rem] text-white outline-none focus:border-[#3B82F6]"
+                        className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.82rem] text-white outline-none focus:border-[#6366F1]"
                       />
                       {configYasAddr && !/^(9[0-3]|7[0-3])\d{6}$/.test(configYasAddr.trim()) && (
                         <p className="text-[0.6rem] text-[#F87171] mt-1">Format: 8 chiffres, commence par 90-93 ou 70-73</p>
@@ -260,7 +260,7 @@ export default function AdminScreen() {
                         step="1"
                         value={configCfaRate}
                         onChange={(e) => setConfigCfaRate(e.target.value)}
-                        className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.82rem] text-white outline-none focus:border-[#3B82F6]"
+                        className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.82rem] text-white outline-none focus:border-[#6366F1]"
                       />
                     </div>
                     <button
@@ -285,7 +285,7 @@ export default function AdminScreen() {
                         setSavingYas(false);
                       }}
                       disabled={savingYas}
-                      className="w-full py-2.5 rounded-lg bg-[#3B82F6] text-[#050506] text-[0.78rem] font-bold border-none cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-60"
+                      className="w-full py-2.5 rounded-lg bg-[#6366F1] text-[#050506] text-[0.78rem] font-bold border-none cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-60"
                     >
                       {savingYas ? <div className="w-4 h-4 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <i className="fas fa-save text-[0.7rem]"></i>}
                       {savingYas ? 'Sauvegarde...' : 'Sauvegarder la config Yas'}
@@ -294,7 +294,7 @@ export default function AdminScreen() {
 
                   <div className="grid grid-cols-3 gap-2 mb-4">
                     {[
-                      { label: 'En attente', value: yasStats.pending || 0, color: '#60A5FA' },
+                      { label: 'En attente', value: yasStats.pending || 0, color: '#818CF8' },
                       { label: 'Approuvées', value: yasStats.approved || 0, color: '#4ADE80' },
                       { label: 'Rejetées', value: yasStats.rejected || 0, color: '#F87171' },
                     ].map((s, i) => (
@@ -305,14 +305,14 @@ export default function AdminScreen() {
                     ))}
                   </div>
                   {yasDeposits.filter(d => d.status === 'pending').map((d: any) => (
-                    <div key={d.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] border-l-[3px] border-l-[#60A5FA] rounded-2xl p-3 mb-2">
+                    <div key={d.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] border-l-[3px] border-l-[#818CF8] rounded-2xl p-3 mb-2">
                       <div className="flex items-center justify-between mb-2">
                         <div>
                           <div className="text-[0.78rem] font-bold text-[#EDEDEF]">{esc(d.user?.name || '?')}</div>
                           <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">{d.amountCfa ? `${d.amountCfa.toLocaleString()} FCFA` : formatMoney(d.amountUsd)} → {d.amountTrx?.toFixed(2)} TRX</div>
-                          {d.amountCfa > 0 && <div className="text-[0.6rem] text-[#60A5FA]">{formatMoney(d.amountUsd)} USD</div>}
+                          {d.amountCfa > 0 && <div className="text-[0.6rem] text-[#818CF8]">{formatMoney(d.amountUsd)} USD</div>}
                         </div>
-                        <span className="text-[0.6rem] bg-[rgba(59,130,246,0.12)] text-[#3B82F6] px-2 py-0.5 rounded-full font-semibold">Yas 🇹🇬</span>
+                        <span className="text-[0.6rem] bg-[rgba(99,102,241,0.12)] text-[#6366F1] px-2 py-0.5 rounded-full font-semibold">Yas 🇹🇬</span>
                       </div>
                       <div className="bg-[#161719] rounded-lg p-2.5 mb-2 space-y-1">
                         <div className="flex justify-between items-center">
@@ -321,7 +321,7 @@ export default function AdminScreen() {
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Adresse TRX</span>
-                          <span className="text-[0.65rem] font-mono font-bold text-[#60A5FA]">{esc(d.trxAddress?.slice(0, 16))}...</span>
+                          <span className="text-[0.65rem] font-mono font-bold text-[#818CF8]">{esc(d.trxAddress?.slice(0, 16))}...</span>
                         </div>
                       </div>
                       <div className="mb-2">
@@ -330,7 +330,7 @@ export default function AdminScreen() {
                           value={yasNote[d.id] || ''}
                           onChange={(e) => setYasNote(prev => ({ ...prev, [d.id]: e.target.value }))}
                           placeholder="Note admin (optionnel)"
-                          className="w-full py-2 px-3 bg-[#161719] border-[1px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.72rem] text-white outline-none focus:border-[#3B82F6]"
+                          className="w-full py-2 px-3 bg-[#161719] border-[1px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.72rem] text-white outline-none focus:border-[#6366F1]"
                         />
                       </div>
                       <div className="flex gap-2">
@@ -345,7 +345,7 @@ export default function AdminScreen() {
                             if (data.success) { addToast('Approuvé - TRX crédités', 'success'); loadYasDeposits(); }
                             else addToast(data.error, 'error');
                           }}
-                          className="flex-1 py-2 rounded-lg bg-[#3B82F6] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer"
+                          className="flex-1 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer"
                         >
                           <i className="fas fa-check mr-1"></i>Approuver
                         </button>
@@ -369,8 +369,8 @@ export default function AdminScreen() {
                   ))}
                   {yasDeposits.filter(d => d.status === 'pending').length === 0 && (
                     <div className="text-center py-6">
-                      <div className="w-12 h-12 rounded-full bg-[rgba(59,130,246,0.12)] flex items-center justify-center mx-auto mb-2">
-                        <i className="fas fa-check-circle text-[#3B82F6] text-[1.2rem]"></i>
+                      <div className="w-12 h-12 rounded-full bg-[rgba(99,102,241,0.12)] flex items-center justify-center mx-auto mb-2">
+                        <i className="fas fa-check-circle text-[#6366F1] text-[1.2rem]"></i>
                       </div>
                       <p className="text-[0.82rem] text-[rgba(255,255,255,0.25)]">Aucune conversion Yas en attente</p>
                     </div>
@@ -383,7 +383,7 @@ export default function AdminScreen() {
                 <>
                   <div className="grid grid-cols-3 gap-2 mb-4">
                     {[
-                      { label: 'En attente', value: withdrawalStats.pending || 0, color: '#60A5FA' },
+                      { label: 'En attente', value: withdrawalStats.pending || 0, color: '#818CF8' },
                       { label: 'Approuvés', value: withdrawalStats.approved || 0, color: '#4ADE80' },
                       { label: 'Rejetés', value: withdrawalStats.rejected || 0, color: '#F87171' },
                     ].map((s, i) => (
@@ -394,13 +394,13 @@ export default function AdminScreen() {
                     ))}
                   </div>
                   {withdrawals.filter(w => w.status === 'pending').map((w: any) => (
-                    <div key={w.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] border-l-[3px] border-l-[#60A5FA] rounded-2xl p-3 mb-2">
+                    <div key={w.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] border-l-[3px] border-l-[#818CF8] rounded-2xl p-3 mb-2">
                       <div className="flex items-center justify-between mb-2">
                         <div>
                           <div className="text-[0.78rem] font-bold text-[#EDEDEF]">{esc(w.user?.name || '?')}</div>
                           <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">{formatMoney(w.amount)} → {esc(w.trxAddress?.slice(0, 10))}...</div>
                         </div>
-                        <span className="text-[0.6rem] bg-[rgba(96,165,250,0.12)] text-[#60A5FA] px-2 py-0.5 rounded-full">En attente</span>
+                        <span className="text-[0.6rem] bg-[rgba(96,165,250,0.12)] text-[#818CF8] px-2 py-0.5 rounded-full">En attente</span>
                       </div>
                       <div className="flex gap-2">
                         <button
@@ -414,7 +414,7 @@ export default function AdminScreen() {
                             if (data.success) { addToast('Approuvé', 'success'); loadWithdrawals(); }
                             else addToast(data.error, 'error');
                           }}
-                          className="flex-1 py-2 rounded-lg bg-[#3B82F6] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer"
+                          className="flex-1 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer"
                         >
                           Approuver
                         </button>
@@ -451,7 +451,7 @@ export default function AdminScreen() {
                       type="text"
                       value={configAddr}
                       onChange={(e) => setConfigAddr(e.target.value)}
-                      className="w-full py-3 px-4 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#3B82F6]"
+                      className="w-full py-3 px-4 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#6366F1]"
                     />
                   </div>
                   <div className="mb-3">
@@ -461,11 +461,11 @@ export default function AdminScreen() {
                       step="0.001"
                       value={configPrice}
                       onChange={(e) => setConfigPrice(e.target.value)}
-                      className="w-full py-3 px-4 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#3B82F6]"
+                      className="w-full py-3 px-4 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#6366F1]"
                     />
                   </div>
-                  <div className="bg-[#161719] rounded-xl p-3 mb-3 border border-[rgba(59,130,246,0.12)]">
-                    <div className="text-[0.72rem] font-bold text-[#60A5FA] mb-2">
+                  <div className="bg-[#161719] rounded-xl p-3 mb-3 border border-[rgba(99,102,241,0.12)]">
+                    <div className="text-[0.72rem] font-bold text-[#818CF8] mb-2">
                       <i className="fas fa-exchange-alt mr-1"></i>Config Yas du Togo
                     </div>
                     <div className="mb-3">
@@ -475,7 +475,7 @@ export default function AdminScreen() {
                         value={configYasAddr}
                         onChange={(e) => setConfigYasAddr(e.target.value)}
                         placeholder="90XXXXXX ou 70XXXXXX"
-                        className="w-full py-3 px-4 bg-[#0E0F11] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#3B82F6]"
+                        className="w-full py-3 px-4 bg-[#0E0F11] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#6366F1]"
                       />
                     </div>
                     <div>
@@ -485,7 +485,7 @@ export default function AdminScreen() {
                         step="1"
                         value={configCfaRate}
                         onChange={(e) => setConfigCfaRate(e.target.value)}
-                        className="w-full py-3 px-4 bg-[#0E0F11] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#3B82F6]"
+                        className="w-full py-3 px-4 bg-[#0E0F11] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#6366F1]"
                       />
                     </div>
                   </div>
@@ -505,7 +505,7 @@ export default function AdminScreen() {
                       setSavingConfig(false);
                     }}
                     disabled={savingConfig}
-                    className="w-full py-3 rounded-xl bg-[#3B82F6] text-[#050506] font-bold text-[0.85rem] border-none cursor-pointer disabled:opacity-60 flex items-center justify-center gap-1.5"
+                    className="w-full py-3 rounded-xl bg-[#6366F1] text-[#050506] font-bold text-[0.85rem] border-none cursor-pointer disabled:opacity-60 flex items-center justify-center gap-1.5"
                   >
                     {savingConfig ? (
                       <div className="w-4 h-4 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />

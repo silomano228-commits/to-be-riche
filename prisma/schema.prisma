@@ -74,6 +74,7 @@ model Trade {
   amount      Float
   direction   String
   durationSec Int
+  asset       String   @default("BTC")
   result      String?
   profit      Float?
   entryPrice  Float    @default(0)

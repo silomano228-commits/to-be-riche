@@ -195,11 +195,11 @@ export default function DepositScreen() {
   if (pendingDeposit && method !== 'yas') {
     return (
       <>
-        <Header title="Dépôt en attente" icon="fa-clock" iconColor="#3B82F6" leftElement={backBtn} />
+        <Header title="Dépôt en attente" icon="fa-clock" iconColor="#22C55E" leftElement={backBtn} />
         <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto">
           <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4 border border-[rgba(0,0,0,0.08)]">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-xl bg-[#3B82F6] flex items-center justify-center shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-[#22C55E] flex items-center justify-center shrink-0">
                 <i className="fas fa-clock text-[#050506] text-[1.2rem]"></i>
               </div>
               <div>
@@ -218,7 +218,7 @@ export default function DepositScreen() {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Statut</span>
-                <span className="text-[0.72rem] font-semibold bg-[rgba(59,130,246,0.12)] text-[#3B82F6] px-2 py-0.5 rounded-full">En attente</span>
+                <span className="text-[0.72rem] font-semibold bg-[rgba(34,197,94,0.12)] text-[#22C55E] px-2 py-0.5 rounded-full">En attente</span>
               </div>
             </div>
             <p className="text-[0.7rem] text-[rgba(0,0,0,0.55)] text-center">
@@ -226,7 +226,7 @@ export default function DepositScreen() {
               Cela peut prendre quelques minutes. Vous serez notifié une fois confirmé.
             </p>
           </div>
-          <button onClick={() => setPage('wallet')} className="w-full py-3.5 rounded-xl bg-[#3B82F6] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer">
+          <button onClick={() => setPage('wallet')} className="w-full py-3.5 rounded-xl bg-[#22C55E] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer">
             <i className="fas fa-wallet mr-2"></i>Retour au portefeuille
           </button>
         </div>
@@ -238,11 +238,11 @@ export default function DepositScreen() {
   if (yasPendingDeposit && method !== 'trx') {
     return (
       <>
-        <Header title="Conversion en attente" icon="fa-clock" iconColor="#3B82F6" leftElement={backBtn} />
+        <Header title="Conversion en attente" icon="fa-clock" iconColor="#22C55E" leftElement={backBtn} />
         <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto">
           <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4 border border-[rgba(0,0,0,0.08)]">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-xl bg-[#3B82F6] flex items-center justify-center shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-[#22C55E] flex items-center justify-center shrink-0">
                 <i className="fas fa-exchange-alt text-[#050506] text-[1.2rem]"></i>
               </div>
               <div>
@@ -271,7 +271,7 @@ export default function DepositScreen() {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Statut</span>
-                <span className="text-[0.72rem] font-semibold bg-[rgba(59,130,246,0.12)] text-[#3B82F6] px-2 py-0.5 rounded-full">En attente</span>
+                <span className="text-[0.72rem] font-semibold bg-[rgba(34,197,94,0.12)] text-[#22C55E] px-2 py-0.5 rounded-full">En attente</span>
               </div>
             </div>
             <p className="text-[0.7rem] text-[rgba(0,0,0,0.55)] text-center">
@@ -279,7 +279,7 @@ export default function DepositScreen() {
               L&apos;administrateur va traiter votre demande et envoyer les TRX à votre adresse Trust Wallet.
             </p>
           </div>
-          <button onClick={() => setPage('wallet')} className="w-full py-3.5 rounded-xl bg-[#3B82F6] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer">
+          <button onClick={() => setPage('wallet')} className="w-full py-3.5 rounded-xl bg-[#22C55E] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer">
             <i className="fas fa-wallet mr-2"></i>Retour au portefeuille
           </button>
         </div>
@@ -294,7 +294,7 @@ export default function DepositScreen() {
 
     return (
       <>
-        <Header title="Déposer" icon="fa-arrow-down" iconColor="#3B82F6" leftElement={
+        <Header title="Déposer" icon="fa-arrow-down" iconColor="#22C55E" leftElement={
           <button onClick={() => setPage('wallet')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] cursor-pointer border-none mr-1">
             <i className="fas fa-arrow-left text-[0.8rem]"></i>
           </button>
@@ -302,7 +302,7 @@ export default function DepositScreen() {
         <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto">
           {loading ? (
             <div className="flex justify-center py-12">
-              <div className="w-8 h-8 border-[3px] border-[#E5E7EB] border-t-[#3B82F6] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
+              <div className="w-8 h-8 border-[3px] border-[#E5E7EB] border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
             </div>
           ) : (
             <>
@@ -315,23 +315,23 @@ export default function DepositScreen() {
                 disabled={hasPendingTrx}
                 className={`w-full text-left rounded-2xl p-5 mb-3 border transition-all ${
                   hasPendingTrx
-                    ? 'border-[rgba(59,130,246,0.2)] bg-[#FFFFFF] opacity-70'
-                    : 'border-[rgba(0,0,0,0.08)] bg-[#FFFFFF] hover:border-[rgba(59,130,246,0.3)] active:scale-[0.98]'
+                    ? 'border-[rgba(34,197,94,0.2)] bg-[#FFFFFF] opacity-70'
+                    : 'border-[rgba(0,0,0,0.08)] bg-[#FFFFFF] hover:border-[rgba(34,197,94,0.3)] active:scale-[0.98]'
                 } cursor-pointer`}
               >
                 <div className="flex items-start gap-3.5">
-                  <div className="w-12 h-12 rounded-xl bg-[rgba(59,130,246,0.12)] flex items-center justify-center shrink-0">
-                    <i className="fab fa-gg-circle text-[#3B82F6] text-[1.3rem]"></i>
+                  <div className="w-12 h-12 rounded-xl bg-[rgba(34,197,94,0.12)] flex items-center justify-center shrink-0">
+                    <i className="fab fa-gg-circle text-[#22C55E] text-[1.3rem]"></i>
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-[0.95rem] font-bold text-[#1F2937] mb-0.5">Dépôt en Dollars (TRX)</h3>
                     <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)] leading-relaxed mb-2">Envoyez directement des TRX depuis votre wallet. Confirmation rapide par l&apos;administrateur.</p>
                     {hasPendingTrx ? (
-                      <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#3B82F6] bg-[rgba(59,130,246,0.12)] px-2 py-1 rounded-full">
+                      <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#22C55E] bg-[rgba(34,197,94,0.12)] px-2 py-1 rounded-full">
                         <i className="fas fa-clock"></i> Dépôt en attente
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#3B82F6] bg-[rgba(59,130,246,0.12)] px-2 py-1 rounded-full">
+                      <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#22C55E] bg-[rgba(34,197,94,0.12)] px-2 py-1 rounded-full">
                         <i className="fas fa-bolt"></i> Rapide & direct
                       </span>
                     )}
@@ -346,23 +346,23 @@ export default function DepositScreen() {
                 disabled={hasPendingYas}
                 className={`w-full text-left rounded-2xl p-5 mb-5 border transition-all ${
                   hasPendingYas
-                    ? 'border-[rgba(59,130,246,0.2)] bg-[#FFFFFF] opacity-70'
-                    : 'border-[rgba(0,0,0,0.08)] bg-[#FFFFFF] hover:border-[rgba(59,130,246,0.3)] active:scale-[0.98]'
+                    ? 'border-[rgba(34,197,94,0.2)] bg-[#FFFFFF] opacity-70'
+                    : 'border-[rgba(0,0,0,0.08)] bg-[#FFFFFF] hover:border-[rgba(34,197,94,0.3)] active:scale-[0.98]'
                 } cursor-pointer`}
               >
                 <div className="flex items-start gap-3.5">
-                  <div className="w-12 h-12 rounded-xl bg-[rgba(59,130,246,0.12)] flex items-center justify-center shrink-0">
-                    <i className="fas fa-exchange-alt text-[#3B82F6] text-[1.1rem]"></i>
+                  <div className="w-12 h-12 rounded-xl bg-[rgba(34,197,94,0.12)] flex items-center justify-center shrink-0">
+                    <i className="fas fa-exchange-alt text-[#22C55E] text-[1.1rem]"></i>
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-[0.95rem] font-bold text-[#1F2937] mb-0.5">Conversion Yas du Togo</h3>
                     <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)] leading-relaxed mb-2">Pas de TRX ? Convertissez l&apos;argent de votre compte Yas du Togo en TRX. L&apos;admin vous enverra les TRX sur votre Trust Wallet.</p>
                     {hasPendingYas ? (
-                      <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#3B82F6] bg-[rgba(59,130,246,0.12)] px-2 py-1 rounded-full">
+                      <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#22C55E] bg-[rgba(34,197,94,0.12)] px-2 py-1 rounded-full">
                         <i className="fas fa-clock"></i> Conversion en attente
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#3B82F6] bg-[rgba(59,130,246,0.12)] px-2 py-1 rounded-full">
+                      <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#22C55E] bg-[rgba(34,197,94,0.12)] px-2 py-1 rounded-full">
                         <i className="fas fa-hand-holding-usd"></i> Sans TRX
                       </span>
                     )}
@@ -374,14 +374,14 @@ export default function DepositScreen() {
               {/* Help guide */}
               <div className="bg-[#FFFFFF] rounded-2xl p-4 border border-[rgba(0,0,0,0.08)]">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-[rgba(59,130,246,0.12)] flex items-center justify-center shrink-0">
-                    <i className="fas fa-question-circle text-[#3B82F6] text-[0.8rem]"></i>
+                  <div className="w-8 h-8 rounded-lg bg-[rgba(34,197,94,0.12)] flex items-center justify-center shrink-0">
+                    <i className="fas fa-question-circle text-[#22C55E] text-[0.8rem]"></i>
                   </div>
                   <h4 className="text-[0.82rem] font-bold text-[#1F2937]">Besoin d&apos;aide ?</h4>
                 </div>
                 <p className="text-[0.7rem] text-[rgba(0,0,0,0.55)] leading-relaxed">
-                  Si vous avez déjà Trust Wallet et des TRX, choisissez <strong className="text-[#3B82F6]">Dépôt en Dollars</strong>.
-                  Si vous n&apos;avez pas de TRX mais un compte Yas du Togo, choisissez <strong className="text-[#3B82F6]">Conversion Yas du Togo</strong>.
+                  Si vous avez déjà Trust Wallet et des TRX, choisissez <strong className="text-[#22C55E]">Dépôt en Dollars</strong>.
+                  Si vous n&apos;avez pas de TRX mais un compte Yas du Togo, choisissez <strong className="text-[#22C55E]">Conversion Yas du Togo</strong>.
                 </p>
               </div>
             </>
@@ -395,11 +395,11 @@ export default function DepositScreen() {
   if (method === 'trx') {
     return (
       <>
-        <Header title="Dépôt via TRX" icon="fa-arrow-down" iconColor="#3B82F6" leftElement={backBtn} />
+        <Header title="Dépôt via TRX" icon="fa-arrow-down" iconColor="#22C55E" leftElement={backBtn} />
         <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto">
           {loading ? (
             <div className="flex justify-center py-12">
-              <div className="w-8 h-8 border-[3px] border-[#E5E7EB] border-t-[#3B82F6] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
+              <div className="w-8 h-8 border-[3px] border-[#E5E7EB] border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
             </div>
           ) : (
             <>
@@ -417,9 +417,9 @@ export default function DepositScreen() {
                   const isDone = currentIdx > thisIdx;
                   return (
                     <div key={st.s} className="flex items-center gap-2">
-                      {i > 0 && <div className={`w-8 h-[2px] rounded ${isDone ? 'bg-[#3B82F6]' : 'bg-[rgba(0,0,0,0.06)]'}`} />}
+                      {i > 0 && <div className={`w-8 h-[2px] rounded ${isDone ? 'bg-[#22C55E]' : 'bg-[rgba(0,0,0,0.06)]'}`} />}
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[0.7rem] font-bold ${
-                        isActive ? 'bg-[#3B82F6] text-[#050506]' : isDone ? 'bg-[#3B82F6] text-[#050506]' : 'bg-[#F3F4F6] text-[rgba(0,0,0,0.35)]'
+                        isActive ? 'bg-[#22C55E] text-[#050506]' : isDone ? 'bg-[#22C55E] text-[#050506]' : 'bg-[#F3F4F6] text-[rgba(0,0,0,0.35)]'
                       }`}>
                         {isDone ? <i className="fas fa-check text-[0.6rem]" /> : st.label}
                       </div>
@@ -430,15 +430,15 @@ export default function DepositScreen() {
 
               {/* TRX Guide */}
               {trxStep === 'amount' && (
-                <div className="bg-[#FFFFFF] rounded-xl p-3.5 mb-4 border-l-[3px] border-[#3B82F6] border-r border-r-[rgba(0,0,0,0.08)] border-t border-t-[rgba(0,0,0,0.08)] border-b border-b-[rgba(0,0,0,0.08)]">
+                <div className="bg-[#FFFFFF] rounded-xl p-3.5 mb-4 border-l-[3px] border-[#22C55E] border-r border-r-[rgba(0,0,0,0.08)] border-t border-t-[rgba(0,0,0,0.08)] border-b border-b-[rgba(0,0,0,0.08)]">
                   <h4 className="text-[0.78rem] font-bold text-[#1F2937] mb-1.5">
-                    <i className="fas fa-book-open mr-1 text-[#3B82F6]"></i> Guide - Dépôt TRX
+                    <i className="fas fa-book-open mr-1 text-[#22C55E]"></i> Guide - Dépôt TRX
                   </h4>
                   <ol className="space-y-1 text-[0.68rem] text-[rgba(0,0,0,0.55)]">
-                    <li className="flex items-start gap-1.5"><span className="w-4 h-4 rounded-full bg-[#3B82F6] text-[#050506] flex items-center justify-center text-[0.5rem] font-bold shrink-0 mt-0.5">1</span><span>Entrez le montant en dollars</span></li>
-                    <li className="flex items-start gap-1.5"><span className="w-4 h-4 rounded-full bg-[#3B82F6] text-[#050506] flex items-center justify-center text-[0.5rem] font-bold shrink-0 mt-0.5">2</span><span>Envoyez les TRX à l&apos;adresse de l&apos;admin</span></li>
-                    <li className="flex items-start gap-1.5"><span className="w-4 h-4 rounded-full bg-[#3B82F6] text-[#050506] flex items-center justify-center text-[0.5rem] font-bold shrink-0 mt-0.5">3</span><span>Entrez votre adresse TRX pour confirmer</span></li>
-                    <li className="flex items-start gap-1.5"><span className="w-4 h-4 rounded-full bg-[#3B82F6] text-[#050506] flex items-center justify-center text-[0.5rem] font-bold shrink-0 mt-0.5">4</span><span>Attendez la confirmation de l&apos;admin</span></li>
+                    <li className="flex items-start gap-1.5"><span className="w-4 h-4 rounded-full bg-[#22C55E] text-[#050506] flex items-center justify-center text-[0.5rem] font-bold shrink-0 mt-0.5">1</span><span>Entrez le montant en dollars</span></li>
+                    <li className="flex items-start gap-1.5"><span className="w-4 h-4 rounded-full bg-[#22C55E] text-[#050506] flex items-center justify-center text-[0.5rem] font-bold shrink-0 mt-0.5">2</span><span>Envoyez les TRX à l&apos;adresse de l&apos;admin</span></li>
+                    <li className="flex items-start gap-1.5"><span className="w-4 h-4 rounded-full bg-[#22C55E] text-[#050506] flex items-center justify-center text-[0.5rem] font-bold shrink-0 mt-0.5">3</span><span>Entrez votre adresse TRX pour confirmer</span></li>
+                    <li className="flex items-start gap-1.5"><span className="w-4 h-4 rounded-full bg-[#22C55E] text-[#050506] flex items-center justify-center text-[0.5rem] font-bold shrink-0 mt-0.5">4</span><span>Attendez la confirmation de l&apos;admin</span></li>
                   </ol>
                 </div>
               )}
@@ -459,7 +459,7 @@ export default function DepositScreen() {
                         value={depositAmt}
                         onChange={(e) => setDepositAmt(e.target.value)}
                         placeholder="0.00"
-                        className="w-full py-4 pl-9 pr-4 bg-[#F3F4F6] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[1.5rem] font-black outline-none focus:border-[#3B82F6] text-gray-900 placeholder:text-[rgba(0,0,0,0.3)]"
+                        className="w-full py-4 pl-9 pr-4 bg-[#F3F4F6] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[1.5rem] font-black outline-none focus:border-[#22C55E] text-gray-900 placeholder:text-[rgba(0,0,0,0.3)]"
                       />
                     </div>
 
@@ -467,7 +467,7 @@ export default function DepositScreen() {
                       <div className="bg-[#F3F4F6] rounded-xl p-3 border border-[rgba(0,0,0,0.08)]">
                         <div className="flex justify-between items-center">
                           <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Équivalent TRX</span>
-                          <span className="text-[1rem] font-black text-[#3B82F6]">{trxCalculatedAmountTrx.toFixed(2)} TRX</span>
+                          <span className="text-[1rem] font-black text-[#22C55E]">{trxCalculatedAmountTrx.toFixed(2)} TRX</span>
                         </div>
                         <div className="flex justify-between items-center mt-1">
                           <span className="text-[0.65rem] text-[rgba(0,0,0,0.35)]">Taux TRX/USD</span>
@@ -483,7 +483,7 @@ export default function DepositScreen() {
                           onClick={() => setDepositAmt(String(amt))}
                           className={`py-2 rounded-lg text-[0.78rem] font-semibold border-none cursor-pointer transition-all ${
                             depositAmt === String(amt)
-                              ? 'bg-[#3B82F6] text-[#050506]'
+                              ? 'bg-[#22C55E] text-[#050506]'
                               : 'bg-[#F3F4F6] text-[rgba(0,0,0,0.55)]'
                           }`}
                         >
@@ -508,7 +508,7 @@ export default function DepositScreen() {
                       setTrxStep('address');
                     }}
                     disabled={!depositAmt || parseFloat(depositAmt) < 10 || !adminAddress}
-                    className="w-full py-3.5 rounded-xl bg-[#3B82F6] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-3.5 rounded-xl bg-[#22C55E] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Continuer <i className="fas fa-arrow-right ml-2"></i>
                   </button>
@@ -523,14 +523,14 @@ export default function DepositScreen() {
                       <i className="fas fa-qrcode mr-1"></i> Envoyer à cette adresse
                     </div>
                     <div className="bg-[#F3F4F6] rounded-xl p-3 mb-3 border border-[rgba(0,0,0,0.08)]">
-                      <div className="text-[0.72rem] font-mono text-[#3B82F6] break-all leading-relaxed">
+                      <div className="text-[0.72rem] font-mono text-[#22C55E] break-all leading-relaxed">
                         {esc(adminAddress)}
                       </div>
                     </div>
                     <button
                       onClick={() => handleCopyAddress(adminAddress, setCopied)}
                       className={`w-full py-2.5 rounded-xl text-[0.78rem] font-semibold border-none cursor-pointer transition-all flex items-center justify-center gap-2 ${
-                        copied ? 'bg-[#3B82F6] text-[#050506]' : 'bg-[rgba(59,130,246,0.12)] text-[#3B82F6]'
+                        copied ? 'bg-[#22C55E] text-[#050506]' : 'bg-[rgba(34,197,94,0.12)] text-[#22C55E]'
                       }`}
                     >
                       <i className={`fas ${copied ? 'fa-check' : 'fa-copy'}`}></i>
@@ -543,30 +543,30 @@ export default function DepositScreen() {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="bg-[#F3F4F6] rounded-xl p-3 text-center border border-[rgba(0,0,0,0.08)]">
                         <div className="text-[0.6rem] text-[rgba(0,0,0,0.55)] uppercase font-semibold mb-1">TRX</div>
-                        <div className="text-[1.3rem] font-black text-[#3B82F6]">{trxCalculatedAmountTrx.toFixed(2)}</div>
+                        <div className="text-[1.3rem] font-black text-[#22C55E]">{trxCalculatedAmountTrx.toFixed(2)}</div>
                       </div>
                       <div className="bg-[#F3F4F6] rounded-xl p-3 text-center border border-[rgba(0,0,0,0.08)]">
                         <div className="text-[0.6rem] text-[rgba(0,0,0,0.55)] uppercase font-semibold mb-1">USD</div>
-                        <div className="text-[1.3rem] font-black text-[#60A5FA]">{parseFloat(depositAmt).toFixed(2)}</div>
+                        <div className="text-[1.3rem] font-black text-[#4ADE80]">{parseFloat(depositAmt).toFixed(2)}</div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-[#FFFFFF] rounded-xl p-3.5 mb-4 border-l-[3px] border-l-[#3B82F6] border-r border-r-[rgba(0,0,0,0.08)] border-t border-t-[rgba(0,0,0,0.08)] border-b border-b-[rgba(0,0,0,0.08)]">
+                  <div className="bg-[#FFFFFF] rounded-xl p-3.5 mb-4 border-l-[3px] border-l-[#22C55E] border-r border-r-[rgba(0,0,0,0.08)] border-t border-t-[rgba(0,0,0,0.08)] border-b border-b-[rgba(0,0,0,0.08)]">
                     <h4 className="text-[0.78rem] font-bold text-[#1F2937] mb-2">
-                      <i className="fas fa-info-circle mr-1 text-[#3B82F6]"></i> Instructions
+                      <i className="fas fa-info-circle mr-1 text-[#22C55E]"></i> Instructions
                     </h4>
                     <ol className="space-y-1.5 text-[0.7rem] text-[rgba(0,0,0,0.55)]">
                       <li className="flex items-start gap-2">
-                        <span className="w-5 h-5 rounded-full bg-[#3B82F6] text-[#050506] flex items-center justify-center text-[0.55rem] font-bold shrink-0 mt-0.5">1</span>
+                        <span className="w-5 h-5 rounded-full bg-[#22C55E] text-[#050506] flex items-center justify-center text-[0.55rem] font-bold shrink-0 mt-0.5">1</span>
                         <span>Ouvrez votre wallet TRX (Trust Wallet, etc.)</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <span className="w-5 h-5 rounded-full bg-[#3B82F6] text-[#050506] flex items-center justify-center text-[0.55rem] font-bold shrink-0 mt-0.5">2</span>
-                        <span>Envoyez <strong className="text-[#3B82F6]">{trxCalculatedAmountTrx.toFixed(2)} TRX</strong> à l&apos;adresse ci-dessus</span>
+                        <span className="w-5 h-5 rounded-full bg-[#22C55E] text-[#050506] flex items-center justify-center text-[0.55rem] font-bold shrink-0 mt-0.5">2</span>
+                        <span>Envoyez <strong className="text-[#22C55E]">{trxCalculatedAmountTrx.toFixed(2)} TRX</strong> à l&apos;adresse ci-dessus</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <span className="w-5 h-5 rounded-full bg-[#3B82F6] text-[#050506] flex items-center justify-center text-[0.55rem] font-bold shrink-0 mt-0.5">3</span>
+                        <span className="w-5 h-5 rounded-full bg-[#22C55E] text-[#050506] flex items-center justify-center text-[0.55rem] font-bold shrink-0 mt-0.5">3</span>
                         <span>Entrez votre adresse TRX ci-dessous pour confirmer</span>
                       </li>
                     </ol>
@@ -580,7 +580,7 @@ export default function DepositScreen() {
                       value={userAddress}
                       onChange={(e) => setUserAddress(e.target.value)}
                       placeholder="T... (votre adresse TRX)"
-                      className="w-full py-3 px-4 bg-[#F3F4F6] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.85rem] font-mono outline-none focus:border-[#3B82F6] text-gray-900 placeholder:text-[rgba(0,0,0,0.3)]"
+                      className="w-full py-3 px-4 bg-[#F3F4F6] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.85rem] font-mono outline-none focus:border-[#22C55E] text-gray-900 placeholder:text-[rgba(0,0,0,0.3)]"
                     />
                   </div>
 
@@ -594,7 +594,7 @@ export default function DepositScreen() {
                     <button
                       onClick={handleTrxSubmit}
                       disabled={submitting || !userAddress.trim()}
-                      className="flex-[2] py-3.5 rounded-xl bg-[#3B82F6] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      className="flex-[2] py-3.5 rounded-xl bg-[#22C55E] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                       {submitting ? (
                         <>
@@ -615,24 +615,24 @@ export default function DepositScreen() {
               {/* ===================== STEP 3: SUCCESS ===================== */}
               {trxStep === 'success' && (
                 <div className="text-center py-6" style={{ animation: 'tIn 0.3s ease-out' }}>
-                  <div className="w-20 h-20 rounded-full bg-[rgba(59,130,246,0.12)] flex items-center justify-center mx-auto mb-4">
-                    <div className="w-14 h-14 rounded-full bg-[#3B82F6] flex items-center justify-center">
+                  <div className="w-20 h-20 rounded-full bg-[rgba(34,197,94,0.12)] flex items-center justify-center mx-auto mb-4">
+                    <div className="w-14 h-14 rounded-full bg-[#22C55E] flex items-center justify-center">
                       <i className="fas fa-check text-[#050506] text-[1.5rem]"></i>
                     </div>
                   </div>
                   <h3 className="text-[1.2rem] font-bold text-[#1F2937] mb-2">Dépôt soumis !</h3>
                   <p className="text-[0.82rem] text-[rgba(0,0,0,0.55)] mb-6 max-w-[280px] mx-auto">
-                    Votre dépôt de <strong className="text-[#3B82F6]">{formatMoney(parseFloat(depositAmt))}</strong> est en attente de confirmation par l&apos;administrateur.
+                    Votre dépôt de <strong className="text-[#22C55E]">{formatMoney(parseFloat(depositAmt))}</strong> est en attente de confirmation par l&apos;administrateur.
                   </p>
                   <div className="bg-[#FFFFFF] rounded-xl p-4 mb-6 max-w-[280px] mx-auto border border-[rgba(0,0,0,0.08)]">
                     <div className="flex items-center gap-2 justify-center">
-                      <div className="w-2 h-2 rounded-full bg-[#3B82F6]" style={{ animation: 'pulse 1.5s infinite' }} />
+                      <div className="w-2 h-2 rounded-full bg-[#22C55E]" style={{ animation: 'pulse 1.5s infinite' }} />
                       <span className="text-[0.78rem] text-[rgba(0,0,0,0.55)] font-medium">En attente de confirmation...</span>
                     </div>
                   </div>
                   <button
                     onClick={() => setPage('wallet')}
-                    className="w-full py-3.5 rounded-xl bg-[#3B82F6] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer"
+                    className="w-full py-3.5 rounded-xl bg-[#22C55E] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer"
                   >
                     <i className="fas fa-wallet mr-2"></i>Retour au portefeuille
                   </button>
@@ -652,11 +652,11 @@ export default function DepositScreen() {
 
     return (
       <>
-        <Header title="Conversion Yas du Togo" icon="fa-exchange-alt" iconColor="#3B82F6" leftElement={backBtn} />
+        <Header title="Conversion Yas du Togo" icon="fa-exchange-alt" iconColor="#22C55E" leftElement={backBtn} />
         <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto">
           {loading ? (
             <div className="flex justify-center py-12">
-              <div className="w-8 h-8 border-[3px] border-[#E5E7EB] border-t-[#3B82F6] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
+              <div className="w-8 h-8 border-[3px] border-[#E5E7EB] border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
             </div>
           ) : (
             <>
@@ -675,9 +675,9 @@ export default function DepositScreen() {
                   const isDone = currentIdx > thisIdx;
                   return (
                     <div key={st.s} className="flex items-center gap-2">
-                      {i > 0 && <div className={`w-6 h-[2px] rounded ${isDone ? 'bg-[#3B82F6]' : 'bg-[rgba(0,0,0,0.06)]'}`} />}
+                      {i > 0 && <div className={`w-6 h-[2px] rounded ${isDone ? 'bg-[#22C55E]' : 'bg-[rgba(0,0,0,0.06)]'}`} />}
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[0.7rem] font-bold ${
-                        isActive ? 'bg-[#3B82F6] text-[#050506]' : isDone ? 'bg-[#3B82F6] text-[#050506]' : 'bg-[#F3F4F6] text-[rgba(0,0,0,0.35)]'
+                        isActive ? 'bg-[#22C55E] text-[#050506]' : isDone ? 'bg-[#22C55E] text-[#050506]' : 'bg-[#F3F4F6] text-[rgba(0,0,0,0.35)]'
                       }`}>
                         {isDone ? <i className="fas fa-check text-[0.6rem]" /> : st.label}
                       </div>
@@ -702,7 +702,7 @@ export default function DepositScreen() {
                         value={yasAmount}
                         onChange={(e) => setYasAmount(e.target.value)}
                         placeholder="0"
-                        className="w-full py-4 pl-[4.5rem] pr-4 bg-[#F3F4F6] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[1.5rem] font-black outline-none focus:border-[#3B82F6] text-gray-900 placeholder:text-[rgba(0,0,0,0.3)]"
+                        className="w-full py-4 pl-[4.5rem] pr-4 bg-[#F3F4F6] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[1.5rem] font-black outline-none focus:border-[#22C55E] text-gray-900 placeholder:text-[rgba(0,0,0,0.3)]"
                       />
                     </div>
 
@@ -714,11 +714,11 @@ export default function DepositScreen() {
                         </div>
                         <div className="flex justify-between items-center mb-1.5">
                           <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Équivalent USD</span>
-                          <span className="text-[0.95rem] font-black text-[#60A5FA]">{yasAmountUsd.toFixed(2)} $</span>
+                          <span className="text-[0.95rem] font-black text-[#4ADE80]">{yasAmountUsd.toFixed(2)} $</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Vous recevrez</span>
-                          <span className="text-[1rem] font-black text-[#3B82F6]">{yasAmountTrx.toFixed(2)} TRX</span>
+                          <span className="text-[1rem] font-black text-[#22C55E]">{yasAmountTrx.toFixed(2)} TRX</span>
                         </div>
                         <div className="border-t border-[rgba(0,0,0,0.08)] mt-2 pt-2">
                           <div className="flex justify-between items-center">
@@ -740,7 +740,7 @@ export default function DepositScreen() {
                           onClick={() => setYasAmount(String(amt))}
                           className={`py-2 rounded-lg text-[0.72rem] font-semibold border-none cursor-pointer transition-all ${
                             yasAmount === String(amt)
-                              ? 'bg-[#3B82F6] text-[#050506]'
+                              ? 'bg-[#22C55E] text-[#050506]'
                               : 'bg-[#F3F4F6] text-[rgba(0,0,0,0.55)]'
                           }`}
                         >
@@ -753,20 +753,20 @@ export default function DepositScreen() {
                   {/* Admin Yas Account - Show where to send money */}
                   {adminYasAccount && (
                     <div className="bg-[#FFFFFF] rounded-2xl p-4 mb-4 border border-[rgba(0,0,0,0.08)] relative overflow-hidden">
-                      <div className="absolute -top-8 -right-8 w-[100px] h-[100px] bg-[radial-gradient(circle,rgba(59,130,246,0.1),transparent_60%)]" />
+                      <div className="absolute -top-8 -right-8 w-[100px] h-[100px] bg-[radial-gradient(circle,rgba(34,197,94,0.1),transparent_60%)]" />
                       <div className="relative z-[1]">
                         <div className="text-[0.65rem] text-[rgba(0,0,0,0.35)] uppercase font-semibold tracking-[1px] mb-2">
                           <i className="fas fa-university mr-1"></i> Envoyez l&apos;argent à ce compte Yas
                         </div>
                         <div className="bg-[#F3F4F6] rounded-xl p-3 mb-3 border border-[rgba(0,0,0,0.08)]">
-                          <div className="text-[1.1rem] font-mono font-bold text-[#3B82F6] tracking-wide">
+                          <div className="text-[1.1rem] font-mono font-bold text-[#22C55E] tracking-wide">
                             {esc(adminYasAccount)}
                           </div>
                         </div>
                         <button
                           onClick={() => handleCopyAddress(adminYasAccount, setYasCopied)}
                           className={`w-full py-2.5 rounded-xl text-[0.78rem] font-semibold border-none cursor-pointer transition-all flex items-center justify-center gap-2 ${
-                            yasCopied ? 'bg-[#3B82F6] text-[#050506]' : 'bg-[rgba(59,130,246,0.12)] text-[#3B82F6]'
+                            yasCopied ? 'bg-[#22C55E] text-[#050506]' : 'bg-[rgba(34,197,94,0.12)] text-[#22C55E]'
                           }`}
                         >
                           <i className={`fas ${yasCopied ? 'fa-check' : 'fa-copy'}`}></i>
@@ -789,7 +789,7 @@ export default function DepositScreen() {
                       setYasStep('guide');
                     }}
                     disabled={!yasAmount || parseFloat(yasAmount) < 6000}
-                    className="w-full py-3.5 rounded-xl bg-[#3B82F6] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-3.5 rounded-xl bg-[#22C55E] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Continuer <i className="fas fa-arrow-right ml-2"></i>
                   </button>
@@ -801,11 +801,11 @@ export default function DepositScreen() {
                 <div style={{ animation: 'tIn 0.3s ease-out' }}>
                   {/* Trust Wallet Guide */}
                   <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4 border border-[rgba(0,0,0,0.08)] relative overflow-hidden">
-                    <div className="absolute -top-12 -right-12 w-[140px] h-[140px] bg-[radial-gradient(circle,rgba(59,130,246,0.1),transparent_60%)]" />
+                    <div className="absolute -top-12 -right-12 w-[140px] h-[140px] bg-[radial-gradient(circle,rgba(34,197,94,0.1),transparent_60%)]" />
                     <div className="relative z-[1]">
                       <div className="flex items-center gap-2 mb-3">
-                        <div className="w-10 h-10 rounded-xl bg-[rgba(59,130,246,0.12)] flex items-center justify-center border border-[rgba(59,130,246,0.15)]">
-                          <i className="fas fa-shield-alt text-[#3B82F6] text-[0.9rem]"></i>
+                        <div className="w-10 h-10 rounded-xl bg-[rgba(34,197,94,0.12)] flex items-center justify-center border border-[rgba(34,197,94,0.15)]">
+                          <i className="fas fa-shield-alt text-[#22C55E] text-[0.9rem]"></i>
                         </div>
                         <div>
                           <h3 className="text-[0.95rem] font-bold text-[#1F2937]">Guide - Trust Wallet</h3>
@@ -822,8 +822,8 @@ export default function DepositScreen() {
                           { icon: 'fa-check-circle', text: 'Collez cette adresse TRX dans le formulaire suivant' },
                         ].map((step, i) => (
                           <li key={i} className="flex items-start gap-2.5">
-                            <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 bg-[rgba(59,130,246,0.12)]">
-                              <i className={`fas ${step.icon} text-[0.55rem] text-[#3B82F6]`}></i>
+                            <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 bg-[rgba(34,197,94,0.12)]">
+                              <i className={`fas ${step.icon} text-[0.55rem] text-[#22C55E]`}></i>
                             </div>
                             <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)] leading-relaxed">{step.text}</span>
                           </li>
@@ -833,9 +833,9 @@ export default function DepositScreen() {
                   </div>
 
                   {/* Important notice */}
-                  <div className="bg-[#FFFFFF] rounded-xl p-3.5 mb-4 border-l-[3px] border-l-[#3B82F6] border-r border-r-[rgba(0,0,0,0.08)] border-t border-t-[rgba(0,0,0,0.08)] border-b border-b-[rgba(0,0,0,0.08)]">
+                  <div className="bg-[#FFFFFF] rounded-xl p-3.5 mb-4 border-l-[3px] border-l-[#22C55E] border-r border-r-[rgba(0,0,0,0.08)] border-t border-t-[rgba(0,0,0,0.08)] border-b border-b-[rgba(0,0,0,0.08)]">
                     <div className="flex items-start gap-2">
-                      <i className="fas fa-exclamation-triangle text-[#3B82F6] text-[0.8rem] mt-0.5"></i>
+                      <i className="fas fa-exclamation-triangle text-[#22C55E] text-[0.8rem] mt-0.5"></i>
                       <div>
                         <h4 className="text-[0.78rem] font-bold text-[#1F2937] mb-1">Important</h4>
                         <p className="text-[0.68rem] text-[rgba(0,0,0,0.55)] leading-relaxed">
@@ -855,7 +855,7 @@ export default function DepositScreen() {
                     </button>
                     <button
                       onClick={() => setYasStep('wallet')}
-                      className="flex-[2] py-3.5 rounded-xl bg-[#3B82F6] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer"
+                      className="flex-[2] py-3.5 rounded-xl bg-[#22C55E] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer"
                     >
                       J&apos;ai compris, continuer <i className="fas fa-arrow-right ml-2"></i>
                     </button>
@@ -876,11 +876,11 @@ export default function DepositScreen() {
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Équivalent USD</span>
-                        <span className="text-[0.88rem] font-bold text-[#60A5FA]">{yasAmountUsd.toFixed(2)} $</span>
+                        <span className="text-[0.88rem] font-bold text-[#4ADE80]">{yasAmountUsd.toFixed(2)} $</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">TRX à recevoir</span>
-                        <span className="text-[0.88rem] font-bold text-[#3B82F6]">{yasAmountTrx.toFixed(2)} TRX</span>
+                        <span className="text-[0.88rem] font-bold text-[#22C55E]">{yasAmountTrx.toFixed(2)} TRX</span>
                       </div>
                     </div>
                   </div>
@@ -888,8 +888,8 @@ export default function DepositScreen() {
                   {/* Yas Account Input */}
                   <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4 border border-[rgba(0,0,0,0.08)]">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-9 h-9 rounded-xl bg-[rgba(59,130,246,0.12)] flex items-center justify-center shrink-0">
-                        <i className="fas fa-phone text-[#3B82F6] text-[0.8rem]"></i>
+                      <div className="w-9 h-9 rounded-xl bg-[rgba(34,197,94,0.12)] flex items-center justify-center shrink-0">
+                        <i className="fas fa-phone text-[#22C55E] text-[0.8rem]"></i>
                       </div>
                       <div>
                         <h3 className="text-[0.95rem] font-bold text-[#1F2937]">Numéro Yas du Togo</h3>
@@ -905,7 +905,7 @@ export default function DepositScreen() {
                       }}
                       placeholder="Ex: 90123456"
                       className={`w-full py-3.5 px-4 bg-[#F3F4F6] border-[1.5px] rounded-xl text-[0.95rem] font-mono outline-none text-gray-900 placeholder:text-[rgba(0,0,0,0.3)] ${
-                        yasAccount && yasAccountError ? 'border-[#EF4444] focus:border-[#EF4444]' : 'border-[rgba(0,0,0,0.08)] focus:border-[#3B82F6]'
+                        yasAccount && yasAccountError ? 'border-[#EF4444] focus:border-[#EF4444]' : 'border-[rgba(0,0,0,0.08)] focus:border-[#22C55E]'
                       }`}
                       maxLength={8}
                     />
@@ -916,7 +916,7 @@ export default function DepositScreen() {
                       </p>
                     )}
                     {yasAccount && !yasAccountError && (
-                      <p className="text-[0.68rem] text-[#3B82F6] mt-1.5 flex items-center gap-1">
+                      <p className="text-[0.68rem] text-[#22C55E] mt-1.5 flex items-center gap-1">
                         <i className="fas fa-check-circle text-[0.6rem]"></i>
                         Numéro valide
                       </p>
@@ -926,8 +926,8 @@ export default function DepositScreen() {
                   {/* TRX Address Input */}
                   <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4 border border-[rgba(0,0,0,0.08)]">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-9 h-9 rounded-xl bg-[rgba(59,130,246,0.12)] flex items-center justify-center shrink-0">
-                        <i className="fas fa-wallet text-[#3B82F6] text-[0.8rem]"></i>
+                      <div className="w-9 h-9 rounded-xl bg-[rgba(34,197,94,0.12)] flex items-center justify-center shrink-0">
+                        <i className="fas fa-wallet text-[#22C55E] text-[0.8rem]"></i>
                       </div>
                       <div>
                         <h3 className="text-[0.95rem] font-bold text-[#1F2937]">Adresse TRX Trust Wallet</h3>
@@ -939,31 +939,31 @@ export default function DepositScreen() {
                       value={yasTrxAddress}
                       onChange={(e) => setYasTrxAddress(e.target.value)}
                       placeholder="T... (votre adresse TRX Trust Wallet)"
-                      className="w-full py-3.5 px-4 bg-[#F3F4F6] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.85rem] font-mono outline-none focus:border-[#3B82F6] text-gray-900 placeholder:text-[rgba(0,0,0,0.3)]"
+                      className="w-full py-3.5 px-4 bg-[#F3F4F6] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.85rem] font-mono outline-none focus:border-[#22C55E] text-gray-900 placeholder:text-[rgba(0,0,0,0.3)]"
                     />
                   </div>
 
                   {/* Reminder about Trust Wallet */}
-                  <div className="bg-[#FFFFFF] rounded-xl p-3.5 mb-4 border-l-[3px] border-l-[#3B82F6] border-r border-r-[rgba(0,0,0,0.08)] border-t border-t-[rgba(0,0,0,0.08)] border-b border-b-[rgba(0,0,0,0.08)]">
+                  <div className="bg-[#FFFFFF] rounded-xl p-3.5 mb-4 border-l-[3px] border-l-[#22C55E] border-r border-r-[rgba(0,0,0,0.08)] border-t border-t-[rgba(0,0,0,0.08)] border-b border-b-[rgba(0,0,0,0.08)]">
                     <h4 className="text-[0.78rem] font-bold text-[#1F2937] mb-1.5">
-                      <i className="fas fa-info-circle mr-1 text-[#3B82F6]"></i> Rappel
+                      <i className="fas fa-info-circle mr-1 text-[#22C55E]"></i> Rappel
                     </h4>
                     <ul className="space-y-1 text-[0.68rem] text-[rgba(0,0,0,0.55)]">
                       <li className="flex items-start gap-1.5">
-                        <i className="fas fa-check text-[0.5rem] mt-1 text-[#3B82F6]"></i>
-                        <span>Assurez-vous d&apos;avoir téléchargé <strong className="text-[#3B82F6]">Trust Wallet</strong></span>
+                        <i className="fas fa-check text-[0.5rem] mt-1 text-[#22C55E]"></i>
+                        <span>Assurez-vous d&apos;avoir téléchargé <strong className="text-[#22C55E]">Trust Wallet</strong></span>
                       </li>
                       <li className="flex items-start gap-1.5">
-                        <i className="fas fa-check text-[0.5rem] mt-1 text-[#3B82F6]"></i>
-                        <span>Votre adresse TRX doit commencer par <strong className="text-[#3B82F6]">T</strong></span>
+                        <i className="fas fa-check text-[0.5rem] mt-1 text-[#22C55E]"></i>
+                        <span>Votre adresse TRX doit commencer par <strong className="text-[#22C55E]">T</strong></span>
                       </li>
                       <li className="flex items-start gap-1.5">
-                        <i className="fas fa-check text-[0.5rem] mt-1 text-[#3B82F6]"></i>
-                        <span>Envoyez <strong className="text-[#3B82F6]">{Math.round(yasAmountCfa).toLocaleString('fr-FR')} FCFA</strong> au compte Yas de l&apos;admin</span>
+                        <i className="fas fa-check text-[0.5rem] mt-1 text-[#22C55E]"></i>
+                        <span>Envoyez <strong className="text-[#22C55E]">{Math.round(yasAmountCfa).toLocaleString('fr-FR')} FCFA</strong> au compte Yas de l&apos;admin</span>
                       </li>
                       <li className="flex items-start gap-1.5">
-                        <i className="fas fa-check text-[0.5rem] mt-1 text-[#3B82F6]"></i>
-                        <span>L&apos;admin convertira votre argent et vous enverra <strong className="text-[#3B82F6]">{yasAmountTrx.toFixed(2)} TRX</strong></span>
+                        <i className="fas fa-check text-[0.5rem] mt-1 text-[#22C55E]"></i>
+                        <span>L&apos;admin convertira votre argent et vous enverra <strong className="text-[#22C55E]">{yasAmountTrx.toFixed(2)} TRX</strong></span>
                       </li>
                     </ul>
                   </div>
@@ -978,7 +978,7 @@ export default function DepositScreen() {
                     <button
                       onClick={handleYasSubmit}
                       disabled={yasSubmitting || !yasTrxAddress.trim() || !!yasAccountError || !yasAccount.trim()}
-                      className="flex-[2] py-3.5 rounded-xl bg-[#3B82F6] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      className="flex-[2] py-3.5 rounded-xl bg-[#22C55E] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                       {yasSubmitting ? (
                         <>
@@ -999,24 +999,24 @@ export default function DepositScreen() {
               {/* ===================== YAS STEP 4: SUCCESS ===================== */}
               {yasStep === 'success' && (
                 <div className="text-center py-6" style={{ animation: 'tIn 0.3s ease-out' }}>
-                  <div className="w-20 h-20 rounded-full bg-[rgba(59,130,246,0.12)] flex items-center justify-center mx-auto mb-4">
-                    <div className="w-14 h-14 rounded-full bg-[#3B82F6] flex items-center justify-center">
+                  <div className="w-20 h-20 rounded-full bg-[rgba(34,197,94,0.12)] flex items-center justify-center mx-auto mb-4">
+                    <div className="w-14 h-14 rounded-full bg-[#22C55E] flex items-center justify-center">
                       <i className="fas fa-check text-[#050506] text-[1.5rem]"></i>
                     </div>
                   </div>
                   <h3 className="text-[1.2rem] font-bold text-[#1F2937] mb-2">Demande soumise !</h3>
                   <p className="text-[0.82rem] text-[rgba(0,0,0,0.55)] mb-4 max-w-[300px] mx-auto">
-                    Votre demande de conversion de <strong className="text-[#3B82F6]">{Math.round(yasAmountCfa).toLocaleString('fr-FR')} FCFA</strong> ({yasAmountUsd.toFixed(2)} $) a été envoyée. L&apos;administrateur convertira votre argent et vous enverra <strong className="text-[#3B82F6]">{yasAmountTrx.toFixed(2)} TRX</strong> sur votre Trust Wallet.
+                    Votre demande de conversion de <strong className="text-[#22C55E]">{Math.round(yasAmountCfa).toLocaleString('fr-FR')} FCFA</strong> ({yasAmountUsd.toFixed(2)} $) a été envoyée. L&apos;administrateur convertira votre argent et vous enverra <strong className="text-[#22C55E]">{yasAmountTrx.toFixed(2)} TRX</strong> sur votre Trust Wallet.
                   </p>
                   <div className="bg-[#FFFFFF] rounded-xl p-4 mb-6 max-w-[300px] mx-auto border border-[rgba(0,0,0,0.08)]">
                     <div className="flex items-center gap-2 justify-center">
-                      <div className="w-2 h-2 rounded-full bg-[#3B82F6]" style={{ animation: 'pulse 1.5s infinite' }} />
+                      <div className="w-2 h-2 rounded-full bg-[#22C55E]" style={{ animation: 'pulse 1.5s infinite' }} />
                       <span className="text-[0.78rem] text-[rgba(0,0,0,0.55)] font-medium">En attente de traitement par l&apos;admin...</span>
                     </div>
                   </div>
                   <button
                     onClick={() => setPage('wallet')}
-                    className="w-full py-3.5 rounded-xl bg-[#3B82F6] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer"
+                    className="w-full py-3.5 rounded-xl bg-[#22C55E] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer"
                   >
                     <i className="fas fa-wallet mr-2"></i>Retour au portefeuille
                   </button>

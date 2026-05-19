@@ -57,8 +57,8 @@ export default function ProfileScreen() {
     <>
       <style>{`
         @keyframes avatarBreathe {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.3); }
-          50% { box-shadow: 0 0 20px 4px rgba(59,130,246,0.15); }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.3); }
+          50% { box-shadow: 0 0 20px 4px rgba(34,197,94,0.15); }
         }
         @keyframes slideUp {
           from { opacity: 0; transform: translateY(8px); }
@@ -66,7 +66,7 @@ export default function ProfileScreen() {
         }
       `}</style>
 
-      <Header title="Profil" icon="fa-user" iconColor="#3B82F6" leftElement={<button onClick={() => setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer border-none mr-1" style={{ background: 'rgba(0,0,0,0.06)', color: 'rgba(0,0,0,0.55)' }}><i className="fas fa-arrow-left text-[0.8rem]"></i></button>} />
+      <Header title="Profil" icon="fa-user" iconColor="#22C55E" leftElement={<button onClick={() => setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer border-none mr-1" style={{ background: 'rgba(0,0,0,0.06)', color: 'rgba(0,0,0,0.55)' }}><i className="fas fa-arrow-left text-[0.8rem]"></i></button>} />
       <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto" style={{ background: '#F8F9FA' }}>
 
         {/* User Card — white with gold avatar */}
@@ -78,8 +78,8 @@ export default function ProfileScreen() {
           }}
         >
           {/* Decorative subtle elements */}
-          <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full" style={{ background: 'rgba(59,130,246,0.06)' }}></div>
-          <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full" style={{ background: 'rgba(59,130,246,0.05)' }}></div>
+          <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full" style={{ background: 'rgba(34,197,94,0.06)' }}></div>
+          <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full" style={{ background: 'rgba(34,197,94,0.05)' }}></div>
 
           <div className="flex items-center gap-4 mb-4 relative">
             {/* Gold avatar */}
@@ -87,16 +87,16 @@ export default function ProfileScreen() {
               <div
                 className="w-16 h-16 rounded-full flex items-center justify-center font-bold text-[1.3rem]"
                 style={{
-                  background: 'linear-gradient(135deg, #3B82F6, #60A5FA)',
+                  background: 'linear-gradient(135deg, #22C55E, #4ADE80)',
                   color: '#050506',
-                  boxShadow: '0 4px 20px rgba(59,130,246,0.3)',
+                  boxShadow: '0 4px 20px rgba(34,197,94,0.3)',
                   animation: 'avatarBreathe 3s ease-in-out infinite',
                 }}
               >
                 {esc(user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2))}
               </div>
               {/* Online indicator */}
-              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full" style={{ background: '#3B82F6', border: '2px solid #FFFFFF' }}></div>
+              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full" style={{ background: '#22C55E', border: '2px solid #FFFFFF' }}></div>
             </div>
             <div>
               <div className="text-[1.1rem] font-bold" style={{ color: '#1F2937' }}>{esc(user.name)}</div>
@@ -105,8 +105,8 @@ export default function ProfileScreen() {
                 <span
                   className="inline-flex items-center gap-1 text-[0.6rem] px-2 py-0.5 rounded-full mt-1 font-semibold"
                   style={{
-                    background: 'rgba(59,130,246,0.12)',
-                    color: '#60A5FA',
+                    background: 'rgba(34,197,94,0.12)',
+                    color: '#4ADE80',
                   }}
                 >
                   <i className="fas fa-shield-alt text-[0.5rem]"></i>Admin
@@ -119,19 +119,19 @@ export default function ProfileScreen() {
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.05)' }}>
               <div className="text-[0.6rem] uppercase" style={{ color: 'rgba(0,0,0,0.35)' }}>Principal</div>
-              <div className="text-[0.95rem] font-black" style={{ color: '#60A5FA' }}>{formatMoney(user.balance)}</div>
+              <div className="text-[0.95rem] font-black" style={{ color: '#4ADE80' }}>{formatMoney(user.balance)}</div>
             </div>
             <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.05)' }}>
               <div className="text-[0.6rem] uppercase" style={{ color: 'rgba(0,0,0,0.35)' }}>Investissement</div>
-              <div className="text-[0.95rem] font-black" style={{ color: '#60A5FA' }}>{formatMoney(user.investBalance)}</div>
+              <div className="text-[0.95rem] font-black" style={{ color: '#4ADE80' }}>{formatMoney(user.investBalance)}</div>
             </div>
             <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.05)' }}>
               <div className="text-[0.6rem] uppercase" style={{ color: 'rgba(0,0,0,0.35)' }}>Trading</div>
-              <div className="text-[0.95rem] font-black" style={{ color: '#60A5FA' }}>{formatMoney(user.tradeBalance)}</div>
+              <div className="text-[0.95rem] font-black" style={{ color: '#4ADE80' }}>{formatMoney(user.tradeBalance)}</div>
             </div>
             <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.05)' }}>
               <div className="text-[0.6rem] uppercase" style={{ color: 'rgba(0,0,0,0.35)' }}>Projet</div>
-              <div className="text-[0.95rem] font-black" style={{ color: '#60A5FA' }}>{formatMoney(user.projectBalance)}</div>
+              <div className="text-[0.95rem] font-black" style={{ color: '#4ADE80' }}>{formatMoney(user.projectBalance)}</div>
             </div>
           </div>
         </div>
@@ -145,7 +145,7 @@ export default function ProfileScreen() {
           }}
         >
           <div className="flex items-center gap-2.5 mb-3">
-            <i className="fas fa-users" style={{ color: '#3B82F6' }}></i>
+            <i className="fas fa-gift" style={{ color: '#F59E0B' }}></i>
             <h4 className="text-[0.88rem] font-bold" style={{ color: '#1F2937' }}>Parrainage</h4>
           </div>
 
@@ -153,21 +153,21 @@ export default function ProfileScreen() {
           <div
             className="rounded-xl p-3 mb-3 flex items-center justify-between"
             style={{
-              background: 'rgba(59,130,246,0.08)',
-              border: '1px solid rgba(59,130,246,0.1)',
+              background: 'rgba(245,158,11,0.08)',
+              border: '1px solid rgba(245,158,11,0.1)',
             }}
           >
             <div>
               <div className="text-[0.68rem] mb-0.5" style={{ color: 'rgba(0,0,0,0.45)' }}>Votre code</div>
-              <div className="text-[1.1rem] font-mono font-black" style={{ color: '#60A5FA' }}>{user.referralCode}</div>
+              <div className="text-[1.1rem] font-mono font-black" style={{ color: '#F59E0B' }}>{user.referralCode}</div>
             </div>
             <button
               onClick={handleCopyCode}
               className="w-10 h-10 rounded-xl flex items-center justify-center border-none cursor-pointer transition-all"
               style={{
-                background: copied ? 'rgba(59,130,246,0.3)' : '#3B82F6',
-                color: copied ? '#60A5FA' : '#050506',
-                boxShadow: copied ? 'none' : '0 2px 12px rgba(59,130,246,0.25)',
+                background: copied ? 'rgba(245,158,11,0.3)' : '#F59E0B',
+                color: copied ? '#F59E0B' : '#050506',
+                boxShadow: copied ? 'none' : '0 2px 12px rgba(245,158,11,0.25)',
               }}
             >
               <i className={`fas ${copied ? 'fa-check' : 'fa-copy'} text-[0.85rem]`}></i>
@@ -185,7 +185,7 @@ export default function ProfileScreen() {
             >
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-[0.72rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>Progrès pour retrait</span>
-                <span className="text-[0.72rem] font-bold" style={{ color: '#3B82F6' }}>{currentReferrals}/{requiredReferrals}</span>
+                <span className="text-[0.72rem] font-bold" style={{ color: '#F59E0B' }}>{currentReferrals}/{requiredReferrals}</span>
               </div>
               <div className="w-full h-2.5 rounded-full overflow-hidden mb-1.5" style={{ background: 'rgba(0,0,0,0.08)' }}>
                 <div
@@ -193,17 +193,17 @@ export default function ProfileScreen() {
                   style={{
                     width: `${referralProgress}%`,
                     background: referralProgress >= 100
-                      ? 'linear-gradient(90deg, #3B82F6, #60A5FA)'
-                      : 'linear-gradient(90deg, #3B82F6, #60A5FA)',
+                      ? 'linear-gradient(90deg, #22C55E, #4ADE80)'
+                      : 'linear-gradient(90deg, #F59E0B, #FBBF24)',
                   }}
                 ></div>
               </div>
               {needsMore > 0 ? (
-                <p className="text-[0.65rem]" style={{ color: 'rgba(59,130,246,0.7)' }}>
+                <p className="text-[0.65rem]" style={{ color: 'rgba(34,197,94,0.7)' }}>
                   <i className="fas fa-info-circle mr-1"></i>Encore <strong>{needsMore}</strong> filleul{needsMore > 1 ? 's' : ''} requis pour le retrait
                 </p>
               ) : (
-                <p className="text-[0.65rem]" style={{ color: '#3B82F6' }}>
+                <p className="text-[0.65rem]" style={{ color: '#22C55E' }}>
                   <i className="fas fa-check-circle mr-1"></i>Condition de parrainage remplie !
                 </p>
               )}
@@ -212,15 +212,15 @@ export default function ProfileScreen() {
 
           <div className="flex items-center justify-between mb-2">
             <span className="text-[0.75rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>Filleuls actifs</span>
-            <span className="text-[0.75rem] font-bold" style={{ color: '#3B82F6' }}>{user.referralCount || 0}</span>
+            <span className="text-[0.75rem] font-bold" style={{ color: '#F59E0B' }}>{user.referralCount || 0}</span>
           </div>
           <button
             onClick={loadReferrals}
             className="w-full py-2.5 rounded-xl font-semibold text-[0.82rem] border-none cursor-pointer transition-all active:scale-[0.98]"
             style={{
-              background: 'rgba(59,130,246,0.1)',
-              color: '#3B82F6',
-              border: '1px solid rgba(59,130,246,0.15)',
+              background: 'rgba(245,158,11,0.1)',
+              color: '#F59E0B',
+              border: '1px solid rgba(245,158,11,0.15)',
             }}
           >
             <i className="fas fa-list mr-1"></i>Voir mes filleuls
@@ -252,8 +252,8 @@ export default function ProfileScreen() {
                 <span
                   className="text-[0.65rem] font-semibold px-2 py-0.5 rounded-full"
                   style={{
-                    background: r.hasInvested ? 'rgba(59,130,246,0.12)' : 'rgba(0,0,0,0.05)',
-                    color: r.hasInvested ? '#3B82F6' : 'rgba(0,0,0,0.45)',
+                    background: r.hasInvested ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.08)',
+                    color: r.hasInvested ? '#22C55E' : 'rgba(239,68,68,0.6)',
                   }}
                 >
                   {r.hasInvested ? 'Actif' : 'Inactif'}
@@ -274,8 +274,8 @@ export default function ProfileScreen() {
             boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
           }}
         >
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.12)' }}>
-            <i className="fas fa-chart-bar text-[0.75rem]" style={{ color: '#3B82F6' }}></i>
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.12)' }}>
+            <i className="fas fa-chart-bar text-[0.75rem]" style={{ color: '#6366F1' }}></i>
           </div>
           Analyses
         </button>
@@ -292,8 +292,8 @@ export default function ProfileScreen() {
               boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
             }}
           >
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.12)' }}>
-              <i className="fas fa-shield-alt text-[0.75rem]" style={{ color: '#60A5FA' }}></i>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.12)' }}>
+              <i className="fas fa-shield-alt text-[0.75rem]" style={{ color: '#6366F1' }}></i>
             </div>
             Panneau Admin
           </button>
