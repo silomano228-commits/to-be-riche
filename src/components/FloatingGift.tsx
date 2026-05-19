@@ -51,20 +51,20 @@ export default function FloatingGift() {
           {/* Gold glow ring — subtle */}
           <div className="absolute inset-0 w-[52px] h-[52px] rounded-full"
             style={{
-              background: 'radial-gradient(circle, rgba(184,155,94,0.25) 0%, transparent 70%)',
+              background: 'radial-gradient(circle, rgba(59,130,246,0.25) 0%, transparent 70%)',
               animation: 'giftGlow 3s ease-in-out infinite',
               transform: 'scale(1.4)',
             }}
           />
-          {/* Main circle — dark with gold border */}
+          {/* Main circle — white with gold border */}
           <div
             className="w-[52px] h-[52px] rounded-full flex items-center justify-center transition-all duration-300"
             style={{
-              background: '#0E0F11',
-              border: '1.5px solid rgba(184,155,94,0.3)',
+              background: '#FFFFFF',
+              border: '1.5px solid rgba(59,130,246,0.3)',
               boxShadow: isComplete
-                ? '0 0 20px rgba(184,155,94,0.25), 0 4px 16px rgba(0,0,0,0.4)'
-                : '0 4px 16px rgba(0,0,0,0.4)',
+                ? '0 0 20px rgba(59,130,246,0.25), 0 1px 4px rgba(0,0,0,0.05)'
+                : '0 1px 4px rgba(0,0,0,0.05)',
               animation: pulse % 2 === 0 ? 'giftFloat 3s ease-in-out infinite' : 'giftBreathe 4s ease-in-out infinite',
             }}
           >
@@ -75,9 +75,9 @@ export default function FloatingGift() {
             <div
               className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[0.55rem] font-bold px-1"
               style={{
-                background: '#B89B5E',
+                background: '#3B82F6',
                 color: '#050506',
-                boxShadow: '0 2px 8px rgba(184,155,94,0.4)',
+                boxShadow: '0 2px 8px rgba(59,130,246,0.4)',
               }}
             >
               {referralCount}
@@ -87,9 +87,9 @@ export default function FloatingGift() {
             <div
               className="absolute -top-1 -right-1 w-[18px] h-[18px] rounded-full flex items-center justify-center text-[0.55rem] font-bold"
               style={{
-                background: '#B89B5E',
+                background: '#3B82F6',
                 color: '#050506',
-                boxShadow: '0 2px 8px rgba(184,155,94,0.4)',
+                boxShadow: '0 2px 8px rgba(59,130,246,0.4)',
               }}
             >
               ✓
@@ -101,19 +101,19 @@ export default function FloatingGift() {
       {/* Modal Overlay */}
       {open && (
         <div className="fixed inset-0 z-[5000] flex items-center justify-center" onClick={() => setOpen(false)}>
-          <div className="absolute inset-0 bg-[rgba(5,5,6,0.7)] backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-[rgba(0,0,0,0.3)] backdrop-blur-sm" />
           <div
             className={`relative w-[88%] max-w-[340px] shadow-2xl overflow-hidden ${animClass}`}
             style={{
-              background: '#0E0F11',
-              border: '1px solid rgba(255,255,255,0.06)',
+              background: '#FFFFFF',
+              border: '1px solid rgba(0,0,0,0.08)',
               borderRadius: '1rem',
             }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Subtle gold line at top instead of gradient header */}
             <div className="h-[2px] w-full" style={{
-              background: 'linear-gradient(90deg, transparent, #B89B5E, transparent)',
+              background: 'linear-gradient(90deg, transparent, #3B82F6, transparent)',
               opacity: isComplete ? 0.8 : 0.4,
             }} />
 
@@ -122,8 +122,8 @@ export default function FloatingGift() {
               onClick={() => setOpen(false)}
               className="absolute top-4 right-4 w-7 h-7 rounded-full flex items-center justify-center cursor-pointer border-none text-[0.7rem] transition-colors"
               style={{
-                background: 'rgba(255,255,255,0.06)',
-                color: 'rgba(255,255,255,0.45)',
+                background: 'rgba(0,0,0,0.06)',
+                color: 'rgba(0,0,0,0.55)',
               }}
             >
               ✕
@@ -134,7 +134,7 @@ export default function FloatingGift() {
               <div className="flex justify-center mb-4">
                 <div className="relative">
                   <div className="text-[3rem]" style={{
-                    filter: isComplete ? 'drop-shadow(0 0 16px rgba(184,155,94,0.35))' : 'none',
+                    filter: isComplete ? 'drop-shadow(0 0 16px rgba(59,130,246,0.35))' : 'none',
                     animation: isComplete ? 'giftCelebrate 3s ease-in-out infinite' : 'giftWiggle 4s ease-in-out infinite',
                   }}>
                     {isComplete ? '🎉' : '🎁'}
@@ -157,8 +157,8 @@ export default function FloatingGift() {
 
               {/* Main message */}
               <div className="text-center mb-1">
-                <div className="text-[0.92rem] font-bold mb-1" style={{ color: '#EDEDEF' }}>{stage.msg}</div>
-                <div className="text-[0.65rem] tracking-wide" style={{ color: 'rgba(255,255,255,0.25)' }}>{stage.sub}</div>
+                <div className="text-[0.92rem] font-bold mb-1" style={{ color: '#1F2937' }}>{stage.msg}</div>
+                <div className="text-[0.65rem] tracking-wide" style={{ color: 'rgba(0,0,0,0.35)' }}>{stage.sub}</div>
               </div>
             </div>
 
@@ -167,17 +167,17 @@ export default function FloatingGift() {
               {/* Progress section */}
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2.5">
-                  <span className="text-[0.72rem] font-semibold" style={{ color: 'rgba(255,255,255,0.45)' }}>Progression</span>
-                  <span className="text-[0.72rem] font-bold" style={{ color: '#B89B5E' }}>{referralCount}/{REQUIRED_REFERRALS}</span>
+                  <span className="text-[0.72rem] font-semibold" style={{ color: 'rgba(0,0,0,0.55)' }}>Progression</span>
+                  <span className="text-[0.72rem] font-bold" style={{ color: '#3B82F6' }}>{referralCount}/{REQUIRED_REFERRALS}</span>
                 </div>
-                {/* Progress bar — gold gradient on dark track */}
+                {/* Progress bar — gold gradient on light track */}
                 <div className="relative">
-                  <div className="w-full h-[6px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                  <div className="w-full h-[6px] rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.08)' }}>
                     <div
                       className="h-full rounded-full transition-all duration-700 ease-out"
                       style={{
                         width: `${progress * 100}%`,
-                        background: 'linear-gradient(90deg, #B89B5E, #D4B87A)',
+                        background: 'linear-gradient(90deg, #3B82F6, #60A5FA)',
                       }}
                     />
                   </div>
@@ -187,8 +187,8 @@ export default function FloatingGift() {
                       <div key={i}
                         className="w-[6px] h-[6px] rounded-full transition-all duration-300"
                         style={{
-                          background: i < referralCount ? '#B89B5E' : 'rgba(255,255,255,0.08)',
-                          boxShadow: i < referralCount ? '0 0 4px rgba(184,155,94,0.4)' : 'none',
+                          background: i < referralCount ? '#3B82F6' : 'rgba(0,0,0,0.1)',
+                          boxShadow: i < referralCount ? '0 0 4px rgba(59,130,246,0.4)' : 'none',
                           transform: i < referralCount ? 'scale(1.2)' : 'scale(1)',
                         }}
                       />
@@ -197,29 +197,29 @@ export default function FloatingGift() {
                 </div>
               </div>
 
-              {/* Remaining message — dark card with subtle gold text */}
+              {/* Remaining message — light card with subtle gold text */}
               {!isComplete && remaining > 0 && (
                 <div
                   className="rounded-xl p-3.5 mb-4 flex items-center gap-3"
                   style={{
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(184,155,94,0.1)',
+                    background: 'rgba(0,0,0,0.04)',
+                    border: '1px solid rgba(59,130,246,0.1)',
                   }}
                 >
                   <div
                     className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ background: 'rgba(184,155,94,0.12)' }}
+                    style={{ background: 'rgba(59,130,246,0.12)' }}
                   >
-                    <i className="fas fa-users text-[0.65rem]" style={{ color: '#B89B5E' }}></i>
+                    <i className="fas fa-users text-[0.65rem]" style={{ color: '#3B82F6' }}></i>
                   </div>
                   <div>
-                    <div className="text-[0.7rem] font-semibold" style={{ color: '#D4B87A' }}>
+                    <div className="text-[0.7rem] font-semibold" style={{ color: '#60A5FA' }}>
                       {remaining === 1
                         ? "Plus qu'une personne..."
                         : `${remaining} personnes restantes`
                       }
                     </div>
-                    <div className="text-[0.58rem]" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                    <div className="text-[0.58rem]" style={{ color: 'rgba(0,0,0,0.35)' }}>
                       Et un univers plus vaste s'ouvrira à vous
                     </div>
                   </div>
@@ -231,39 +231,39 @@ export default function FloatingGift() {
                 <div
                   className="rounded-xl p-3.5 mb-4 flex items-center gap-3"
                   style={{
-                    background: 'rgba(184,155,94,0.08)',
-                    border: '1px solid rgba(184,155,94,0.15)',
+                    background: 'rgba(59,130,246,0.1)',
+                    border: '1px solid rgba(59,130,246,0.15)',
                   }}
                 >
                   <div
                     className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ background: 'rgba(184,155,94,0.15)' }}
+                    style={{ background: 'rgba(59,130,246,0.15)' }}
                   >
-                    <i className="fas fa-crown text-[0.65rem]" style={{ color: '#D4B87A' }}></i>
+                    <i className="fas fa-crown text-[0.65rem]" style={{ color: '#60A5FA' }}></i>
                   </div>
                   <div>
-                    <div className="text-[0.7rem] font-bold" style={{ color: '#D4B87A' }}>
+                    <div className="text-[0.7rem] font-bold" style={{ color: '#60A5FA' }}>
                       Horizons débloqués
                     </div>
-                    <div className="text-[0.58rem]" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                    <div className="text-[0.58rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>
                       Un monde d'opportunités étendues vous attend
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Referral code — dark bg, gold copy button */}
+              {/* Referral code — light bg, gold copy button */}
               <div
                 className="rounded-xl p-4"
                 style={{
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.06)',
+                  background: 'rgba(0,0,0,0.04)',
+                  border: '1px solid rgba(0,0,0,0.08)',
                 }}
               >
-                <div className="text-[0.62rem] mb-2 text-center" style={{ color: 'rgba(255,255,255,0.25)' }}>Votre code de parrainage</div>
+                <div className="text-[0.62rem] mb-2 text-center" style={{ color: 'rgba(0,0,0,0.35)' }}>Votre code de parrainage</div>
                 <div
                   className="text-center text-[1rem] font-black tracking-[3px] font-mono mb-3"
-                  style={{ color: '#EDEDEF' }}
+                  style={{ color: '#1F2937' }}
                 >
                   {user.referralCode || '—'}
                 </div>
@@ -276,9 +276,9 @@ export default function FloatingGift() {
                   }}
                   className="w-full py-2.5 rounded-lg text-[0.75rem] font-semibold border-none cursor-pointer flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
                   style={{
-                    background: '#B89B5E',
+                    background: '#3B82F6',
                     color: '#050506',
-                    boxShadow: '0 2px 12px rgba(184,155,94,0.25)',
+                    boxShadow: '0 2px 12px rgba(59,130,246,0.25)',
                   }}
                 >
                   <i className="fas fa-copy text-[0.6rem]"></i>

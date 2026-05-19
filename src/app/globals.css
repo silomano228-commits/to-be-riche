@@ -177,8 +177,8 @@
 
 /* Pulse animation for claimable items */
 @keyframes claimPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 200, 83, 0.4); }
-  50% { box-shadow: 0 0 0 8px rgba(0, 200, 83, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
 }
 
 /* Slide up animation for cards appearing */
@@ -195,8 +195,8 @@
 
 /* Glow pulse for gold elements */
 @keyframes goldPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.3); }
-  50% { box-shadow: 0 0 12px 4px rgba(251, 191, 36, 0.15); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.3); }
+  50% { box-shadow: 0 0 12px 4px rgba(59, 130, 246, 0.15); }
 }
 
 /* Trading chart shimmer */
@@ -213,20 +213,20 @@
 
 /* Pulse glow for status dots */
 @keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 200, 83, 0.4); }
-  50% { box-shadow: 0 0 0 6px rgba(0, 200, 83, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
 }
 
 /* Claim button pulse animation */
 @keyframes claimPulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 4px 16px rgba(0, 200, 83, 0.3); }
-  50% { transform: scale(1.04); box-shadow: 0 6px 24px rgba(0, 200, 83, 0.45); }
+  0%, 100% { transform: scale(1); box-shadow: 0 4px 16px rgba(34, 197, 94, 0.3); }
+  50% { transform: scale(1.04); box-shadow: 0 6px 24px rgba(34, 197, 94, 0.45); }
 }
 
 /* Avatar breathing animation */
 @keyframes avatarBreathe {
-  0%, 100% { transform: scale(1); box-shadow: 0 4px 24px rgba(0, 200, 83, 0.35); }
-  50% { transform: scale(1.04); box-shadow: 0 6px 32px rgba(0, 200, 83, 0.5); }
+  0%, 100% { transform: scale(1); box-shadow: 0 4px 24px rgba(34, 197, 94, 0.35); }
+  50% { transform: scale(1.04); box-shadow: 0 6px 32px rgba(34, 197, 94, 0.5); }
 }
 
 /* Scrollbar hide */

@@ -7,10 +7,10 @@ import { Header, LogoImg, Modal, INVEST_LEVELS, ENTERPRISE_TYPES, ENTERPRISE_NAM
 function SectionHeader({ icon, title }: { icon: string; title: string; color?: string }) {
   return (
     <div className="flex items-center gap-2 mb-3">
-      <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-[rgba(184,155,94,0.12)]">
-        <i className={`fas ${icon} text-[0.65rem] text-[#B89B5E]`}></i>
+      <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-[rgba(59,130,246,0.12)]">
+        <i className={`fas ${icon} text-[0.65rem] text-[#3B82F6]`}></i>
       </div>
-      <h3 className="text-[0.82rem] font-bold text-[#EDEDEF]">{title}</h3>
+      <h3 className="text-[0.82rem] font-bold text-[#1F2937]">{title}</h3>
     </div>
   );
 }
@@ -56,11 +56,11 @@ export default function AnalyticsScreen() {
       <Header
         title="Analyses"
         icon="fa-chart-bar"
-        iconColor="#B89B5E"
+        iconColor="#3B82F6"
         leftElement={
           <button
             onClick={() => setPage('profile')}
-            className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] cursor-pointer border-none mr-1"
+            className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] cursor-pointer border-none mr-1"
           >
             <i className="fas fa-arrow-left text-[0.8rem]"></i>
           </button>
@@ -70,76 +70,74 @@ export default function AnalyticsScreen() {
         {/* Account Balances Section */}
         <SectionHeader icon="fa-wallet" title="Comptes" />
         <div className="grid grid-cols-2 gap-2.5 mb-5">
-          <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-4">
+          <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4">
             <div className="flex items-center gap-1.5 mb-1.5">
-              <div className="w-5 h-5 rounded-md bg-[rgba(184,155,94,0.12)] flex items-center justify-center">
-                <i className="fas fa-coins text-[0.45rem] text-[#B89B5E]"></i>
+              <div className="w-5 h-5 rounded-md bg-[rgba(59,130,246,0.12)] flex items-center justify-center">
+                <i className="fas fa-coins text-[0.45rem] text-[#3B82F6]"></i>
               </div>
-              <div className="text-[0.62rem] text-[rgba(255,255,255,0.45)] uppercase font-semibold">Principal</div>
+              <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)] uppercase font-semibold">Principal</div>
             </div>
-            <div className="text-[1.1rem] font-black text-[#EDEDEF]">{formatMoney(user.balance)}</div>
+            <div className="text-[1.1rem] font-black text-[#1F2937]">{formatMoney(user.balance)}</div>
           </div>
-          <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-4">
+          <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4">
             <div className="flex items-center gap-1.5 mb-1.5">
-              <div className="w-5 h-5 rounded-md bg-[rgba(184,155,94,0.12)] flex items-center justify-center">
-                <i className="fas fa-chart-line text-[0.45rem] text-[#B89B5E]"></i>
+              <div className="w-5 h-5 rounded-md bg-[rgba(59,130,246,0.12)] flex items-center justify-center">
+                <i className="fas fa-chart-line text-[0.45rem] text-[#3B82F6]"></i>
               </div>
-              <div className="text-[0.62rem] text-[rgba(255,255,255,0.45)] uppercase font-semibold">Investissement</div>
+              <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)] uppercase font-semibold">Investissement</div>
             </div>
             <div className="text-[1.1rem] font-black text-[#4ADE80]">{formatMoney(user.investBalance)}</div>
           </div>
-          <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-4">
+          <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4">
             <div className="flex items-center gap-1.5 mb-1.5">
-              <div className="w-5 h-5 rounded-md bg-[rgba(184,155,94,0.12)] flex items-center justify-center">
-                <i className="fas fa-bolt text-[0.45rem] text-[#B89B5E]"></i>
+              <div className="w-5 h-5 rounded-md bg-[rgba(59,130,246,0.12)] flex items-center justify-center">
+                <i className="fas fa-bolt text-[0.45rem] text-[#3B82F6]"></i>
               </div>
-              <div className="text-[0.62rem] text-[rgba(255,255,255,0.45)] uppercase font-semibold">Trading</div>
+              <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)] uppercase font-semibold">Trading</div>
             </div>
-            <div className="text-[1.1rem] font-black text-[#D4B87A]">{formatMoney(user.tradeBalance)}</div>
+            <div className="text-[1.1rem] font-black text-[#60A5FA]">{formatMoney(user.tradeBalance)}</div>
           </div>
-          <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-4">
+          <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4">
             <div className="flex items-center gap-1.5 mb-1.5">
-              <div className="w-5 h-5 rounded-md bg-[rgba(184,155,94,0.12)] flex items-center justify-center">
-                <i className="fas fa-building text-[0.45rem] text-[#B89B5E]"></i>
+              <div className="w-5 h-5 rounded-md bg-[rgba(59,130,246,0.12)] flex items-center justify-center">
+                <i className="fas fa-building text-[0.45rem] text-[#3B82F6]"></i>
               </div>
-              <div className="text-[0.62rem] text-[rgba(255,255,255,0.45)] uppercase font-semibold">Projet</div>
+              <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)] uppercase font-semibold">Projet</div>
             </div>
-            <div className="text-[1.1rem] font-black text-[#D4B87A]">{formatMoney(user.projectBalance)}</div>
+            <div className="text-[1.1rem] font-black text-[#60A5FA]">{formatMoney(user.projectBalance)}</div>
           </div>
         </div>
 
         {/* Profit/Loss Section */}
         <SectionHeader icon="fa-scale-balanced" title="Résultats" />
         <div className="grid grid-cols-2 gap-2.5 mb-2.5">
-          <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-4">
+          <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4">
             <div className="flex items-center gap-1.5 mb-1.5">
               <div className="w-6 h-6 rounded-full bg-[rgba(74,222,128,0.12)] flex items-center justify-center">
                 <i className="fas fa-arrow-trend-up text-[0.5rem] text-[#4ADE80]"></i>
               </div>
-              <div className="text-[0.62rem] text-[rgba(255,255,255,0.45)] uppercase font-semibold">Profit total</div>
+              <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)] uppercase font-semibold">Profit total</div>
             </div>
             <div className="text-[1.2rem] font-black text-[#4ADE80]">{formatMoney(a.totalProfit || user.totalProfit)}</div>
           </div>
-          <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-4">
+          <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4">
             <div className="flex items-center gap-1.5 mb-1.5">
               <div className="w-6 h-6 rounded-full bg-[rgba(248,113,113,0.12)] flex items-center justify-center">
                 <i className="fas fa-arrow-trend-down text-[0.5rem] text-[#F87171]"></i>
               </div>
-              <div className="text-[0.62rem] text-[rgba(255,255,255,0.45)] uppercase font-semibold">Pertes totales</div>
+              <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)] uppercase font-semibold">Pertes totales</div>
             </div>
             <div className="text-[1.2rem] font-black text-[#F87171]">{formatMoney(a.totalLoss || user.totalLoss)}</div>
           </div>
         </div>
 
         {/* Net */}
-        <div className={`rounded-2xl p-4 mb-5 border border-[rgba(255,255,255,0.06)] ${
-          netProfit >= 0 ? 'bg-[#0E0F11]' : 'bg-[#0E0F11]'
-        }`}>
+        <div className={`rounded-2xl p-4 mb-5 border border-[rgba(0,0,0,0.08)] bg-[#FFFFFF]`}>
           <div className="flex items-center gap-1.5 mb-1">
             <div className={`w-6 h-6 rounded-full flex items-center justify-center ${netProfit >= 0 ? 'bg-[rgba(74,222,128,0.12)]' : 'bg-[rgba(248,113,113,0.12)]'}`}>
               <i className={`fas ${netProfit >= 0 ? 'fa-arrow-up' : 'fa-arrow-down'} text-[0.5rem]`} style={{ color: netProfit >= 0 ? '#4ADE80' : '#F87171' }}></i>
             </div>
-            <div className="text-[0.7rem] text-[rgba(255,255,255,0.45)] uppercase font-semibold">Bénéfice net</div>
+            <div className="text-[0.7rem] text-[rgba(0,0,0,0.55)] uppercase font-semibold">Bénéfice net</div>
           </div>
           <div className={`text-[1.8rem] font-black ${netProfit >= 0 ? 'text-[#4ADE80]' : 'text-[#F87171]'}`}>
             {netProfit >= 0 ? '+' : ''}{formatMoney(netProfit)}
@@ -154,12 +152,12 @@ export default function AnalyticsScreen() {
             { label: 'Win Rate Trading', value: a.tradeWinRate ? `${a.tradeWinRate}%` : '-', icon: 'fa-bolt' },
             { label: 'Entreprises', value: a.activeEnterprises ?? '-', icon: 'fa-building' },
           ].map((s, i) => (
-            <div key={i} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 text-center">
-              <div className="w-9 h-9 rounded-xl mx-auto mb-1.5 flex items-center justify-center bg-[rgba(184,155,94,0.12)]">
-                <i className={`fas ${s.icon} text-[0.8rem] text-[#B89B5E]`}></i>
+            <div key={i} className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-3 text-center">
+              <div className="w-9 h-9 rounded-xl mx-auto mb-1.5 flex items-center justify-center bg-[rgba(59,130,246,0.12)]">
+                <i className={`fas ${s.icon} text-[0.8rem] text-[#3B82F6]`}></i>
               </div>
-              <div className="text-[0.95rem] font-bold text-[#EDEDEF]">{s.value}</div>
-              <div className="text-[0.56rem] text-[rgba(255,255,255,0.25)] uppercase">{s.label}</div>
+              <div className="text-[0.95rem] font-bold text-[#1F2937]">{s.value}</div>
+              <div className="text-[0.56rem] text-[rgba(0,0,0,0.35)] uppercase">{s.label}</div>
             </div>
           ))}
         </div>
@@ -168,7 +166,7 @@ export default function AnalyticsScreen() {
         {recentTxns.length > 0 && (
           <>
             <SectionHeader icon="fa-clock-rotate-left" title="Transactions récentes" />
-            <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-4 mb-5">
+            <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4 mb-5">
               <div className="flex items-end gap-1.5 h-28">
                 {recentTxns.map((t: any, i: number) => (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1">
@@ -181,12 +179,12 @@ export default function AnalyticsScreen() {
                         style={{
                           height: `${Math.max(t.heightPct, 8)}%`,
                           background: t.isPositive
-                            ? 'linear-gradient(180deg, #B89B5E, rgba(184,155,94,0.5))'
+                            ? 'linear-gradient(180deg, #22C55E, rgba(34,197,94,0.5))'
                             : 'linear-gradient(180deg, #F87171, rgba(248,113,113,0.5))',
                         }}
                       ></div>
                     </div>
-                    <div className="text-[0.45rem] text-[rgba(255,255,255,0.25)] truncate w-full text-center">
+                    <div className="text-[0.45rem] text-[rgba(0,0,0,0.35)] truncate w-full text-center">
                       {t.type?.slice(0, 3).toUpperCase() || '—'}
                     </div>
                   </div>
@@ -198,26 +196,26 @@ export default function AnalyticsScreen() {
 
         {/* AI Recommendation */}
         <SectionHeader icon="fa-robot" title="Recommandation IA" />
-        <div className="relative overflow-hidden bg-[#0E0F11] text-white rounded-2xl p-5 mb-4 border border-[rgba(184,155,94,0.15)]">
+        <div className="relative overflow-hidden bg-[#FFFFFF] text-[#1F2937] rounded-2xl p-5 mb-4 border border-[rgba(59,130,246,0.15)]">
           {/* Decorative glow */}
-          <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-[rgba(184,155,94,0.08)] blur-2xl pointer-events-none"></div>
-          <div className="absolute -bottom-8 -left-8 w-24 h-24 rounded-full bg-[rgba(184,155,94,0.06)] blur-xl pointer-events-none"></div>
+          <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-[rgba(59,130,246,0.1)] blur-2xl pointer-events-none"></div>
+          <div className="absolute -bottom-8 -left-8 w-24 h-24 rounded-full bg-[rgba(59,130,246,0.08)] blur-xl pointer-events-none"></div>
 
           <div className="flex items-center gap-2.5 mb-3 relative">
-            <div className="w-10 h-10 rounded-xl bg-[rgba(184,155,94,0.15)] flex items-center justify-center border border-[rgba(184,155,94,0.2)]">
-              <i className="fas fa-brain text-[0.9rem] text-[#B89B5E]"></i>
+            <div className="w-10 h-10 rounded-xl bg-[rgba(59,130,246,0.15)] flex items-center justify-center border border-[rgba(59,130,246,0.2)]">
+              <i className="fas fa-brain text-[0.9rem] text-[#3B82F6]"></i>
             </div>
             <div>
-              <span className="text-[0.82rem] font-bold text-[#EDEDEF]">Assistant IA</span>
-              <div className="text-[0.6rem] text-[rgba(255,255,255,0.4)]">Analyse en temps réel</div>
+              <span className="text-[0.82rem] font-bold text-[#1F2937]">Assistant IA</span>
+              <div className="text-[0.6rem] text-[rgba(0,0,0,0.5)]">Analyse en temps réel</div>
             </div>
           </div>
-          <p className="text-[0.85rem] leading-relaxed text-[rgba(255,255,255,0.7)] relative">{AI_TIPS[aiTipIndex]}</p>
+          <p className="text-[0.85rem] leading-relaxed text-[rgba(0,0,0,0.65)] relative">{AI_TIPS[aiTipIndex]}</p>
         </div>
 
         {loading && (
           <div className="text-center py-4">
-            <div className="w-6 h-6 border-2 border-[rgba(255,255,255,0.1)] border-t-[#B89B5E] rounded-full mx-auto" style={{ animation: 'spin 0.7s linear infinite' }} />
+            <div className="w-6 h-6 border-2 border-[rgba(0,0,0,0.1)] border-t-[#3B82F6] rounded-full mx-auto" style={{ animation: 'spin 0.7s linear infinite' }} />
           </div>
         )}
       </div>

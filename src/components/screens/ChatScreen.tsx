@@ -29,12 +29,12 @@ const QUICK_QUESTIONS = [
 ];
 
 const ESCALATE_REASONS = [
-  { value: 'Problème de dépôt non reçu', icon: 'fa-wallet', color: '#B89B5E' },
-  { value: 'Problème de retrait bloqué', icon: 'fa-ban', color: '#B89B5E' },
-  { value: 'Transaction manquante', icon: 'fa-search-dollar', color: '#B89B5E' },
-  { value: 'Problème technique', icon: 'fa-bug', color: '#B89B5E' },
-  { value: 'Réclamation', icon: 'fa-exclamation-triangle', color: '#B89B5E' },
-  { value: 'Autre', icon: 'fa-question-circle', color: '#B89B5E' },
+  { value: 'Problème de dépôt non reçu', icon: 'fa-wallet', color: '#3B82F6' },
+  { value: 'Problème de retrait bloqué', icon: 'fa-ban', color: '#3B82F6' },
+  { value: 'Transaction manquante', icon: 'fa-search-dollar', color: '#3B82F6' },
+  { value: 'Problème technique', icon: 'fa-bug', color: '#3B82F6' },
+  { value: 'Réclamation', icon: 'fa-exclamation-triangle', color: '#3B82F6' },
+  { value: 'Autre', icon: 'fa-question-circle', color: '#3B82F6' },
 ];
 
 export default function ChatScreen() {
@@ -190,9 +190,9 @@ export default function ChatScreen() {
       <Header
         title={activeTicket ? "Support Admin" : "Assistant IA"}
         icon={activeTicket ? "fa-headset" : "fa-robot"}
-        iconColor="#B89B5E"
+        iconColor="#3B82F6"
         leftElement={
-          <button onClick={() => setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] cursor-pointer border-none mr-1">
+          <button onClick={() => setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] cursor-pointer border-none mr-1">
             <i className="fas fa-arrow-left text-[0.8rem]"></i>
           </button>
         }
@@ -200,7 +200,7 @@ export default function ChatScreen() {
           !activeTicket ? (
             <button
               onClick={() => setShowEscalateModal(true)}
-              className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(184,155,94,0.12)] text-[#B89B5E] cursor-pointer border-none"
+              className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(59,130,246,0.12)] text-[#3B82F6] cursor-pointer border-none"
               title="Contacter un admin"
             >
               <i className="fas fa-headset text-[0.75rem]"></i>
@@ -210,47 +210,47 @@ export default function ChatScreen() {
       />
       <div className="flex-1 flex flex-col w-full overflow-hidden">
         {activeTicket && (
-          <div className="bg-[#0E0F11] px-4 py-2 flex items-center gap-2 shrink-0 border-b border-[rgba(184,155,94,0.15)]">
-            <div className="w-7 h-7 rounded-full bg-[rgba(184,155,94,0.15)] flex items-center justify-center shrink-0">
-              <i className="fas fa-headset text-[#B89B5E] text-[0.55rem]"></i>
+          <div className="bg-[#FFFFFF] px-4 py-2 flex items-center gap-2 shrink-0 border-b border-[rgba(59,130,246,0.15)]">
+            <div className="w-7 h-7 rounded-full bg-[rgba(59,130,246,0.15)] flex items-center justify-center shrink-0">
+              <i className="fas fa-headset text-[#3B82F6] text-[0.55rem]"></i>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[0.7rem] font-bold text-[#D4B87A]">Mode Administrateur</div>
-              <div className="text-[0.6rem] text-[rgba(255,255,255,0.45)] truncate">Raison : {esc(activeTicket.reason)}</div>
+              <div className="text-[0.7rem] font-bold text-[#60A5FA]">Mode Administrateur</div>
+              <div className="text-[0.6rem] text-[rgba(0,0,0,0.55)] truncate">Raison : {esc(activeTicket.reason)}</div>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-[#B89B5E]" style={{ animation: 'pulse 1.5s infinite' }} />
-              <span className="text-[0.55rem] text-[rgba(255,255,255,0.45)] font-medium">En attente</span>
+              <div className="w-2 h-2 rounded-full bg-[#3B82F6]" style={{ animation: 'pulse 1.5s infinite' }} />
+              <span className="text-[0.55rem] text-[rgba(0,0,0,0.55)] font-medium">En attente</span>
             </div>
           </div>
         )}
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-[#050506]">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-[#F8F9FA]">
           {loading && messages.length === 0 && (
             <div className="text-center py-8">
-              <div className="w-8 h-8 border-2 border-[rgba(255,255,255,0.06)] border-t-[#B89B5E] rounded-full mx-auto mb-3" style={{ animation: 'spin 0.7s linear infinite' }} />
-              <p className="text-[0.75rem] text-[rgba(255,255,255,0.45)]">Chargement...</p>
+              <div className="w-8 h-8 border-2 border-[rgba(0,0,0,0.08)] border-t-[#3B82F6] rounded-full mx-auto mb-3" style={{ animation: 'spin 0.7s linear infinite' }} />
+              <p className="text-[0.75rem] text-[rgba(0,0,0,0.55)]">Chargement...</p>
             </div>
           )}
 
           {!loading && messages.length === 0 && !activeTicket && (
             <div className="text-center py-8">
-              <div className="w-16 h-16 rounded-2xl bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] flex items-center justify-center mx-auto mb-4">
-                <i className="fas fa-robot text-[#B89B5E] text-[1.5rem]"></i>
+              <div className="w-16 h-16 rounded-2xl bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] flex items-center justify-center mx-auto mb-4">
+                <i className="fas fa-robot text-[#3B82F6] text-[1.5rem]"></i>
               </div>
-              <h3 className="text-[1rem] font-bold text-[#EDEDEF] mb-1">Assistant Be Rich</h3>
-              <p className="text-[0.75rem] text-[rgba(255,255,255,0.45)] mb-5">Posez-moi une question sur la plateforme !</p>
+              <h3 className="text-[1rem] font-bold text-[#1F2937] mb-1">Assistant Be Rich</h3>
+              <p className="text-[0.75rem] text-[rgba(0,0,0,0.55)] mb-5">Posez-moi une question sur la plateforme !</p>
               <div className="space-y-2 max-w-[280px] mx-auto">
                 {QUICK_QUESTIONS.map((q, i) => (
-                  <button key={i} onClick={() => handleSend(q)} className="w-full py-2.5 px-4 rounded-xl bg-[#161719] text-[0.72rem] text-[#EDEDEF] font-medium border border-[rgba(255,255,255,0.06)] cursor-pointer text-left hover:bg-[rgba(184,155,94,0.08)] hover:border-[rgba(184,155,94,0.2)] transition-all">
-                    <i className="fas fa-comment-dots text-[#B89B5E] mr-2 text-[0.65rem]"></i>{q}
+                  <button key={i} onClick={() => handleSend(q)} className="w-full py-2.5 px-4 rounded-xl bg-[#F3F4F6] text-[0.72rem] text-[#1F2937] font-medium border border-[rgba(0,0,0,0.08)] cursor-pointer text-left hover:bg-[rgba(59,130,246,0.1)] hover:border-[rgba(59,130,246,0.2)] transition-all">
+                    <i className="fas fa-comment-dots text-[#3B82F6] mr-2 text-[0.65rem]"></i>{q}
                   </button>
                 ))}
               </div>
-              <div className="mt-6 pt-4 border-t border-[rgba(255,255,255,0.06)]">
+              <div className="mt-6 pt-4 border-t border-[rgba(0,0,0,0.08)]">
                 <button
                   onClick={() => setShowEscalateModal(true)}
-                  className="py-2.5 px-5 rounded-xl bg-[rgba(184,155,94,0.12)] text-[0.72rem] text-[#B89B5E] font-semibold border border-[rgba(184,155,94,0.15)] cursor-pointer hover:bg-[rgba(184,155,94,0.18)] transition-all"
+                  className="py-2.5 px-5 rounded-xl bg-[rgba(59,130,246,0.12)] text-[0.72rem] text-[#3B82F6] font-semibold border border-[rgba(59,130,246,0.15)] cursor-pointer hover:bg-[rgba(59,130,246,0.18)] transition-all"
                 >
                   <i className="fas fa-headset mr-1.5"></i>Parler à un administrateur
                 </button>
@@ -265,26 +265,26 @@ export default function ChatScreen() {
                   <div className="flex items-center gap-1.5 mb-1">
                     <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
                       msg.isAdminMsg
-                        ? 'bg-[rgba(184,155,94,0.15)]'
-                        : 'bg-[#0E0F11] border border-[rgba(255,255,255,0.06)]'
+                        ? 'bg-[rgba(59,130,246,0.15)]'
+                        : 'bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)]'
                     }`}>
-                      <i className={`fas ${msg.isAdminMsg ? 'fa-headset text-[#B89B5E]' : 'fa-robot text-[#B89B5E]'} text-[0.45rem]`}></i>
+                      <i className={`fas ${msg.isAdminMsg ? 'fa-headset text-[#3B82F6]' : 'fa-robot text-[#3B82F6]'} text-[0.45rem]`}></i>
                     </div>
-                    <span className="text-[0.6rem] font-semibold text-[rgba(255,255,255,0.25)]">
+                    <span className="text-[0.6rem] font-semibold text-[rgba(0,0,0,0.35)]">
                       {msg.isAdminMsg ? 'Admin Be Rich' : 'Be Rich IA'}
                     </span>
                   </div>
                 )}
                 <div className={`rounded-2xl px-4 py-2.5 ${
                   msg.me
-                    ? 'bg-[#B89B5E] text-[#050506] rounded-br-md'
+                    ? 'bg-[#3B82F6] text-[#050506] rounded-br-md'
                     : msg.isAdminMsg
-                      ? 'bg-[rgba(184,155,94,0.15)] text-[#D4B87A] border border-[rgba(184,155,94,0.2)] rounded-bl-md'
-                      : 'bg-[#0E0F11] text-[#EDEDEF] border border-[rgba(255,255,255,0.06)] rounded-bl-md'
+                      ? 'bg-[rgba(59,130,246,0.15)] text-[#60A5FA] border border-[rgba(59,130,246,0.2)] rounded-bl-md'
+                      : 'bg-[#F3F4F6] text-[#1F2937] border border-[rgba(0,0,0,0.08)] rounded-bl-md'
                 }`}>
                   <p className="text-[0.78rem] leading-relaxed whitespace-pre-wrap">{esc(msg.text)}</p>
                 </div>
-                <div className={`text-[0.55rem] text-[rgba(255,255,255,0.2)] mt-0.5 ${msg.me ? 'text-right' : 'text-left'}`}>{msg.t}</div>
+                <div className={`text-[0.55rem] text-[rgba(0,0,0,0.25)] mt-0.5 ${msg.me ? 'text-right' : 'text-left'}`}>{msg.t}</div>
               </div>
             </div>
           ))}
@@ -293,16 +293,16 @@ export default function ChatScreen() {
             <div className="flex justify-start">
               <div className="max-w-[80%]">
                 <div className="flex items-center gap-1.5 mb-1">
-                  <div className="w-5 h-5 rounded-full bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] flex items-center justify-center">
-                    <i className="fas fa-robot text-[#B89B5E] text-[0.45rem]"></i>
+                  <div className="w-5 h-5 rounded-full bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] flex items-center justify-center">
+                    <i className="fas fa-robot text-[#3B82F6] text-[0.45rem]"></i>
                   </div>
-                  <span className="text-[0.6rem] font-semibold text-[rgba(255,255,255,0.25)]">Be Rich IA</span>
+                  <span className="text-[0.6rem] font-semibold text-[rgba(0,0,0,0.35)]">Be Rich IA</span>
                 </div>
-                <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl rounded-bl-md px-4 py-3">
+                <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl rounded-bl-md px-4 py-3">
                   <div className="flex items-center gap-1.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#B89B5E]" style={{ animation: 'pulse 1s infinite' }} />
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#B89B5E]" style={{ animation: 'pulse 1s infinite 0.2s' }} />
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#B89B5E]" style={{ animation: 'pulse 1s infinite 0.4s' }} />
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#3B82F6]" style={{ animation: 'pulse 1s infinite' }} />
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#3B82F6]" style={{ animation: 'pulse 1s infinite 0.2s' }} />
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#3B82F6]" style={{ animation: 'pulse 1s infinite 0.4s' }} />
                   </div>
                 </div>
               </div>
@@ -311,9 +311,9 @@ export default function ChatScreen() {
         </div>
 
         {messages.length > 0 && messages.length <= 2 && !activeTicket && (
-          <div className="px-4 py-2 flex gap-1.5 overflow-x-auto shrink-0 bg-[#050506]">
+          <div className="px-4 py-2 flex gap-1.5 overflow-x-auto shrink-0 bg-[#F8F9FA]">
             {QUICK_QUESTIONS.slice(0, 3).map((q, i) => (
-              <button key={i} onClick={() => handleSend(q)} className="whitespace-nowrap py-1.5 px-3 rounded-full bg-[#161719] text-[0.65rem] text-[#EDEDEF] font-medium border border-[rgba(255,255,255,0.06)] cursor-pointer hover:bg-[rgba(184,155,94,0.08)] transition-all shrink-0">
+              <button key={i} onClick={() => handleSend(q)} className="whitespace-nowrap py-1.5 px-3 rounded-full bg-[#F3F4F6] text-[0.65rem] text-[#1F2937] font-medium border border-[rgba(0,0,0,0.08)] cursor-pointer hover:bg-[rgba(59,130,246,0.1)] transition-all shrink-0">
                 {q}
               </button>
             ))}
@@ -321,10 +321,10 @@ export default function ChatScreen() {
         )}
 
         {messages.length > 2 && !activeTicket && (
-          <div className="px-4 py-1.5 shrink-0 bg-[#050506]">
+          <div className="px-4 py-1.5 shrink-0 bg-[#F8F9FA]">
             <button
               onClick={() => setShowEscalateModal(true)}
-              className="w-full py-2 rounded-xl bg-[rgba(184,155,94,0.12)] text-[0.68rem] text-[#B89B5E] font-semibold border border-[rgba(184,155,94,0.15)] cursor-pointer hover:bg-[rgba(184,155,94,0.18)] transition-all flex items-center justify-center gap-1.5"
+              className="w-full py-2 rounded-xl bg-[rgba(59,130,246,0.12)] text-[0.68rem] text-[#3B82F6] font-semibold border border-[rgba(59,130,246,0.15)] cursor-pointer hover:bg-[rgba(59,130,246,0.18)] transition-all flex items-center justify-center gap-1.5"
             >
               <i className="fas fa-headset text-[0.6rem]"></i>
               Besoin d&apos;aide ? Contacter un administrateur
@@ -332,20 +332,20 @@ export default function ChatScreen() {
           </div>
         )}
 
-        <div className="px-3 py-2.5 bg-[#0E0F11] border-t border-[rgba(255,255,255,0.06)] flex items-center gap-2 shrink-0">
+        <div className="px-3 py-2.5 bg-[#FFFFFF] border-t border-[rgba(0,0,0,0.08)] flex items-center gap-2 shrink-0">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
             placeholder={activeTicket ? "Écrire à l'administrateur..." : "Posez votre question..."}
-            className="flex-1 py-2.5 px-4 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] outline-none focus:border-[#B89B5E] text-white placeholder:text-[rgba(255,255,255,0.25)]"
+            className="flex-1 py-2.5 px-4 bg-[#F3F4F6] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.85rem] outline-none focus:border-[#3B82F6] text-gray-900 placeholder:text-[rgba(0,0,0,0.3)]"
             disabled={sending}
           />
           <button
             onClick={() => handleSend()}
             disabled={sending || !input.trim()}
-            className="w-10 h-10 rounded-xl bg-[#B89B5E] text-[#050506] flex items-center justify-center border-none cursor-pointer disabled:opacity-40 shrink-0 transition-transform active:scale-90"
+            className="w-10 h-10 rounded-xl bg-[#3B82F6] text-[#050506] flex items-center justify-center border-none cursor-pointer disabled:opacity-40 shrink-0 transition-transform active:scale-90"
           >
             <i className="fas fa-paper-plane text-[0.8rem]"></i>
           </button>
@@ -353,23 +353,23 @@ export default function ChatScreen() {
       </div>
 
       {showEscalateModal && (
-        <div className="fixed inset-0 bg-[rgba(0,0,0,0.7)] backdrop-blur-sm z-[6000] flex items-end sm:items-center justify-center" onClick={() => setShowEscalateModal(false)}>
+        <div className="fixed inset-0 bg-[rgba(0,0,0,0.3)] backdrop-blur-sm z-[6000] flex items-end sm:items-center justify-center" onClick={() => setShowEscalateModal(false)}>
           <div
-            className="bg-[#0E0F11] rounded-t-2xl sm:rounded-2xl p-5 w-full max-w-[420px] border border-[rgba(255,255,255,0.06)]"
+            className="bg-[#FFFFFF] rounded-t-2xl sm:rounded-2xl p-5 w-full max-w-[420px] border border-[rgba(0,0,0,0.08)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-[rgba(184,155,94,0.12)] flex items-center justify-center">
-                <i className="fas fa-headset text-[#B89B5E] text-[1rem]"></i>
+              <div className="w-10 h-10 rounded-xl bg-[rgba(59,130,246,0.12)] flex items-center justify-center">
+                <i className="fas fa-headset text-[#3B82F6] text-[1rem]"></i>
               </div>
               <div>
-                <h3 className="text-[1rem] font-bold text-[#EDEDEF]">Contacter un administrateur</h3>
-                <p className="text-[0.7rem] text-[rgba(255,255,255,0.45)]">Pour les problèmes complexes nécessitant un humain</p>
+                <h3 className="text-[1rem] font-bold text-[#1F2937]">Contacter un administrateur</h3>
+                <p className="text-[0.7rem] text-[rgba(0,0,0,0.55)]">Pour les problèmes complexes nécessitant un humain</p>
               </div>
             </div>
 
             <div className="mb-4">
-              <label className="block mb-2 text-[0.75rem] font-semibold text-[rgba(255,255,255,0.45)]">Raison du transfert</label>
+              <label className="block mb-2 text-[0.75rem] font-semibold text-[rgba(0,0,0,0.55)]">Raison du transfert</label>
               <div className="grid grid-cols-2 gap-2">
                 {ESCALATE_REASONS.map((r) => (
                   <button
@@ -377,8 +377,8 @@ export default function ChatScreen() {
                     onClick={() => setEscalateReason(r.value)}
                     className={`py-2.5 px-3 rounded-xl text-[0.7rem] font-medium border cursor-pointer transition-all text-left flex items-center gap-2 ${
                       escalateReason === r.value
-                        ? 'bg-[rgba(184,155,94,0.15)] border-[#B89B5E] text-[#B89B5E]'
-                        : 'bg-[#161719] border-[rgba(255,255,255,0.06)] text-[#EDEDEF] hover:border-[rgba(184,155,94,0.3)]'
+                        ? 'bg-[rgba(59,130,246,0.15)] border-[#3B82F6] text-[#3B82F6]'
+                        : 'bg-[#F3F4F6] border-[rgba(0,0,0,0.08)] text-[#1F2937] hover:border-[rgba(59,130,246,0.3)]'
                     }`}
                   >
                     <i className={`fas ${r.icon} text-[0.6rem]`} style={{ color: r.color }}></i>
@@ -394,7 +394,7 @@ export default function ChatScreen() {
                   value={customReason}
                   onChange={(e) => setCustomReason(e.target.value)}
                   placeholder="Décrivez votre problème..."
-                  className="w-full py-2.5 px-4 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.82rem] outline-none focus:border-[#B89B5E] resize-none text-white placeholder:text-[rgba(255,255,255,0.25)]"
+                  className="w-full py-2.5 px-4 bg-[#F3F4F6] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.82rem] outline-none focus:border-[#3B82F6] resize-none text-gray-900 placeholder:text-[rgba(0,0,0,0.3)]"
                   rows={3}
                 />
               </div>
@@ -403,14 +403,14 @@ export default function ChatScreen() {
             <div className="flex gap-2">
               <button
                 onClick={() => { setShowEscalateModal(false); setEscalateReason(''); setCustomReason(''); }}
-                className="flex-1 py-3 rounded-xl border-[1.5px] border-[rgba(255,255,255,0.06)] bg-transparent text-[rgba(255,255,255,0.45)] font-semibold text-[0.82rem] cursor-pointer transition-transform active:scale-95"
+                className="flex-1 py-3 rounded-xl border-[1.5px] border-[rgba(0,0,0,0.08)] bg-transparent text-[rgba(0,0,0,0.55)] font-semibold text-[0.82rem] cursor-pointer transition-transform active:scale-95"
               >
                 Annuler
               </button>
               <button
                 onClick={handleEscalate}
                 disabled={escalating || (!escalateReason || (escalateReason === 'Autre' && !customReason.trim()))}
-                className="flex-1 py-3 rounded-xl bg-[#B89B5E] text-[#050506] font-bold text-[0.82rem] cursor-pointer transition-transform active:scale-95 disabled:opacity-40 border-none"
+                className="flex-1 py-3 rounded-xl bg-[#3B82F6] text-[#050506] font-bold text-[0.82rem] cursor-pointer transition-transform active:scale-95 disabled:opacity-40 border-none"
               >
                 {escalating ? (
                   <span className="flex items-center justify-center gap-1.5">

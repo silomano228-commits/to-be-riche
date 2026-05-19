@@ -57,8 +57,8 @@ export default function ProfileScreen() {
     <>
       <style>{`
         @keyframes avatarBreathe {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(184,155,94,0.3); }
-          50% { box-shadow: 0 0 20px 4px rgba(184,155,94,0.15); }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.3); }
+          50% { box-shadow: 0 0 20px 4px rgba(59,130,246,0.15); }
         }
         @keyframes slideUp {
           from { opacity: 0; transform: translateY(8px); }
@@ -66,20 +66,20 @@ export default function ProfileScreen() {
         }
       `}</style>
 
-      <Header title="Profil" icon="fa-user" iconColor="#B89B5E" leftElement={<button onClick={() => setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer border-none mr-1" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' }}><i className="fas fa-arrow-left text-[0.8rem]"></i></button>} />
-      <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto" style={{ background: '#050506' }}>
+      <Header title="Profil" icon="fa-user" iconColor="#3B82F6" leftElement={<button onClick={() => setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer border-none mr-1" style={{ background: 'rgba(0,0,0,0.06)', color: 'rgba(0,0,0,0.55)' }}><i className="fas fa-arrow-left text-[0.8rem]"></i></button>} />
+      <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto" style={{ background: '#F8F9FA' }}>
 
-        {/* User Card — dark with gold avatar */}
+        {/* User Card — white with gold avatar */}
         <div
           className="relative overflow-hidden rounded-2xl p-5 mb-4"
           style={{
-            background: '#0E0F11',
-            border: '1px solid rgba(255,255,255,0.06)',
+            background: '#FFFFFF',
+            border: '1px solid rgba(0,0,0,0.08)',
           }}
         >
           {/* Decorative subtle elements */}
-          <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full" style={{ background: 'rgba(184,155,94,0.04)' }}></div>
-          <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full" style={{ background: 'rgba(184,155,94,0.03)' }}></div>
+          <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full" style={{ background: 'rgba(59,130,246,0.06)' }}></div>
+          <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full" style={{ background: 'rgba(59,130,246,0.05)' }}></div>
 
           <div className="flex items-center gap-4 mb-4 relative">
             {/* Gold avatar */}
@@ -87,26 +87,26 @@ export default function ProfileScreen() {
               <div
                 className="w-16 h-16 rounded-full flex items-center justify-center font-bold text-[1.3rem]"
                 style={{
-                  background: 'linear-gradient(135deg, #B89B5E, #D4B87A)',
+                  background: 'linear-gradient(135deg, #3B82F6, #60A5FA)',
                   color: '#050506',
-                  boxShadow: '0 4px 20px rgba(184,155,94,0.3)',
+                  boxShadow: '0 4px 20px rgba(59,130,246,0.3)',
                   animation: 'avatarBreathe 3s ease-in-out infinite',
                 }}
               >
                 {esc(user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2))}
               </div>
               {/* Online indicator */}
-              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full" style={{ background: '#B89B5E', border: '2px solid #0E0F11' }}></div>
+              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full" style={{ background: '#3B82F6', border: '2px solid #FFFFFF' }}></div>
             </div>
             <div>
-              <div className="text-[1.1rem] font-bold" style={{ color: '#EDEDEF' }}>{esc(user.name)}</div>
-              <div className="text-[0.75rem]" style={{ color: 'rgba(255,255,255,0.35)' }}>{esc(user.email)}</div>
+              <div className="text-[1.1rem] font-bold" style={{ color: '#1F2937' }}>{esc(user.name)}</div>
+              <div className="text-[0.75rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>{esc(user.email)}</div>
               {user.role === 'admin' && (
                 <span
                   className="inline-flex items-center gap-1 text-[0.6rem] px-2 py-0.5 rounded-full mt-1 font-semibold"
                   style={{
-                    background: 'rgba(184,155,94,0.12)',
-                    color: '#D4B87A',
+                    background: 'rgba(59,130,246,0.12)',
+                    color: '#60A5FA',
                   }}
                 >
                   <i className="fas fa-shield-alt text-[0.5rem]"></i>Admin
@@ -115,95 +115,95 @@ export default function ProfileScreen() {
             </div>
           </div>
 
-          {/* Account grid — all same dark bg with gold numbers */}
+          {/* Account grid — light bg with gold numbers */}
           <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.04)' }}>
-              <div className="text-[0.6rem] uppercase" style={{ color: 'rgba(255,255,255,0.25)' }}>Principal</div>
-              <div className="text-[0.95rem] font-black" style={{ color: '#D4B87A' }}>{formatMoney(user.balance)}</div>
+            <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.05)' }}>
+              <div className="text-[0.6rem] uppercase" style={{ color: 'rgba(0,0,0,0.35)' }}>Principal</div>
+              <div className="text-[0.95rem] font-black" style={{ color: '#60A5FA' }}>{formatMoney(user.balance)}</div>
             </div>
-            <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.04)' }}>
-              <div className="text-[0.6rem] uppercase" style={{ color: 'rgba(255,255,255,0.25)' }}>Investissement</div>
-              <div className="text-[0.95rem] font-black" style={{ color: '#D4B87A' }}>{formatMoney(user.investBalance)}</div>
+            <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.05)' }}>
+              <div className="text-[0.6rem] uppercase" style={{ color: 'rgba(0,0,0,0.35)' }}>Investissement</div>
+              <div className="text-[0.95rem] font-black" style={{ color: '#60A5FA' }}>{formatMoney(user.investBalance)}</div>
             </div>
-            <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.04)' }}>
-              <div className="text-[0.6rem] uppercase" style={{ color: 'rgba(255,255,255,0.25)' }}>Trading</div>
-              <div className="text-[0.95rem] font-black" style={{ color: '#D4B87A' }}>{formatMoney(user.tradeBalance)}</div>
+            <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.05)' }}>
+              <div className="text-[0.6rem] uppercase" style={{ color: 'rgba(0,0,0,0.35)' }}>Trading</div>
+              <div className="text-[0.95rem] font-black" style={{ color: '#60A5FA' }}>{formatMoney(user.tradeBalance)}</div>
             </div>
-            <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.04)' }}>
-              <div className="text-[0.6rem] uppercase" style={{ color: 'rgba(255,255,255,0.25)' }}>Projet</div>
-              <div className="text-[0.95rem] font-black" style={{ color: '#D4B87A' }}>{formatMoney(user.projectBalance)}</div>
+            <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.05)' }}>
+              <div className="text-[0.6rem] uppercase" style={{ color: 'rgba(0,0,0,0.35)' }}>Projet</div>
+              <div className="text-[0.95rem] font-black" style={{ color: '#60A5FA' }}>{formatMoney(user.projectBalance)}</div>
             </div>
           </div>
         </div>
 
-        {/* Referral Section — dark cards, gold accent */}
+        {/* Referral Section — white cards, gold accent */}
         <div
           className="rounded-2xl p-4 mb-4"
           style={{
-            background: '#0E0F11',
-            border: '1px solid rgba(255,255,255,0.06)',
+            background: '#FFFFFF',
+            border: '1px solid rgba(0,0,0,0.08)',
           }}
         >
           <div className="flex items-center gap-2.5 mb-3">
-            <i className="fas fa-users" style={{ color: '#B89B5E' }}></i>
-            <h4 className="text-[0.88rem] font-bold" style={{ color: '#EDEDEF' }}>Parrainage</h4>
+            <i className="fas fa-users" style={{ color: '#3B82F6' }}></i>
+            <h4 className="text-[0.88rem] font-bold" style={{ color: '#1F2937' }}>Parrainage</h4>
           </div>
 
-          {/* Referral Code — dark bg, gold accent */}
+          {/* Referral Code — light bg, gold accent */}
           <div
             className="rounded-xl p-3 mb-3 flex items-center justify-between"
             style={{
-              background: 'rgba(184,155,94,0.06)',
-              border: '1px solid rgba(184,155,94,0.1)',
+              background: 'rgba(59,130,246,0.08)',
+              border: '1px solid rgba(59,130,246,0.1)',
             }}
           >
             <div>
-              <div className="text-[0.68rem] mb-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>Votre code</div>
-              <div className="text-[1.1rem] font-mono font-black" style={{ color: '#D4B87A' }}>{user.referralCode}</div>
+              <div className="text-[0.68rem] mb-0.5" style={{ color: 'rgba(0,0,0,0.45)' }}>Votre code</div>
+              <div className="text-[1.1rem] font-mono font-black" style={{ color: '#60A5FA' }}>{user.referralCode}</div>
             </div>
             <button
               onClick={handleCopyCode}
               className="w-10 h-10 rounded-xl flex items-center justify-center border-none cursor-pointer transition-all"
               style={{
-                background: copied ? 'rgba(184,155,94,0.3)' : '#B89B5E',
-                color: copied ? '#D4B87A' : '#050506',
-                boxShadow: copied ? 'none' : '0 2px 12px rgba(184,155,94,0.25)',
+                background: copied ? 'rgba(59,130,246,0.3)' : '#3B82F6',
+                color: copied ? '#60A5FA' : '#050506',
+                boxShadow: copied ? 'none' : '0 2px 12px rgba(59,130,246,0.25)',
               }}
             >
               <i className={`fas ${copied ? 'fa-check' : 'fa-copy'} text-[0.85rem]`}></i>
             </button>
           </div>
 
-          {/* Referral Progress — dark bg, gold bar */}
+          {/* Referral Progress — light bg, gold bar */}
           {requiredReferrals > 0 && (
             <div
               className="rounded-xl p-3 mb-3"
               style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.04)',
+                background: 'rgba(0,0,0,0.04)',
+                border: '1px solid rgba(0,0,0,0.05)',
               }}
             >
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[0.72rem]" style={{ color: 'rgba(255,255,255,0.35)' }}>Progrès pour retrait</span>
-                <span className="text-[0.72rem] font-bold" style={{ color: '#B89B5E' }}>{currentReferrals}/{requiredReferrals}</span>
+                <span className="text-[0.72rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>Progrès pour retrait</span>
+                <span className="text-[0.72rem] font-bold" style={{ color: '#3B82F6' }}>{currentReferrals}/{requiredReferrals}</span>
               </div>
-              <div className="w-full h-2.5 rounded-full overflow-hidden mb-1.5" style={{ background: 'rgba(255,255,255,0.06)' }}>
+              <div className="w-full h-2.5 rounded-full overflow-hidden mb-1.5" style={{ background: 'rgba(0,0,0,0.08)' }}>
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{
                     width: `${referralProgress}%`,
                     background: referralProgress >= 100
-                      ? 'linear-gradient(90deg, #B89B5E, #D4B87A)'
-                      : 'linear-gradient(90deg, #B89B5E, #D4B87A)',
+                      ? 'linear-gradient(90deg, #3B82F6, #60A5FA)'
+                      : 'linear-gradient(90deg, #3B82F6, #60A5FA)',
                   }}
                 ></div>
               </div>
               {needsMore > 0 ? (
-                <p className="text-[0.65rem]" style={{ color: 'rgba(184,155,94,0.7)' }}>
+                <p className="text-[0.65rem]" style={{ color: 'rgba(59,130,246,0.7)' }}>
                   <i className="fas fa-info-circle mr-1"></i>Encore <strong>{needsMore}</strong> filleul{needsMore > 1 ? 's' : ''} requis pour le retrait
                 </p>
               ) : (
-                <p className="text-[0.65rem]" style={{ color: '#B89B5E' }}>
+                <p className="text-[0.65rem]" style={{ color: '#3B82F6' }}>
                   <i className="fas fa-check-circle mr-1"></i>Condition de parrainage remplie !
                 </p>
               )}
@@ -211,49 +211,49 @@ export default function ProfileScreen() {
           )}
 
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[0.75rem]" style={{ color: 'rgba(255,255,255,0.35)' }}>Filleuls actifs</span>
-            <span className="text-[0.75rem] font-bold" style={{ color: '#B89B5E' }}>{user.referralCount || 0}</span>
+            <span className="text-[0.75rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>Filleuls actifs</span>
+            <span className="text-[0.75rem] font-bold" style={{ color: '#3B82F6' }}>{user.referralCount || 0}</span>
           </div>
           <button
             onClick={loadReferrals}
             className="w-full py-2.5 rounded-xl font-semibold text-[0.82rem] border-none cursor-pointer transition-all active:scale-[0.98]"
             style={{
-              background: 'rgba(184,155,94,0.1)',
-              color: '#B89B5E',
-              border: '1px solid rgba(184,155,94,0.15)',
+              background: 'rgba(59,130,246,0.1)',
+              color: '#3B82F6',
+              border: '1px solid rgba(59,130,246,0.15)',
             }}
           >
             <i className="fas fa-list mr-1"></i>Voir mes filleuls
           </button>
         </div>
 
-        {/* Referral List — dark cards */}
+        {/* Referral List — white cards */}
         {showReferrals && (
           <div
             className="rounded-2xl p-4 mb-4"
             style={{
-              background: '#0E0F11',
-              border: '1px solid rgba(255,255,255,0.06)',
+              background: '#FFFFFF',
+              border: '1px solid rgba(0,0,0,0.08)',
             }}
           >
-            <h4 className="text-[0.82rem] font-bold mb-2" style={{ color: '#EDEDEF' }}>Mes filleuls ({referrals.length})</h4>
+            <h4 className="text-[0.82rem] font-bold mb-2" style={{ color: '#1F2937' }}>Mes filleuls ({referrals.length})</h4>
             {referrals.length === 0 ? (
-              <p className="text-[0.75rem]" style={{ color: 'rgba(255,255,255,0.25)' }}>Aucun filleul pour le moment.</p>
+              <p className="text-[0.75rem]" style={{ color: 'rgba(0,0,0,0.35)' }}>Aucun filleul pour le moment.</p>
             ) : referrals.map((r, i) => (
               <div
                 key={i}
                 className="flex items-center justify-between py-2"
-                style={{ borderBottom: i < referrals.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
+                style={{ borderBottom: i < referrals.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}
               >
                 <div>
-                  <div className="text-[0.78rem] font-semibold" style={{ color: '#EDEDEF' }}>{esc(r.name)}</div>
-                  <div className="text-[0.65rem]" style={{ color: 'rgba(255,255,255,0.25)' }}>{esc(r.email)}</div>
+                  <div className="text-[0.78rem] font-semibold" style={{ color: '#1F2937' }}>{esc(r.name)}</div>
+                  <div className="text-[0.65rem]" style={{ color: 'rgba(0,0,0,0.35)' }}>{esc(r.email)}</div>
                 </div>
                 <span
                   className="text-[0.65rem] font-semibold px-2 py-0.5 rounded-full"
                   style={{
-                    background: r.hasInvested ? 'rgba(184,155,94,0.12)' : 'rgba(255,255,255,0.04)',
-                    color: r.hasInvested ? '#B89B5E' : 'rgba(255,255,255,0.35)',
+                    background: r.hasInvested ? 'rgba(59,130,246,0.12)' : 'rgba(0,0,0,0.05)',
+                    color: r.hasInvested ? '#3B82F6' : 'rgba(0,0,0,0.45)',
                   }}
                 >
                   {r.hasInvested ? 'Actif' : 'Inactif'}
@@ -263,48 +263,48 @@ export default function ProfileScreen() {
           </div>
         )}
 
-        {/* Analytics Button — dark bg with gold icon */}
+        {/* Analytics Button — white bg with gold icon */}
         <button
           onClick={() => setPage('analytics')}
           className="w-full py-3.5 rounded-xl font-bold text-[0.88rem] border-none cursor-pointer mb-3 flex items-center justify-center gap-2.5 transition-all active:scale-[0.98]"
           style={{
-            background: '#0E0F11',
-            color: '#EDEDEF',
-            border: '1px solid rgba(255,255,255,0.06)',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.2)',
+            background: '#FFFFFF',
+            color: '#1F2937',
+            border: '1px solid rgba(0,0,0,0.08)',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
           }}
         >
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(184,155,94,0.12)' }}>
-            <i className="fas fa-chart-bar text-[0.75rem]" style={{ color: '#B89B5E' }}></i>
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.12)' }}>
+            <i className="fas fa-chart-bar text-[0.75rem]" style={{ color: '#3B82F6' }}></i>
           </div>
           Analyses
         </button>
 
-        {/* Admin Button — dark bg with gold icon */}
+        {/* Admin Button — white bg with gold icon */}
         {user.role === 'admin' && (
           <button
             onClick={() => setPage('admin')}
             className="w-full py-3.5 rounded-xl font-bold text-[0.88rem] border-none cursor-pointer mb-3 flex items-center justify-center gap-2.5 transition-all active:scale-[0.98]"
             style={{
-              background: '#0E0F11',
-              color: '#EDEDEF',
-              border: '1px solid rgba(255,255,255,0.06)',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.2)',
+              background: '#FFFFFF',
+              color: '#1F2937',
+              border: '1px solid rgba(0,0,0,0.08)',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
             }}
           >
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(184,155,94,0.12)' }}>
-              <i className="fas fa-shield-alt text-[0.75rem]" style={{ color: '#D4B87A' }}></i>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.12)' }}>
+              <i className="fas fa-shield-alt text-[0.75rem]" style={{ color: '#60A5FA' }}></i>
             </div>
             Panneau Admin
           </button>
         )}
 
-        {/* Logout — dark bg with subtle red text */}
+        {/* Logout — light bg with subtle red text */}
         <button
           onClick={() => setModalOpen(true)}
           className="w-full py-3.5 rounded-xl font-semibold text-[0.88rem] cursor-pointer flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
           style={{
-            background: 'rgba(255,255,255,0.03)',
+            background: 'rgba(0,0,0,0.04)',
             border: '1.5px solid rgba(239,68,68,0.12)',
             color: 'rgba(239,68,68,0.6)',
           }}
@@ -316,29 +316,29 @@ export default function ProfileScreen() {
       {modalOpen && (
         <div
           className="fixed inset-0 backdrop-blur-sm z-[6000] flex items-center justify-center"
-          style={{ background: 'rgba(5,5,6,0.75)' }}
+          style={{ background: 'rgba(0,0,0,0.3)' }}
           onClick={() => setModalOpen(false)}
         >
           <div
             className="rounded-2xl p-7 w-[88%] max-w-[320px] text-center"
             style={{
-              background: '#0E0F11',
-              border: '1px solid rgba(255,255,255,0.06)',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+              background: '#FFFFFF',
+              border: '1px solid rgba(0,0,0,0.08)',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
               animation: 'modalIn 0.25s ease-out',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="mb-2 text-[1.05rem] font-extrabold" style={{ color: '#EDEDEF' }}>Déconnexion</h3>
-            <p className="text-[0.82rem] mb-5 leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)' }}>Voulez-vous vous déconnecter ?</p>
+            <h3 className="mb-2 text-[1.05rem] font-extrabold" style={{ color: '#1F2937' }}>Déconnexion</h3>
+            <p className="text-[0.82rem] mb-5 leading-relaxed" style={{ color: 'rgba(0,0,0,0.55)' }}>Voulez-vous vous déconnecter ?</p>
             <div className="flex gap-2">
               <button
                 onClick={() => setModalOpen(false)}
                 className="flex-1 py-3 rounded-xl font-semibold text-[0.82rem] cursor-pointer transition-all active:scale-95"
                 style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1.5px solid rgba(255,255,255,0.08)',
-                  color: 'rgba(255,255,255,0.45)',
+                  background: 'rgba(0,0,0,0.05)',
+                  border: '1.5px solid rgba(0,0,0,0.1)',
+                  color: 'rgba(0,0,0,0.55)',
                 }}
               >
                 Annuler
