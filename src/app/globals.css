@@ -121,121 +121,127 @@
   }
 }
 
-/* Custom animations for Be Rich */
-@keyframes spin {
-  to { transform: rotate(360deg); }
+/* ========================================
+   BE RICH — Premium Design System
+   ======================================== */
+
+/* === Premium Scrollbar === */
+#app ::-webkit-scrollbar { width: 0; }
+#app i.fas, #app i.far { font-family: 'Font Awesome 6 Free', 'Font Awesome 6 Brands'; }
+
+/* === Keyframes === */
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes gs { to { background-position: 200% center; } }
+@keyframes orbFloat { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(20px, -20px); } }
+@keyframes spFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+@keyframes tIn { from { transform: translateY(16px) scale(0.92); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+@keyframes nIn { from { transform: translateY(-16px) scale(0.96); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+@keyframes modalIn { from { transform: scale(0.9); } to { transform: scale(1); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); } 50% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); } }
+@keyframes claimPulse { 0%, 100% { transform: scale(1); box-shadow: 0 4px 16px rgba(34, 197, 94, 0.3); } 50% { transform: scale(1.04); box-shadow: 0 6px 24px rgba(34, 197, 94, 0.45); } }
+@keyframes countBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+@keyframes chartDraw { from { stroke-dashoffset: 200; } to { stroke-dashoffset: 0; } }
+@keyframes goldPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.3); } 50% { box-shadow: 0 0 12px 4px rgba(34,197,94,0.15); } }
+@keyframes avatarBreathe { 0%, 100% { transform: scale(1); box-shadow: 0 4px 24px rgba(34, 197, 94, 0.35); } 50% { transform: scale(1.04); box-shadow: 0 6px 32px rgba(34, 197, 94, 0.5); } }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes floatY { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes scaleIn { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes ripple { to { transform: scale(4); opacity: 0; } }
+@keyframes glowBreath { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+@keyframes borderGlow { 0%, 100% { border-color: rgba(34,197,94,0.2); } 50% { border-color: rgba(34,197,94,0.5); } }
+
+/* === Premium Glass Card === */
+.glass-card {
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.6);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
 }
 
-@keyframes orbFloat {
-  0%, 100% { transform: translate(0, 0); }
-  50% { transform: translate(15px, -20px); }
+/* === Gradient Accent Card (for hero elements) === */
+.gradient-card {
+  background: linear-gradient(135deg, #22C55E 0%, #16A34A 40%, #15803D 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 8px 32px rgba(34,197,94,0.25), 0 2px 8px rgba(0,0,0,0.08);
 }
 
-@keyframes spFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+/* === Premium Button Gradient === */
+.btn-gradient-green {
+  background: linear-gradient(135deg, #22C55E, #16A34A);
+  color: white;
+  font-weight: 700;
+  border: none;
+  box-shadow: 0 4px 16px rgba(34,197,94,0.3);
+  transition: all 0.2s ease;
+}
+.btn-gradient-green:hover {
+  box-shadow: 0 6px 24px rgba(34,197,94,0.4);
+  transform: translateY(-1px);
+}
+.btn-gradient-green:active {
+  transform: scale(0.97) translateY(0);
 }
 
-@keyframes gs {
-  to { background-position: 200% center; }
+/* === Premium Icon Container === */
+.icon-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  position: relative;
+  overflow: hidden;
+}
+.icon-box::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.3), transparent);
+  border-radius: inherit;
+  pointer-events: none;
 }
 
-@keyframes shm {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+/* === Stagger Animation for Lists === */
+.stagger-1 { animation: fadeSlideUp 0.4s ease-out 0.05s both; }
+.stagger-2 { animation: fadeSlideUp 0.4s ease-out 0.1s both; }
+.stagger-3 { animation: fadeSlideUp 0.4s ease-out 0.15s both; }
+.stagger-4 { animation: fadeSlideUp 0.4s ease-out 0.2s both; }
+.stagger-5 { animation: fadeSlideUp 0.4s ease-out 0.25s both; }
+
+/* === Subtle Noise Texture Overlay === */
+.noise-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
 }
 
-@keyframes nIn {
-  from { transform: translateY(-16px) scale(0.96); opacity: 0; }
-  to { transform: translateY(0) scale(1); opacity: 1; }
+/* === Premium Input === */
+.premium-input {
+  background: rgba(255,255,255,0.8);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(0,0,0,0.08);
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1F2937;
+  outline: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
-
-@keyframes tIn {
-  from { transform: translateY(16px) scale(0.92); opacity: 0; }
-  to { transform: translateY(0) scale(1); opacity: 1; }
+.premium-input:focus {
+  border-color: #22C55E;
+  box-shadow: 0 0 0 3px rgba(34,197,94,0.1), 0 2px 8px rgba(0,0,0,0.06);
 }
-
-@keyframes modalIn {
-  from { transform: scale(0.9); }
-  to { transform: scale(1); }
-}
-
-@keyframes cbIn {
-  from { transform: scale(0.88) translateY(6px); opacity: 0; }
-  to { transform: scale(1) translateY(0); opacity: 1; }
-}
-
-@keyframes tdot {
-  0%, 60%, 100% { transform: translateY(0); }
-  30% { transform: translateY(-5px); }
-}
-
-@keyframes pod {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
-}
-
-/* Pulse animation for claimable items */
-@keyframes claimPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
-  50% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
-}
-
-/* Slide up animation for cards appearing */
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-/* Chart line animation for trading */
-@keyframes chartDraw {
-  from { stroke-dashoffset: 200; }
-  to { stroke-dashoffset: 0; }
-}
-
-/* Glow pulse for gold elements */
-@keyframes goldPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.3); }
-  50% { box-shadow: 0 0 12px 4px rgba(59, 130, 246, 0.15); }
-}
-
-/* Trading chart shimmer */
-@keyframes chartShimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-/* Countdown blink */
-@keyframes countBlink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-/* Pulse glow for status dots */
-@keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
-  50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
-}
-
-/* Claim button pulse animation */
-@keyframes claimPulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 4px 16px rgba(34, 197, 94, 0.3); }
-  50% { transform: scale(1.04); box-shadow: 0 6px 24px rgba(34, 197, 94, 0.45); }
-}
-
-/* Avatar breathing animation */
-@keyframes avatarBreathe {
-  0%, 100% { transform: scale(1); box-shadow: 0 4px 24px rgba(34, 197, 94, 0.35); }
-  50% { transform: scale(1.04); box-shadow: 0 6px 32px rgba(34, 197, 94, 0.5); }
-}
-
-/* Scrollbar hide */
-#app ::-webkit-scrollbar {
-  width: 0;
-}
-
-/* Font Awesome fixes */
-#app i.fas,
-#app i.far {
-  font-family: 'Font Awesome 6 Free', 'Font Awesome 6 Brands';
+.premium-input::placeholder {
+  color: rgba(0,0,0,0.3);
+  font-weight: 400;
 }

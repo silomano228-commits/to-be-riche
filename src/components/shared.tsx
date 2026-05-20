@@ -103,10 +103,10 @@ export function Modal({ title, text, okText = 'Confirmer', okClass = 'bg-[#22C55
 // ==================== HEADER ====================
 export function Header({ title, icon, iconColor, rightElement, leftElement }: { title: React.ReactNode; icon?: string; iconColor?: string; rightElement?: React.ReactNode; leftElement?: React.ReactNode }) {
   return (
-    <header className="h-[58px] bg-[#FFFFFF]/90 backdrop-blur-2xl flex items-center justify-between px-[18px] sticky top-0 z-20 shrink-0 border-b border-[rgba(0,0,0,0.06)]">
+    <header className="h-[58px] bg-white/80 backdrop-blur-2xl flex items-center justify-between px-[18px] sticky top-0 z-20 shrink-0 border-b border-[rgba(0,0,0,0.04)]">
       <div className="flex items-center gap-2">
         {leftElement}
-        <div className="text-[1rem] font-bold text-[#1F2937] flex items-center gap-2">
+        <div className="text-[1rem] font-black text-[#1F2937] flex items-center gap-2">
           {icon && <i className={`fas ${icon} text-[0.85rem]`} style={iconColor ? { color: iconColor } : { color: '#22C55E' }} />}
           {title}
         </div>
