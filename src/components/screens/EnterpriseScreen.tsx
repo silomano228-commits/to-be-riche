@@ -63,7 +63,7 @@ export default function EnterpriseScreen() {
   return (
     <>
       <Header title="Entreprises" icon="fa-building" iconColor="#8B5CF6" leftElement={<button onClick={() => useAppStore.getState().setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] cursor-pointer border-none mr-1"><i className="fas fa-arrow-left text-[0.8rem]"></i></button>} />
-      <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto bg-[#F8F9FA]">
+      <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0 bg-[#F8F9FA]">
         {/* Balance - White card with gold accent */}
         <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4 mb-4">
           <div className="text-[0.7rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[1.5px] mb-1">Compte de Projet</div>

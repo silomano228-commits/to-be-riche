@@ -86,7 +86,7 @@ export default function AdminScreen() {
           </button>
         }
       />
-      <div className="flex-1 w-full overflow-y-auto">
+      <div className="flex-1 w-full overflow-y-auto min-h-0">
         {/* Tabs */}
         <div className="flex bg-[#0E0F11] border-b border-[rgba(255,255,255,0.06)] px-1 overflow-x-auto">
           {[
@@ -174,9 +174,27 @@ export default function AdminScreen() {
                         <div>
                           <div className="text-[0.78rem] font-bold text-[#EDEDEF]">{esc(d.user?.name || '?')}</div>
                           <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">{formatMoney(d.amountUsd)} → {d.amountTrx?.toFixed(2)} TRX</div>
-                          <div className="text-[0.6rem] text-[rgba(255,255,255,0.25)] mt-0.5">Adresse: {esc(d.userAddress?.slice(0, 12))}...</div>
                         </div>
                         <span className="text-[0.6rem] bg-[rgba(99,102,241,0.12)] text-[#6366F1] px-2 py-0.5 rounded-full">TRX</span>
+                      </div>
+                      <div className="bg-[#161719] rounded-lg p-2.5 mb-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Adresse TRX client</span>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await navigator.clipboard.writeText(d.userAddress || '');
+                                addToast('Adresse copiée !', 'success');
+                              } catch {
+                                addToast('Erreur de copie', 'error');
+                              }
+                            }}
+                            className="text-[0.6rem] text-[#6366F1] hover:text-[#818CF8] cursor-pointer bg-transparent border-none flex items-center gap-1"
+                          >
+                            <i className="fas fa-copy text-[0.55rem]"></i> Copier
+                          </button>
+                        </div>
+                        <div className="text-[0.72rem] font-mono font-bold text-[#818CF8] break-all leading-relaxed mt-1">{esc(d.userAddress || 'Non renseigné')}</div>
                       </div>
                       <div className="flex gap-2">
                         <button
@@ -321,8 +339,21 @@ export default function AdminScreen() {
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Adresse TRX</span>
-                          <span className="text-[0.65rem] font-mono font-bold text-[#818CF8]">{esc(d.trxAddress?.slice(0, 16))}...</span>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await navigator.clipboard.writeText(d.trxAddress || '');
+                                addToast('Adresse copiée !', 'success');
+                              } catch {
+                                addToast('Erreur de copie', 'error');
+                              }
+                            }}
+                            className="text-[0.6rem] text-[#6366F1] hover:text-[#818CF8] cursor-pointer bg-transparent border-none flex items-center gap-1"
+                          >
+                            <i className="fas fa-copy text-[0.55rem]"></i> Copier
+                          </button>
                         </div>
+                        <div className="text-[0.72rem] font-mono font-bold text-[#818CF8] break-all leading-relaxed mt-1">{esc(d.trxAddress || 'Non renseigné')}</div>
                       </div>
                       <div className="mb-2">
                         <input
@@ -398,9 +429,28 @@ export default function AdminScreen() {
                       <div className="flex items-center justify-between mb-2">
                         <div>
                           <div className="text-[0.78rem] font-bold text-[#EDEDEF]">{esc(w.user?.name || '?')}</div>
-                          <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">{formatMoney(w.amount)} → {esc(w.trxAddress?.slice(0, 10))}...</div>
+                          <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">{formatMoney(w.amount)}</div>
                         </div>
                         <span className="text-[0.6rem] bg-[rgba(96,165,250,0.12)] text-[#818CF8] px-2 py-0.5 rounded-full">En attente</span>
+                      </div>
+                      <div className="bg-[#161719] rounded-lg p-2.5 mb-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Adresse TRX retrait</span>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await navigator.clipboard.writeText(w.trxAddress || '');
+                                addToast('Adresse copiée !', 'success');
+                              } catch {
+                                addToast('Erreur de copie', 'error');
+                              }
+                            }}
+                            className="text-[0.6rem] text-[#6366F1] hover:text-[#818CF8] cursor-pointer bg-transparent border-none flex items-center gap-1"
+                          >
+                            <i className="fas fa-copy text-[0.55rem]"></i> Copier
+                          </button>
+                        </div>
+                        <div className="text-[0.72rem] font-mono font-bold text-[#818CF8] break-all leading-relaxed mt-1">{esc(w.trxAddress || 'Non renseigné')}</div>
                       </div>
                       <div className="flex gap-2">
                         <button

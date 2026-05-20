@@ -196,7 +196,7 @@ export default function DepositScreen() {
     return (
       <>
         <Header title="Dépôt en attente" icon="fa-clock" iconColor="#22C55E" leftElement={backBtn} />
-        <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto">
+        <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
           <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4 border border-[rgba(0,0,0,0.08)]">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-xl bg-[#22C55E] flex items-center justify-center shrink-0">
@@ -239,7 +239,7 @@ export default function DepositScreen() {
     return (
       <>
         <Header title="Conversion en attente" icon="fa-clock" iconColor="#22C55E" leftElement={backBtn} />
-        <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto">
+        <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
           <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4 border border-[rgba(0,0,0,0.08)]">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-xl bg-[#22C55E] flex items-center justify-center shrink-0">
@@ -299,7 +299,7 @@ export default function DepositScreen() {
             <i className="fas fa-arrow-left text-[0.8rem]"></i>
           </button>
         } />
-        <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto">
+        <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
           {loading ? (
             <div className="flex justify-center py-12">
               <div className="w-8 h-8 border-[3px] border-[#E5E7EB] border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
@@ -396,7 +396,7 @@ export default function DepositScreen() {
     return (
       <>
         <Header title="Dépôt via TRX" icon="fa-arrow-down" iconColor="#22C55E" leftElement={backBtn} />
-        <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto">
+        <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
           {loading ? (
             <div className="flex justify-center py-12">
               <div className="w-8 h-8 border-[3px] border-[#E5E7EB] border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
@@ -653,7 +653,7 @@ export default function DepositScreen() {
     return (
       <>
         <Header title="Conversion Yas du Togo" icon="fa-exchange-alt" iconColor="#22C55E" leftElement={backBtn} />
-        <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto">
+        <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
           {loading ? (
             <div className="flex justify-center py-12">
               <div className="w-8 h-8 border-[3px] border-[#E5E7EB] border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />

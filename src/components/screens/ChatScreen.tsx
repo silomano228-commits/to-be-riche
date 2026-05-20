@@ -225,7 +225,7 @@ export default function ChatScreen() {
           </div>
         )}
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-[#F8F9FA]">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0 px-4 py-3 space-y-3 bg-[#F8F9FA]">
           {loading && messages.length === 0 && (
             <div className="text-center py-8">
               <div className="w-8 h-8 border-2 border-[rgba(0,0,0,0.08)] border-t-[#6366F1] rounded-full mx-auto mb-3" style={{ animation: 'spin 0.7s linear infinite' }} />

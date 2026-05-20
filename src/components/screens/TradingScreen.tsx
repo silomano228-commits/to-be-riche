@@ -218,9 +218,18 @@ export default function TradingScreen() {
   const [showAI, setShowAI] = useState(false);
   const prices = useLivePrices();
   const [aiAnalysis, setAiAnalysis] = useState<ReturnType<typeof generateAIAnalysis> | null>(null);
+  const [winPercent, setWinPercent] = useState(() => 75 + Math.floor(Math.random() * 11)); // 75-85%
 
   // Tick every second
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
+
+  // Vary win percentage every 15-30 seconds
+  useEffect(() => {
+    const vary = () => setWinPercent(75 + Math.floor(Math.random() * 11));
+    const delay = 15000 + Math.random() * 15000;
+    const t = setTimeout(() => { vary(); const iv = setInterval(vary, 15000 + Math.random() * 15000); return () => clearInterval(iv); }, delay);
+    return () => clearTimeout(t);
+  }, []);
 
   // Load active trades
   const loadTrades = useCallback(async () => {
@@ -330,7 +339,7 @@ export default function TradingScreen() {
         leftElement={<button onClick={() => useAppStore.getState().setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] cursor-pointer border-none mr-1"><i className="fas fa-arrow-left text-[0.8rem]"></i></button>}
       />
 
-      <div className="px-[14px] py-3 flex-1 w-full overflow-y-auto bg-[#F8F9FA]">
+      <div className="px-[14px] py-3 flex-1 w-full overflow-y-auto min-h-0 bg-[#F8F9FA]">
 
         {/* ===== MARKET SELECTOR ===== */}
         <div className="flex gap-2 overflow-x-auto pb-2 mb-3 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
@@ -507,7 +516,7 @@ export default function TradingScreen() {
           <div className="flex items-center justify-center gap-3 mb-3 py-2 bg-[rgba(0,0,0,0.03)] rounded-xl border border-[rgba(0,0,0,0.04)]">
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-[#22C55E]"></div>
-              <span className="text-[0.68rem] font-semibold text-[#22C55E]">Gain: +85%</span>
+              <span className="text-[0.68rem] font-semibold text-[#22C55E]">Gain: +{winPercent}%</span>
             </div>
             <div className="w-[1px] h-3 bg-[rgba(0,0,0,0.1)]"></div>
             <div className="flex items-center gap-1.5">

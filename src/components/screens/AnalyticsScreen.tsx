@@ -66,7 +66,7 @@ export default function AnalyticsScreen() {
           </button>
         }
       />
-      <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto">
+      <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
         {/* Account Balances Section */}
         <SectionHeader icon="fa-wallet" title="Comptes" />
         <div className="grid grid-cols-2 gap-2.5 mb-5">

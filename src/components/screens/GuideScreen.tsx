@@ -87,7 +87,7 @@ export default function GuideScreen() {
         ))}
       </div>
 
-      <div className="flex-1 w-full overflow-y-auto bg-[#F8F9FA]">
+      <div className="flex-1 w-full overflow-y-auto min-h-0 bg-[#F8F9FA]">
         <div className="px-[18px] py-4">
 
           {/* ============ GUIDE SECTION ============ */}

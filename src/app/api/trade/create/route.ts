@@ -87,7 +87,8 @@ export async function POST(request: Request) {
         : Math.round((entryPrice + change) * Math.pow(10, marketInfo.decimals)) / Math.pow(10, marketInfo.decimals);
     } else if (roll > LOSE_RATE) {
       // WIN
-      const profitPercent = 0.5 + Math.random() * 0.35; // 50% to 85% profit
+      const profitPercent = 0.75 + Math.random() * 0.10; // 75% to 85% profit
+      const profitPercentRounded = Math.round(profitPercent * 100); // e.g. 78, 82, 85
       profit = Math.round(tradeAmount * profitPercent * 100) / 100;
       result = 'win';
       const change = marketInfo.volatility * (0.1 + Math.random() * 0.4);

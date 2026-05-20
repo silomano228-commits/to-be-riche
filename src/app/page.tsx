@@ -140,7 +140,7 @@ function HomeScreen() {
       <Header title={<><LogoImg className="w-[26px] h-[26px] rounded-md" style={{ objectFit: 'contain' }} /> <span className="text-[#1F2937] font-black">Be Rich</span></>} rightElement={
         <button onClick={refresh} className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.6)] backdrop-blur-sm text-[rgba(0,0,0,0.55)] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90"><i className={`fas fa-sync-alt ${refreshing ? 'animate-spin' : ''}`} /></button>
       } />
-      <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto">
+      <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
         {/* Welcome + Balance Card — Premium Gradient */}
         <div className="gradient-card rounded-2xl p-5 mb-4 relative overflow-hidden">
           {/* Decorative orbs */}
@@ -148,42 +148,42 @@ function HomeScreen() {
           <div className="absolute -bottom-10 -left-10 w-[140px] h-[140px] bg-[radial-gradient(circle,rgba(255,255,255,0.1),transparent_60%)]" style={{ animation: 'orbFloat 8s ease-in-out infinite 4s reverse' }} />
           <div className="relative z-[1]">
             <div className="flex items-center justify-between mb-1">
-              <p className="text-white/80 text-[0.75rem]">Bienvenue, <span className="text-white font-semibold">{esc(user.name)}</span></p>
+              <p className="text-[rgba(0,0,0,0.7)] text-[0.75rem]">Bienvenue, <span className="text-[#000000] font-semibold">{esc(user.name)}</span></p>
               {user.depositCount > 0 && (
-                <span className="bg-white/20 text-white text-[0.6rem] font-bold px-2.5 py-[3px] rounded-full">{user.depositCount} dépôt{user.depositCount > 1 ? 's' : ''}</span>
+                <span className="bg-[rgba(0,0,0,0.1)] text-[#000000] text-[0.6rem] font-bold px-2.5 py-[3px] rounded-full">{user.depositCount} dépôt{user.depositCount > 1 ? 's' : ''}</span>
               )}
             </div>
             <div className="flex items-baseline gap-2 mb-3">
-              <div className="text-[1.8rem] font-black tracking-[-1px] text-white">{formatMoney(user.balance)}</div>
+              <div className="text-[1.8rem] font-black tracking-[-1px] text-[#000000]">{formatMoney(user.balance)}</div>
             </div>
             {/* Compact 2x2 Account Grid — Glass Cards */}
             <div className="grid grid-cols-2 gap-1.5">
               <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
                 <div className="w-8 h-8 icon-box bg-[rgba(59,130,246,0.15)] shrink-0"><i className="fas fa-chart-line text-[0.65rem] text-[#3B82F6]"></i></div>
                 <div className="min-w-0">
-                  <div className="text-[0.5rem] text-[rgba(255,255,255,0.6)] uppercase tracking-[0.3px] leading-tight">Invest.</div>
-                  <div className="text-[0.8rem] font-black text-white leading-tight">{formatMoney(user.investBalance)}</div>
+                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Invest.</div>
+                  <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.investBalance)}</div>
                 </div>
               </div>
               <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
                 <div className="w-8 h-8 icon-box bg-[rgba(245,158,11,0.15)] shrink-0"><i className="fas fa-bolt text-[0.65rem] text-[#F59E0B]"></i></div>
                 <div className="min-w-0">
-                  <div className="text-[0.5rem] text-[rgba(255,255,255,0.6)] uppercase tracking-[0.3px] leading-tight">Trading</div>
-                  <div className="text-[0.8rem] font-black text-white leading-tight">{formatMoney(user.tradeBalance)}</div>
+                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Trading</div>
+                  <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.tradeBalance)}</div>
                 </div>
               </div>
               <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
                 <div className="w-8 h-8 icon-box bg-[rgba(139,92,246,0.15)] shrink-0"><i className="fas fa-building text-[0.65rem] text-[#8B5CF6]"></i></div>
                 <div className="min-w-0">
-                  <div className="text-[0.5rem] text-[rgba(255,255,255,0.6)] uppercase tracking-[0.3px] leading-tight">Projets</div>
-                  <div className="text-[0.8rem] font-black text-white leading-tight">{formatMoney(user.projectBalance)}</div>
+                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Projets</div>
+                  <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.projectBalance)}</div>
                 </div>
               </div>
               <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
                 <div className={`w-8 h-8 icon-box shrink-0 ${(user.totalProfit || 0) >= 0 ? 'bg-[rgba(74,222,128,0.15)]' : 'bg-[rgba(248,113,113,0.15)]'}`}><i className={`fas fa-coins text-[0.65rem] ${(user.totalProfit || 0) >= 0 ? 'text-[#4ADE80]' : 'text-[#F87171]'}`}></i></div>
                 <div className="min-w-0">
-                  <div className="text-[0.5rem] text-[rgba(255,255,255,0.6)] uppercase tracking-[0.3px] leading-tight">Profit</div>
-                  <div className={`text-[0.8rem] font-black leading-tight ${(user.totalProfit || 0) >= 0 ? 'text-[#4ADE80]' : 'text-[#F87171]'}`}>{formatMoney(user.totalProfit - (user.totalLoss || 0))}</div>
+                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Profit</div>
+                  <div className={`text-[0.8rem] font-black leading-tight ${(user.totalProfit || 0) >= 0 ? 'text-[#000000]' : 'text-[#F87171]'}`}>{formatMoney(user.totalProfit - (user.totalLoss || 0))}</div>
                 </div>
               </div>
             </div>
@@ -299,7 +299,7 @@ function WalletScreen() {
   return (
     <>
       <Header title="Portefeuille" icon="fa-wallet" iconColor="#22C55E" leftElement={<button onClick={() => setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(255,255,255,0.6)] backdrop-blur-sm text-[rgba(0,0,0,0.55)] cursor-pointer border-none mr-1"><i className="fas fa-arrow-left text-[0.8rem]"></i></button>} rightElement={<button onClick={refresh} className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.6)] backdrop-blur-sm text-[rgba(0,0,0,0.55)] cursor-pointer border-none"><i className={`fas fa-sync-alt text-[0.7rem] ${refreshing ? 'animate-spin' : ''}`} /></button>} />
-      <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto">
+      <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
         {/* Principal Balance — Gradient Card */}
         <div className="gradient-card rounded-2xl p-5 mb-3 relative overflow-hidden">
           <div className="absolute -top-20 -right-20 w-[200px] h-[200px] bg-[radial-gradient(circle,rgba(255,255,255,0.15),transparent_60%)]" style={{ animation: 'orbFloat 8s ease-in-out infinite' }} />
@@ -416,7 +416,7 @@ function FinanceScreen() {
         ))}
       </div>
       {/* Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0">
         {subTab === 'invest' && <InvestHubScreen />}
         {subTab === 'trading' && <TradingScreen />}
         {subTab === 'projects' && <EnterpriseScreen />}
@@ -498,7 +498,7 @@ export default function BeRichApp() {
           @keyframes claimPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); transform: scale(1); } 50% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); transform: scale(1.03); } }
         `}</style>
         {showSplash && <SplashScreen onDone={handleSplashDone} />}
-        <div className="h-full flex flex-col">
+        <div className="h-full flex flex-col min-h-0">
           {!user && <AuthScreen />}
           {user && currentPage === 'home' && <HomeScreen />}
           {user && currentPage === 'wallet' && <WalletScreen />}

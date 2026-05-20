@@ -3,54 +3,80 @@
 ---
 Task ID: 1
 Agent: Main Agent
-Task: Fix admin Yas config save + Create Guide tab + Floating gift widget + Analysis bases
+Task: Fix scrolling issues - add min-h-0 to flex children, ensure overflow-y-auto works
 
 Work Log:
-- Verified SiteConfig database model exists and data is being saved correctly (adminYasAccount: "90123456", cfaUsdRate: 685)
-- Added loading states (savingYas, savingConfig) to AdminScreen save buttons with spinner animations
-- Added `await loadConfig()` after save to ensure state refresh
-- Created GuideScreen.tsx with 3 sub-tabs: Guide, Trading, Projects
-- Guide tab: All 5 steps (deposit, transfer, earn, withdraw, referral) + chat IA tip
-- Trading tab: Market indices (confidence, volatility, momentum, risk), 4 asset analysis cards with RSI/MACD/volatility/signal, strategy tips
-- Project tab: Sector analysis (6 sectors with confidence/trend/momentum/risk), risk/reward matrix, investment philosophy, hot sectors banner
-- Created FloatingGift.tsx: Animated floating gift icon on home screen, referral progress (0-10), evolving messages per referral count, copy referral code, subtle non-pushy UX
-- Updated page.tsx: Added Guide tab to bottom nav (5 tabs now: Accueil, Finance, Guide, Chat IA, Profil), added GuideScreen routing, added FloatingGift component
-- Removed old guide section from HomeScreen, replaced with attractive Guide & Analyses link card + referral gift teaser card
-- Fixed parsing error in GuideScreen (>75% → sup. à 75%)
+- Added `min-h-0` to the main flex container `<div className="h-full flex flex-col min-h-0">`
+- Added `min-h-0` to all scroll containers across all screens:
+  - HomeScreen: `overflow-y-auto min-h-0`
+  - WalletScreen: `overflow-y-auto min-h-0`
+  - FinanceScreen content div: `overflow-hidden min-h-0`
+  - TradingScreen: `overflow-y-auto min-h-0`
+  - AdminScreen: `overflow-y-auto min-h-0`
+  - GuideScreen: `overflow-y-auto min-h-0`
+  - DepositScreen (all 5 scroll containers): `overflow-y-auto min-h-0`
+  - InvestHubScreen: `overflow-y-auto min-h-0`
+  - EnterpriseScreen: `overflow-y-auto min-h-0`
+  - AnalyticsScreen: `overflow-y-auto min-h-0`
+  - WithdrawScreen: `overflow-y-auto min-h-0`
+  - ChatScreen: `overflow-y-auto min-h-0`
+  - ProfileScreen: `overflow-y-auto min-h-0`
 
 Stage Summary:
-- Admin Yas save now has visual feedback with loading spinner
-- Guide tab created with comprehensive analysis bases for Trading and Project
-- Trading analysis includes: market indices, asset signals (RSI, MACD), strategy tips
-- Project analysis includes: sector analysis, risk/reward matrix, investment philosophy
-- 35% cap is never explicitly stated but the system design limits wins accordingly
-- Floating gift widget with referral countdown, evolving messages, non-pushy UX
-- Bottom nav now has 5 tabs including Guide
+- `min-h-0` is required for flex children with `overflow-y-auto` to properly constrain their height and enable scrolling. Without it, the browser's default `min-height: auto` prevents the child from shrinking below its content size, which breaks overflow scrolling.
+
 ---
-Task ID: 1
+Task ID: 2
 Agent: Main Agent
-Task: Change color scheme from gold to blue/green/red/white palette
+Task: Change welcome box text (amounts, labels) to black color
 
 Work Log:
-- Read all source files to understand current gold color usage
-- Launched 3 parallel subagents to replace gold colors across all files
-- Subagent A: shared.tsx + page.tsx (13 + 50 replacements)
-- Subagent B: TradingScreen + EnterpriseScreen + InvestHubScreen (8 + 3 + 3 major replacements)
-- Subagent C: GuideScreen + ProfileScreen + ChatScreen + FloatingGift + globals.css
-- Found 4 remaining files with gold: WithdrawScreen, DepositScreen, AdminScreen, AnalyticsScreen
-- Launched 4th subagent to update remaining files
-- Verified zero remaining gold references (#B89B5E, #D4B87A, rgba(184,155,94,...))
-- Lint check passes (only pre-existing errors in unrelated files)
+- Changed the welcome card text colors from white to black:
+  - Welcome text: `text-white/80` → `text-[rgba(0,0,0,0.7)]`
+  - Username: `text-white` → `text-[#000000]`
+  - Deposit badge: `bg-white/20 text-white` → `bg-[rgba(0,0,0,0.1)] text-[#000000]`
+  - Main balance: `text-white` → `text-[#000000]`
+  - Glass card labels: `text-[rgba(255,255,255,0.6)]` → `text-[rgba(0,0,0,0.45)]`
+  - Glass card amounts: `text-white` → `text-[#000000]`
+  - Profit amount: `text-[#4ADE80]` → `text-[#000000]` (when positive)
 
 Stage Summary:
-- All gold (#B89B5E, #D4B87A) replaced with blue (#3B82F6, #60A5FA)
-- All gold rgba replaced with blue rgba equivalents
-- Green (#22C55E, #4ADE80) used for gains and "up" direction in trading
-- Red (#F87171) kept for losses and "down" direction
-- White backgrounds preserved
-- Trading HAUT button now green, BAS button stays red
-- Analytics positive bar chart bars now green instead of gold
-- FloatingGift progress bar and accents now blue
-- Chat bubbles for user messages now blue
-- Profile avatar gradient now blue
-- Admin panel (dark theme) gold accents replaced with blue
+- All text in the welcome/balance card on the home screen is now black, making it readable against the green gradient card with glass overlay.
+
+---
+Task ID: 3
+Agent: Main Agent
+Task: Make trading win repayment percentage vary randomly between 75% and 85%
+
+Work Log:
+- Changed backend profit calculation from `0.5 + Math.random() * 0.35` (50-85%) to `0.75 + Math.random() * 0.10` (75-85%) in `/api/trade/create/route.ts`
+- Added `profitPercentRounded` variable for tracking
+- Updated frontend TradingScreen to show dynamic win percentage:
+  - Added `winPercent` state initialized to random 75-85
+  - Added useEffect that varies the percentage every 15-30 seconds
+  - Changed display from hardcoded "Gain: +85%" to dynamic "Gain: +{winPercent}%"
+
+Stage Summary:
+- Win percentage now randomly varies between 75% and 85% both on the backend (actual profit calculation) and frontend (displayed percentage)
+
+---
+Task ID: 4
+Agent: Main Agent
+Task: Show full TRX address in admin deposit approval view
+
+Work Log:
+- Updated AdminScreen TRX deposits section:
+  - Removed truncated `{esc(d.userAddress?.slice(0, 12))}...` display
+  - Added dedicated dark box showing full TRX address with `break-all` for wrapping
+  - Added "Copier" (copy) button next to the address label
+- Updated AdminScreen Yas deposits section:
+  - Changed `{esc(d.trxAddress?.slice(0, 16))}...` to full address display
+  - Added "Copier" copy button
+- Updated AdminScreen Withdrawals section:
+  - Changed `{esc(w.trxAddress?.slice(0, 10))}...` to full address display
+  - Added dedicated TRX address section with copy button
+  - Separated amount and address display into distinct sections
+
+Stage Summary:
+- All TRX addresses in the admin panel now display in full with copy-to-clipboard functionality
+- Applied to: TRX deposits, Yas deposits, and Withdrawals sections
