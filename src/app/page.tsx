@@ -432,7 +432,7 @@ function BottomNav() {
     { id: 'home', icon: 'fa-home', label: 'Accueil' },
     { id: 'finance', icon: 'fa-chart-line', label: 'Finance' },
     { id: 'guide', icon: 'fa-compass', label: 'Guide' },
-    { id: 'chat', icon: 'fa-robot', label: 'Chat IA' },
+    { id: 'chat', icon: 'fa-headset', label: 'Support' },
     { id: 'profile', icon: 'fa-user', label: 'Profil' },
   ];
   const isActive = (tabId: string) => {
