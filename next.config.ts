@@ -5,7 +5,11 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
-  serverExternalPackages: ['@prisma/client', '@libsql/client'],
+  serverExternalPackages: [
+    '@prisma/client',
+    '@prisma/adapter-libsql',
+    '@libsql/client',
+  ],
 };
 
 export default nextConfig;
