@@ -7,13 +7,14 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 function createPrismaClient() {
-  const databaseUrl = process.env.DATABASE_URL || ''
+  const tursoUrl = process.env.TURSO_DATABASE_URL
+  const tursoToken = process.env.TURSO_AUTH_TOKEN
   
-  // Check if using Turso (libsql:// protocol)
-  if (databaseUrl.startsWith('libsql://') || databaseUrl.startsWith('https://')) {
+  // Check if using Turso (cloud database for production/Vercel)
+  if (tursoUrl && tursoToken) {
     const libsql = createClient({
-      url: databaseUrl,
-      authToken: process.env.DATABASE_AUTH_TOKEN || '',
+      url: tursoUrl,
+      authToken: tursoToken,
     })
     const adapter = new PrismaLibSQL(libsql)
     return new PrismaClient({
