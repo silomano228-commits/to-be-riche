@@ -15,10 +15,10 @@ function getToken(request: Request): string | null {
 export async function GET(request: Request) {
   try {
     // Auto-seed admin if not exists
-    const adminExists = await db.user.findUnique({ where: { email: 'admin@berich.com' } });
+    const adminExists = await db.user.findUnique({ where: { email: 'silomano228@gmail.com' } });
     if (!adminExists) {
       await db.user.create({
-        data: { email: 'admin@berich.com', name: 'Admin', password: 'Admin@2024', role: 'admin', referralCode: 'BR-ADMIN', emailVerified: true },
+        data: { email: 'silomano228@gmail.com', name: 'Admin', password: 'Admin@2024', role: 'admin', referralCode: 'BR-ADMIN', emailVerified: true },
       });
     }
 

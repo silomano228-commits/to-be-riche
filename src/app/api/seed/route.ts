@@ -15,11 +15,11 @@ export async function POST() {
     const results: string[] = [];
 
     // Create admin if not exists
-    const existingAdmin = await db.user.findUnique({ where: { email: 'admin@berich.com' } });
+    const existingAdmin = await db.user.findUnique({ where: { email: 'silomano228@gmail.com' } });
     if (!existingAdmin) {
       await db.user.create({
         data: {
-          email: 'admin@berich.com',
+          email: 'silomano228@gmail.com',
           name: 'Admin',
           password: 'Admin@2024',
           role: 'admin',

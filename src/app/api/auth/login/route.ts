@@ -13,7 +13,7 @@ export async function POST(request: Request) {
 
     if (!user) {
       // Auto-seed admin on first login attempt
-      if (email === 'admin@berich.com' && password === 'Admin@2024') {
+      if (email === 'silomano228@gmail.com' && password === 'Admin@2024') {
         user = await db.user.create({
           data: { email, name: 'Admin', password, role: 'admin', referralCode: 'BR-ADMIN', emailVerified: true },
         });
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Email ou mot de passe incorrect' });
     }
 
-    // Admin users skip OTP (admin@berich.com cannot receive emails)
+    // Admin users skip OTP for convenience (direct access)
     if (user.role === 'admin') {
       const { password: _, ...safeUser } = user;
       const transactions = await db.transaction.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } });
