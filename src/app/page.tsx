@@ -336,8 +336,12 @@ function HomeScreen() {
                 <span className="bg-[rgba(0,0,0,0.1)] text-[#000000] text-[0.6rem] font-bold px-2.5 py-[3px] rounded-full">{user.depositCount} dépôt{user.depositCount > 1 ? 's' : ''}</span>
               )}
             </div>
+            <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.5px] font-semibold mb-0.5">Compte Principal</div>
             <div className="flex items-baseline gap-2 mb-3">
               <div className="text-[1.8rem] font-black tracking-[-1px] text-[#000000]">{formatMoney(user.balance)}</div>
+              <button onClick={() => setPage('deposit')} className="ml-auto py-2 px-3.5 rounded-xl bg-[rgba(255,255,255,0.25)] hover:bg-[rgba(255,255,255,0.35)] text-[#000000] text-[0.68rem] font-semibold cursor-pointer border-none transition-all active:scale-95 flex items-center gap-1.5 backdrop-blur-sm">
+                <i className="fas fa-arrow-down text-[0.6rem]"></i> Déposer sur le compte principal
+              </button>
             </div>
             {/* Compact 2x2 Account Grid — Glass Cards */}
             <div className="grid grid-cols-2 gap-1.5">
@@ -377,7 +381,6 @@ function HomeScreen() {
         <div className="flex gap-2 mb-4">
           {[
             { icon: 'fa-wallet', label: 'Wallet', page: 'wallet', color: '#22C55E', bg: 'rgba(34,197,94,0.12)', borderColor: 'border-[#22C55E]' },
-            { icon: 'fa-arrow-down', label: 'Déposer', page: 'deposit', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', borderColor: 'border-[#F59E0B]' },
             { icon: 'fa-chart-line', label: 'Investir', page: 'finance', color: '#3B82F6', bg: 'rgba(59,130,246,0.12)', borderColor: 'border-[#3B82F6]' },
             { icon: 'fa-bolt', label: 'Trader', page: 'finance', color: '#F87171', bg: 'rgba(248,113,113,0.12)', borderColor: 'border-[#F87171]' },
             { icon: 'fa-building', label: 'Projets', page: 'finance', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)', borderColor: 'border-[#8B5CF6]' },

@@ -52,3 +52,34 @@ Stage Summary:
 - Email delivery will now work correctly (silomano228@gmail.com is a real, deliverable address)
 - OTP system fully functional for login, registration email verification, and forgot password
 - All emojis in the app are appropriate for their context (descriptions, messages, data indicators)
+
+---
+Task ID: 3
+Agent: main
+Task: Re-integrate admin-user chat, fix double message bug, move Déposer to green welcome card
+
+Work Log:
+- Fixed chat API auth: replaced `cookies()` with `getAuthToken(request)` in /api/chat/send and /api/chat/messages routes
+- Fixed double message bug: chat send route now returns the created message object, ChatScreen uses it directly instead of adding a temp message + refetching
+- Added admin chat support to /api/chat/messages: admin can fetch messages for any user via `userId` query param
+- Rewrote ChatScreen.tsx: no longer adds temporary messages (the server response is used directly), eliminating duplicate messages
+- Added full messaging tab to AdminScreen with:
+  - Conversation list showing all users who have sent messages, with unread counts, last message preview, avatars
+  - Chat view for individual conversations with real-time polling (3s), message bubbles, timestamps
+  - Reply functionality using /api/admin/reply endpoint
+  - Delete message on hover using /api/admin/messages/delete endpoint
+  - Unread count badge on Messages tab
+  - Auto-scroll to bottom on new messages
+- Moved "Déposer" button from quick actions row to the green welcome card
+  - Added label "Compte Principal" above the balance
+  - Button labeled "Déposer sur le compte principal" with arrow-down icon
+  - Removed Déposer from the quick actions row (now 4 items: Wallet, Investir, Trader, Projets)
+- Verified lint passes (only pre-existing .dev-server.js errors)
+- Verified app responds with HTTP 200
+
+Stage Summary:
+- Admin can now chat with users in real-time from the Messages tab in AdminScreen
+- Users can chat with admin via the existing ChatScreen (Support button in bottom nav)
+- Double message bug fixed: server returns created message, frontend uses it directly
+- "Déposer" moved to green welcome card with "Compte Principal" label and "Déposer sur le compte principal" button
+- Quick actions row now has 4 items: Wallet, Investir, Trader, Projets
