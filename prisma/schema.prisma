@@ -158,6 +158,16 @@ model Withdrawal {
   updatedAt   DateTime @updatedAt
 }
 
+model OtpCode {
+  id        String   @id @default(cuid())
+  email     String
+  codeHash  String
+  purpose   String   @default("login")
+  used      Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
 model YasDeposit {
   id            String   @id @default(cuid())
   userId        String

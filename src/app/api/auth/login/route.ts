@@ -26,52 +26,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Email ou mot de passe incorrect' });
     }
 
-    const { password: _, ...safeUser } = user;
-
-    const transactions = await db.transaction.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    const investments = await db.investment.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    const activeTradesCount = await db.trade.count({
-      where: { userId: user.id, resolved: false },
-    });
-
-    const activeEnterprisesCount = await db.enterprise.count({
-      where: { userId: user.id, status: 'active' },
-    });
-
-    const response = NextResponse.json({
+    // Password is correct — require OTP verification before full login
+    return NextResponse.json({
       success: true,
-      user: {
-        ...safeUser,
-        investBalance: user.investBalance,
-        tradeBalance: user.tradeBalance,
-        projectBalance: user.projectBalance,
-        totalProfit: user.totalProfit,
-        totalLoss: user.totalLoss,
-        transactions,
-        investments,
-        activeTradesCount,
-        activeEnterprisesCount,
-      },
+      requires_otp: true,
+      email: user.email,
+      message: 'Vérification OTP requise',
     });
-
-    // Set cookie on the response object (reliable method)
-    response.cookies.set('br_token', user.id, {
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7,
-      httpOnly: false,
-      sameSite: 'lax',
-      secure: false,
-    });
-
-    return response;
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
   }
