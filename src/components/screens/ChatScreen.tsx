@@ -12,29 +12,14 @@ interface ChatMsg {
   isAdminMsg: boolean;
   ticketId: string | null;
   t: string;
+  date?: string;
 }
 
-interface Ticket {
-  id: string;
-  reason: string;
-  status: string;
-}
-
-const QUICK_QUESTIONS = [
-  'Comment déposer de l\'argent ?',
-  'Comment fonctionne le trading ?',
-  'Quels sont les risques ?',
-  'Comment retirer mes gains ?',
-  'Comment fonctionne le parrainage ?',
-];
-
-const ESCALATE_REASONS = [
-  { value: 'Problème de dépôt non reçu', icon: 'fa-wallet', color: '#F59E0B' },
-  { value: 'Problème de retrait bloqué', icon: 'fa-ban', color: '#EF4444' },
-  { value: 'Transaction manquante', icon: 'fa-search-dollar', color: '#8B5CF6' },
-  { value: 'Problème technique', icon: 'fa-bug', color: '#F97316' },
-  { value: 'Réclamation', icon: 'fa-exclamation-triangle', color: '#EF4444' },
-  { value: 'Autre', icon: 'fa-question-circle', color: '#6B7280' },
+const QUICK_REPLIES = [
+  { text: "Bonjour ! 👋", icon: 'fa-hand-wave' },
+  { text: "J'ai un problème de dépôt", icon: 'fa-wallet' },
+  { text: "Question sur mon compte", icon: 'fa-user-circle' },
+  { text: "Problème de retrait", icon: 'fa-arrow-up' },
 ];
 
 export default function ChatScreen() {
@@ -43,13 +28,12 @@ export default function ChatScreen() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTicket, setActiveTicket] = useState<Ticket | null>(null);
-  const [showEscalateModal, setShowEscalateModal] = useState(false);
-  const [escalateReason, setEscalateReason] = useState('');
-  const [customReason, setCustomReason] = useState('');
-  const [escalating, setEscalating] = useState(false);
+  const [adminOnline, setAdminOnline] = useState(false);
+  const [lastAdminSeen, setLastAdminSeen] = useState<string>('');
+  const [showQuickReplies, setShowQuickReplies] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastFetchIdRef = useRef<string>('0');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const fetchMessages = useCallback(async () => {
     try {
@@ -62,6 +46,13 @@ export default function ChatScreen() {
           if (newMsgs.length > 0) {
             const updated = [...prev, ...newMsgs];
             lastFetchIdRef.current = newMsgs[newMsgs.length - 1].id;
+            // Check if admin has sent messages (admin is "online")
+            const hasAdminMsg = newMsgs.some((m: ChatMsg) => m.isAdminMsg || m.isAdmin);
+            if (hasAdminMsg) {
+              setAdminOnline(true);
+              const lastAdmin = [...updated].reverse().find(m => m.isAdminMsg || m.isAdmin);
+              if (lastAdmin) setLastAdminSeen(lastAdmin.t);
+            }
             return updated;
           }
           return prev;
@@ -71,27 +62,11 @@ export default function ChatScreen() {
     setLoading(false);
   }, []);
 
-  const checkTicket = useCallback(async () => {
-    try {
-      const res = await authFetch('/api/chat/ticket');
-      const data = await res.json();
-      if (data.success && data.ticket) {
-        setActiveTicket(data.ticket);
-      } else {
-        setActiveTicket(null);
-      }
-    } catch { /* */ }
-  }, []);
-
   useEffect(() => {
     fetchMessages();
-    checkTicket();
-    const interval = setInterval(() => {
-      fetchMessages();
-      checkTicket();
-    }, 5000);
+    const interval = setInterval(fetchMessages, 3000);
     return () => clearInterval(interval);
-  }, [fetchMessages, checkTicket]);
+  }, [fetchMessages]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -99,40 +74,11 @@ export default function ChatScreen() {
     }
   }, [messages]);
 
-  const handleEscalate = async () => {
-    const reason = escalateReason === 'Autre' ? customReason.trim() : escalateReason;
-    if (!reason) {
-      addToast('Veuillez sélectionner ou saisir une raison', 'error');
-      return;
-    }
-    setEscalating(true);
-    try {
-      const res = await authFetch('/api/chat/escalate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        addToast('Transfert en cours vers un administrateur', 'success');
-        setShowEscalateModal(false);
-        setEscalateReason('');
-        setCustomReason('');
-        checkTicket();
-        setTimeout(() => fetchMessages(), 500);
-      } else {
-        addToast(data.error || 'Erreur', 'error');
-      }
-    } catch {
-      addToast('Erreur réseau', 'error');
-    }
-    setEscalating(false);
-  };
-
   const handleSend = async (customText?: string) => {
     const text = (customText || input).trim();
     if (!text || sending) return;
     setInput('');
+    setShowQuickReplies(false);
 
     const tempId = `temp-${Date.now()}`;
     const now = new Date();
@@ -142,36 +88,21 @@ export default function ChatScreen() {
       me: true,
       isAdmin: false,
       isAdminMsg: false,
-      ticketId: activeTicket?.id || null,
+      ticketId: null,
       t: now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
     };
     setMessages(prev => [...prev, userMsg]);
 
     setSending(true);
     try {
-      const res = await authFetch('/api/chat/bot', {
+      const res = await authFetch('/api/chat/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ content: text }),
       });
       const data = await res.json();
       if (data.success) {
-        if (data.escalated) {
-          checkTicket();
-        }
-        if (data.response) {
-          const aiMsg: ChatMsg = {
-            id: `ai-${Date.now()}`,
-            text: data.response,
-            me: false,
-            isAdmin: true,
-            isAdminMsg: data.adminMode || false,
-            ticketId: data.ticketId || activeTicket?.id || null,
-            t: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-          };
-          setMessages(prev => [...prev, aiMsg]);
-        }
-        setTimeout(() => fetchMessages(), 1000);
+        setTimeout(() => fetchMessages(), 500);
       } else {
         addToast(data.error || 'Erreur', 'error');
         setMessages(prev => prev.filter(m => m.id !== tempId));
@@ -181,128 +112,160 @@ export default function ChatScreen() {
       setMessages(prev => prev.filter(m => m.id !== tempId));
     }
     setSending(false);
+    inputRef.current?.focus();
   };
 
   if (!user) return null;
 
+  // Group messages by date
+  const groupedMessages: { date: string; msgs: ChatMsg[] }[] = [];
+  let currentDate = '';
+  for (const msg of messages) {
+    if (msg.date && msg.date !== currentDate) {
+      currentDate = msg.date;
+      groupedMessages.push({ date: currentDate, msgs: [msg] });
+    } else if (groupedMessages.length > 0) {
+      groupedMessages[groupedMessages.length - 1].msgs.push(msg);
+    } else {
+      groupedMessages.push({ date: currentDate || "Aujourd'hui", msgs: [msg] });
+    }
+  }
+
   return (
     <>
       <Header
-        title={activeTicket ? "Support Admin" : "Assistant IA"}
-        icon={activeTicket ? "fa-headset" : "fa-robot"}
-        iconColor="#6366F1"
+        title={
+          <div className="flex items-center gap-2.5">
+            <div className="relative">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#22C55E] to-[#16A34A] flex items-center justify-center shadow-md">
+                <i className="fas fa-headset text-white text-[0.85rem]"></i>
+              </div>
+              <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${adminOnline ? 'bg-[#22C55E]' : 'bg-[#F59E0B]'}`} style={adminOnline ? { animation: 'pulse 2s infinite' } : {}} />
+            </div>
+            <div>
+              <div className="text-[0.92rem] font-black text-[#1F2937] leading-tight">Support Admin</div>
+              <div className="text-[0.6rem] font-medium text-[#22C55E] leading-tight">
+                {adminOnline ? `En ligne · Vu à ${lastAdminSeen}` : 'Hors ligne · Répond sous 24h'}
+              </div>
+            </div>
+          </div>
+        }
         leftElement={
-          <button onClick={() => setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] cursor-pointer border-none mr-1">
+          <button onClick={() => setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(255,255,255,0.6)] backdrop-blur-sm text-[rgba(0,0,0,0.55)] cursor-pointer border-none mr-1">
             <i className="fas fa-arrow-left text-[0.8rem]"></i>
           </button>
         }
-        rightElement={
-          !activeTicket ? (
-            <button
-              onClick={() => setShowEscalateModal(true)}
-              className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(20,184,166,0.12)] text-[#14B8A6] cursor-pointer border-none"
-              title="Contacter un admin"
-            >
-              <i className="fas fa-headset text-[0.75rem]"></i>
-            </button>
-          ) : undefined
-        }
       />
-      <div className="flex-1 flex flex-col w-full overflow-hidden">
-        {activeTicket && (
-          <div className="bg-[#FFFFFF] px-4 py-2 flex items-center gap-2 shrink-0 border-b border-[rgba(20,184,166,0.15)]">
-            <div className="w-7 h-7 rounded-full bg-[rgba(20,184,166,0.15)] flex items-center justify-center shrink-0">
-              <i className="fas fa-headset text-[#14B8A6] text-[0.55rem]"></i>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[0.7rem] font-bold text-[#818CF8]">Mode Administrateur</div>
-              <div className="text-[0.6rem] text-[rgba(0,0,0,0.55)] truncate">Raison : {esc(activeTicket.reason)}</div>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-[#6366F1]" style={{ animation: 'pulse 1.5s infinite' }} />
-              <span className="text-[0.55rem] text-[rgba(0,0,0,0.55)] font-medium">En attente</span>
-            </div>
-          </div>
-        )}
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0 px-4 py-3 space-y-3 bg-[#F8F9FA]">
+      <div className="flex-1 flex flex-col w-full overflow-hidden" style={{ background: 'linear-gradient(180deg, #F0FDF4 0%, #F8F9FA 15%, #F8F9FA 100%)' }}>
+        {/* Chat Messages Area */}
+        <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0 px-4 py-4 space-y-1">
           {loading && messages.length === 0 && (
-            <div className="text-center py-8">
-              <div className="w-8 h-8 border-2 border-[rgba(0,0,0,0.08)] border-t-[#6366F1] rounded-full mx-auto mb-3" style={{ animation: 'spin 0.7s linear infinite' }} />
-              <p className="text-[0.75rem] text-[rgba(0,0,0,0.55)]">Chargement...</p>
+            <div className="text-center py-12">
+              <div className="w-10 h-10 rounded-2xl bg-[rgba(34,197,94,0.1)] flex items-center justify-center mx-auto mb-3">
+                <div className="w-5 h-5 border-2 border-[rgba(34,197,94,0.2)] border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
+              </div>
+              <p className="text-[0.75rem] text-[rgba(0,0,0,0.45)]">Chargement des messages...</p>
             </div>
           )}
 
-          {!loading && messages.length === 0 && !activeTicket && (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 rounded-2xl bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] flex items-center justify-center mx-auto mb-4">
-                <i className="fas fa-robot text-[#14B8A6] text-[1.5rem]"></i>
+          {!loading && messages.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-10">
+              {/* Welcome Card */}
+              <div className="w-full max-w-[300px] bg-white rounded-2xl p-5 shadow-sm border border-[rgba(0,0,0,0.06)] text-center mb-4">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#22C55E] to-[#16A34A] flex items-center justify-center mx-auto mb-3 shadow-lg" style={{ boxShadow: '0 8px 24px rgba(34,197,94,0.25)' }}>
+                  <i className="fas fa-comments text-white text-[1.5rem]"></i>
+                </div>
+                <h3 className="text-[1.05rem] font-black text-[#1F2937] mb-1">Chat Support</h3>
+                <p className="text-[0.72rem] text-[rgba(0,0,0,0.5)] leading-relaxed mb-4">
+                  Besoin d&apos;aide ? Écrivez-nous et un administrateur vous répondra rapidement.
+                </p>
+                <div className="flex items-center justify-center gap-2 text-[0.65rem] text-[rgba(0,0,0,0.4)]">
+                  <i className="fas fa-shield-alt text-[#22C55E]"></i>
+                  <span>Vos conversations sont sécurisées</span>
+                </div>
               </div>
-              <h3 className="text-[1rem] font-bold text-[#1F2937] mb-1">Assistant Be Rich</h3>
-              <p className="text-[0.75rem] text-[rgba(0,0,0,0.55)] mb-5">Posez-moi une question sur la plateforme !</p>
-              <div className="space-y-2 max-w-[280px] mx-auto">
-                {QUICK_QUESTIONS.map((q, i) => (
-                  <button key={i} onClick={() => handleSend(q)} className="w-full py-2.5 px-4 rounded-xl bg-[#F3F4F6] text-[0.72rem] text-[#1F2937] font-medium border border-[rgba(0,0,0,0.08)] cursor-pointer text-left hover:bg-[rgba(99,102,241,0.1)] hover:border-[rgba(99,102,241,0.2)] transition-all">
-                    <i className="fas fa-comment-dots text-[#14B8A6] mr-2 text-[0.65rem]"></i>{q}
+
+              {/* Quick Replies */}
+              <div className="w-full max-w-[300px] space-y-2">
+                {QUICK_REPLIES.map((qr, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleSend(qr.text)}
+                    className="w-full flex items-center gap-3 py-3 px-4 rounded-xl bg-white border border-[rgba(0,0,0,0.06)] cursor-pointer transition-all hover:border-[rgba(34,197,94,0.3)] hover:shadow-sm active:scale-[0.98] text-left"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-[rgba(34,197,94,0.08)] flex items-center justify-center shrink-0">
+                      <i className={`fas ${qr.icon} text-[0.7rem] text-[#22C55E]`}></i>
+                    </div>
+                    <span className="text-[0.78rem] font-medium text-[#1F2937]">{qr.text}</span>
                   </button>
                 ))}
               </div>
-              <div className="mt-6 pt-4 border-t border-[rgba(0,0,0,0.08)]">
-                <button
-                  onClick={() => setShowEscalateModal(true)}
-                  className="py-2.5 px-5 rounded-xl bg-[rgba(20,184,166,0.12)] text-[0.72rem] text-[#14B8A6] font-semibold border border-[rgba(20,184,166,0.15)] cursor-pointer hover:bg-[rgba(20,184,166,0.18)] transition-all"
-                >
-                  <i className="fas fa-headset mr-1.5"></i>Parler à un administrateur
-                </button>
-              </div>
             </div>
           )}
 
-          {messages.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.me ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[80%] ${msg.me ? 'order-2' : 'order-1'}`}>
-                {!msg.me && (
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                      msg.isAdminMsg
-                        ? 'bg-[rgba(99,102,241,0.15)]'
-                        : 'bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)]'
-                    }`}>
-                      <i className={`fas ${msg.isAdminMsg ? 'fa-headset text-[#6366F1]' : 'fa-robot text-[#14B8A6]'} text-[0.45rem]`}></i>
-                    </div>
-                    <span className="text-[0.6rem] font-semibold text-[rgba(0,0,0,0.35)]">
-                      {msg.isAdminMsg ? 'Admin Be Rich' : 'Be Rich IA'}
-                    </span>
+          {groupedMessages.map((group, gi) => (
+            <div key={gi}>
+              {/* Date Separator */}
+              {group.date && messages.length > 1 && (
+                <div className="flex items-center justify-center my-3">
+                  <div className="bg-white/80 backdrop-blur-sm border border-[rgba(0,0,0,0.06)] rounded-full px-3 py-1">
+                    <span className="text-[0.6rem] font-semibold text-[rgba(0,0,0,0.35)] uppercase tracking-[0.5px]">{group.date}</span>
                   </div>
-                )}
-                <div className={`rounded-2xl px-4 py-2.5 ${
-                  msg.me
-                    ? 'bg-[#6366F1] text-[#050506] rounded-br-md'
-                    : msg.isAdminMsg
-                      ? 'bg-[rgba(99,102,241,0.15)] text-[#818CF8] border border-[rgba(99,102,241,0.2)] rounded-bl-md'
-                      : 'bg-[rgba(20,184,166,0.08)] text-[#1F2937] border border-[rgba(20,184,166,0.15)] rounded-bl-md'
-                }`}>
-                  <p className="text-[0.78rem] leading-relaxed whitespace-pre-wrap">{esc(msg.text)}</p>
                 </div>
-                <div className={`text-[0.55rem] text-[rgba(0,0,0,0.25)] mt-0.5 ${msg.me ? 'text-right' : 'text-left'}`}>{msg.t}</div>
-              </div>
+              )}
+
+              {group.msgs.map((msg, mi) => {
+                const isFirstInGroup = mi === 0 || group.msgs[mi - 1]?.me !== msg.me;
+                const isLastInGroup = mi === group.msgs.length - 1 || group.msgs[mi + 1]?.me !== msg.me;
+
+                return (
+                  <div key={msg.id} className={`flex ${msg.me ? 'justify-end' : 'justify-start'} ${isFirstInGroup ? 'mt-2' : 'mt-0.5'}`}>
+                    <div className={`max-w-[78%] ${msg.me ? 'order-2' : 'order-1'}`}>
+                      {/* Admin Avatar for first message */}
+                      {!msg.me && isFirstInGroup && (
+                        <div className="flex items-center gap-2 mb-1 ml-1">
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#22C55E] to-[#16A34A] flex items-center justify-center shadow-sm">
+                            <i className="fas fa-headset text-white text-[0.4rem]"></i>
+                          </div>
+                          <span className="text-[0.6rem] font-bold text-[rgba(0,0,0,0.4)]">Admin Be Rich</span>
+                        </div>
+                      )}
+
+                      {/* Message Bubble */}
+                      <div className={`${
+                        msg.me
+                          ? `bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white ${isLastInGroup ? 'rounded-2xl rounded-br-md' : 'rounded-2xl'}`
+                          : `bg-white border border-[rgba(0,0,0,0.06)] text-[#1F2937] ${isLastInGroup ? 'rounded-2xl rounded-bl-md' : 'rounded-2xl'} shadow-sm`
+                      } px-3.5 py-2.5`}>
+                        <p className="text-[0.8rem] leading-relaxed whitespace-pre-wrap break-words">{esc(msg.text)}</p>
+                      </div>
+
+                      {/* Timestamp for last message in group */}
+                      {isLastInGroup && (
+                        <div className={`flex items-center gap-1 mt-0.5 ${msg.me ? 'justify-end mr-1' : 'justify-start ml-1'}`}>
+                          <span className="text-[0.5rem] text-[rgba(0,0,0,0.25)]">{msg.t}</span>
+                          {msg.me && (
+                            <i className="fas fa-check-double text-[0.45rem] text-[rgba(34,197,94,0.6)]"></i>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ))}
 
+          {/* Sending indicator */}
           {sending && (
-            <div className="flex justify-start">
-              <div className="max-w-[80%]">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <div className="w-5 h-5 rounded-full bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] flex items-center justify-center">
-                    <i className="fas fa-robot text-[#14B8A6] text-[0.45rem]"></i>
-                  </div>
-                  <span className="text-[0.6rem] font-semibold text-[rgba(0,0,0,0.35)]">Be Rich IA</span>
-                </div>
-                <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl rounded-bl-md px-4 py-3">
+            <div className="flex justify-end mt-2">
+              <div className="max-w-[78%]">
+                <div className="bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white rounded-2xl rounded-br-md px-3.5 py-2.5 opacity-60">
                   <div className="flex items-center gap-1.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#14B8A6]" style={{ animation: 'pulse 1s infinite' }} />
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#14B8A6]" style={{ animation: 'pulse 1s infinite 0.2s' }} />
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#14B8A6]" style={{ animation: 'pulse 1s infinite 0.4s' }} />
+                    <div className="w-1 h-1 rounded-full bg-white" style={{ animation: 'pulse 0.8s infinite' }} />
+                    <div className="w-1 h-1 rounded-full bg-white" style={{ animation: 'pulse 0.8s infinite 0.2s' }} />
+                    <div className="w-1 h-1 rounded-full bg-white" style={{ animation: 'pulse 0.8s infinite 0.4s' }} />
                   </div>
                 </div>
               </div>
@@ -310,121 +273,45 @@ export default function ChatScreen() {
           )}
         </div>
 
-        {messages.length > 0 && messages.length <= 2 && !activeTicket && (
-          <div className="px-4 py-2 flex gap-1.5 overflow-x-auto shrink-0 bg-[#F8F9FA]">
-            {QUICK_QUESTIONS.slice(0, 3).map((q, i) => (
-              <button key={i} onClick={() => handleSend(q)} className="whitespace-nowrap py-1.5 px-3 rounded-full bg-[#F3F4F6] text-[0.65rem] text-[#1F2937] font-medium border border-[rgba(0,0,0,0.08)] cursor-pointer hover:bg-[rgba(99,102,241,0.1)] transition-all shrink-0">
-                {q}
+        {/* Quick Replies Bar (when there are some messages but few) */}
+        {showQuickReplies && messages.length > 0 && messages.length <= 4 && (
+          <div className="px-4 py-2 flex gap-1.5 overflow-x-auto shrink-0" style={{ scrollbarWidth: 'none' }}>
+            {QUICK_REPLIES.map((qr, i) => (
+              <button
+                key={i}
+                onClick={() => handleSend(qr.text)}
+                className="whitespace-nowrap py-2 px-3.5 rounded-full bg-white border border-[rgba(34,197,94,0.15)] text-[0.68rem] text-[#1F2937] font-medium cursor-pointer hover:bg-[rgba(34,197,94,0.06)] transition-all shrink-0 shadow-sm active:scale-95"
+              >
+                {qr.text}
               </button>
             ))}
           </div>
         )}
 
-        {messages.length > 2 && !activeTicket && (
-          <div className="px-4 py-1.5 shrink-0 bg-[#F8F9FA]">
-            <button
-              onClick={() => setShowEscalateModal(true)}
-              className="w-full py-2 rounded-xl bg-[rgba(20,184,166,0.12)] text-[0.68rem] text-[#14B8A6] font-semibold border border-[rgba(20,184,166,0.15)] cursor-pointer hover:bg-[rgba(20,184,166,0.18)] transition-all flex items-center justify-center gap-1.5"
-            >
-              <i className="fas fa-headset text-[0.6rem]"></i>
-              Besoin d&apos;aide ? Contacter un administrateur
-            </button>
+        {/* Input Bar — Modern messaging style */}
+        <div className="px-3 py-2.5 bg-white border-t border-[rgba(0,0,0,0.06)] flex items-end gap-2 shrink-0" style={{ paddingBottom: 'max(10px, env(safe-area-inset-bottom))' }}>
+          <div className="flex-1 relative">
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              placeholder="Écrire un message..."
+              className="w-full py-3 px-4 bg-[#F3F4F6] border-[1.5px] border-[rgba(0,0,0,0.06)] rounded-2xl text-[0.85rem] outline-none focus:border-[#22C55E] focus:bg-white text-gray-900 placeholder:text-[rgba(0,0,0,0.3)] transition-all"
+              disabled={sending}
+            />
           </div>
-        )}
-
-        <div className="px-3 py-2.5 bg-[#FFFFFF] border-t border-[rgba(0,0,0,0.08)] flex items-center gap-2 shrink-0">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-            placeholder={activeTicket ? "Écrire à l'administrateur..." : "Posez votre question..."}
-            className="flex-1 py-2.5 px-4 bg-[#F3F4F6] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.85rem] outline-none focus:border-[#6366F1] text-gray-900 placeholder:text-[rgba(0,0,0,0.3)]"
-            disabled={sending}
-          />
           <button
             onClick={() => handleSend()}
             disabled={sending || !input.trim()}
-            className="w-10 h-10 rounded-xl bg-[#6366F1] text-[#050506] flex items-center justify-center border-none cursor-pointer disabled:opacity-40 shrink-0 transition-transform active:scale-90"
+            className="w-11 h-11 rounded-2xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white flex items-center justify-center border-none cursor-pointer disabled:opacity-30 shrink-0 transition-all active:scale-90 shadow-md"
+            style={{ boxShadow: input.trim() ? '0 4px 12px rgba(34,197,94,0.35)' : 'none' }}
           >
-            <i className="fas fa-paper-plane text-[0.8rem]"></i>
+            <i className="fas fa-paper-plane text-[0.85rem]" style={{ transform: 'translateX(1px)' }}></i>
           </button>
         </div>
       </div>
-
-      {showEscalateModal && (
-        <div className="fixed inset-0 bg-[rgba(0,0,0,0.3)] backdrop-blur-sm z-[6000] flex items-end sm:items-center justify-center" onClick={() => setShowEscalateModal(false)}>
-          <div
-            className="bg-[#FFFFFF] rounded-t-2xl sm:rounded-2xl p-5 w-full max-w-[420px] border border-[rgba(0,0,0,0.08)]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-[rgba(20,184,166,0.12)] flex items-center justify-center">
-                <i className="fas fa-headset text-[#14B8A6] text-[1rem]"></i>
-              </div>
-              <div>
-                <h3 className="text-[1rem] font-bold text-[#1F2937]">Contacter un administrateur</h3>
-                <p className="text-[0.7rem] text-[rgba(0,0,0,0.55)]">Pour les problèmes complexes nécessitant un humain</p>
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <label className="block mb-2 text-[0.75rem] font-semibold text-[rgba(0,0,0,0.55)]">Raison du transfert</label>
-              <div className="grid grid-cols-2 gap-2">
-                {ESCALATE_REASONS.map((r) => (
-                  <button
-                    key={r.value}
-                    onClick={() => setEscalateReason(r.value)}
-                    className={`py-2.5 px-3 rounded-xl text-[0.7rem] font-medium border cursor-pointer transition-all text-left flex items-center gap-2 ${
-                      escalateReason === r.value
-                        ? 'bg-[rgba(20,184,166,0.15)] border-[#14B8A6] text-[#14B8A6]'
-                        : 'bg-[#F3F4F6] border-[rgba(0,0,0,0.08)] text-[#1F2937] hover:border-[rgba(20,184,166,0.3)]'
-                    }`}
-                  >
-                    <i className={`fas ${r.icon} text-[0.6rem]`} style={{ color: r.color }}></i>
-                    {r.value}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {escalateReason === 'Autre' && (
-              <div className="mb-4">
-                <textarea
-                  value={customReason}
-                  onChange={(e) => setCustomReason(e.target.value)}
-                  placeholder="Décrivez votre problème..."
-                  className="w-full py-2.5 px-4 bg-[#F3F4F6] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.82rem] outline-none focus:border-[#14B8A6] resize-none text-gray-900 placeholder:text-[rgba(0,0,0,0.3)]"
-                  rows={3}
-                />
-              </div>
-            )}
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => { setShowEscalateModal(false); setEscalateReason(''); setCustomReason(''); }}
-                className="flex-1 py-3 rounded-xl border-[1.5px] border-[rgba(0,0,0,0.08)] bg-transparent text-[rgba(0,0,0,0.55)] font-semibold text-[0.82rem] cursor-pointer transition-transform active:scale-95"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleEscalate}
-                disabled={escalating || (!escalateReason || (escalateReason === 'Autre' && !customReason.trim()))}
-                className="flex-1 py-3 rounded-xl bg-[#6366F1] text-[#050506] font-bold text-[0.82rem] cursor-pointer transition-transform active:scale-95 disabled:opacity-40 border-none"
-              >
-                {escalating ? (
-                  <span className="flex items-center justify-center gap-1.5">
-                    <div className="w-3 h-3 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
-                    Transfert...
-                  </span>
-                ) : (
-                  <span><i className="fas fa-headset mr-1.5"></i>Transférer</span>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }
