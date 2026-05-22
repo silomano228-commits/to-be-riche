@@ -22,7 +22,17 @@ function createPrismaClient(): PrismaClient {
       })
       const adapter = new PrismaLibSQL(libsql)
       console.log('✅ Connected to Turso database')
-      return new PrismaClient({ adapter, log: ['error', 'warn'] })
+      // When using adapter, Prisma doesn't use DATABASE_URL for queries
+      // but still needs a valid URL format for internal validation
+      return new PrismaClient({
+        adapter,
+        log: ['error', 'warn'],
+        datasources: {
+          db: {
+            url: process.env.DATABASE_URL || 'file:./db/local.db',
+          },
+        },
+      })
     } catch (e) {
       console.error('❌ Turso connection failed, falling back to local SQLite:', e)
     }
