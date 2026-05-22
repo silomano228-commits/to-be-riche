@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
     '@prisma/adapter-libsql',
     '@libsql/client',
   ],
+  env: {
+    DATABASE_URL: process.env.DATABASE_URL || 'file:./db/local.db',
+  },
 };
 
 export default nextConfig;
