@@ -1,13 +1,33 @@
 import { PrismaClient } from '@prisma/client'
+import { PrismaLibSQL } from '@prisma/adapter-libsql'
+import { createClient } from '@libsql/client'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-export const db =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+function createPrismaClient() {
+  const databaseUrl = process.env.DATABASE_URL || ''
+  
+  // Check if using Turso (libsql:// protocol)
+  if (databaseUrl.startsWith('libsql://') || databaseUrl.startsWith('https://')) {
+    const libsql = createClient({
+      url: databaseUrl,
+      authToken: process.env.DATABASE_AUTH_TOKEN || '',
+    })
+    const adapter = new PrismaLibSQL(libsql)
+    return new PrismaClient({
+      adapter,
+      log: ['error', 'warn'],
+    })
+  }
+  
+  // Fallback to local SQLite for development
+  return new PrismaClient({
     log: ['error', 'warn'],
   })
+}
+
+export const db = globalForPrisma.prisma ?? createPrismaClient()
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
