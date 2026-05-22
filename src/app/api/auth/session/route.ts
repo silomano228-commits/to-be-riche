@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     const adminExists = await db.user.findUnique({ where: { email: 'admin@berich.com' } });
     if (!adminExists) {
       await db.user.create({
-        data: { email: 'admin@berich.com', name: 'Admin', password: 'Admin@2024', role: 'admin', referralCode: 'BR-ADMIN' },
+        data: { email: 'admin@berich.com', name: 'Admin', password: 'Admin@2024', role: 'admin', referralCode: 'BR-ADMIN', emailVerified: true },
       });
     }
 

@@ -9,7 +9,7 @@ export async function POST(request: Request) {
 
     if (action === 'send') {
       // Send OTP to user's email after successful password check
-      const { email } = body;
+      const { email, purpose } = body;
       if (!email) {
         return NextResponse.json({ success: false, error: 'Email requis' });
       }
@@ -19,7 +19,8 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, error: 'Utilisateur non trouvé' });
       }
 
-      const result = await initiateOtp(email, user.name, 'login', 5);
+      const otpPurpose = purpose || 'login';
+      const result = await initiateOtp(email, user.name, otpPurpose as 'login' | 'password_reset' | 'email_verification', 5);
 
       if (!result.sent) {
         return NextResponse.json({ success: false, error: result.error || 'Erreur envoi email' });
@@ -34,14 +35,23 @@ export async function POST(request: Request) {
 
     if (action === 'verify') {
       // Verify the OTP code
-      const { email, code } = body;
+      const { email, code, purpose } = body;
       if (!email || !code) {
         return NextResponse.json({ success: false, error: 'Email et code requis' });
       }
 
-      const result = await verifyOtp(email, code, 'login');
+      const otpPurpose = purpose || 'login';
+      const result = await verifyOtp(email, code, otpPurpose);
       if (!result.valid) {
         return NextResponse.json({ success: false, error: result.error || 'Code invalide' });
+      }
+
+      // For email_verification purpose: mark email as verified and log the user in
+      if (otpPurpose === 'email_verification') {
+        await db.user.update({
+          where: { email },
+          data: { emailVerified: true },
+        });
       }
 
       // OTP is valid - return user data for login completion

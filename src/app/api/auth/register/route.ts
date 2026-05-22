@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { initiateOtp } from '@/lib/auth';
 
 function generateReferralCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -53,8 +54,9 @@ export async function POST(request: Request) {
 
     const referralCode = await getUniqueReferralCode();
 
+    // Create user with emailVerified = false — must verify email via OTP
     const user = await db.user.create({
-      data: { email, name, password, role: 'user', referralCode, referredByCode },
+      data: { email, name, password, role: 'user', referralCode, referredByCode, emailVerified: false },
     });
 
     // If referred, increment the referrer's referral count
@@ -65,22 +67,16 @@ export async function POST(request: Request) {
       });
     }
 
-    const { password: _, ...safeUser } = user;
+    // Send OTP for email verification
+    const otpResult = await initiateOtp(email, name, 'email_verification', 5);
 
-    const response = NextResponse.json({
+    return NextResponse.json({
       success: true,
-      user: { ...safeUser, transactions: [], project: null },
+      requires_verification: true,
+      email,
+      message: 'Vérifiez votre email pour activer votre compte',
+      plain_code: otpResult.plain_code, // only set in simulation mode
     });
-
-    // Set cookie on the response object (reliable method)
-    response.cookies.set('br_token', user.id, {
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7,
-      httpOnly: false,
-      sameSite: 'lax',
-    });
-
-    return response;
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
   }

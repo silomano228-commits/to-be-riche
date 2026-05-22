@@ -130,7 +130,7 @@ export default function EnterpriseScreen() {
                       isFinished ? 'bg-[rgba(74,222,128,0.1)] text-[#4ADE80]' :
                       'bg-[rgba(0,0,0,0.05)] text-[rgba(0,0,0,0.6)]'
                     }`}>
-                      {isClaimable ? '✅ Réclamer' : isFinished ? 'Terminé' : 'En cours'}
+                      {isClaimable ? 'Réclamer' : isFinished ? 'Terminé' : 'En cours'}
                     </span>
                   </div>
                   <div className="w-full h-2 bg-[rgba(0,0,0,0.08)] rounded-full mb-2 overflow-hidden">

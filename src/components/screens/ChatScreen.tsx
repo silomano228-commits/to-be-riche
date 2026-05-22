@@ -16,7 +16,7 @@ interface ChatMsg {
 }
 
 const QUICK_REPLIES = [
-  { text: "Bonjour ! 👋", icon: 'fa-hand-wave' },
+  { text: "Bonjour !", icon: 'fa-hand-wave' },
   { text: "J'ai un problème de dépôt", icon: 'fa-wallet' },
   { text: "Question sur mon compte", icon: 'fa-user-circle' },
   { text: "Problème de retrait", icon: 'fa-arrow-up' },

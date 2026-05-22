@@ -24,6 +24,7 @@ export async function POST() {
           password: 'Admin@2024',
           role: 'admin',
           referralCode: 'BR-ADMIN',
+          emailVerified: true,
         },
       });
       results.push('Admin created');
@@ -43,6 +44,7 @@ export async function POST() {
           role: 'user',
           referralCode: testReferral,
           referredByCode: 'BR-ADMIN',
+          emailVerified: true,
         },
       });
       // Increment admin's referral count

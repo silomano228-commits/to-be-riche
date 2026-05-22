@@ -51,6 +51,8 @@ function AuthScreen() {
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [simCode, setSimCode] = useState('');
+  const [otpPurpose, setOtpPurpose] = useState<'login' | 'email_verification'>('login');
+  const [otpUserName, setOtpUserName] = useState('');
 
   if (user) return null;
 
@@ -64,12 +66,13 @@ function AuthScreen() {
       const res = await fetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }), headers: { 'Content-Type': 'application/json' } });
       const data = await res.json();
       if (data.success && data.requires_otp) {
-        // Password correct — send OTP
+        // Password correct — send OTP for login
         setOtpEmail(email);
+        setOtpPurpose('login');
         setOtpStep(true);
         setOtpLoading(true);
         try {
-          const otpRes = await fetch('/api/auth/otp', { method: 'POST', body: JSON.stringify({ action: 'send', email }), headers: { 'Content-Type': 'application/json' } });
+          const otpRes = await fetch('/api/auth/otp', { method: 'POST', body: JSON.stringify({ action: 'send', email, purpose: 'login' }), headers: { 'Content-Type': 'application/json' } });
           const otpData = await otpRes.json();
           if (otpData.success) {
             setOtpSent(true);
@@ -101,10 +104,12 @@ function AuthScreen() {
     if (!otpCode || otpCode.length < 6) { addToast('Entrez le code à 6 chiffres', 'error'); return; }
     setOtpLoading(true);
     try {
-      const res = await fetch('/api/auth/otp', { method: 'POST', body: JSON.stringify({ action: 'verify', email: otpEmail, code: otpCode }), headers: { 'Content-Type': 'application/json' } });
+      const res = await fetch('/api/auth/otp', { method: 'POST', body: JSON.stringify({ action: 'verify', email: otpEmail, code: otpCode, purpose: otpPurpose }), headers: { 'Content-Type': 'application/json' } });
       const data = await res.json();
       if (data.success && data.user) {
-        setUser(data.user); addToast('Bienvenue, ' + data.user.name, 'success'); setPage('home');
+        setUser(data.user);
+        addToast(otpPurpose === 'email_verification' ? 'Email vérifié ! Bienvenue, ' + data.user.name : 'Bienvenue, ' + data.user.name, 'success');
+        setPage('home');
       } else {
         addToast(data.error || 'Code invalide', 'error');
       }
@@ -115,7 +120,7 @@ function AuthScreen() {
   const handleResendOtp = async () => {
     setOtpLoading(true);
     try {
-      const res = await fetch('/api/auth/otp', { method: 'POST', body: JSON.stringify({ action: 'send', email: otpEmail }), headers: { 'Content-Type': 'application/json' } });
+      const res = await fetch('/api/auth/otp', { method: 'POST', body: JSON.stringify({ action: 'send', email: otpEmail, purpose: otpPurpose }), headers: { 'Content-Type': 'application/json' } });
       const data = await res.json();
       if (data.success) {
         if (data.plain_code) {
@@ -147,7 +152,22 @@ function AuthScreen() {
     try {
       const res = await fetch('/api/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password, password2, referralCode }), headers: { 'Content-Type': 'application/json' } });
       const data = await res.json();
-      if (data.success) { setUser(data.user); addToast('Compte créé !', 'success'); setPage('home'); }
+      if (data.success && data.requires_verification) {
+        // Account created — must verify email via OTP
+        setOtpEmail(email);
+        setOtpUserName(name);
+        setOtpPurpose('email_verification');
+        setOtpStep(true);
+        setOtpSent(true);
+        if (data.plain_code) {
+          setSimCode(data.plain_code);
+          addToast('Mode simulation - Code: ' + data.plain_code, 'info');
+        } else {
+          addToast('Code de vérification envoyé à ' + email, 'success');
+        }
+      } else if (data.success) {
+        setUser(data.user); addToast('Compte créé !', 'success'); setPage('home');
+      }
       else { addToast(data.error, 'error'); }
     } catch { addToast('Erreur réseau', 'error'); }
     setLoading(false);
@@ -170,9 +190,12 @@ function AuthScreen() {
             <div className="w-14 h-14 mx-auto rounded-full bg-[rgba(34,197,94,0.1)] flex items-center justify-center mb-4 mt-4">
               <i className="fas fa-shield-alt text-[#22C55E] text-[1.3rem]"></i>
             </div>
-            <h2 className="text-[1rem] font-bold text-[#1F2937] mb-1">Vérification OTP</h2>
+            <h2 className="text-[1rem] font-bold text-[#1F2937] mb-1">{otpPurpose === 'email_verification' ? 'Vérification email' : 'Vérification OTP'}</h2>
             <p className="text-[rgba(0,0,0,0.45)] text-[0.72rem] mb-5">
-              Un code a été envoyé à <strong className="text-[#1F2937]">{otpEmail}</strong>
+              {otpPurpose === 'email_verification'
+                ? <>Un code a été envoyé à <strong className="text-[#1F2937]">{otpEmail}</strong> pour vérifier votre adresse email</>
+                : <>Un code a été envoyé à <strong className="text-[#1F2937]">{otpEmail}</strong></>
+              }
             </p>
 
             {/* Simulation mode code display */}
@@ -243,7 +266,7 @@ function AuthScreen() {
             </button>
 
             <button
-              onClick={() => { setOtpStep(false); setOtpCode(''); setSimCode(''); setOtpSent(false); }}
+              onClick={() => { setOtpStep(false); setOtpCode(''); setSimCode(''); setOtpSent(false); setOtpPurpose('login'); }}
               className="text-[0.75rem] text-[rgba(0,0,0,0.4)] cursor-pointer bg-transparent border-none font-medium"
             >
               <i className="fas fa-arrow-left mr-1"></i>Retour

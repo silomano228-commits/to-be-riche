@@ -74,6 +74,7 @@ export async function seedAdmin() {
         name: 'Admin',
         password: 'Admin@2024',
         role: 'admin',
+        emailVerified: true,
       },
     });
   }

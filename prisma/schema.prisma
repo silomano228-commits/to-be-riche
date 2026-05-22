@@ -18,6 +18,7 @@ model User {
   projectBalance  Float         @default(0)
   hasInvested     Boolean       @default(false)
   role            String        @default("user")
+  emailVerified   Boolean       @default(false)
   depositCount    Int           @default(0)
   firstDepositAt  DateTime?
   lastClaimAt     DateTime?
