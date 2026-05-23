@@ -6,7 +6,7 @@ import { Header } from '@/components/shared';
 
 type DepositMethod = 'choose' | 'trx' | 'yas';
 type TrxStep = 'amount' | 'address' | 'success';
-type YasStep = 'amount' | 'guide' | 'wallet' | 'success';
+type YasStep = 'amount' | 'guide' | 'info' | 'confirm' | 'success';
 
 // Yas number validation
 function validateYasAccount(account: string): string | null {
@@ -48,6 +48,7 @@ export default function DepositScreen() {
   const [cfaUsdRate, setCfaUsdRate] = useState(600);
   const [adminYasAccount, setAdminYasAccount] = useState('');
   const [yasCopied, setYasCopied] = useState(false);
+  const [yasSyntaxCopied, setYasSyntaxCopied] = useState(false);
 
   // Unified pending deposit — tracks ANY pending deposit from either table
   const [activePending, setActivePending] = useState<ActivePendingDeposit | null>(null);
@@ -628,6 +629,10 @@ export default function DepositScreen() {
   // ===================== YAS DU TOGO FLOW =====================
   if (method === 'yas') {
     const yasAccountError = yasAccount ? validateYasAccount(yasAccount) : null;
+    // Build the complete Yas transfer syntax
+    const yasTransferSyntax = adminYasAccount && yasAmountCfa >= 6000
+      ? `*145*1${Math.round(yasAmountCfa)}*${adminYasAccount}*2#`
+      : '';
 
     return (
       <>
@@ -644,21 +649,22 @@ export default function DepositScreen() {
                 {[
                   { s: 'amount', label: '1' },
                   { s: 'guide', label: '2' },
-                  { s: 'wallet', label: '3' },
-                  { s: 'success', label: '4' },
+                  { s: 'info', label: '3' },
+                  { s: 'confirm', label: '4' },
+                  { s: 'success', label: '5' },
                 ].map((st, i) => {
-                  const stepOrder: YasStep[] = ['amount', 'guide', 'wallet', 'success'];
+                  const stepOrder: YasStep[] = ['amount', 'guide', 'info', 'confirm', 'success'];
                   const currentIdx = stepOrder.indexOf(yasStep);
                   const thisIdx = stepOrder.indexOf(st.s as YasStep);
                   const isActive = yasStep === st.s;
                   const isDone = currentIdx > thisIdx;
                   return (
-                    <div key={st.s} className="flex items-center gap-2">
-                      {i > 0 && <div className={`w-6 h-[2px] rounded ${isDone ? 'bg-[#22C55E]' : 'bg-[rgba(0,0,0,0.06)]'}`} />}
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[0.7rem] font-bold ${
+                    <div key={st.s} className="flex items-center gap-1">
+                      {i > 0 && <div className={`w-4 h-[2px] rounded ${isDone ? 'bg-[#22C55E]' : 'bg-[rgba(0,0,0,0.06)]'}`} />}
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[0.6rem] font-bold ${
                         isActive ? 'bg-[#22C55E] text-[#050506]' : isDone ? 'bg-[#22C55E] text-[#050506]' : 'bg-[#F3F4F6] text-[rgba(0,0,0,0.35)]'
                       }`}>
-                        {isDone ? <i className="fas fa-check text-[0.6rem]" /> : st.label}
+                        {isDone ? <i className="fas fa-check text-[0.5rem]" /> : st.label}
                       </div>
                     </div>
                   );
@@ -775,7 +781,7 @@ export default function DepositScreen() {
                 </div>
               )}
 
-              {/* ===================== YAS STEP 2: GUIDE ===================== */}
+              {/* ===================== YAS STEP 2: GUIDE TRANSFERT YAS ===================== */}
               {yasStep === 'guide' && (
                 <div style={{ animation: 'tIn 0.3s ease-out' }}>
                   <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4 border border-[rgba(0,0,0,0.08)] relative overflow-hidden">
@@ -783,21 +789,20 @@ export default function DepositScreen() {
                     <div className="relative z-[1]">
                       <div className="flex items-center gap-2 mb-3">
                         <div className="w-10 h-10 rounded-xl bg-[rgba(34,197,94,0.12)] flex items-center justify-center border border-[rgba(34,197,94,0.15)]">
-                          <i className="fas fa-shield-alt text-[#22C55E] text-[0.9rem]"></i>
+                          <i className="fas fa-mobile-alt text-[#22C55E] text-[0.9rem]"></i>
                         </div>
                         <div>
-                          <h3 className="text-[0.95rem] font-bold text-[#1F2937]">Guide - Trust Wallet</h3>
-                          <p className="text-[0.65rem] text-[rgba(0,0,0,0.35)]">Suivez ces étapes avant de continuer</p>
+                          <h3 className="text-[0.95rem] font-bold text-[#1F2937]">Comment envoyer via Yas</h3>
+                          <p className="text-[0.65rem] text-[rgba(0,0,0,0.35)]">Suivez ces étapes pour transférer</p>
                         </div>
                       </div>
-
                       <ol className="space-y-2.5">
                         {[
-                          { icon: 'fa-download', text: 'Téléchargez Trust Wallet depuis le Play Store ou l\'App Store' },
-                          { icon: 'fa-user-plus', text: 'Créez votre wallet et sécurisez votre phrase de récupération' },
-                          { icon: 'fa-coins', text: 'Ajoutez la crypto TRX (Tron) à votre wallet' },
-                          { icon: 'fa-key', text: 'Copiez votre adresse TRX (commence par T...)' },
-                          { icon: 'fa-check-circle', text: 'Collez cette adresse TRX dans le formulaire suivant' },
+                          { icon: 'fa-phone', text: 'Ouvrez le clavier de votre téléphone' },
+                          { icon: 'fa-hashtag', text: 'Composez le code de transfert Yas' },
+                          { icon: 'fa-calculator', text: 'Entrez le montant que vous souhaitez envoyer' },
+                          { icon: 'fa-user', text: 'Entrez le numéro Yas du destinataire (celui de l\'admin)' },
+                          { icon: 'fa-check-double', text: 'Confirmez l\'envoi en tapant 2 puis #' },
                         ].map((step, i) => (
                           <li key={i} className="flex items-start gap-2.5">
                             <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 bg-[rgba(34,197,94,0.12)]">
@@ -810,65 +815,55 @@ export default function DepositScreen() {
                     </div>
                   </div>
 
+                  {/* Syntax preview */}
+                  <div className="bg-[#FFFFFF] rounded-2xl p-4 mb-4 border border-[rgba(0,0,0,0.08)]">
+                    <h4 className="text-[0.82rem] font-bold text-[#1F2937] mb-2">
+                      <i className="fas fa-code mr-1 text-[#22C55E]"></i> Format du code
+                    </h4>
+                    <div className="bg-[#F3F4F6] rounded-xl p-3 border border-[rgba(0,0,0,0.08)]">
+                      <div className="text-[0.78rem] font-mono font-bold text-[#22C55E] text-center tracking-wide">
+                        *145*1(montant)*{adminYasAccount || 'XXXXXXXX'}*2#
+                      </div>
+                    </div>
+                    <p className="text-[0.65rem] text-[rgba(0,0,0,0.45)] mt-2 text-center">
+                      Remplacez (montant) par le montant en FCFA que vous souhaitez envoyer
+                    </p>
+                  </div>
+
                   <div className="bg-[#FFFFFF] rounded-xl p-3.5 mb-4 border-l-[3px] border-l-[#22C55E] border-r border-r-[rgba(0,0,0,0.08)] border-t border-t-[rgba(0,0,0,0.08)] border-b border-b-[rgba(0,0,0,0.08)]">
                     <div className="flex items-start gap-2">
                       <i className="fas fa-exclamation-triangle text-[#22C55E] text-[0.8rem] mt-0.5"></i>
                       <div>
                         <h4 className="text-[0.78rem] font-bold text-[#1F2937] mb-1">Important</h4>
                         <p className="text-[0.68rem] text-[rgba(0,0,0,0.55)] leading-relaxed">
-                          L&apos;administrateur convertira votre argent Yas du Togo et vous enverra les TRX sur votre adresse Trust Wallet.
-                          Vous devrez attendre que l&apos;admin traite votre demande.
+                          Après l&apos;envoi, l&apos;administrateur convertira votre argent et vous enverra les TRX sur votre adresse Trust Wallet.
                         </p>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => setYasStep('amount')}
-                      className="flex-1 py-3.5 rounded-xl bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] font-semibold text-[0.82rem] cursor-pointer border-none"
-                    >
+                    <button onClick={() => setYasStep('amount')} className="flex-1 py-3.5 rounded-xl bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] font-semibold text-[0.82rem] cursor-pointer border-none">
                       <i className="fas fa-arrow-left mr-1"></i> Retour
                     </button>
-                    <button
-                      onClick={() => setYasStep('wallet')}
-                      className="flex-[2] py-3.5 rounded-xl bg-[#22C55E] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer"
-                    >
+                    <button onClick={() => setYasStep('info')} className="flex-[2] py-3.5 rounded-xl bg-[#22C55E] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer">
                       J&apos;ai compris, continuer <i className="fas fa-arrow-right ml-2"></i>
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* ===================== YAS STEP 3: YAS ACCOUNT + TRX ADDRESS ===================== */}
-              {yasStep === 'wallet' && (
+              {/* ===================== YAS STEP 3: NUMÉRO YAS + ADRESSE TRX ===================== */}
+              {yasStep === 'info' && (
                 <div style={{ animation: 'tIn 0.3s ease-out' }}>
-                  <div className="bg-[#FFFFFF] rounded-2xl p-4 mb-4 border border-[rgba(0,0,0,0.08)]">
-                    <h4 className="text-[0.82rem] font-bold text-[#1F2937] mb-2">Récapitulatif</h4>
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Montant CFA</span>
-                        <span className="text-[0.88rem] font-bold text-[#1F2937]">{Math.round(yasAmountCfa).toLocaleString('fr-FR')} FCFA</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Équivalent USD</span>
-                        <span className="text-[0.88rem] font-bold text-[#4ADE80]">{yasAmountUsd.toFixed(2)} $</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">TRX à recevoir</span>
-                        <span className="text-[0.88rem] font-bold text-[#22C55E]">{yasAmountTrx.toFixed(2)} TRX</span>
-                      </div>
-                    </div>
-                  </div>
-
                   <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4 border border-[rgba(0,0,0,0.08)]">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-9 h-9 rounded-xl bg-[rgba(34,197,94,0.12)] flex items-center justify-center shrink-0">
                         <i className="fas fa-phone text-[#22C55E] text-[0.8rem]"></i>
                       </div>
                       <div>
-                        <h3 className="text-[0.95rem] font-bold text-[#1F2937]">Numéro Yas du Togo</h3>
-                        <p className="text-[0.68rem] text-[rgba(0,0,0,0.55)]">8 chiffres, commence par 90-93 ou 70-73</p>
+                        <h3 className="text-[0.95rem] font-bold text-[#1F2937]">Votre numéro Yas</h3>
+                        <p className="text-[0.68rem] text-[rgba(0,0,0,0.55)]">Le numéro depuis lequel vous allez envoyer l&apos;argent</p>
                       </div>
                     </div>
                     <input
@@ -905,7 +900,7 @@ export default function DepositScreen() {
                       </div>
                       <div>
                         <h3 className="text-[0.95rem] font-bold text-[#1F2937]">Adresse TRX Trust Wallet</h3>
-                        <p className="text-[0.68rem] text-[rgba(0,0,0,0.55)]">L&apos;admin vous enverra les TRX à cette adresse</p>
+                        <p className="text-[0.68rem] text-[rgba(0,0,0,0.55)]">L&apos;admin vous enverra les TRX à cette adresse après conversion</p>
                       </div>
                     </div>
                     <input
@@ -917,40 +912,116 @@ export default function DepositScreen() {
                     />
                   </div>
 
+                  <div className="flex gap-2">
+                    <button onClick={() => setYasStep('guide')} className="flex-1 py-3.5 rounded-xl bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] font-semibold text-[0.82rem] cursor-pointer border-none">
+                      <i className="fas fa-arrow-left mr-1"></i> Retour
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (!yasAccount.trim()) { addToast('Entrez votre numéro Yas', 'error'); return; }
+                        if (yasAccountError) { addToast(yasAccountError, 'error'); return; }
+                        if (!yasTrxAddress.trim()) { addToast('Entrez votre adresse TRX', 'error'); return; }
+                        setYasStep('confirm');
+                      }}
+                      disabled={!yasAccount.trim() || !!yasAccountError || !yasTrxAddress.trim()}
+                      className="flex-[2] py-3.5 rounded-xl bg-[#22C55E] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Continuer <i className="fas fa-arrow-right ml-2"></i>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ===================== YAS STEP 4: CONFIRMATION + SYNTAXE ===================== */}
+              {yasStep === 'confirm' && (
+                <div style={{ animation: 'tIn 0.3s ease-out' }}>
+                  <div className="bg-[#FFFFFF] rounded-2xl p-4 mb-4 border border-[rgba(0,0,0,0.08)]">
+                    <h4 className="text-[0.82rem] font-bold text-[#1F2937] mb-2">Récapitulatif</h4>
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Montant CFA</span>
+                        <span className="text-[0.88rem] font-bold text-[#1F2937]">{Math.round(yasAmountCfa).toLocaleString('fr-FR')} FCFA</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Équivalent USD</span>
+                        <span className="text-[0.88rem] font-bold text-[#4ADE80]">{yasAmountUsd.toFixed(2)} $</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">TRX à recevoir</span>
+                        <span className="text-[0.88rem] font-bold text-[#22C55E]">{yasAmountTrx.toFixed(2)} TRX</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Votre numéro Yas</span>
+                        <span className="text-[0.82rem] font-bold text-[#1F2937]">{esc(yasAccount)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Adresse TRX</span>
+                        <span className="text-[0.72rem] font-mono font-bold text-[#1F2937] max-w-[180px] truncate">{esc(yasTrxAddress)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SYNTAXE D'ENVOI */}
+                  <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4 border-[2px] border-[#22C55E] relative overflow-hidden">
+                    <div className="absolute -top-10 -right-10 w-[120px] h-[120px] bg-[radial-gradient(circle,rgba(34,197,94,0.15),transparent_60%)]" />
+                    <div className="relative z-[1]">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-10 h-10 rounded-xl bg-[#22C55E] flex items-center justify-center shrink-0">
+                          <i className="fas fa-paper-plane text-[#050506] text-[0.9rem]"></i>
+                        </div>
+                        <div>
+                          <h3 className="text-[0.95rem] font-black text-[#1F2937]">Code d&apos;envoi Yas</h3>
+                          <p className="text-[0.65rem] text-[rgba(0,0,0,0.55)]">Composez ce code sur votre téléphone</p>
+                        </div>
+                      </div>
+                      <div className="bg-[rgba(34,197,94,0.08)] rounded-xl p-4 mb-3 border border-[rgba(34,197,94,0.2)]">
+                        <div className="text-[1.2rem] font-mono font-black text-[#22C55E] text-center tracking-wider break-all">
+                          {yasTransferSyntax || '*145*1...*...*2#'}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleCopyAddress(yasTransferSyntax, setYasSyntaxCopied)}
+                        className={`w-full py-3 rounded-xl text-[0.82rem] font-bold border-none cursor-pointer transition-all flex items-center justify-center gap-2 ${
+                          yasSyntaxCopied ? 'bg-[#22C55E] text-[#050506]' : 'bg-[rgba(34,197,94,0.12)] text-[#22C55E]'
+                        }`}
+                      >
+                        <i className={`fas ${yasSyntaxCopied ? 'fa-check' : 'fa-copy'}`}></i>
+                        {yasSyntaxCopied ? 'Copié !' : 'Copier le code'}
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="bg-[#FFFFFF] rounded-xl p-3.5 mb-4 border-l-[3px] border-l-[#22C55E] border-r border-r-[rgba(0,0,0,0.08)] border-t border-t-[rgba(0,0,0,0.08)] border-b border-b-[rgba(0,0,0,0.08)]">
                     <h4 className="text-[0.78rem] font-bold text-[#1F2937] mb-1.5">
-                      <i className="fas fa-info-circle mr-1 text-[#22C55E]"></i> Rappel
+                      <i className="fas fa-info-circle mr-1 text-[#22C55E]"></i> Que faire maintenant ?
                     </h4>
-                    <ul className="space-y-1 text-[0.68rem] text-[rgba(0,0,0,0.55)]">
-                      <li className="flex items-start gap-1.5">
-                        <i className="fas fa-check text-[0.5rem] mt-1 text-[#22C55E]"></i>
-                        <span>Assurez-vous d&apos;avoir téléchargé <strong className="text-[#22C55E]">Trust Wallet</strong></span>
+                    <ol className="space-y-1.5 text-[0.68rem] text-[rgba(0,0,0,0.55)]">
+                      <li className="flex items-start gap-2">
+                        <span className="w-5 h-5 rounded-full bg-[#22C55E] text-[#050506] flex items-center justify-center text-[0.55rem] font-bold shrink-0 mt-0.5">1</span>
+                        <span>Copiez le code ci-dessus</span>
                       </li>
-                      <li className="flex items-start gap-1.5">
-                        <i className="fas fa-check text-[0.5rem] mt-1 text-[#22C55E]"></i>
-                        <span>Votre adresse TRX doit commencer par <strong className="text-[#22C55E]">T</strong></span>
+                      <li className="flex items-start gap-2">
+                        <span className="w-5 h-5 rounded-full bg-[#22C55E] text-[#050506] flex items-center justify-center text-[0.55rem] font-bold shrink-0 mt-0.5">2</span>
+                        <span>Ouvrez le clavier de votre téléphone et composez le code</span>
                       </li>
-                      <li className="flex items-start gap-1.5">
-                        <i className="fas fa-check text-[0.5rem] mt-1 text-[#22C55E]"></i>
-                        <span>Envoyez <strong className="text-[#22C55E]">{Math.round(yasAmountCfa).toLocaleString('fr-FR')} FCFA</strong> au compte Yas de l&apos;admin</span>
+                      <li className="flex items-start gap-2">
+                        <span className="w-5 h-5 rounded-full bg-[#22C55E] text-[#050506] flex items-center justify-center text-[0.55rem] font-bold shrink-0 mt-0.5">3</span>
+                        <span>Confirmez le transfert</span>
                       </li>
-                      <li className="flex items-start gap-1.5">
-                        <i className="fas fa-check text-[0.5rem] mt-1 text-[#22C55E]"></i>
-                        <span>L&apos;admin convertira votre argent et vous enverra <strong className="text-[#22C55E]">{yasAmountTrx.toFixed(2)} TRX</strong></span>
+                      <li className="flex items-start gap-2">
+                        <span className="w-5 h-5 rounded-full bg-[#22C55E] text-[#050506] flex items-center justify-center text-[0.55rem] font-bold shrink-0 mt-0.5">4</span>
+                        <span>Cliquez sur <strong className="text-[#22C55E]">Soumettre</strong> ci-dessous pour signaler votre dépôt</span>
                       </li>
-                    </ul>
+                    </ol>
                   </div>
 
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => setYasStep('guide')}
-                      className="flex-1 py-3.5 rounded-xl bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] font-semibold text-[0.82rem] cursor-pointer border-none"
-                    >
+                    <button onClick={() => setYasStep('info')} className="flex-1 py-3.5 rounded-xl bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] font-semibold text-[0.82rem] cursor-pointer border-none">
                       <i className="fas fa-arrow-left mr-1"></i> Retour
                     </button>
                     <button
                       onClick={handleYasSubmit}
-                      disabled={yasSubmitting || !yasTrxAddress.trim() || !!yasAccountError || !yasAccount.trim()}
+                      disabled={yasSubmitting}
                       className="flex-[2] py-3.5 rounded-xl bg-[#22C55E] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                       {yasSubmitting ? (
@@ -969,28 +1040,44 @@ export default function DepositScreen() {
                 </div>
               )}
 
-              {/* ===================== YAS STEP 4: SUCCESS ===================== */}
+              {/* ===================== YAS STEP 5: SUCCESS ===================== */}
               {yasStep === 'success' && (
-                <div className="text-center py-6" style={{ animation: 'tIn 0.3s ease-out' }}>
-                  <div className="w-20 h-20 rounded-full bg-[rgba(34,197,94,0.12)] flex items-center justify-center mx-auto mb-4">
-                    <div className="w-14 h-14 rounded-full bg-[#22C55E] flex items-center justify-center">
-                      <i className="fas fa-check text-[#050506] text-[1.5rem]"></i>
+                <div style={{ animation: 'tIn 0.3s ease-out' }}>
+                  <div className="text-center py-4">
+                    <div className="w-20 h-20 rounded-full bg-[rgba(34,197,94,0.12)] flex items-center justify-center mx-auto mb-4">
+                      <div className="w-14 h-14 rounded-full bg-[#22C55E] flex items-center justify-center">
+                        <i className="fas fa-check text-[#050506] text-[1.5rem]"></i>
+                      </div>
                     </div>
+                    <h3 className="text-[1.2rem] font-bold text-[#1F2937] mb-2">Demande soumise !</h3>
+                    <p className="text-[0.82rem] text-[rgba(0,0,0,0.55)] mb-4 max-w-[300px] mx-auto">
+                      Votre demande de conversion de <strong className="text-[#22C55E]">{Math.round(yasAmountCfa).toLocaleString('fr-FR')} FCFA</strong> a été envoyée. L&apos;admin vous enverra <strong className="text-[#22C55E]">{yasAmountTrx.toFixed(2)} TRX</strong> sur votre Trust Wallet.
+                    </p>
                   </div>
-                  <h3 className="text-[1.2rem] font-bold text-[#1F2937] mb-2">Demande soumise !</h3>
-                  <p className="text-[0.82rem] text-[rgba(0,0,0,0.55)] mb-4 max-w-[300px] mx-auto">
-                    Votre demande de conversion de <strong className="text-[#22C55E]">{Math.round(yasAmountCfa).toLocaleString('fr-FR')} FCFA</strong> ({yasAmountUsd.toFixed(2)} $) a été envoyée. L&apos;administrateur convertira votre argent et vous enverra <strong className="text-[#22C55E]">{yasAmountTrx.toFixed(2)} TRX</strong> sur votre Trust Wallet.
-                  </p>
-                  <div className="bg-[#FFFFFF] rounded-xl p-4 mb-6 max-w-[300px] mx-auto border border-[rgba(0,0,0,0.08)]">
+
+                  {yasTransferSyntax && (
+                    <div className="bg-[#FFFFFF] rounded-2xl p-4 mb-4 border-[2px] border-[#22C55E]">
+                      <h4 className="text-[0.78rem] font-bold text-[#1F2937] mb-2">
+                        <i className="fas fa-code mr-1 text-[#22C55E]"></i> Rappel du code d&apos;envoi
+                      </h4>
+                      <div className="bg-[rgba(34,197,94,0.08)] rounded-xl p-3 mb-2 border border-[rgba(34,197,94,0.2)]">
+                        <div className="text-[1rem] font-mono font-black text-[#22C55E] text-center tracking-wider break-all">
+                          {yasTransferSyntax}
+                        </div>
+                      </div>
+                      <p className="text-[0.65rem] text-[rgba(0,0,0,0.45)] text-center">
+                        Si vous n&apos;avez pas encore envoyé, composez ce code sur votre téléphone
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="bg-[#FFFFFF] rounded-xl p-4 mb-4 border border-[rgba(0,0,0,0.08)]">
                     <div className="flex items-center gap-2 justify-center">
                       <div className="w-2 h-2 rounded-full bg-[#22C55E]" style={{ animation: 'pulse 1.5s infinite' }} />
                       <span className="text-[0.78rem] text-[rgba(0,0,0,0.55)] font-medium">En attente de traitement par l&apos;admin...</span>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setPage('wallet')}
-                    className="w-full py-3.5 rounded-xl bg-[#22C55E] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer"
-                  >
+                  <button onClick={() => setPage('wallet')} className="w-full py-3.5 rounded-xl bg-[#22C55E] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer">
                     <i className="fas fa-wallet mr-2"></i>Retour au portefeuille
                   </button>
                 </div>
