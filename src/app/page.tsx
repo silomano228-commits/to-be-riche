@@ -198,17 +198,28 @@ function AuthScreen() {
               }
             </p>
 
-            {/* Simulation mode code display */}
+            {/* Simulation mode code display - VERY VISIBLE */}
             {simCode && (
-              <div className="mb-4 p-3 bg-[rgba(245,158,11,0.08)] border border-[rgba(245,158,11,0.2)] rounded-xl">
-                <div className="text-[0.65rem] text-[rgba(0,0,0,0.4)] mb-1 font-semibold">Code de simulation</div>
-                <div className="text-[1.4rem] font-black text-[#F59E0B] tracking-[6px] font-mono">{simCode}</div>
-                <button
-                  onClick={() => { navigator.clipboard.writeText(simCode); addToast('Code copié', 'success'); }}
-                  className="mt-2 py-1.5 px-3 rounded-lg bg-[rgba(245,158,11,0.12)] text-[0.68rem] text-[#D97706] font-semibold border border-[rgba(245,158,11,0.2)] cursor-pointer"
-                >
-                  <i className="fas fa-copy mr-1"></i>Copier le code
-                </button>
+              <div className="mb-4 p-4 bg-[rgba(245,158,11,0.12)] border-2 border-[rgba(245,158,11,0.4)] rounded-xl">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <i className="fas fa-key text-[#F59E0B] text-[0.7rem]"></i>
+                  <div className="text-[0.72rem] text-[#D97706] font-bold">Votre code de vérification</div>
+                </div>
+                <div className="text-[2rem] font-black text-[#F59E0B] tracking-[8px] font-mono text-center py-2">{simCode}</div>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => { setOtpCode(simCode); addToast('Code rempli automatiquement', 'success'); }}
+                    className="flex-1 py-2 rounded-lg bg-[#F59E0B] text-white text-[0.75rem] font-bold border-none cursor-pointer flex items-center justify-center gap-1"
+                  >
+                    <i className="fas fa-magic mr-1"></i>Remplir automatiquement
+                  </button>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(simCode); addToast('Code copié', 'success'); }}
+                    className="py-2 px-3 rounded-lg bg-[rgba(245,158,11,0.15)] text-[0.72rem] text-[#D97706] font-semibold border border-[rgba(245,158,11,0.3)] cursor-pointer"
+                  >
+                    <i className="fas fa-copy mr-1"></i>Copier
+                  </button>
+                </div>
               </div>
             )}
 
