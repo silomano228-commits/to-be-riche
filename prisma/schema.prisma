@@ -178,7 +178,7 @@ model YasDeposit {
   amountTrx     Float
   trxPrice      Float
   yasAccount    String
-  trxAddress    String
+  trxAddress    String?
   status        String   @default("pending")
   adminNote     String?
   createdAt     DateTime @default(now())

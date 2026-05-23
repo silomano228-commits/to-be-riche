@@ -41,6 +41,7 @@ export async function POST(request: Request) {
     if (!token) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
 
     const { amountCfa, yasAccount, trxAddress } = await request.json();
+    const safeTrxAddress = trxAddress?.trim() || '';
     const amtCfa = parseFloat(amountCfa);
 
     // Get CFA rate from config
@@ -63,9 +64,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Le numéro Yas doit commencer par 90-93 ou 70-73' });
     }
 
-    if (!trxAddress || !trxAddress.trim()) {
-      return NextResponse.json({ success: false, error: 'Adresse TRX Trust Wallet requise' });
-    }
+    // trxAddress is now optional for YAS deposits
 
     // Vérifier s'il y a déjà un dépôt en attente (TRX OU YAS)
     const anyPending = await getAnyPendingDeposit(token);
@@ -94,7 +93,7 @@ export async function POST(request: Request) {
         amountTrx,
         trxPrice,
         yasAccount: yasAccount.trim(),
-        trxAddress: trxAddress.trim(),
+        trxAddress: safeTrxAddress || null,
         status: 'pending',
       },
     });

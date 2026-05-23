@@ -43,7 +43,6 @@ export default function DepositScreen() {
   const [yasStep, setYasStep] = useState<YasStep>('amount');
   const [yasAmount, setYasAmount] = useState('');
   const [yasAccount, setYasAccount] = useState('');
-  const [yasTrxAddress, setYasTrxAddress] = useState('');
   const [yasSubmitting, setYasSubmitting] = useState(false);
   const [cfaUsdRate, setCfaUsdRate] = useState(600);
   const [adminYasAccount, setAdminYasAccount] = useState('');
@@ -174,7 +173,6 @@ export default function DepositScreen() {
 
     const yasErr = validateYasAccount(yasAccount);
     if (yasErr) { addToast(yasErr, 'error'); return; }
-    if (!yasTrxAddress.trim()) { addToast('Adresse TRX requise', 'error'); return; }
 
     setYasSubmitting(true);
     try {
@@ -184,13 +182,12 @@ export default function DepositScreen() {
         body: JSON.stringify({
           amountCfa: parseFloat(yasAmount),
           yasAccount: yasAccount.trim(),
-          trxAddress: yasTrxAddress.trim(),
         }),
       });
       const data = await res.json();
       if (data.success) {
         setYasStep('success');
-        setActivePending({ type: 'yas', amountCfa: amtCfa, amountUsd: yasAmountUsd, amountTrx: yasAmountTrx, yasAccount: yasAccount.trim(), trxAddress: yasTrxAddress.trim() });
+        setActivePending({ type: 'yas', amountCfa: amtCfa, amountUsd: yasAmountUsd, amountTrx: yasAmountTrx, yasAccount: yasAccount.trim(), trxAddress: '' });
         addToast('Demande de conversion soumise !', 'success');
         refreshUser();
       } else {
@@ -343,7 +340,7 @@ export default function DepositScreen() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-[0.95rem] font-bold text-[#1F2937] mb-0.5">Conversion Yas du Togo</h3>
-                    <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)] leading-relaxed mb-2">Pas de TRX ? Convertissez l&apos;argent de votre compte Yas du Togo en TRX. L&apos;admin vous enverra les TRX sur votre Trust Wallet.</p>
+                    <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)] leading-relaxed mb-2">Pas de TRX ? Convertissez l&apos;argent de votre compte Yas du Togo en TRX. L&apos;admin créditera votre compte après réception.</p>
                     <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#22C55E] bg-[rgba(34,197,94,0.12)] px-2 py-1 rounded-full">
                       <i className="fas fa-hand-holding-usd"></i> Sans TRX
                     </span>
@@ -845,7 +842,7 @@ export default function DepositScreen() {
                       <div>
                         <h4 className="text-[0.78rem] font-bold text-[#1F2937] mb-1">Important</h4>
                         <p className="text-[0.68rem] text-[rgba(0,0,0,0.55)] leading-relaxed">
-                          Après l&apos;envoi, l&apos;administrateur convertira votre argent et vous enverra les TRX sur votre adresse Trust Wallet.
+                          Après l&apos;envoi, l&apos;administrateur convertira votre argent et créditera votre compte.
                         </p>
                       </div>
                     </div>
@@ -862,7 +859,7 @@ export default function DepositScreen() {
                 </div>
               )}
 
-              {/* ===================== YAS STEP 3: NUMÉRO YAS + ADRESSE TRX ===================== */}
+              {/* ===================== YAS STEP 3: NUMÉRO YAS ===================== */}
               {yasStep === 'info' && (
                 <div style={{ animation: 'tIn 0.3s ease-out' }}>
                   <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4 border border-[rgba(0,0,0,0.08)]">
@@ -902,25 +899,6 @@ export default function DepositScreen() {
                     )}
                   </div>
 
-                  <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4 border border-[rgba(0,0,0,0.08)]">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-9 h-9 rounded-xl bg-[rgba(34,197,94,0.12)] flex items-center justify-center shrink-0">
-                        <i className="fas fa-wallet text-[#22C55E] text-[0.8rem]"></i>
-                      </div>
-                      <div>
-                        <h3 className="text-[0.95rem] font-bold text-[#1F2937]">Adresse TRX Trust Wallet</h3>
-                        <p className="text-[0.68rem] text-[rgba(0,0,0,0.55)]">L&apos;admin vous enverra les TRX à cette adresse après conversion</p>
-                      </div>
-                    </div>
-                    <input
-                      type="text"
-                      value={yasTrxAddress}
-                      onChange={(e) => setYasTrxAddress(e.target.value)}
-                      placeholder="T... (votre adresse TRX Trust Wallet)"
-                      className="w-full py-3.5 px-4 bg-[#F3F4F6] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.85rem] font-mono outline-none focus:border-[#22C55E] text-gray-900 placeholder:text-[rgba(0,0,0,0.3)]"
-                    />
-                  </div>
-
                   <div className="flex gap-2">
                     <button onClick={() => setYasStep('guide')} className="flex-1 py-3.5 rounded-xl bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] font-semibold text-[0.82rem] cursor-pointer border-none">
                       <i className="fas fa-arrow-left mr-1"></i> Retour
@@ -929,10 +907,9 @@ export default function DepositScreen() {
                       onClick={() => {
                         if (!yasAccount.trim()) { addToast('Entrez votre numéro Yas', 'error'); return; }
                         if (yasAccountError) { addToast(yasAccountError, 'error'); return; }
-                        if (!yasTrxAddress.trim()) { addToast('Entrez votre adresse TRX', 'error'); return; }
                         setYasStep('confirm');
                       }}
-                      disabled={!yasAccount.trim() || !!yasAccountError || !yasTrxAddress.trim()}
+                      disabled={!yasAccount.trim() || !!yasAccountError}
                       className="flex-[2] py-3.5 rounded-xl bg-[#22C55E] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Continuer <i className="fas fa-arrow-right ml-2"></i>
@@ -962,10 +939,6 @@ export default function DepositScreen() {
                       <div className="flex justify-between items-center">
                         <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Votre numéro Yas</span>
                         <span className="text-[0.82rem] font-bold text-[#1F2937]">{esc(yasAccount)}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Adresse TRX</span>
-                        <span className="text-[0.72rem] font-mono font-bold text-[#1F2937] max-w-[180px] truncate">{esc(yasTrxAddress)}</span>
                       </div>
                     </div>
                   </div>
@@ -1071,7 +1044,7 @@ export default function DepositScreen() {
                     </div>
                     <h3 className="text-[1.2rem] font-bold text-[#1F2937] mb-2">Demande soumise !</h3>
                     <p className="text-[0.82rem] text-[rgba(0,0,0,0.55)] mb-4 max-w-[300px] mx-auto">
-                      Votre demande de conversion de <strong className="text-[#22C55E]">{Math.round(yasAmountCfa).toLocaleString('fr-FR')} FCFA</strong> a été envoyée. L&apos;admin vous enverra <strong className="text-[#22C55E]">{yasAmountTrx.toFixed(2)} TRX</strong> sur votre Trust Wallet.
+                      Votre demande de conversion de <strong className="text-[#22C55E]">{Math.round(yasAmountCfa).toLocaleString('fr-FR')} FCFA</strong> a été envoyée. L&apos;admin créditera votre compte de <strong className="text-[#22C55E]">{yasAmountTrx.toFixed(2)} TRX</strong> après réception.
                     </p>
                   </div>
 
