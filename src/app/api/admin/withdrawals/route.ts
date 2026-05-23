@@ -89,38 +89,35 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, error: 'Le retrait doit d\'abord être approuvé' });
       }
 
-      // Use transaction for atomicity — deduct balance on execution
-      await db.$transaction(async (tx) => {
-        // Verify user still has enough balance (compte principal)
-        const user = await tx.user.findUnique({ where: { id: withdrawal.userId } });
-        if (!user || user.balance < withdrawal.amount) {
-          throw new Error('INSUFFICIENT_BALANCE');
-        }
+      // Verify user still has enough balance (compte principal)
+      const user = await db.user.findUnique({ where: { id: withdrawal.userId } });
+      if (!user || user.balance < withdrawal.amount) {
+        return NextResponse.json({ success: false, error: 'L\'utilisateur n\'a plus assez de solde sur le compte principal' });
+      }
 
-        // Deduct from balance (compte principal)
-        await tx.user.update({
-          where: { id: withdrawal.userId },
-          data: {
-            balance: { decrement: withdrawal.amount },
-          },
-        });
+      // Deduct from balance (compte principal)
+      await db.user.update({
+        where: { id: withdrawal.userId },
+        data: {
+          balance: { decrement: withdrawal.amount },
+        },
+      });
 
-        // Create a withdrawal transaction record
-        const typeLabel = withdrawal.type === 'yas' ? 'Yas' : 'TRX';
-        await tx.transaction.create({
-          data: {
-            type: 'withdrawal',
-            amount: withdrawal.amount,
-            detail: `Retrait ${typeLabel} exécuté — ${withdrawal.amount} $${withdrawal.type === 'yas' ? ` (${withdrawal.amountCfa.toLocaleString()} FCFA vers ${withdrawal.yasAccount})` : ` vers ${withdrawal.trxAddress}`}`,
-            userId: withdrawal.userId,
-          },
-        });
+      // Create a withdrawal transaction record
+      const typeLabel = withdrawal.type === 'yas' ? 'Yas' : 'TRX';
+      await db.transaction.create({
+        data: {
+          type: 'withdrawal',
+          amount: withdrawal.amount,
+          detail: `Retrait ${typeLabel} exécuté — ${withdrawal.amount} $${withdrawal.type === 'yas' ? ` (${withdrawal.amountCfa.toLocaleString()} FCFA vers ${withdrawal.yasAccount})` : ` vers ${withdrawal.trxAddress}`}`,
+          userId: withdrawal.userId,
+        },
+      });
 
-        // Update withdrawal status to executed
-        await tx.withdrawal.update({
-          where: { id: withdrawalId },
-          data: { status: 'executed', adminNote: adminNote || null },
-        });
+      // Update withdrawal status to executed
+      await db.withdrawal.update({
+        where: { id: withdrawalId },
+        data: { status: 'executed', adminNote: adminNote || null },
       });
 
       return NextResponse.json({ success: true, message: 'Retrait exécuté — fonds envoyés et solde débité' });
@@ -141,10 +138,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: false, error: 'Action inconnue' });
-  } catch (error: any) {
-    if (error?.message === 'INSUFFICIENT_BALANCE') {
-      return NextResponse.json({ success: false, error: 'L\'utilisateur n\'a plus assez de solde sur le compte principal' });
-    }
+  } catch (error) {
     console.error('[ADMIN-WITHDRAWALS] Error:', error);
     return NextResponse.json({ success: false, error: 'Erreur serveur' });
   }

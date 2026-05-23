@@ -1,13 +1,22 @@
 import { db } from '@/lib/db';
-import { getAuthToken } from '@/lib/auth';
 import { NextResponse } from 'next/server';
+
+// Inline auth token extraction to avoid importing @/lib/auth which pulls in heavy nodemailer
+function getToken(request: Request): string | null {
+  const authHeader = request.headers.get('x-auth-token');
+  if (authHeader) return authHeader;
+  const cookieHeader = request.headers.get('cookie') || '';
+  const match = cookieHeader.match(/br_token=([^;]+)/);
+  if (match) return match[1];
+  return null;
+}
 
 export const dynamic = 'force-dynamic';
 
 // GET — Check withdrawal status (pending withdrawals for current user)
 export async function GET(request: Request) {
   try {
-    const token = getAuthToken(request);
+    const token = getToken(request);
     if (!token) return NextResponse.json({ success: false, error: 'Non autorisé' });
 
     const user = await db.user.findUnique({ where: { id: token } });
@@ -27,7 +36,7 @@ export async function GET(request: Request) {
 // POST — Create a TRX withdrawal request (no balance deduction — admin approves then executes)
 export async function POST(request: Request) {
   try {
-    const token = getAuthToken(request);
+    const token = getToken(request);
     if (!token) return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
 
     const user = await db.user.findUnique({ where: { id: token } });
@@ -117,18 +126,19 @@ export async function POST(request: Request) {
       },
     });
 
-    // Notify admin via Socket.io (fire and forget)
-    try {
-      const { io } = await import('@/lib/socket');
-      io.emit('new-withdrawal', {
+    // Notify admin (non-blocking HTTP call to chat service)
+    fetch('http://localhost:3003/notify-withdrawal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         withdrawalId: withdrawal.id,
         type: 'trx',
         userId: user.id,
         userName: user.name,
         amount: amt,
         trxAddress,
-      });
-    } catch { /* Socket.io not available */ }
+      }),
+    }).catch(() => {});
 
     return NextResponse.json({ success: true, data: { id: withdrawal.id, amount: amt, status: 'pending' } });
   } catch {

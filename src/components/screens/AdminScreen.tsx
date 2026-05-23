@@ -38,6 +38,28 @@ export default function AdminScreen() {
     }
   }, []);
 
+  // Data loading callbacks — declared BEFORE the socket useEffect that references them
+  const loadData = useCallback(async () => {
+    try { const r = await authFetch('/api/admin/data'); const d = await r.json(); if (d.success) setAdminData(d); } catch { /* */ }
+    setLoading(false);
+  }, []);
+
+  const loadDeposits = useCallback(async () => {
+    try { const r = await authFetch('/api/admin/deposits'); const d = await r.json(); if (d.success) { setPendingDeposits(d.data || []); setDepositStats(d.stats || {}); } } catch { /* */ }
+  }, []);
+
+  const loadYasDeposits = useCallback(async () => {
+    try { const r = await authFetch('/api/admin/yas-deposits'); const d = await r.json(); if (d.success) { setYasDeposits(d.data || []); setYasStats(d.stats || {}); } } catch { /* */ }
+  }, []);
+
+  const loadWithdrawals = useCallback(async () => {
+    try { const r = await authFetch('/api/admin/withdrawals'); const d = await r.json(); if (d.success) { setWithdrawals(d.data || []); setWithdrawalStats(d.stats || {}); } } catch { /* */ }
+  }, []);
+
+  const loadConfig = useCallback(async () => {
+    try { const r = await authFetch('/api/admin/config'); const d = await r.json(); if (d.success) { setSiteConfig(d.data); setConfigAddr(d.data.adminTrxAddress || ''); setConfigPrice(String(d.data.trxUsdPrice || '')); setConfigYasAddr(d.data.adminYasAccount || ''); setConfigCfaRate(String(d.data.cfaUsdRate || '600')); } } catch { /* */ }
+  }, []);
+
   // Socket.io connection for real-time withdrawal notifications
   useEffect(() => {
     if (!user || user.role !== 'admin') return;
@@ -76,28 +98,7 @@ export default function AdminScreen() {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [user?.id, user?.role]);
-
-  const loadData = useCallback(async () => {
-    try { const r = await authFetch('/api/admin/data'); const d = await r.json(); if (d.success) setAdminData(d); } catch { /* */ }
-    setLoading(false);
-  }, []);
-
-  const loadDeposits = useCallback(async () => {
-    try { const r = await authFetch('/api/admin/deposits'); const d = await r.json(); if (d.success) { setPendingDeposits(d.data || []); setDepositStats(d.stats || {}); } } catch { /* */ }
-  }, []);
-
-  const loadYasDeposits = useCallback(async () => {
-    try { const r = await authFetch('/api/admin/yas-deposits'); const d = await r.json(); if (d.success) { setYasDeposits(d.data || []); setYasStats(d.stats || {}); } } catch { /* */ }
-  }, []);
-
-  const loadWithdrawals = useCallback(async () => {
-    try { const r = await authFetch('/api/admin/withdrawals'); const d = await r.json(); if (d.success) { setWithdrawals(d.data || []); setWithdrawalStats(d.stats || {}); } } catch { /* */ }
-  }, []);
-
-  const loadConfig = useCallback(async () => {
-    try { const r = await authFetch('/api/admin/config'); const d = await r.json(); if (d.success) { setSiteConfig(d.data); setConfigAddr(d.data.adminTrxAddress || ''); setConfigPrice(String(d.data.trxUsdPrice || '')); setConfigYasAddr(d.data.adminYasAccount || ''); setConfigCfaRate(String(d.data.cfaUsdRate || '600')); } } catch { /* */ }
-  }, []);
+  }, [user?.id, user?.role, loadWithdrawals]);
 
   useEffect(() => { const t = setTimeout(() => { loadData(); loadDeposits(); loadYasDeposits(); loadWithdrawals(); loadConfig(); }, 0); return () => clearTimeout(t); }, [loadData, loadDeposits, loadYasDeposits, loadWithdrawals, loadConfig]);
 

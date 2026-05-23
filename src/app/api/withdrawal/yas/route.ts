@@ -1,13 +1,22 @@
 import { db } from '@/lib/db';
-import { getAuthToken } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
+// Inline auth token extraction to avoid importing @/lib/auth which pulls in heavy nodemailer
+function getToken(request: Request): string | null {
+  const authHeader = request.headers.get('x-auth-token');
+  if (authHeader) return authHeader;
+  const cookieHeader = request.headers.get('cookie') || '';
+  const match = cookieHeader.match(/br_token=([^;]+)/);
+  if (match) return match[1];
+  return null;
+}
+
 // POST — Create a YAS withdrawal request (user enters USD, we convert to CFA)
 export async function POST(request: Request) {
   try {
-    const token = getAuthToken(request);
+    const token = getToken(request);
     if (!token) return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
 
     const user = await db.user.findUnique({ where: { id: token } });
@@ -107,10 +116,11 @@ export async function POST(request: Request) {
       },
     });
 
-    // Notify admin via Socket.io (fire and forget)
-    try {
-      const { io } = await import('@/lib/socket');
-      io.emit('new-withdrawal', {
+    // Notify admin (non-blocking HTTP call to chat service)
+    fetch('http://localhost:3003/notify-withdrawal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         withdrawalId: withdrawal.id,
         type: 'yas',
         userId: user.id,
@@ -118,8 +128,8 @@ export async function POST(request: Request) {
         amount: amt,
         amountCfa,
         yasAccount: yasAccount.trim(),
-      });
-    } catch { /* Socket.io not available */ }
+      }),
+    }).catch(() => {});
 
     return NextResponse.json({
       success: true,
@@ -140,7 +150,7 @@ export async function POST(request: Request) {
 // GET — Check YAS config (cfaUsdRate) and pending YAS withdrawal for the form
 export async function GET(request: Request) {
   try {
-    const token = getAuthToken(request);
+    const token = getToken(request);
     if (!token) return NextResponse.json({ success: false }, { status: 401 });
 
     const user = await db.user.findUnique({ where: { id: token } });

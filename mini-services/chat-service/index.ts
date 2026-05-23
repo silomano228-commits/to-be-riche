@@ -1,4 +1,4 @@
-import { createServer } from 'http';
+import { createServer, IncomingMessage, ServerResponse } from 'http';
 import { Server } from 'socket.io';
 
 const PORT = 3003;
@@ -13,6 +13,31 @@ const io = new Server(httpServer, {
 
 // Track online admins with connection count
 const adminConnections = new Map<string, number>(); // userId -> connection count
+
+// ========== HTTP ENDPOINT FOR WITHDRAWAL NOTIFICATIONS ==========
+// API routes can POST to this endpoint to notify admins without importing socket.io-client
+httpServer.on('request', (req: IncomingMessage, res: ServerResponse) => {
+  if (req.method === 'POST' && req.url === '/notify-withdrawal') {
+    let body = '';
+    req.on('data', (chunk) => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        console.log(`[CHAT] Withdrawal notification via HTTP: ${data.type} ${data.amount}$ from ${data.userName}`);
+        // Broadcast to all admins
+        io.to('admins').emit('new-withdrawal', data);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true }));
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Invalid JSON' }));
+      }
+    });
+  } else {
+    res.writeHead(404);
+    res.end();
+  }
+});
 
 io.on('connection', (socket) => {
   const userId = socket.handshake.auth?.userId as string | undefined;

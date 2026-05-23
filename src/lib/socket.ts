@@ -1,42 +1,28 @@
-// Socket.io client singleton for server-side use (API routes can emit events)
-import { io as socketioClient, Socket } from 'socket.io-client';
+// Socket notification utility - uses HTTP endpoint to chat service instead of socket.io-client
+// This avoids the heavy socket.io-client dependency that causes Turbopack compilation issues
 
-let _io: Socket | null = null;
-
-function getSocket(): Socket {
-  if (!_io || !_io.connected) {
-    _io = socketioClient('/', {
-      transports: ['websocket'],
-      auth: { userId: 'server-api', userRole: 'server', userName: 'API Server' },
-      query: { XTransformPort: '3003' },
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-    });
-
-    _io.on('connect', () => {
-      console.log('[SOCKET-CLIENT] Connected to chat service');
-    });
-
-    _io.on('disconnect', () => {
-      console.log('[SOCKET-CLIENT] Disconnected from chat service');
-    });
-
-    _io.on('connect_error', (err) => {
-      console.error('[SOCKET-CLIENT] Connection error:', err.message);
-    });
-  }
-  return _io;
+interface WithdrawalNotification {
+  withdrawalId: string;
+  type: 'trx' | 'yas';
+  userId: string;
+  userName: string;
+  amount: number;
+  amountCfa?: number;
+  yasAccount?: string;
+  trxAddress?: string;
 }
 
-// Export a proxy that auto-connects
-export const io = new Proxy({} as Socket, {
-  get(_target, prop) {
-    const socket = getSocket();
-    const value = (socket as any)[prop];
-    if (typeof value === 'function') {
-      return value.bind(socket);
-    }
-    return value;
-  },
-});
+/**
+ * Notify admin about a new withdrawal via the chat service HTTP endpoint
+ * This is non-blocking and won't affect the API response time
+ */
+export function notifyWithdrawal(data: WithdrawalNotification): void {
+  // Fire and forget - don't await, don't block
+  fetch('http://localhost:3003/notify-withdrawal', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }).catch(() => {
+    // Chat service might be down, that's OK
+  });
+}
