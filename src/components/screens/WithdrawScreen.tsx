@@ -253,8 +253,8 @@ export default function WithdrawScreen() {
             <>
               {/* Balance card */}
               <div className="bg-gradient-to-r from-[#22C55E] to-[#16A34A] rounded-2xl p-5 mb-5 text-white" style={{ boxShadow: '0 8px 24px rgba(34,197,94,0.25)' }}>
-                <div className="text-[0.7rem] uppercase font-semibold opacity-80 mb-1">Solde retirable (gains)</div>
-                <div className="text-[1.8rem] font-black">{formatMoney(user.totalProfit)}</div>
+                <div className="text-[0.7rem] uppercase font-semibold opacity-80 mb-1">Solde retirable (compte principal)</div>
+                <div className="text-[1.8rem] font-black">{formatMoney(user.balance)}</div>
               </div>
 
               <h2 className="text-[1.1rem] font-black text-[#1F2937] mb-1">Choisissez votre méthode</h2>
@@ -379,8 +379,8 @@ export default function WithdrawScreen() {
         <Header title="Retrait via TRX" icon="fa-arrow-up" iconColor="#22C55E" leftElement={backBtn} />
         <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
           <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-5 mb-4">
-            <div className="text-[0.7rem] text-[rgba(0,0,0,0.55)] uppercase font-semibold mb-1">Solde retirable</div>
-            <div className="text-[1.5rem] font-black text-[#1F2937] mb-4">{formatMoney(user.totalProfit)}</div>
+            <div className="text-[0.7rem] text-[rgba(0,0,0,0.55)] uppercase font-semibold mb-1">Solde retirable (compte principal)</div>
+            <div className="text-[1.5rem] font-black text-[#1F2937] mb-4">{formatMoney(user.balance)}</div>
 
             <div className="mb-3">
               <label className="block mb-1 text-[0.75rem] font-semibold text-[rgba(0,0,0,0.55)]">Montant ($)</label>
@@ -456,8 +456,8 @@ export default function WithdrawScreen() {
         <Header title="Retrait via Yas" icon="fa-arrow-up" iconColor="#22C55E" leftElement={backBtn} />
         <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
           <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-5 mb-4">
-            <div className="text-[0.7rem] text-[rgba(0,0,0,0.55)] uppercase font-semibold mb-1">Solde retirable</div>
-            <div className="text-[1.5rem] font-black text-[#1F2937] mb-4">{formatMoney(user.totalProfit)}</div>
+            <div className="text-[0.7rem] text-[rgba(0,0,0,0.55)] uppercase font-semibold mb-1">Solde retirable (compte principal)</div>
+            <div className="text-[1.5rem] font-black text-[#1F2937] mb-4">{formatMoney(user.balance)}</div>
 
             {/* Amount in USD */}
             <div className="mb-3">

@@ -74,17 +74,16 @@ export async function POST(request: Request) {
     if (action === 'approve') {
       // Use transaction for atomicity — deduct balance only on approval
       await db.$transaction(async (tx) => {
-        // Verify user still has enough totalProfit
+        // Verify user still has enough balance (compte principal)
         const user = await tx.user.findUnique({ where: { id: withdrawal.userId } });
-        if (!user || user.totalProfit < withdrawal.amount) {
+        if (!user || user.balance < withdrawal.amount) {
           throw new Error('INSUFFICIENT_BALANCE');
         }
 
-        // Deduct from totalProfit and balance
+        // Deduct from balance (compte principal)
         await tx.user.update({
           where: { id: withdrawal.userId },
           data: {
-            totalProfit: { decrement: withdrawal.amount },
             balance: { decrement: withdrawal.amount },
           },
         });
@@ -119,7 +118,7 @@ export async function POST(request: Request) {
     }
   } catch (error: any) {
     if (error?.message === 'INSUFFICIENT_BALANCE') {
-      return NextResponse.json({ success: false, error: 'L\'utilisateur n\'a plus assez de gains' });
+      return NextResponse.json({ success: false, error: 'L\'utilisateur n\'a plus assez de solde sur le compte principal' });
     }
     return NextResponse.json({ success: false, error: 'Erreur serveur' });
   }

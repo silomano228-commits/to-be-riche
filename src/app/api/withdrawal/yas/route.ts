@@ -22,9 +22,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Minimum de retrait : 5 $' });
     }
 
-    // Check balance (can only withdraw from totalProfit/gains)
-    if (amt > user.totalProfit) {
-      return NextResponse.json({ success: false, error: 'Solde de gains insuffisant. Seul le solde de gains est retirable.' });
+    // Check balance (can only withdraw from compte principal)
+    if (amt > user.balance) {
+      return NextResponse.json({ success: false, error: 'Solde insuffisant sur le compte principal.' });
     }
 
     // 48h cooldown after first deposit
