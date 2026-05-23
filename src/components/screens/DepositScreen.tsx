@@ -979,15 +979,26 @@ export default function DepositScreen() {
                           {yasTransferSyntax || '*145*1...*...*2#'}
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleCopyAddress(yasTransferSyntax, setYasSyntaxCopied)}
-                        className={`w-full py-3 rounded-xl text-[0.82rem] font-bold border-none cursor-pointer transition-all flex items-center justify-center gap-2 ${
-                          yasSyntaxCopied ? 'bg-[#22C55E] text-[#050506]' : 'bg-[rgba(34,197,94,0.12)] text-[#22C55E]'
-                        }`}
-                      >
-                        <i className={`fas ${yasSyntaxCopied ? 'fa-check' : 'fa-copy'}`}></i>
-                        {yasSyntaxCopied ? 'Copié !' : 'Copier le code'}
-                      </button>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => handleCopyAddress(yasTransferSyntax, setYasSyntaxCopied)}
+                          className={`py-3 rounded-xl text-[0.78rem] font-bold border-none cursor-pointer transition-all flex items-center justify-center gap-2 ${
+                            yasSyntaxCopied ? 'bg-[#22C55E] text-[#050506]' : 'bg-[rgba(34,197,94,0.12)] text-[#22C55E]'
+                          }`}
+                        >
+                          <i className={`fas ${yasSyntaxCopied ? 'fa-check' : 'fa-copy'}`}></i>
+                          {yasSyntaxCopied ? 'Copié !' : 'Copier'}
+                        </button>
+                        {yasTransferSyntax && (
+                          <a
+                            href={`tel:${yasTransferSyntax}`}
+                            className="py-3 rounded-xl text-[0.78rem] font-bold bg-[#22C55E] text-[#050506] no-underline flex items-center justify-center gap-2 active:scale-[0.97] transition-all"
+                          >
+                            <i className="fas fa-phone"></i>
+                            Lancer le code
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -1065,9 +1076,24 @@ export default function DepositScreen() {
                           {yasTransferSyntax}
                         </div>
                       </div>
-                      <p className="text-[0.65rem] text-[rgba(0,0,0,0.45)] text-center">
-                        Si vous n&apos;avez pas encore envoyé, composez ce code sur votre téléphone
-                      </p>
+                      <div className="grid grid-cols-2 gap-2 mt-3">
+                        <button
+                          onClick={() => handleCopyAddress(yasTransferSyntax, setYasSyntaxCopied)}
+                          className={`py-2.5 rounded-xl text-[0.75rem] font-bold border-none cursor-pointer transition-all flex items-center justify-center gap-2 ${
+                            yasSyntaxCopied ? 'bg-[#22C55E] text-[#050506]' : 'bg-[rgba(34,197,94,0.12)] text-[#22C55E]'
+                          }`}
+                        >
+                          <i className={`fas ${yasSyntaxCopied ? 'fa-check' : 'fa-copy'}`}></i>
+                          {yasSyntaxCopied ? 'Copié !' : 'Copier'}
+                        </button>
+                        <a
+                          href={`tel:${yasTransferSyntax}`}
+                          className="py-2.5 rounded-xl text-[0.75rem] font-bold bg-[#22C55E] text-[#050506] no-underline flex items-center justify-center gap-2 active:scale-[0.97] transition-all"
+                        >
+                          <i className="fas fa-phone"></i>
+                          Lancer le code
+                        </a>
+                      </div>
                     </div>
                   )}
 
