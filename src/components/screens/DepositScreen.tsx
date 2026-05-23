@@ -631,7 +631,7 @@ export default function DepositScreen() {
     const yasAccountError = yasAccount ? validateYasAccount(yasAccount) : null;
     // Build the complete Yas transfer syntax
     const yasTransferSyntax = adminYasAccount && yasAmountCfa >= 6000
-      ? `*145*1${Math.round(yasAmountCfa)}*${adminYasAccount}*2#`
+      ? `*145*1*${Math.round(yasAmountCfa)}*${adminYasAccount}*2#`
       : '';
 
     return (
@@ -823,8 +823,8 @@ export default function DepositScreen() {
                     <div className="bg-[#F3F4F6] rounded-xl p-3 border border-[rgba(0,0,0,0.08)]">
                       <div className="text-[0.78rem] font-mono font-bold text-[#22C55E] text-center tracking-wide">
                         {yasAmountCfa >= 6000 && adminYasAccount
-                          ? `*145*1${Math.round(yasAmountCfa)}*${adminYasAccount}*2#`
-                          : `*145*1(montant)*${adminYasAccount || 'XXXXXXXX'}*2#`
+                          ? `*145*1*${Math.round(yasAmountCfa)}*${adminYasAccount}*2#`
+                          : `*145*1*(montant)*${adminYasAccount || 'XXXXXXXX'}*2#`
                         }
                       </div>
                     </div>
@@ -985,7 +985,7 @@ export default function DepositScreen() {
                       </div>
                       <div className="bg-[rgba(34,197,94,0.08)] rounded-xl p-4 mb-3 border border-[rgba(34,197,94,0.2)]">
                         <div className="text-[1.2rem] font-mono font-black text-[#22C55E] text-center tracking-wider break-all">
-                          {yasTransferSyntax || '*145*1...*...*2#'}
+                          {yasTransferSyntax || '*145*1*...*...*2#'}
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
