@@ -211,3 +211,101 @@ Stage Summary:
 - OTP login respects 48h withdrawal rule and referral requirements
 - Admin routes are protected
 - Chat Socket.io handles multi-tab admin correctly
+
+---
+Task ID: 2
+Agent: fix-invest-create
+Task: Fix investment create ignoring user amount
+
+Work Log:
+- Read /home/z/my-project/src/app/api/invest/create/route.ts and identified the bug on line 47
+- Changed destructuring on line 38 from `{ level }` to `{ level, amount: requestedAmount }` to extract the user's amount from the request body
+- Added validation: checks that requestedAmount is not null, is a number, and is not NaN
+- Replaced random amount generation (`Math.round((config.minAmount + Math.random() * ...) * 100) / 100`) with `Math.round(requestedAmount * 100) / 100` to use the user's requested amount
+- Added range validation: ensures the amount is within the level's minAmount and maxAmount, returning a clear error message if out of range
+- No other changes made to the file
+
+Stage Summary:
+- Investment create API now uses the user's requested amount instead of generating a random one
+- Amount is extracted from the request body and validated (type check + range check)
+- Error messages clearly indicate when amount is invalid or out of the level's allowed range
+
+---
+Task ID: 4
+Agent: fix-socket-reconnection
+Task: Fix Socket.io reconnects on every selectedUserId change
+
+Work Log:
+- Added `selectedUserIdRef` ref to track `selectedUserId` without causing socket reconnection
+- Added useEffect to keep `selectedUserIdRef.current` in sync with `selectedUserId` state
+- Changed `new-user-message` handler to use `selectedUserIdRef.current` instead of `selectedUserId` (line 155)
+- Changed `admin-message-sent` handler to use `selectedUserIdRef.current` instead of `selectedUserId` (line 183)
+- Removed `selectedUserId` and `loadConversations` from the socket useEffect dependency array, keeping only `user?.id`
+
+Stage Summary:
+- Socket.io no longer disconnects/reconnects when admin switches conversations
+- `selectedUserIdRef` provides live access to the current selected user inside socket handlers without being a useEffect dependency
+- The socket connection is now stable for the entire admin session (only reconnects if user.id changes)
+
+---
+Task ID: 3
+Agent: fix-withdrawal-bugs
+Task: Fix race condition and duplicate transactions in withdrawal flow
+
+Work Log:
+- Read both affected files: admin/withdrawals/route.ts and withdrawal/route.ts
+- Verified Transaction model has optional `detail` field in Prisma schema
+- Bug #5 Fix: Replaced three separate DB calls (balance check, user update, transaction create, withdrawal update) with a single interactive `db.$transaction(async (tx) => { ... })` in admin/withdrawals/route.ts
+  - Moved balance check INSIDE the transaction to avoid TOCTOU (time-of-check-time-of-use) race condition
+  - All three write operations (user update, transaction create, withdrawal status update) now run atomically
+  - If balance is insufficient, throws INSUFFICIENT_BALANCE error within the transaction, caught and returned as proper error response
+  - Concurrent approvals will now properly serialize and the second one will see the updated balance
+- Bug #12 Fix: Eliminated duplicate transaction records
+  - In withdrawal/route.ts: Changed transaction type from `'withdrawal'` to `'withdrawal_pending'`, changed amount from positive to negative (`-amt`), added `detail` field: `Pending withdrawal request of ${amt} $ to ${trxAddress}`
+  - In admin/withdrawals/route.ts: Kept transaction type as `'withdrawal'` (the actual completed withdrawal), added `detail` field: `Withdrawal approved — ${withdrawal.amount} $ to ${withdrawal.trxAddress}`
+  - Now the user creation creates a `withdrawal_pending` record (negative amount, distinguishable from completed withdrawal) and admin approval creates the final `withdrawal` record
+- Ran `bun run lint` — no new errors (only pre-existing ones in scripts/ folder)
+
+Stage Summary:
+- Race condition in withdrawal approval fixed: all DB operations now run inside a single interactive transaction, balance check happens within the transaction to prevent concurrent double-spending
+- Duplicate transaction records eliminated: user withdrawal creation now creates a `withdrawal_pending` type transaction with negative amount and detail, while admin approval creates the final `withdrawal` type transaction with detail
+
+---
+Task ID: 7
+Agent: fix-force-dynamic
+Task: Add force-dynamic to missing API routes
+
+Work Log:
+- Read all 9 API route files to understand their structure and identify insertion points
+- Added `export const dynamic = 'force-dynamic';` after imports, before function/handler definitions in each file:
+  1. /home/z/my-project/src/app/api/deposit/trx/route.ts
+  2. /home/z/my-project/src/app/api/deposit/yas/route.ts
+  3. /home/z/my-project/src/app/api/chat/send/route.ts
+  4. /home/z/my-project/src/app/api/auth/login/route.ts
+  5. /home/z/my-project/src/app/api/auth/register/route.ts
+  6. /home/z/my-project/src/app/api/auth/otp/route.ts
+  7. /home/z/my-project/src/app/api/auth/logout/route.ts
+  8. /home/z/my-project/src/app/api/auth/forgot-password/route.ts
+  9. /home/z/my-project/src/app/api/auth/reset-password/route.ts
+- Verified none of the files already had the export (no duplicates)
+- Ran lint to confirm no new errors introduced (only pre-existing errors in unrelated files)
+
+Stage Summary:
+- Successfully added `export const dynamic = 'force-dynamic';` to all 9 API route files, placed after imports and before any function definitions. No duplicates created, no new lint errors introduced.
+
+---
+Task ID: 6
+Agent: fix-trade-race
+Task: Fix trade resolve race condition in TradingScreen
+
+Work Log:
+- Read TradingScreen.tsx to understand the race condition in the resolve useEffect (lines 245-260)
+- Added `resolvingRef = useRef<Set<string>>(new Set())` to track in-flight resolve requests
+- Modified the resolve useEffect to check `resolvingRef.current.has(trade.id)` before firing a resolve request
+- Added `resolvingRef.current.add(trade.id)` before the authFetch call
+- Added `.finally(() => { resolvingRef.current.delete(trade.id); })` to clean up on both success and error
+- Added `resolvingRef.current.clear()` in `loadTrades()` when new data is successfully fetched, since activeTrades state will be refreshed
+- Verified no lint errors in the changed file
+
+Stage Summary:
+- Race condition fixed: concurrent resolve requests for the same trade are now prevented by the resolvingRef Set, which acts as an in-memory lock per trade ID during the async resolve operation

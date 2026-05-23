@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { level } = body;
+    const { level, amount: requestedAmount } = body;
 
     if (!level || ![1, 2, 3, 4].includes(level)) {
       return NextResponse.json({ success: false, error: 'Invalid level. Must be 1-4.' }, { status: 400 });
@@ -43,8 +43,15 @@ export async function POST(request: Request) {
 
     const config = INVESTMENT_LEVELS[level];
 
-    // Random amount within the level range
-    const amount = Math.round((config.minAmount + Math.random() * (config.maxAmount - config.minAmount)) * 100) / 100;
+    if (requestedAmount == null || typeof requestedAmount !== 'number' || isNaN(requestedAmount)) {
+      return NextResponse.json({ success: false, error: 'Invalid amount. Must be a number.' }, { status: 400 });
+    }
+
+    const amount = Math.round(requestedAmount * 100) / 100;
+
+    if (amount < config.minAmount || amount > config.maxAmount) {
+      return NextResponse.json({ success: false, error: `Amount must be between $${config.minAmount} and $${config.maxAmount} for ${config.label}` }, { status: 400 });
+    }
 
     if (user.investBalance < amount) {
       return NextResponse.json({ success: false, error: `Insufficient invest balance. Need $${amount.toFixed(2)}, have $${user.investBalance.toFixed(2)}` }, { status: 400 });

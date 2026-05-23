@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 import { initiateOtp, verifyOtp, hashOtp } from '@/lib/auth';
 import crypto from 'crypto';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();

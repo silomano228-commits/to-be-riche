@@ -106,12 +106,13 @@ export async function POST(request: Request) {
       },
     });
 
-    // Create transaction record
+    // Create transaction record for the pending request
     await db.transaction.create({
       data: {
-        type: 'withdrawal',
-        amount: amt,
+        type: 'withdrawal_pending',
+        amount: -amt,
         userId: user.id,
+        detail: `Pending withdrawal request of ${amt} $ to ${trxAddress}`,
       },
     });
 

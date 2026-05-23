@@ -1,2 +1,12 @@
 $ bun --hot index.ts
 [CHAT-SERVICE] Socket.io server running on port 3003
+[CHAT] Admin Admin (cmpgntixz0000lwki8xtmg45t) connected. Total admins online: 1
+[CHAT] Admin Admin disconnected. Remaining admins: 0
+[CHAT] Admin Admin (cmpgntixz0000lwki8xtmg45t) connected. Total admins online: 1
+[CHAT] Admin Admin disconnected. Remaining admins: 0
+[CHAT] Admin Admin (cmpgntixz0000lwki8xtmg45t) connected. Total admins online: 1
+[CHAT] Admin Admin disconnected. Remaining admins: 0
+[CHAT] Admin Admin (cmpgntixz0000lwki8xtmg45t) connected. Total admins online: 1
+[CHAT] Admin Admin disconnected. Remaining admins: 0
+[CHAT] Admin Admin (cmpgntixz0000lwki8xtmg45t) connected. Total admins online: 1
+[CHAT] Admin Admin disconnected. Remaining admins: 0

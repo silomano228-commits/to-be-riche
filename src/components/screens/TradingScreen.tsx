@@ -219,6 +219,7 @@ export default function TradingScreen() {
   const prices = useLivePrices();
   const [aiAnalysis, setAiAnalysis] = useState<ReturnType<typeof generateAIAnalysis> | null>(null);
   const [winPercent, setWinPercent] = useState(() => 75 + Math.floor(Math.random() * 11)); // 75-85%
+  const resolvingRef = useRef<Set<string>>(new Set());
 
   // Tick every second
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
@@ -236,7 +237,10 @@ export default function TradingScreen() {
     try {
       const res = await authFetch('/api/trade/active');
       const data = await res.json();
-      if (data.success) setActiveTrades(data.trades || []);
+      if (data.success) {
+        setActiveTrades(data.trades || []);
+        resolvingRef.current.clear();
+      }
     } catch { /* */ }
   }, []);
   useEffect(() => { loadTrades(); }, [loadTrades]);
@@ -244,7 +248,8 @@ export default function TradingScreen() {
   // Resolve finished trades
   useEffect(() => {
     activeTrades.forEach((trade) => {
-      if (new Date(trade.endsAt).getTime() <= now && !trade.resolved) {
+      if (new Date(trade.endsAt).getTime() <= now && !trade.resolved && !resolvingRef.current.has(trade.id)) {
+        resolvingRef.current.add(trade.id);
         authFetch('/api/trade/resolve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tradeId: trade.id }) })
           .then(r => r.json())
           .then(data => {
@@ -254,7 +259,8 @@ export default function TradingScreen() {
               refreshUser();
             }
           })
-          .catch(() => { /* */ });
+          .catch(() => { /* */ })
+          .finally(() => { resolvingRef.current.delete(trade.id); });
       }
     });
   }, [now, activeTrades]);

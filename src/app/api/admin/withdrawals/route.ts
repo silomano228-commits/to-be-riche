@@ -72,35 +72,50 @@ export async function POST(request: Request) {
     }
 
     if (action === 'approve') {
-      // Verify user still has enough earnings
-      const user = await db.user.findUnique({ where: { id: withdrawal.userId } });
-      if (!user || user.totalProfit < withdrawal.amount) {
+      // Use interactive transaction to prevent race condition on concurrent approvals
+      const result = await db.$transaction(async (tx) => {
+        // Check user balance WITHIN the transaction to avoid TOCTOU issues
+        const user = await tx.user.findUnique({ where: { id: withdrawal.userId } });
+        if (!user || user.totalProfit < withdrawal.amount) {
+          throw new Error('INSUFFICIENT_BALANCE');
+        }
+
+        // Deduct from earnings and balance
+        await tx.user.update({
+          where: { id: withdrawal.userId },
+          data: {
+            totalProfit: { decrement: withdrawal.amount },
+            balance: { decrement: withdrawal.amount },
+          },
+        });
+
+        // Create a withdrawal transaction
+        await tx.transaction.create({
+          data: {
+            type: 'withdrawal',
+            amount: withdrawal.amount,
+            userId: withdrawal.userId,
+            detail: `Withdrawal approved — ${withdrawal.amount} $ to ${withdrawal.trxAddress}`,
+          },
+        });
+
+        // Update withdrawal status
+        await tx.withdrawal.update({
+          where: { id: withdrawalId },
+          data: { status: 'approved', adminNote: adminNote || null },
+        });
+
+        return true;
+      }).catch((e: unknown) => {
+        if (e instanceof Error && e.message === 'INSUFFICIENT_BALANCE') {
+          return 'INSUFFICIENT_BALANCE';
+        }
+        throw e;
+      });
+
+      if (result === 'INSUFFICIENT_BALANCE') {
         return NextResponse.json({ success: false, error: 'L\'utilisateur n\'a plus assez de gains' });
       }
-
-      // Deduct from earnings and balance
-      await db.user.update({
-        where: { id: withdrawal.userId },
-        data: {
-          totalProfit: { decrement: withdrawal.amount },
-          balance: { decrement: withdrawal.amount },
-        },
-      });
-
-      // Create a withdrawal transaction
-      await db.transaction.create({
-        data: {
-          type: 'withdrawal',
-          amount: withdrawal.amount,
-          userId: withdrawal.userId,
-        },
-      });
-
-      // Update withdrawal status
-      await db.withdrawal.update({
-        where: { id: withdrawalId },
-        data: { status: 'approved', adminNote: adminNote || null },
-      });
 
       return NextResponse.json({ success: true, message: 'Retrait approuvé et débité' });
     } else {

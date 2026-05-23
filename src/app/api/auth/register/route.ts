@@ -2,6 +2,8 @@ import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { initiateOtp } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 function generateReferralCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = 'BR-';

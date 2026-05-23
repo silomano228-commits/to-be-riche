@@ -73,6 +73,12 @@ export default function AdminScreen() {
   const chatInputRef = useRef<HTMLInputElement>(null);
   const lastChatFetchId = useRef<string>('0');
   const socketRef = useRef<Socket | null>(null);
+  const selectedUserIdRef = useRef<string | null>(null);
+
+  // Keep selectedUserIdRef in sync with selectedUserId
+  useEffect(() => {
+    selectedUserIdRef.current = selectedUserId;
+  }, [selectedUserId]);
 
   // Ensure spin animation is available
   useEffect(() => {
@@ -146,7 +152,7 @@ export default function AdminScreen() {
       date: string;
     }) => {
       // If we have this conversation open, add the message
-      if (selectedUserId === msgData.userId) {
+      if (selectedUserIdRef.current === msgData.userId) {
         setChatMessages(prev => {
           const existingIds = new Set(prev.map(m => m.id));
           if (existingIds.has(msgData.id)) return prev;
@@ -174,7 +180,7 @@ export default function AdminScreen() {
       t: string;
       date: string;
     }) => {
-      if (selectedUserId === msgData.userId) {
+      if (selectedUserIdRef.current === msgData.userId) {
         setChatMessages(prev => {
           const existingIds = new Set(prev.map(m => m.id));
           if (existingIds.has(msgData.id)) return prev;
@@ -198,7 +204,7 @@ export default function AdminScreen() {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [user?.id, selectedUserId, loadConversations]);
+  }, [user?.id]);
 
   const loadChatMessages = useCallback(async (userId: string) => {
     try {

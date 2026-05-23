@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { getTrxPrice, getTrxUsdPrice } from '@/lib/trongrid';
 
+export const dynamic = 'force-dynamic';
+
 function getToken(request: Request): string | null {
   const authHeader = request.headers.get('x-auth-token');
   if (authHeader) return authHeader;
