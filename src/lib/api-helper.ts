@@ -65,15 +65,16 @@ export function formatMoney(amount: number): string {
 
 export async function seedAdmin() {
   const existing = await db.user.findUnique({
-    where: { email: 'admin@berich.com' },
+    where: { email: 'silomano228@gmail.com' },
   });
   if (!existing) {
     await db.user.create({
       data: {
-        email: 'admin@berich.com',
+        email: 'silomano228@gmail.com',
         name: 'Admin',
         password: 'Admin@2024',
         role: 'admin',
+        emailVerified: true,
       },
     });
   }

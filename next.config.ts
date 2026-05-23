@@ -11,8 +11,6 @@ const nextConfig: NextConfig = {
     '@libsql/client',
   ],
   env: {
-    // Fallback: ensure DATABASE_URL is always set for Prisma internal validation
-    // Even when using the Turso adapter, Prisma validates this URL format
     DATABASE_URL: process.env.DATABASE_URL || 'file:./db/local.db',
   },
 };

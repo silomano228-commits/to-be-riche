@@ -9,7 +9,7 @@ const MARKET_MOODS = [
   { label: 'Humeur du marché', emoji: '😊', value: 'Optimiste' },
   { label: 'Volatilité', emoji: '🌊', value: 'Modérée' },
   { label: 'Tendance', emoji: '📈', value: 'Hausse' },
-  { label: 'Moment favorable', emoji: '✅', value: 'Oui' },
+  { label: 'Moment favorable', emoji: '👍', value: 'Oui' },
 ];
 
 const TRADING_ASSETS = [

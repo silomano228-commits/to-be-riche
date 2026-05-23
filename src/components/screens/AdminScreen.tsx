@@ -1,12 +1,49 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAppStore, formatMoney, esc, authFetch, type AppUser } from '@/lib/store';
 import { Header, LogoImg, Modal, INVEST_LEVELS, ENTERPRISE_TYPES, ENTERPRISE_NAMES } from '@/components/shared';
 
+interface AdminChatMsg {
+  id: string;
+  text: string;
+  me: boolean;
+  isAdmin: boolean;
+  isAdminMsg: boolean;
+  t: string;
+  date?: string;
+}
+
+interface Conversation {
+  user_id: string;
+  user_name: string | null;
+  user_email: string;
+  user_balance: number;
+  user_has_invested: boolean;
+  messages: {
+    id: string;
+    content: string;
+    is_admin: boolean;
+    time: string;
+    date: string;
+    timestamp: number;
+  }[];
+  last_ts: number;
+  last_message: {
+    id: string;
+    content: string;
+    is_admin: boolean;
+    time: string;
+    date: string;
+    timestamp: number;
+  } | null;
+  unread_count: number;
+  total_messages: number;
+}
+
 export default function AdminScreen() {
   const { user, addToast } = useAppStore();
-  const [tab, setTab] = useState<'users' | 'deposits' | 'yas' | 'withdrawals' | 'config'>('users');
+  const [tab, setTab] = useState<'users' | 'deposits' | 'yas' | 'withdrawals' | 'messages' | 'config'>('users');
   const [adminData, setAdminData] = useState<any>(null);
   const [pendingDeposits, setPendingDeposits] = useState<any[]>([]);
   const [depositStats, setDepositStats] = useState<any>({});
@@ -23,6 +60,17 @@ export default function AdminScreen() {
   const [yasNote, setYasNote] = useState<Record<string, string>>({});
   const [savingYas, setSavingYas] = useState(false);
   const [savingConfig, setSavingConfig] = useState(false);
+
+  // Chat state
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<AdminChatMsg[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatSending, setChatSending] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLInputElement>(null);
+  const lastChatFetchId = useRef<string>('0');
 
   // Ensure spin animation is available
   useEffect(() => {
@@ -55,6 +103,118 @@ export default function AdminScreen() {
     try { const r = await authFetch('/api/admin/config'); const d = await r.json(); if (d.success) { setSiteConfig(d.data); setConfigAddr(d.data.adminTrxAddress || ''); setConfigPrice(String(d.data.trxUsdPrice || '')); setConfigYasAddr(d.data.adminYasAccount || ''); setConfigCfaRate(String(d.data.cfaUsdRate || '600')); } } catch { /* */ }
   }, []);
 
+  const loadConversations = useCallback(async () => {
+    try {
+      const r = await authFetch('/api/admin/chats');
+      const d = await r.json();
+      if (d.success) setConversations(d.conversations || []);
+    } catch { /* */ }
+  }, []);
+
+  const loadChatMessages = useCallback(async (userId: string) => {
+    try {
+      const r = await authFetch(`/api/chat/messages?userId=${userId}&lastId=${lastChatFetchId.current}`);
+      const d = await r.json();
+      if (d.success && d.messages?.length > 0) {
+        setChatMessages(prev => {
+          const existingIds = new Set(prev.map(m => m.id));
+          const newMsgs = d.messages.filter((m: AdminChatMsg) => !existingIds.has(m.id));
+          if (newMsgs.length > 0) {
+            lastChatFetchId.current = newMsgs[newMsgs.length - 1].id;
+            return [...prev, ...newMsgs];
+          }
+          return prev;
+        });
+      }
+    } catch { /* */ }
+    setChatLoading(false);
+  }, []);
+
+  // Poll chat messages when a conversation is open
+  useEffect(() => {
+    if (tab === 'messages' && selectedUserId) {
+      loadChatMessages(selectedUserId);
+      const interval = setInterval(() => loadChatMessages(selectedUserId), 3000);
+      return () => clearInterval(interval);
+    }
+  }, [tab, selectedUserId, loadChatMessages]);
+
+  // Load conversations when messages tab is selected
+  useEffect(() => {
+    if (tab === 'messages') {
+      const load = () => { loadConversations(); };
+      load();
+      const interval = setInterval(load, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [tab, loadConversations]);
+
+  // Auto-scroll chat
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [chatMessages]);
+
+  const handleAdminReply = async () => {
+    if (!chatInput.trim() || !selectedUserId || chatSending) return;
+    setChatSending(true);
+    try {
+      const res = await authFetch('/api/admin/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetUserId: selectedUserId, content: chatInput.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setChatInput('');
+        // Fetch new messages instead of adding locally to avoid duplicates
+        setTimeout(() => loadChatMessages(selectedUserId), 300);
+        loadConversations(); // Refresh conversation list
+      } else {
+        addToast(data.error || 'Erreur', 'error');
+      }
+    } catch {
+      addToast('Erreur réseau', 'error');
+    }
+    setChatSending(false);
+    chatInputRef.current?.focus();
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    try {
+      const res = await authFetch('/api/admin/messages/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setChatMessages(prev => prev.filter(m => m.id !== messageId));
+        addToast('Message supprimé', 'info');
+      } else {
+        addToast(data.error || 'Erreur', 'error');
+      }
+    } catch {
+      addToast('Erreur', 'error');
+    }
+  };
+
+  const openConversation = (userId: string) => {
+    setSelectedUserId(userId);
+    setChatMessages([]);
+    lastChatFetchId.current = '0';
+    setChatLoading(true);
+    loadChatMessages(userId);
+  };
+
+  const closeConversation = () => {
+    setSelectedUserId(null);
+    setChatMessages([]);
+    lastChatFetchId.current = '0';
+    loadConversations();
+  };
+
   useEffect(() => { const t = setTimeout(() => { loadData(); loadDeposits(); loadYasDeposits(); loadWithdrawals(); loadConfig(); }, 0); return () => clearTimeout(t); }, [loadData, loadDeposits, loadYasDeposits, loadWithdrawals, loadConfig]);
 
   if (!user || user.role !== 'admin') return null;
@@ -62,6 +222,9 @@ export default function AdminScreen() {
   const usersList = adminData?.users || [];
 
   const refreshAll = () => { loadData(); loadDeposits(); loadYasDeposits(); loadWithdrawals(); loadConfig(); };
+
+  // Total unread messages
+  const totalUnread = conversations.reduce((sum, c) => sum + c.unread_count, 0);
 
   return (
     <>
@@ -94,6 +257,7 @@ export default function AdminScreen() {
             { k: 'deposits', l: 'Dépôts TRX' },
             { k: 'yas', l: 'Yas 🇹🇬' },
             { k: 'withdrawals', l: 'Retraits' },
+            { k: 'messages', l: `Messages${totalUnread > 0 ? ` (${totalUnread})` : ''}` },
             { k: 'config', l: 'Config' },
           ].map(t => (
             <button
@@ -182,12 +346,7 @@ export default function AdminScreen() {
                           <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Adresse TRX client</span>
                           <button
                             onClick={async () => {
-                              try {
-                                await navigator.clipboard.writeText(d.userAddress || '');
-                                addToast('Adresse copiée !', 'success');
-                              } catch {
-                                addToast('Erreur de copie', 'error');
-                              }
+                              try { await navigator.clipboard.writeText(d.userAddress || ''); addToast('Adresse copiée !', 'success'); } catch { addToast('Erreur de copie', 'error'); }
                             }}
                             className="text-[0.6rem] text-[#6366F1] hover:text-[#818CF8] cursor-pointer bg-transparent border-none flex items-center gap-1"
                           >
@@ -199,34 +358,18 @@ export default function AdminScreen() {
                       <div className="flex gap-2">
                         <button
                           onClick={async () => {
-                            const r = await authFetch('/api/admin/deposits', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ depositId: d.id, action: 'approve' })
-                            });
-                            const data = await r.json();
-                            if (data.success) { addToast('Approuvé', 'success'); loadDeposits(); }
-                            else addToast(data.error, 'error');
+                            const r = await authFetch('/api/admin/deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId: d.id, action: 'approve' }) });
+                            const data = await r.json(); if (data.success) { addToast('Approuvé', 'success'); loadDeposits(); } else addToast(data.error, 'error');
                           }}
                           className="flex-1 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer"
-                        >
-                          Approuver
-                        </button>
+                        >Approuver</button>
                         <button
                           onClick={async () => {
-                            const r = await authFetch('/api/admin/deposits', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ depositId: d.id, action: 'reject' })
-                            });
-                            const data = await r.json();
-                            if (data.success) { addToast('Rejeté', 'info'); loadDeposits(); }
-                            else addToast(data.error, 'error');
+                            const r = await authFetch('/api/admin/deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId: d.id, action: 'reject' }) });
+                            const data = await r.json(); if (data.success) { addToast('Rejeté', 'info'); loadDeposits(); } else addToast(data.error, 'error');
                           }}
                           className="flex-1 py-2 rounded-lg bg-[rgba(248,113,113,0.15)] text-[#F87171] text-[0.72rem] font-semibold border-none cursor-pointer"
-                        >
-                          Rejeter
-                        </button>
+                        >Rejeter</button>
                       </div>
                     </div>
                   ))}
@@ -248,68 +391,25 @@ export default function AdminScreen() {
                       <div className="text-[rgba(255,255,255,0.45)] text-[0.65rem]">Approuvez pour créditer et envoyer les TRX</div>
                     </div>
                   </div>
-
-                  {/* Yas Config Section */}
                   <div className="bg-[#0E0F11] border border-[rgba(99,102,241,0.12)] rounded-2xl p-3.5 mb-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-7 h-7 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center shrink-0">
-                        <i className="fas fa-cog text-[#6366F1] text-[0.65rem]"></i>
-                      </div>
+                      <div className="w-7 h-7 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center shrink-0"><i className="fas fa-cog text-[#6366F1] text-[0.65rem]"></i></div>
                       <div className="text-[0.78rem] font-bold text-[#EDEDEF]">Configuration Yas</div>
                     </div>
                     <div className="mb-2.5">
                       <label className="block mb-1 text-[0.7rem] font-semibold text-[rgba(255,255,255,0.45)]">Votre numéro Yas (affiché aux utilisateurs)</label>
-                      <input
-                        type="text"
-                        value={configYasAddr}
-                        onChange={(e) => setConfigYasAddr(e.target.value)}
-                        placeholder="90XXXXXX ou 70XXXXXX"
-                        maxLength={8}
-                        className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.82rem] text-white outline-none focus:border-[#6366F1]"
-                      />
-                      {configYasAddr && !/^(9[0-3]|7[0-3])\d{6}$/.test(configYasAddr.trim()) && (
-                        <p className="text-[0.6rem] text-[#F87171] mt-1">Format: 8 chiffres, commence par 90-93 ou 70-73</p>
-                      )}
+                      <input type="text" value={configYasAddr} onChange={(e) => setConfigYasAddr(e.target.value)} placeholder="90XXXXXX ou 70XXXXXX" maxLength={8} className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.82rem] text-white outline-none focus:border-[#6366F1]" />
+                      {configYasAddr && !/^(9[0-3]|7[0-3])\d{6}$/.test(configYasAddr.trim()) && (<p className="text-[0.6rem] text-[#F87171] mt-1">Format: 8 chiffres, commence par 90-93 ou 70-73</p>)}
                     </div>
                     <div className="mb-3">
                       <label className="block mb-1 text-[0.7rem] font-semibold text-[rgba(255,255,255,0.45)]">Taux CFA/USD (1 USD = ? CFA)</label>
-                      <input
-                        type="number"
-                        step="1"
-                        value={configCfaRate}
-                        onChange={(e) => setConfigCfaRate(e.target.value)}
-                        className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.82rem] text-white outline-none focus:border-[#6366F1]"
-                      />
+                      <input type="number" step="1" value={configCfaRate} onChange={(e) => setConfigCfaRate(e.target.value)} className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.82rem] text-white outline-none focus:border-[#6366F1]" />
                     </div>
-                    <button
-                      onClick={async () => {
-                        setSavingYas(true);
-                        try {
-                          const r = await authFetch('/api/admin/config', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ adminYasAccount: configYasAddr, cfaUsdRate: configCfaRate })
-                          });
-                          const d = await r.json();
-                          if (d.success) {
-                            addToast('Config Yas sauvegardée !', 'success');
-                            await loadConfig();
-                          } else {
-                            addToast(d.error || 'Erreur de sauvegarde', 'error');
-                          }
-                        } catch (e) {
-                          addToast('Erreur réseau', 'error');
-                        }
-                        setSavingYas(false);
-                      }}
-                      disabled={savingYas}
-                      className="w-full py-2.5 rounded-lg bg-[#6366F1] text-[#050506] text-[0.78rem] font-bold border-none cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-60"
-                    >
+                    <button onClick={async () => { setSavingYas(true); try { const r = await authFetch('/api/admin/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminYasAccount: configYasAddr, cfaUsdRate: configCfaRate }) }); const d = await r.json(); if (d.success) { addToast('Config Yas sauvegardée !', 'success'); await loadConfig(); } else addToast(d.error || 'Erreur de sauvegarde', 'error'); } catch { addToast('Erreur réseau', 'error'); } setSavingYas(false); }} disabled={savingYas} className="w-full py-2.5 rounded-lg bg-[#6366F1] text-[#050506] text-[0.78rem] font-bold border-none cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-60">
                       {savingYas ? <div className="w-4 h-4 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <i className="fas fa-save text-[0.7rem]"></i>}
                       {savingYas ? 'Sauvegarde...' : 'Sauvegarder la config Yas'}
                     </button>
                   </div>
-
                   <div className="grid grid-cols-3 gap-2 mb-4">
                     {[
                       { label: 'En attente', value: yasStats.pending || 0, color: '#818CF8' },
@@ -333,78 +433,22 @@ export default function AdminScreen() {
                         <span className="text-[0.6rem] bg-[rgba(99,102,241,0.12)] text-[#6366F1] px-2 py-0.5 rounded-full font-semibold">Yas 🇹🇬</span>
                       </div>
                       <div className="bg-[#161719] rounded-lg p-2.5 mb-2 space-y-1">
-                        <div className="flex justify-between items-center">
-                          <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Compte Yas client</span>
-                          <span className="text-[0.7rem] font-bold text-[#EDEDEF]">{esc(d.yasAccount)}</span>
-                        </div>
+                        <div className="flex justify-between items-center"><span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Compte Yas client</span><span className="text-[0.7rem] font-bold text-[#EDEDEF]">{esc(d.yasAccount)}</span></div>
                         <div className="flex justify-between items-center">
                           <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Adresse TRX</span>
-                          <button
-                            onClick={async () => {
-                              try {
-                                await navigator.clipboard.writeText(d.trxAddress || '');
-                                addToast('Adresse copiée !', 'success');
-                              } catch {
-                                addToast('Erreur de copie', 'error');
-                              }
-                            }}
-                            className="text-[0.6rem] text-[#6366F1] hover:text-[#818CF8] cursor-pointer bg-transparent border-none flex items-center gap-1"
-                          >
-                            <i className="fas fa-copy text-[0.55rem]"></i> Copier
-                          </button>
+                          <button onClick={async () => { try { await navigator.clipboard.writeText(d.trxAddress || ''); addToast('Adresse copiée !', 'success'); } catch { addToast('Erreur de copie', 'error'); } }} className="text-[0.6rem] text-[#6366F1] hover:text-[#818CF8] cursor-pointer bg-transparent border-none flex items-center gap-1"><i className="fas fa-copy text-[0.55rem]"></i> Copier</button>
                         </div>
                         <div className="text-[0.72rem] font-mono font-bold text-[#818CF8] break-all leading-relaxed mt-1">{esc(d.trxAddress || 'Non renseigné')}</div>
                       </div>
-                      <div className="mb-2">
-                        <input
-                          type="text"
-                          value={yasNote[d.id] || ''}
-                          onChange={(e) => setYasNote(prev => ({ ...prev, [d.id]: e.target.value }))}
-                          placeholder="Note admin (optionnel)"
-                          className="w-full py-2 px-3 bg-[#161719] border-[1px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.72rem] text-white outline-none focus:border-[#6366F1]"
-                        />
-                      </div>
+                      <div className="mb-2"><input type="text" value={yasNote[d.id] || ''} onChange={(e) => setYasNote(prev => ({ ...prev, [d.id]: e.target.value }))} placeholder="Note admin (optionnel)" className="w-full py-2 px-3 bg-[#161719] border-[1px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.72rem] text-white outline-none focus:border-[#6366F1]" /></div>
                       <div className="flex gap-2">
-                        <button
-                          onClick={async () => {
-                            const r = await authFetch('/api/admin/yas-deposits', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ depositId: d.id, action: 'approve', adminNote: yasNote[d.id] || 'Conversion effectuée. TRX envoyé à votre adresse.' })
-                            });
-                            const data = await r.json();
-                            if (data.success) { addToast('Approuvé - TRX crédités', 'success'); loadYasDeposits(); }
-                            else addToast(data.error, 'error');
-                          }}
-                          className="flex-1 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer"
-                        >
-                          <i className="fas fa-check mr-1"></i>Approuver
-                        </button>
-                        <button
-                          onClick={async () => {
-                            const r = await authFetch('/api/admin/yas-deposits', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ depositId: d.id, action: 'reject', adminNote: yasNote[d.id] || undefined })
-                            });
-                            const data = await r.json();
-                            if (data.success) { addToast('Rejeté', 'info'); loadYasDeposits(); }
-                            else addToast(data.error, 'error');
-                          }}
-                          className="flex-1 py-2 rounded-lg bg-[rgba(248,113,113,0.15)] text-[#F87171] text-[0.72rem] font-semibold border-none cursor-pointer"
-                        >
-                          Rejeter
-                        </button>
+                        <button onClick={async () => { const r = await authFetch('/api/admin/yas-deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId: d.id, action: 'approve', adminNote: yasNote[d.id] || 'Conversion effectuée. TRX envoyé à votre adresse.' }) }); const data = await r.json(); if (data.success) { addToast('Approuvé - TRX crédités', 'success'); loadYasDeposits(); } else addToast(data.error, 'error'); }} className="flex-1 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer"><i className="fas fa-check mr-1"></i>Approuver</button>
+                        <button onClick={async () => { const r = await authFetch('/api/admin/yas-deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId: d.id, action: 'reject', adminNote: yasNote[d.id] || undefined }) }); const data = await r.json(); if (data.success) { addToast('Rejeté', 'info'); loadYasDeposits(); } else addToast(data.error, 'error'); }} className="flex-1 py-2 rounded-lg bg-[rgba(248,113,113,0.15)] text-[#F87171] text-[0.72rem] font-semibold border-none cursor-pointer">Rejeter</button>
                       </div>
                     </div>
                   ))}
                   {yasDeposits.filter(d => d.status === 'pending').length === 0 && (
-                    <div className="text-center py-6">
-                      <div className="w-12 h-12 rounded-full bg-[rgba(99,102,241,0.12)] flex items-center justify-center mx-auto mb-2">
-                        <i className="fas fa-check-circle text-[#6366F1] text-[1.2rem]"></i>
-                      </div>
-                      <p className="text-[0.82rem] text-[rgba(255,255,255,0.25)]">Aucune conversion Yas en attente</p>
-                    </div>
+                    <div className="text-center py-6"><div className="w-12 h-12 rounded-full bg-[rgba(99,102,241,0.12)] flex items-center justify-center mx-auto mb-2"><i className="fas fa-check-circle text-[#6366F1] text-[1.2rem]"></i></div><p className="text-[0.82rem] text-[rgba(255,255,255,0.25)]">Aucune conversion Yas en attente</p></div>
                   )}
                 </>
               )}
@@ -436,53 +480,13 @@ export default function AdminScreen() {
                       <div className="bg-[#161719] rounded-lg p-2.5 mb-2">
                         <div className="flex justify-between items-center">
                           <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Adresse TRX retrait</span>
-                          <button
-                            onClick={async () => {
-                              try {
-                                await navigator.clipboard.writeText(w.trxAddress || '');
-                                addToast('Adresse copiée !', 'success');
-                              } catch {
-                                addToast('Erreur de copie', 'error');
-                              }
-                            }}
-                            className="text-[0.6rem] text-[#6366F1] hover:text-[#818CF8] cursor-pointer bg-transparent border-none flex items-center gap-1"
-                          >
-                            <i className="fas fa-copy text-[0.55rem]"></i> Copier
-                          </button>
+                          <button onClick={async () => { try { await navigator.clipboard.writeText(w.trxAddress || ''); addToast('Adresse copiée !', 'success'); } catch { addToast('Erreur de copie', 'error'); } }} className="text-[0.6rem] text-[#6366F1] hover:text-[#818CF8] cursor-pointer bg-transparent border-none flex items-center gap-1"><i className="fas fa-copy text-[0.55rem]"></i> Copier</button>
                         </div>
                         <div className="text-[0.72rem] font-mono font-bold text-[#818CF8] break-all leading-relaxed mt-1">{esc(w.trxAddress || 'Non renseigné')}</div>
                       </div>
                       <div className="flex gap-2">
-                        <button
-                          onClick={async () => {
-                            const r = await authFetch('/api/admin/withdrawals', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ withdrawalId: w.id, action: 'approve' })
-                            });
-                            const data = await r.json();
-                            if (data.success) { addToast('Approuvé', 'success'); loadWithdrawals(); }
-                            else addToast(data.error, 'error');
-                          }}
-                          className="flex-1 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer"
-                        >
-                          Approuver
-                        </button>
-                        <button
-                          onClick={async () => {
-                            const r = await authFetch('/api/admin/withdrawals', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ withdrawalId: w.id, action: 'reject' })
-                            });
-                            const data = await r.json();
-                            if (data.success) { addToast('Rejeté', 'info'); loadWithdrawals(); }
-                            else addToast(data.error, 'error');
-                          }}
-                          className="flex-1 py-2 rounded-lg bg-[rgba(248,113,113,0.15)] text-[#F87171] text-[0.72rem] font-semibold border-none cursor-pointer"
-                        >
-                          Rejeter
-                        </button>
+                        <button onClick={async () => { const r = await authFetch('/api/admin/withdrawals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ withdrawalId: w.id, action: 'approve' }) }); const data = await r.json(); if (data.success) { addToast('Approuvé', 'success'); loadWithdrawals(); } else addToast(data.error, 'error'); }} className="flex-1 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer">Approuver</button>
+                        <button onClick={async () => { const r = await authFetch('/api/admin/withdrawals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ withdrawalId: w.id, action: 'reject' }) }); const data = await r.json(); if (data.success) { addToast('Rejeté', 'info'); loadWithdrawals(); } else addToast(data.error, 'error'); }} className="flex-1 py-2 rounded-lg bg-[rgba(248,113,113,0.15)] text-[#F87171] text-[0.72rem] font-semibold border-none cursor-pointer">Rejeter</button>
                       </div>
                     </div>
                   ))}
@@ -492,76 +496,189 @@ export default function AdminScreen() {
                 </>
               )}
 
+              {/* ============ MESSAGES TAB ============ */}
+              {tab === 'messages' && (
+                <>
+                  {selectedUserId ? (
+                    /* ========== CHAT VIEW ========== */
+                    <div className="flex flex-col" style={{ minHeight: 'calc(100vh - 180px)' }}>
+                      {/* Chat Header - User info */}
+                      <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 mb-3 flex items-center gap-3">
+                        <button onClick={closeConversation} className="w-8 h-8 rounded-lg bg-[rgba(255,255,255,0.06)] flex items-center justify-center text-[rgba(255,255,255,0.45)] cursor-pointer border-none shrink-0">
+                          <i className="fas fa-arrow-left text-[0.7rem]"></i>
+                        </button>
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#6366F1] to-[#4F46E5] flex items-center justify-center text-white text-[0.7rem] font-bold shrink-0">
+                          {conversations.find(c => c.user_id === selectedUserId)?.user_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[0.85rem] font-bold text-[#EDEDEF] truncate">{conversations.find(c => c.user_id === selectedUserId)?.user_name || 'Utilisateur'}</div>
+                          <div className="text-[0.6rem] text-[rgba(255,255,255,0.35)] truncate">{conversations.find(c => c.user_id === selectedUserId)?.user_email}</div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className="text-[0.75rem] font-bold text-[#4ADE80]">{formatMoney(conversations.find(c => c.user_id === selectedUserId)?.user_balance || 0)}</div>
+                        </div>
+                      </div>
+
+                      {/* Messages Area */}
+                      <div ref={chatScrollRef} className="flex-1 overflow-y-auto min-h-0 mb-3 space-y-1" style={{ maxHeight: 'calc(100vh - 340px)' }}>
+                        {chatLoading && chatMessages.length === 0 && (
+                          <div className="flex justify-center py-8">
+                            <div className="w-6 h-6 border-2 border-[rgba(255,255,255,0.1)] border-t-[#6366F1] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
+                          </div>
+                        )}
+                        {!chatLoading && chatMessages.length === 0 && (
+                          <p className="text-center text-[0.75rem] text-[rgba(255,255,255,0.25)] py-6">Aucun message</p>
+                        )}
+                        {chatMessages.map((msg) => (
+                          <div key={msg.id} className={`flex ${msg.me ? 'justify-end' : 'justify-start'} mt-1 group`}>
+                            <div className={`max-w-[80%] relative ${msg.me ? 'order-2' : 'order-1'}`}>
+                              <div className={`${
+                                msg.me
+                                  ? 'bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white rounded-2xl rounded-br-md'
+                                  : 'bg-[#161719] border border-[rgba(255,255,255,0.06)] text-[#EDEDEF] rounded-2xl rounded-bl-md'
+                              } px-3.5 py-2.5`}>
+                                <p className="text-[0.8rem] leading-relaxed whitespace-pre-wrap break-words">{esc(msg.text)}</p>
+                              </div>
+                              <div className={`flex items-center gap-1 mt-0.5 ${msg.me ? 'justify-end mr-1' : 'justify-start ml-1'}`}>
+                                <span className="text-[0.5rem] text-[rgba(255,255,255,0.2)]">{msg.t}</span>
+                                {msg.me && <i className="fas fa-check-double text-[0.4rem] text-[rgba(99,102,241,0.5)]"></i>}
+                              </div>
+                              {/* Delete button on hover */}
+                              <button
+                                onClick={() => handleDeleteMessage(msg.id)}
+                                className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[rgba(239,68,68,0.15)] text-[#F87171] text-[0.45rem] flex items-center justify-center border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                title="Supprimer"
+                              >
+                                <i className="fas fa-trash"></i>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        {chatSending && (
+                          <div className="flex justify-end mt-1">
+                            <div className="bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white rounded-2xl rounded-br-md px-3.5 py-2.5 opacity-60">
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-1 h-1 rounded-full bg-white" style={{ animation: 'pulse 0.8s infinite' }} />
+                                <div className="w-1 h-1 rounded-full bg-white" style={{ animation: 'pulse 0.8s infinite 0.2s' }} />
+                                <div className="w-1 h-1 rounded-full bg-white" style={{ animation: 'pulse 0.8s infinite 0.4s' }} />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Input Bar */}
+                      <div className="flex items-end gap-2 shrink-0 bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-2">
+                        <input
+                          ref={chatInputRef}
+                          type="text"
+                          value={chatInput}
+                          onChange={(e) => setChatInput(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAdminReply(); } }}
+                          placeholder="Répondre..."
+                          className="flex-1 py-2.5 px-3 bg-[#161719] border-[1px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.82rem] text-white outline-none focus:border-[#6366F1] placeholder:text-[rgba(255,255,255,0.2)]"
+                          disabled={chatSending}
+                        />
+                        <button
+                          onClick={handleAdminReply}
+                          disabled={chatSending || !chatInput.trim()}
+                          className="w-10 h-10 rounded-xl bg-[#6366F1] text-[#050506] flex items-center justify-center border-none cursor-pointer disabled:opacity-30 shrink-0 transition-all active:scale-90"
+                        >
+                          <i className="fas fa-paper-plane text-[0.75rem]"></i>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* ========== CONVERSATION LIST ========== */
+                    <>
+                      <div className="bg-[#0E0F11] border border-[rgba(99,102,241,0.15)] rounded-2xl p-3 mb-4 flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center shrink-0">
+                          <i className="fas fa-comments text-[#6366F1] text-[0.85rem]"></i>
+                        </div>
+                        <div>
+                          <div className="text-[#EDEDEF] text-[0.85rem] font-bold">Messagerie</div>
+                          <div className="text-[rgba(255,255,255,0.45)] text-[0.65rem]">Répondez aux utilisateurs en temps réel</div>
+                        </div>
+                      </div>
+
+                      {conversations.length === 0 && (
+                        <div className="text-center py-8">
+                          <div className="w-12 h-12 rounded-full bg-[rgba(99,102,241,0.12)] flex items-center justify-center mx-auto mb-3">
+                            <i className="fas fa-inbox text-[#6366F1] text-[1.2rem]"></i>
+                          </div>
+                          <p className="text-[0.82rem] text-[rgba(255,255,255,0.25)]">Aucune conversation pour le moment</p>
+                          <p className="text-[0.65rem] text-[rgba(255,255,255,0.15)] mt-1">Les messages des utilisateurs apparaîtront ici</p>
+                        </div>
+                      )}
+
+                      {conversations.map((conv) => (
+                        <button
+                          key={conv.user_id}
+                          onClick={() => openConversation(conv.user_id)}
+                          className="w-full bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 mb-2 cursor-pointer transition-all hover:border-[rgba(99,102,241,0.2)] text-left"
+                        >
+                          <div className="flex items-center gap-3">
+                            {/* Avatar */}
+                            <div className="relative shrink-0">
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#6366F1] to-[#4F46E5] flex items-center justify-center text-white text-[0.7rem] font-bold">
+                                {conv.user_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?'}
+                              </div>
+                              {conv.unread_count > 0 && (
+                                <div className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-[#EF4444] text-white text-[0.55rem] font-bold flex items-center justify-center px-1">
+                                  {conv.unread_count}
+                                </div>
+                              )}
+                            </div>
+                            {/* Content */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-0.5">
+                                <span className="text-[0.82rem] font-bold text-[#EDEDEF] truncate">{esc(conv.user_name || 'Utilisateur')}</span>
+                                <span className="text-[0.55rem] text-[rgba(255,255,255,0.2)] shrink-0 ml-2">
+                                  {conv.last_message?.time || ''}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <p className="text-[0.68rem] text-[rgba(255,255,255,0.35)] truncate pr-2">
+                                  {conv.last_message
+                                    ? (conv.last_message.is_admin ? <span className="text-[rgba(99,102,241,0.6)]">Vous : </span> : null)
+                                    : null}
+                                  {conv.last_message?.content || ''}
+                                </p>
+                                <span className="text-[0.55rem] text-[rgba(255,255,255,0.15)] shrink-0">{conv.total_messages} msg</span>
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </>
+                  )}
+                </>
+              )}
+
               {/* Config Tab */}
               {tab === 'config' && siteConfig && (
                 <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-4">
                   <div className="mb-3">
                     <label className="block mb-1 text-[0.75rem] font-semibold text-[rgba(255,255,255,0.45)]">Adresse TRX Admin</label>
-                    <input
-                      type="text"
-                      value={configAddr}
-                      onChange={(e) => setConfigAddr(e.target.value)}
-                      className="w-full py-3 px-4 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#6366F1]"
-                    />
+                    <input type="text" value={configAddr} onChange={(e) => setConfigAddr(e.target.value)} className="w-full py-3 px-4 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#6366F1]" />
                   </div>
                   <div className="mb-3">
                     <label className="block mb-1 text-[0.75rem] font-semibold text-[rgba(255,255,255,0.45)]">Prix TRX (USD)</label>
-                    <input
-                      type="number"
-                      step="0.001"
-                      value={configPrice}
-                      onChange={(e) => setConfigPrice(e.target.value)}
-                      className="w-full py-3 px-4 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#6366F1]"
-                    />
+                    <input type="number" step="0.001" value={configPrice} onChange={(e) => setConfigPrice(e.target.value)} className="w-full py-3 px-4 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#6366F1]" />
                   </div>
                   <div className="bg-[#161719] rounded-xl p-3 mb-3 border border-[rgba(99,102,241,0.12)]">
-                    <div className="text-[0.72rem] font-bold text-[#818CF8] mb-2">
-                      <i className="fas fa-exchange-alt mr-1"></i>Config Yas du Togo
-                    </div>
+                    <div className="text-[0.72rem] font-bold text-[#818CF8] mb-2"><i className="fas fa-exchange-alt mr-1"></i>Config Yas du Togo</div>
                     <div className="mb-3">
                       <label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(255,255,255,0.45)]">Numéro Yas Admin</label>
-                      <input
-                        type="text"
-                        value={configYasAddr}
-                        onChange={(e) => setConfigYasAddr(e.target.value)}
-                        placeholder="90XXXXXX ou 70XXXXXX"
-                        className="w-full py-3 px-4 bg-[#0E0F11] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#6366F1]"
-                      />
+                      <input type="text" value={configYasAddr} onChange={(e) => setConfigYasAddr(e.target.value)} placeholder="90XXXXXX ou 70XXXXXX" className="w-full py-3 px-4 bg-[#0E0F11] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#6366F1]" />
                     </div>
                     <div>
                       <label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(255,255,255,0.45)]">Taux CFA/USD (1 USD = ? CFA)</label>
-                      <input
-                        type="number"
-                        step="1"
-                        value={configCfaRate}
-                        onChange={(e) => setConfigCfaRate(e.target.value)}
-                        className="w-full py-3 px-4 bg-[#0E0F11] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#6366F1]"
-                      />
+                      <input type="number" step="1" value={configCfaRate} onChange={(e) => setConfigCfaRate(e.target.value)} className="w-full py-3 px-4 bg-[#0E0F11] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#6366F1]" />
                     </div>
                   </div>
-                  <button
-                    onClick={async () => {
-                      setSavingConfig(true);
-                      try {
-                        const r = await authFetch('/api/admin/config', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ adminTrxAddress: configAddr, trxUsdPrice: configPrice, adminYasAccount: configYasAddr, cfaUsdRate: configCfaRate })
-                        });
-                        const d = await r.json();
-                        if (d.success) { addToast('Config sauvegardée', 'success'); await loadConfig(); }
-                        else addToast(d.error, 'error');
-                      } catch { addToast('Erreur', 'error'); }
-                      setSavingConfig(false);
-                    }}
-                    disabled={savingConfig}
-                    className="w-full py-3 rounded-xl bg-[#6366F1] text-[#050506] font-bold text-[0.85rem] border-none cursor-pointer disabled:opacity-60 flex items-center justify-center gap-1.5"
-                  >
-                    {savingConfig ? (
-                      <div className="w-4 h-4 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
-                    ) : (
-                      <i className="fas fa-save mr-1"></i>
-                    )}
+                  <button onClick={async () => { setSavingConfig(true); try { const r = await authFetch('/api/admin/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminTrxAddress: configAddr, trxUsdPrice: configPrice, adminYasAccount: configYasAddr, cfaUsdRate: configCfaRate }) }); const d = await r.json(); if (d.success) { addToast('Config sauvegardée', 'success'); await loadConfig(); } else addToast(d.error, 'error'); } catch { addToast('Erreur', 'error'); } setSavingConfig(false); }} disabled={savingConfig} className="w-full py-3 rounded-xl bg-[#6366F1] text-[#050506] font-bold text-[0.85rem] border-none cursor-pointer disabled:opacity-60 flex items-center justify-center gap-1.5">
+                    {savingConfig ? <div className="w-4 h-4 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <i className="fas fa-save mr-1"></i>}
                     {savingConfig ? 'Sauvegarde...' : 'Sauvegarder'}
                   </button>
                 </div>

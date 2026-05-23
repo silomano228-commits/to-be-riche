@@ -18,7 +18,6 @@ function createPrismaClient(): PrismaClient {
         authToken: tursoToken,
       })
       const adapter = new PrismaLibSQL(libsql)
-      console.log('✅ Connected to Turso cloud database')
       return new PrismaClient({ adapter, log: ['error', 'warn'] })
     } catch (e) {
       console.error('❌ Turso connection failed:', e)
@@ -27,7 +26,6 @@ function createPrismaClient(): PrismaClient {
   }
 
   // Local SQLite for development
-  console.log('📦 Using local SQLite database')
   return new PrismaClient({ log: ['error', 'warn'] })
 }
 

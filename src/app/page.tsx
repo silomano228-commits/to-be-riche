@@ -44,6 +44,15 @@ function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState({ l: false, r: false, r2: false });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // OTP state
+  const [otpStep, setOtpStep] = useState(false);
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [simCode, setSimCode] = useState('');
+  const [otpPurpose, setOtpPurpose] = useState<'login' | 'email_verification'>('login');
+  const [otpUserName, setOtpUserName] = useState('');
 
   if (user) return null;
 
@@ -52,12 +61,77 @@ function AuthScreen() {
     setLoading(true);
     try {
       const fd = new FormData(e.target as HTMLFormElement);
-      const res = await fetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email: fd.get('email'), password: fd.get('password') }), headers: { 'Content-Type': 'application/json' } });
+      const email = fd.get('email') as string;
+      const password = fd.get('password') as string;
+      const res = await fetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }), headers: { 'Content-Type': 'application/json' } });
       const data = await res.json();
-      if (data.success) { setUser(data.user); addToast('Bienvenue, ' + data.user.name, 'success'); setPage('home'); }
-      else { addToast(data.error, 'error'); }
+      if (data.success && data.requires_otp) {
+        // Password correct — send OTP for login
+        setOtpEmail(email);
+        setOtpPurpose('login');
+        setOtpStep(true);
+        setOtpLoading(true);
+        try {
+          const otpRes = await fetch('/api/auth/otp', { method: 'POST', body: JSON.stringify({ action: 'send', email, purpose: 'login' }), headers: { 'Content-Type': 'application/json' } });
+          const otpData = await otpRes.json();
+          if (otpData.success) {
+            setOtpSent(true);
+            if (otpData.plain_code) {
+              setSimCode(otpData.plain_code);
+              addToast('Mode simulation - Code: ' + otpData.plain_code, 'info');
+            } else {
+              addToast('Code envoyé à ' + email, 'success');
+            }
+          } else {
+            addToast(otpData.error || 'Erreur envoi OTP', 'error');
+            setOtpStep(false);
+          }
+        } catch {
+          addToast('Erreur envoi OTP', 'error');
+          setOtpStep(false);
+        }
+        setOtpLoading(false);
+      } else if (data.success) {
+        setUser(data.user); addToast('Bienvenue, ' + data.user.name, 'success'); setPage('home');
+      } else {
+        addToast(data.error, 'error');
+      }
     } catch { addToast('Erreur réseau', 'error'); }
     setLoading(false);
+  };
+
+  const handleOtpVerify = async () => {
+    if (!otpCode || otpCode.length < 6) { addToast('Entrez le code à 6 chiffres', 'error'); return; }
+    setOtpLoading(true);
+    try {
+      const res = await fetch('/api/auth/otp', { method: 'POST', body: JSON.stringify({ action: 'verify', email: otpEmail, code: otpCode, purpose: otpPurpose }), headers: { 'Content-Type': 'application/json' } });
+      const data = await res.json();
+      if (data.success && data.user) {
+        setUser(data.user);
+        addToast(otpPurpose === 'email_verification' ? 'Email vérifié ! Bienvenue, ' + data.user.name : 'Bienvenue, ' + data.user.name, 'success');
+        setPage('home');
+      } else {
+        addToast(data.error || 'Code invalide', 'error');
+      }
+    } catch { addToast('Erreur réseau', 'error'); }
+    setOtpLoading(false);
+  };
+
+  const handleResendOtp = async () => {
+    setOtpLoading(true);
+    try {
+      const res = await fetch('/api/auth/otp', { method: 'POST', body: JSON.stringify({ action: 'send', email: otpEmail, purpose: otpPurpose }), headers: { 'Content-Type': 'application/json' } });
+      const data = await res.json();
+      if (data.success) {
+        if (data.plain_code) {
+          setSimCode(data.plain_code);
+          addToast('Code: ' + data.plain_code, 'info');
+        } else {
+          addToast('Code renvoyé', 'success');
+        }
+      } else { addToast(data.error, 'error'); }
+    } catch { addToast('Erreur réseau', 'error'); }
+    setOtpLoading(false);
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -78,7 +152,22 @@ function AuthScreen() {
     try {
       const res = await fetch('/api/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password, password2, referralCode }), headers: { 'Content-Type': 'application/json' } });
       const data = await res.json();
-      if (data.success) { setUser(data.user); addToast('Compte créé !', 'success'); setPage('home'); }
+      if (data.success && data.requires_verification) {
+        // Account created — must verify email via OTP
+        setOtpEmail(email);
+        setOtpUserName(name);
+        setOtpPurpose('email_verification');
+        setOtpStep(true);
+        setOtpSent(true);
+        if (data.plain_code) {
+          setSimCode(data.plain_code);
+          addToast('Mode simulation - Code: ' + data.plain_code, 'info');
+        } else {
+          addToast('Code de vérification envoyé à ' + email, 'success');
+        }
+      } else if (data.success) {
+        setUser(data.user); addToast('Compte créé !', 'success'); setPage('home');
+      }
       else { addToast(data.error, 'error'); }
     } catch { addToast('Erreur réseau', 'error'); }
     setLoading(false);
@@ -94,26 +183,120 @@ function AuthScreen() {
       <div className="w-full max-w-[330px] text-center px-5 relative z-[1]">
         <LogoImg className="w-[100px] h-[100px] mx-auto mb-4" style={{ filter: 'drop-shadow(0 8px 32px rgba(34,197,94,0.25))' }} />
         <h1 className="text-[1.8rem] font-black mb-1 bg-gradient-to-r from-[#22C55E] to-[#16A34A] bg-clip-text text-transparent tracking-[2px]">BE RICH</h1>
-        <p className="text-[rgba(0,0,0,0.35)] text-[0.72rem] mb-6">{mode === 'login' ? 'Connectez-vous à votre compte.' : 'Rejoignez Be Rich.'}</p>
-        <div className="flex bg-[#FFFFFF] rounded-xl p-[3px] mb-6 border border-[rgba(0,0,0,0.08)]">
-          <button onClick={() => { setMode('login'); setErrors({}); }} className={`flex-1 py-[11px] text-center text-[0.82rem] font-semibold rounded-lg transition-all border-none cursor-pointer ${mode === 'login' ? 'bg-[#22C55E] text-white shadow-lg' : 'text-[rgba(0,0,0,0.35)]'}`}>Connexion</button>
-          <button onClick={() => { setMode('register'); setErrors({}); }} className={`flex-1 py-[11px] text-center text-[0.82rem] font-semibold rounded-lg transition-all border-none cursor-pointer ${mode === 'register' ? 'bg-[#22C55E] text-white shadow-lg' : 'text-[rgba(0,0,0,0.35)]'}`}>Inscription</button>
-        </div>
-        {mode === 'login' ? (
-          <form onSubmit={handleLogin}>
-            <div className="mb-4 w-full"><label className="block mb-1.5 text-[0.75rem] font-semibold text-[rgba(0,0,0,0.45)]">Email</label><input name="email" type="email" required placeholder="votre@email.com" className="w-full premium-input" /></div>
-            <div className="mb-4 w-full relative"><label className="block mb-1.5 text-[0.75rem] font-semibold text-[rgba(0,0,0,0.45)]">Mot de passe</label><input name="password" type={showPw.l ? 'text' : 'password'} required placeholder="••••••••" className="w-full premium-input pr-11" /><button type="button" onClick={() => setShowPw({ ...showPw, l: !showPw.l })} className="absolute right-3 top-[38px] bg-transparent border-none text-[rgba(0,0,0,0.35)] cursor-pointer p-0.5"><i className={`fas ${showPw.l ? 'fa-eye-slash' : 'fa-eye'}`}></i></button></div>
-            <button type="submit" disabled={loading} className="w-full py-3.5 rounded-xl btn-gradient-green text-[0.88rem] cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">{loading ? <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <><i className="fas fa-arrow-right"></i> Se connecter</>}</button>
-          </form>
+
+        {/* OTP Verification Step */}
+        {otpStep ? (
+          <>
+            <div className="w-14 h-14 mx-auto rounded-full bg-[rgba(34,197,94,0.1)] flex items-center justify-center mb-4 mt-4">
+              <i className="fas fa-shield-alt text-[#22C55E] text-[1.3rem]"></i>
+            </div>
+            <h2 className="text-[1rem] font-bold text-[#1F2937] mb-1">{otpPurpose === 'email_verification' ? 'Vérification email' : 'Vérification OTP'}</h2>
+            <p className="text-[rgba(0,0,0,0.45)] text-[0.72rem] mb-5">
+              {otpPurpose === 'email_verification'
+                ? <>Un code a été envoyé à <strong className="text-[#1F2937]">{otpEmail}</strong> pour vérifier votre adresse email</>
+                : <>Un code a été envoyé à <strong className="text-[#1F2937]">{otpEmail}</strong></>
+              }
+            </p>
+
+            {/* Simulation mode code display */}
+            {simCode && (
+              <div className="mb-4 p-3 bg-[rgba(245,158,11,0.08)] border border-[rgba(245,158,11,0.2)] rounded-xl">
+                <div className="text-[0.65rem] text-[rgba(0,0,0,0.4)] mb-1 font-semibold">Code de simulation</div>
+                <div className="text-[1.4rem] font-black text-[#F59E0B] tracking-[6px] font-mono">{simCode}</div>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(simCode); addToast('Code copié', 'success'); }}
+                  className="mt-2 py-1.5 px-3 rounded-lg bg-[rgba(245,158,11,0.12)] text-[0.68rem] text-[#D97706] font-semibold border border-[rgba(245,158,11,0.2)] cursor-pointer"
+                >
+                  <i className="fas fa-copy mr-1"></i>Copier le code
+                </button>
+              </div>
+            )}
+
+            {/* 6-digit OTP input */}
+            <div className="flex justify-center gap-2 mb-5">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <input
+                  key={i}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  className="w-10 h-12 text-center text-[1.1rem] font-bold bg-white border-[1.5px] border-[rgba(0,0,0,0.1)] rounded-xl outline-none focus:border-[#22C55E] focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)] transition-all text-[#1F2937]"
+                  value={otpCode[i] || ''}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    const newCode = otpCode.split('');
+                    newCode[i] = val.slice(-1);
+                    const final = newCode.join('').slice(0, 6);
+                    setOtpCode(final);
+                    // Auto-focus next
+                    if (val && i < 5) {
+                      const next = e.target.nextElementSibling as HTMLInputElement;
+                      next?.focus();
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Backspace' && !otpCode[i] && i > 0) {
+                      const prev = (e.target as HTMLElement).previousElementSibling as HTMLInputElement;
+                      prev?.focus();
+                    }
+                  }}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    const paste = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6);
+                    setOtpCode(paste);
+                  }}
+                />
+              ))}
+            </div>
+
+            <button
+              onClick={handleOtpVerify}
+              disabled={otpLoading || otpCode.length < 6}
+              className="w-full py-3.5 rounded-xl btn-gradient-green text-[0.88rem] cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2 mb-3"
+            >
+              {otpLoading ? <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <><i className="fas fa-check-circle"></i> Vérifier</>}
+            </button>
+
+            <button
+              onClick={handleResendOtp}
+              disabled={otpLoading}
+              className="w-full py-3 rounded-xl border-[1.5px] border-[rgba(0,0,0,0.08)] bg-transparent text-[rgba(0,0,0,0.5)] font-semibold text-[0.82rem] cursor-pointer transition-transform active:scale-95 mb-3"
+            >
+              <i className="fas fa-redo mr-1.5 text-[0.7rem]"></i>Renvoyer le code
+            </button>
+
+            <button
+              onClick={() => { setOtpStep(false); setOtpCode(''); setSimCode(''); setOtpSent(false); setOtpPurpose('login'); }}
+              className="text-[0.75rem] text-[rgba(0,0,0,0.4)] cursor-pointer bg-transparent border-none font-medium"
+            >
+              <i className="fas fa-arrow-left mr-1"></i>Retour
+            </button>
+          </>
         ) : (
-          <form onSubmit={handleRegister}>
-            <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Nom complet</label><input name="name" type="text" required placeholder="Jean Dupont" minLength={2} className={`w-full premium-input ${errors.name ? '!border-[#F87171]' : ''}`} />{errors.name && <p className="text-[#F87171] text-[0.65rem] mt-0.5">{errors.name}</p>}</div>
-            <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Email</label><input name="email" type="email" required placeholder="votre@email.com" className="w-full premium-input" /></div>
-            <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Mot de passe</label><input name="password" type={showPw.r ? 'text' : 'password'} required placeholder="Min. 6 caractères" minLength={6} className={`w-full premium-input ${errors.password ? '!border-[#F87171]' : ''}`} />{errors.password && <p className="text-[#F87171] text-[0.65rem] mt-0.5">{errors.password}</p>}</div>
-            <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Confirmer</label><input name="password2" type={showPw.r2 ? 'text' : 'password'} required placeholder="••••••••" className={`w-full premium-input ${errors.password2 ? '!border-[#F87171]' : ''}`} />{errors.password2 && <p className="text-[#F87171] text-[0.65rem] mt-0.5">{errors.password2}</p>}</div>
-            <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Code de parrainage <span className="opacity-50">(optionnel)</span></label><input name="referralCode" type="text" placeholder="BR-XXXXXX" className="w-full premium-input" /></div>
-            <button type="submit" disabled={loading} className="w-full py-3.5 rounded-xl btn-gradient-green text-[0.88rem] cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">{loading ? <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <><i className="fas fa-user-plus"></i> Créer mon compte</>}</button>
-          </form>
+          <>
+            <p className="text-[rgba(0,0,0,0.35)] text-[0.72rem] mb-6">{mode === 'login' ? 'Connectez-vous à votre compte.' : 'Rejoignez Be Rich.'}</p>
+            <div className="flex bg-[#FFFFFF] rounded-xl p-[3px] mb-6 border border-[rgba(0,0,0,0.08)]">
+              <button onClick={() => { setMode('login'); setErrors({}); }} className={`flex-1 py-[11px] text-center text-[0.82rem] font-semibold rounded-lg transition-all border-none cursor-pointer ${mode === 'login' ? 'bg-[#22C55E] text-white shadow-lg' : 'text-[rgba(0,0,0,0.35)]'}`}>Connexion</button>
+              <button onClick={() => { setMode('register'); setErrors({}); }} className={`flex-1 py-[11px] text-center text-[0.82rem] font-semibold rounded-lg transition-all border-none cursor-pointer ${mode === 'register' ? 'bg-[#22C55E] text-white shadow-lg' : 'text-[rgba(0,0,0,0.35)]'}`}>Inscription</button>
+            </div>
+            {mode === 'login' ? (
+              <form onSubmit={handleLogin}>
+                <div className="mb-4 w-full"><label className="block mb-1.5 text-[0.75rem] font-semibold text-[rgba(0,0,0,0.45)]">Email</label><input name="email" type="email" required placeholder="votre@email.com" className="w-full premium-input" /></div>
+                <div className="mb-4 w-full relative"><label className="block mb-1.5 text-[0.75rem] font-semibold text-[rgba(0,0,0,0.45)]">Mot de passe</label><input name="password" type={showPw.l ? 'text' : 'password'} required placeholder="••••••••" className="w-full premium-input pr-11" /><button type="button" onClick={() => setShowPw({ ...showPw, l: !showPw.l })} className="absolute right-3 top-[38px] bg-transparent border-none text-[rgba(0,0,0,0.35)] cursor-pointer p-0.5"><i className={`fas ${showPw.l ? 'fa-eye-slash' : 'fa-eye'}`}></i></button></div>
+                <button type="submit" disabled={loading} className="w-full py-3.5 rounded-xl btn-gradient-green text-[0.88rem] cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">{loading ? <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <><i className="fas fa-arrow-right"></i> Se connecter</>}</button>
+                <div className="mt-3"><a href="/forgot-password" className="text-[0.72rem] text-[#22C55E] font-medium hover:underline">Mot de passe oublié ?</a></div>
+              </form>
+            ) : (
+              <form onSubmit={handleRegister}>
+                <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Nom complet</label><input name="name" type="text" required placeholder="Jean Dupont" minLength={2} className={`w-full premium-input ${errors.name ? '!border-[#F87171]' : ''}`} />{errors.name && <p className="text-[#F87171] text-[0.65rem] mt-0.5">{errors.name}</p>}</div>
+                <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Email</label><input name="email" type="email" required placeholder="votre@email.com" className="w-full premium-input" /></div>
+                <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Mot de passe</label><input name="password" type={showPw.r ? 'text' : 'password'} required placeholder="Min. 6 caractères" minLength={6} className={`w-full premium-input ${errors.password ? '!border-[#F87171]' : ''}`} />{errors.password && <p className="text-[#F87171] text-[0.65rem] mt-0.5">{errors.password}</p>}</div>
+                <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Confirmer</label><input name="password2" type={showPw.r2 ? 'text' : 'password'} required placeholder="••••••••" className={`w-full premium-input ${errors.password2 ? '!border-[#F87171]' : ''}`} />{errors.password2 && <p className="text-[#F87171] text-[0.65rem] mt-0.5">{errors.password2}</p>}</div>
+                <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Code de parrainage <span className="opacity-50">(optionnel)</span></label><input name="referralCode" type="text" placeholder="BR-XXXXXX" className="w-full premium-input" /></div>
+                <button type="submit" disabled={loading} className="w-full py-3.5 rounded-xl btn-gradient-green text-[0.88rem] cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">{loading ? <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <><i className="fas fa-user-plus"></i> Créer mon compte</>}</button>
+              </form>
+            )}
+          </>
         )}
       </div>
     </section>
@@ -153,8 +336,12 @@ function HomeScreen() {
                 <span className="bg-[rgba(0,0,0,0.1)] text-[#000000] text-[0.6rem] font-bold px-2.5 py-[3px] rounded-full">{user.depositCount} dépôt{user.depositCount > 1 ? 's' : ''}</span>
               )}
             </div>
+            <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.5px] font-semibold mb-0.5">Compte Principal</div>
             <div className="flex items-baseline gap-2 mb-3">
               <div className="text-[1.8rem] font-black tracking-[-1px] text-[#000000]">{formatMoney(user.balance)}</div>
+              <button onClick={() => setPage('deposit')} className="ml-auto py-2 px-3.5 rounded-xl bg-[rgba(255,255,255,0.25)] hover:bg-[rgba(255,255,255,0.35)] text-[#000000] text-[0.68rem] font-semibold cursor-pointer border-none transition-all active:scale-95 flex items-center gap-1.5 backdrop-blur-sm">
+                <i className="fas fa-arrow-down text-[0.6rem]"></i> Déposer sur le compte principal
+              </button>
             </div>
             {/* Compact 2x2 Account Grid — Glass Cards */}
             <div className="grid grid-cols-2 gap-1.5">
@@ -194,7 +381,6 @@ function HomeScreen() {
         <div className="flex gap-2 mb-4">
           {[
             { icon: 'fa-wallet', label: 'Wallet', page: 'wallet', color: '#22C55E', bg: 'rgba(34,197,94,0.12)', borderColor: 'border-[#22C55E]' },
-            { icon: 'fa-arrow-down', label: 'Déposer', page: 'deposit', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', borderColor: 'border-[#F59E0B]' },
             { icon: 'fa-chart-line', label: 'Investir', page: 'finance', color: '#3B82F6', bg: 'rgba(59,130,246,0.12)', borderColor: 'border-[#3B82F6]' },
             { icon: 'fa-bolt', label: 'Trader', page: 'finance', color: '#F87171', bg: 'rgba(248,113,113,0.12)', borderColor: 'border-[#F87171]' },
             { icon: 'fa-building', label: 'Projets', page: 'finance', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)', borderColor: 'border-[#8B5CF6]' },

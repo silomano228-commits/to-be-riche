@@ -16,7 +16,7 @@ interface ChatMsg {
 }
 
 const QUICK_REPLIES = [
-  { text: "Bonjour ! 👋", icon: 'fa-hand-wave' },
+  { text: "Bonjour !", icon: 'fa-hand-wave' },
   { text: "J'ai un problème de dépôt", icon: 'fa-wallet' },
   { text: "Question sur mon compte", icon: 'fa-user-circle' },
   { text: "Problème de retrait", icon: 'fa-arrow-up' },
@@ -46,7 +46,6 @@ export default function ChatScreen() {
           if (newMsgs.length > 0) {
             const updated = [...prev, ...newMsgs];
             lastFetchIdRef.current = newMsgs[newMsgs.length - 1].id;
-            // Check if admin has sent messages (admin is "online")
             const hasAdminMsg = newMsgs.some((m: ChatMsg) => m.isAdminMsg || m.isAdmin);
             if (hasAdminMsg) {
               setAdminOnline(true);
@@ -80,19 +79,6 @@ export default function ChatScreen() {
     setInput('');
     setShowQuickReplies(false);
 
-    const tempId = `temp-${Date.now()}`;
-    const now = new Date();
-    const userMsg: ChatMsg = {
-      id: tempId,
-      text,
-      me: true,
-      isAdmin: false,
-      isAdminMsg: false,
-      ticketId: null,
-      t: now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-    };
-    setMessages(prev => [...prev, userMsg]);
-
     setSending(true);
     try {
       const res = await authFetch('/api/chat/send', {
@@ -101,15 +87,22 @@ export default function ChatScreen() {
         body: JSON.stringify({ content: text }),
       });
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.message) {
+        // Use the server-returned message directly (no duplicate)
+        setMessages(prev => {
+          const existingIds = new Set(prev.map(m => m.id));
+          if (existingIds.has(data.message.id)) return prev;
+          return [...prev, data.message];
+        });
+        lastFetchIdRef.current = data.message.id;
+      } else if (data.success) {
+        // Fallback: refetch if server didn't return message
         setTimeout(() => fetchMessages(), 500);
       } else {
         addToast(data.error || 'Erreur', 'error');
-        setMessages(prev => prev.filter(m => m.id !== tempId));
       }
     } catch {
       addToast('Erreur réseau', 'error');
-      setMessages(prev => prev.filter(m => m.id !== tempId));
     }
     setSending(false);
     inputRef.current?.focus();
