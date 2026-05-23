@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useAppStore, formatMoney, esc, authFetch } from '@/lib/store';
+import { useAppStore, formatMoney, esc, authFetch, refreshUser } from '@/lib/store';
 import { Header } from '@/components/shared';
 
 // ==================== MARKET DATA ====================
@@ -251,7 +251,7 @@ export default function TradingScreen() {
             if (data.success) {
               addToast(data.result === 'win' ? `Gagné ! +${formatMoney(data.profit)}` : data.result === 'lose' ? 'Perdu !' : 'Match nul', data.result === 'win' ? 'success' : data.result === 'lose' ? 'error' : 'info');
               loadTrades();
-              fetch('/api/auth/session').then(r => r.json()).then(d => { if (d.success) setUser(d.user); });
+              refreshUser();
             }
           })
           .catch(() => { /* */ });
@@ -286,7 +286,7 @@ export default function TradingScreen() {
         addToast('Trade lancé !', 'success');
         setAmount('');
         loadTrades();
-        fetch('/api/auth/session').then(r => r.json()).then(d => { if (d.success) setUser(d.user); });
+        refreshUser();
       } else { addToast(data.error, 'error'); }
     } catch { addToast('Erreur', 'error'); }
     setCreating(false);

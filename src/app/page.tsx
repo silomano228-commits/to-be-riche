@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { useAppStore, formatMoney, esc, authFetch, type AppUser } from '@/lib/store';
+import { useAppStore, formatMoney, esc, authFetch, refreshUser, type AppUser } from '@/lib/store';
 import { LogoImg, ToastContainer, NotificationContainer, Header, AI_TIPS } from '@/components/shared';
 
 // Lazy load heavy screen components
@@ -311,7 +311,7 @@ function HomeScreen() {
 
   const refresh = async () => {
     setRefreshing(true);
-    try { const res = await fetch('/api/auth/session'); const data = await res.json(); if (data.success) setUser(data.user); } catch { /* */ }
+    try { await refreshUser(); } catch { /* */ }
     setRefreshing(false);
   };
 
@@ -457,7 +457,7 @@ function WalletScreen() {
   const [transferring, setTransferring] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const refresh = async () => { setRefreshing(true); try { const r = await fetch('/api/auth/session'); const d = await r.json(); if (d.success) setUser(d.user); } catch { /* */ } setRefreshing(false); };
+  const refresh = async () => { setRefreshing(true); try { await refreshUser(); } catch { /* */ } setRefreshing(false); };
 
   const handleTransfer = async () => {
     const amt = parseFloat(transferAmt);
@@ -467,7 +467,7 @@ function WalletScreen() {
     try {
       const res = await authFetch('/api/transfer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ from: transferTarget.from, to: transferTarget.to, amount: amt }) });
       const data = await res.json();
-      if (data.success) { addToast('Transfert effectué !', 'success'); setTransferAmt(''); setTransferTarget(null); refresh(); }
+      if (data.success) { addToast('Transfert effectué !', 'success'); setTransferAmt(''); setTransferTarget(null); await refreshUser(); }
       else { addToast(data.error, 'error'); }
     } catch { addToast('Erreur', 'error'); }
     setTransferring(false);
@@ -647,7 +647,7 @@ export default function BeRichApp() {
   useEffect(() => {
     const init = async () => {
       try {
-        const res = await fetch('/api/auth/session');
+        const res = await authFetch('/api/auth/session');
         const data = await res.json();
         if (data.success && data.user) { setUser(data.user); setPage('home'); }
         else { setPage('auth'); }

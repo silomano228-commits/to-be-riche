@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useAppStore, formatMoney, esc, authFetch, type AppUser } from '@/lib/store';
+import { useAppStore, formatMoney, esc, authFetch, refreshUser as globalRefreshUser, type AppUser } from '@/lib/store';
 import { Header, LogoImg, Modal, INVEST_LEVELS, ENTERPRISE_TYPES, ENTERPRISE_NAMES } from '@/components/shared';
 
 const hexToRgba = (hex: string, alpha: number) => {
@@ -33,7 +33,7 @@ export default function InvestHubScreen() {
 
   useEffect(() => { const t = setTimeout(() => { loadInvestments(); }, 0); return () => clearTimeout(t); }, [loadInvestments]);
 
-  const refreshUser = async () => { try { const r = await fetch('/api/auth/session'); const d = await r.json(); if (d.success) setUser(d.user); } catch { /* */ } };
+  const refreshUser = async () => { await globalRefreshUser(); };
 
   const handleCreate = async (level: number) => {
     const amt = parseFloat(createAmt);

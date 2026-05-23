@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useAppStore, formatMoney, esc, authFetch, type AppUser } from '@/lib/store';
+import { useAppStore, formatMoney, esc, authFetch, refreshUser, type AppUser } from '@/lib/store';
 import { Header, LogoImg, Modal, INVEST_LEVELS, ENTERPRISE_TYPES, ENTERPRISE_NAMES } from '@/components/shared';
 
 export default function WithdrawScreen() {
@@ -18,7 +18,7 @@ export default function WithdrawScreen() {
     try {
       const res = await authFetch('/api/withdrawal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: amt, trxAddress: address.trim() }) });
       const data = await res.json();
-      if (data.success) { addToast('Retrait soumis !', 'success'); setAmount(''); setAddress(''); fetch('/api/auth/session').then(r => r.json()).then(d => { if (d.success) setUser(d.user); }); }
+      if (data.success) { addToast('Retrait soumis !', 'success'); setAmount(''); setAddress(''); await refreshUser(); }
       else { addToast(data.error, 'error'); }
     } catch { addToast('Erreur', 'error'); }
     setWithdrawing(false);

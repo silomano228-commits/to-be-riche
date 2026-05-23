@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAppStore, formatMoney, esc, authFetch } from '@/lib/store';
+import { useAppStore, formatMoney, esc, authFetch, refreshUser } from '@/lib/store';
 import { Header } from '@/components/shared';
 
 type DepositMethod = 'choose' | 'trx' | 'yas';
@@ -130,14 +130,6 @@ export default function DepositScreen() {
     }
   };
 
-  const refreshUser = async () => {
-    try {
-      const r = await fetch('/api/auth/session');
-      const d = await r.json();
-      if (d.success) setUser(d.user);
-    } catch { /* */ }
-  };
-
   // TRX deposit submit
   const handleTrxSubmit = async () => {
     const amt = parseFloat(depositAmt);
@@ -156,7 +148,7 @@ export default function DepositScreen() {
         setTrxStep('success');
         setActivePending({ type: 'trx', amountUsd: amt, amountTrx: trxCalculatedAmountTrx });
         addToast('Dépôt soumis avec succès !', 'success');
-        refreshUser();
+        await refreshUser();
       } else {
         addToast(data.error, 'error');
       }
@@ -189,7 +181,7 @@ export default function DepositScreen() {
         setYasStep('success');
         setActivePending({ type: 'yas', amountCfa: amtCfa, amountUsd: yasAmountUsd, amountTrx: yasAmountTrx, yasAccount: yasAccount.trim(), trxAddress: '' });
         addToast('Demande de conversion soumise !', 'success');
-        refreshUser();
+        await refreshUser();
       } else {
         addToast(data.error, 'error');
       }
