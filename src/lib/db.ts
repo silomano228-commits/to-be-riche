@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaLibSQL } from '@prisma/adapter-libsql'
-import { createClient } from '@libsql/client'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
@@ -13,12 +12,12 @@ function createPrismaClient(): PrismaClient {
   // Use Turso cloud database if configured (production/Vercel)
   if (tursoUrl && tursoToken) {
     try {
-      const libsql = createClient({
+      // Prisma 6.x: PrismaLibSQL is a FACTORY - pass config object, not client instance
+      const adapter = new PrismaLibSQL({
         url: tursoUrl,
         authToken: tursoToken,
       })
-      const adapter = new PrismaLibSQL(libsql)
-      return new PrismaClient({ adapter, log: ['error', 'warn'] })
+      return new PrismaClient({ adapter } as any)
     } catch (e) {
       console.error('❌ Turso connection failed:', e)
       throw e
@@ -26,7 +25,7 @@ function createPrismaClient(): PrismaClient {
   }
 
   // Local SQLite for development
-  return new PrismaClient({ log: ['error', 'warn'] })
+  return new PrismaClient()
 }
 
 export const db = globalForPrisma.prisma ?? createPrismaClient()
