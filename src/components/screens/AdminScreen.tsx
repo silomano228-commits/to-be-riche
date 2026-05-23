@@ -27,6 +27,8 @@ export default function AdminScreen() {
   const [withdrawalNotifCount, setWithdrawalNotifCount] = useState(0);
   const socketRef = useRef<Socket | null>(null);
   const [withdrawalFilter, setWithdrawalFilter] = useState<'pending' | 'approved' | 'executed' | 'rejected' | 'all'>('pending');
+  const [withdrawalsLoading, setWithdrawalsLoading] = useState(true);
+  const [withdrawalsError, setWithdrawalsError] = useState<string | null>(null);
 
   // Ensure spin animation is available
   useEffect(() => {
@@ -53,7 +55,34 @@ export default function AdminScreen() {
   }, []);
 
   const loadWithdrawals = useCallback(async () => {
-    try { const r = await authFetch('/api/admin/withdrawals'); const d = await r.json(); if (d.success) { setWithdrawals(d.data || []); setWithdrawalStats(d.stats || {}); } } catch { /* */ }
+    setWithdrawalsLoading(true);
+    setWithdrawalsError(null);
+    try {
+      const r = await authFetch('/api/admin/withdrawals');
+      console.log('[ADMIN] Withdrawals response status:', r.status);
+      if (!r.ok) {
+        setWithdrawalsError(`Erreur HTTP ${r.status}`);
+        return;
+      }
+      const d = await r.json();
+      console.log('[ADMIN] Withdrawals data:', d.success ? `${(d.data || []).length} withdrawals` : d.error);
+      if (d.success) {
+        const ws = d.data || [];
+        console.log('[ADMIN] YAS withdrawals:', ws.filter((w: any) => w.type === 'yas').length);
+        console.log('[ADMIN] TRX withdrawals:', ws.filter((w: any) => w.type === 'trx').length);
+        ws.forEach((w: any) => console.log(`  → ${w.type} | ${w.status} | ${w.amount} | yas:${w.yasAccount || 'n/a'} | trx:${w.trxAddress || 'n/a'}`));
+        setWithdrawals(ws);
+        setWithdrawalStats(d.stats || {});
+      } else {
+        console.error('[ADMIN] Withdrawals API error:', d.error);
+        setWithdrawalsError(d.error || 'Erreur inconnue');
+      }
+    } catch (e) {
+      console.error('[ADMIN] loadWithdrawals error:', e);
+      setWithdrawalsError('Erreur réseau');
+    } finally {
+      setWithdrawalsLoading(false);
+    }
   }, []);
 
   const loadConfig = useCallback(async () => {
@@ -100,7 +129,12 @@ export default function AdminScreen() {
     };
   }, [user?.id, user?.role, loadWithdrawals]);
 
-  useEffect(() => { const t = setTimeout(() => { loadData(); loadDeposits(); loadYasDeposits(); loadWithdrawals(); loadConfig(); }, 0); return () => clearTimeout(t); }, [loadData, loadDeposits, loadYasDeposits, loadWithdrawals, loadConfig]);
+  // Load data on mount AND when user becomes available
+  useEffect(() => {
+    if (!user?.id) return; // Wait until user is authenticated
+    const t = setTimeout(() => { loadData(); loadDeposits(); loadYasDeposits(); loadWithdrawals(); loadConfig(); }, 0);
+    return () => clearTimeout(t);
+  }, [user?.id, loadData, loadDeposits, loadYasDeposits, loadWithdrawals, loadConfig]);
 
   if (!user || user.role !== 'admin') return null;
   const stats = adminData?.stats || {};
@@ -150,7 +184,7 @@ export default function AdminScreen() {
           ].map(t => (
             <button
               key={t.k}
-              onClick={() => { setTab(t.k as any); if (t.k === 'withdrawals') setWithdrawalNotifCount(0); }}
+              onClick={() => { setTab(t.k as any); if (t.k === 'withdrawals') { setWithdrawalNotifCount(0); loadWithdrawals(); } }}
               className={`flex-1 min-w-0 py-3 text-[0.65rem] font-semibold border-none cursor-pointer transition-all whitespace-nowrap px-1 rounded-none relative ${
                 tab === t.k
                   ? 'text-[#6366F1] border-b-2 border-[#6366F1]'
@@ -374,6 +408,22 @@ export default function AdminScreen() {
               {/* ========== WITHDRAWALS TAB — ENHANCED ========== */}
               {tab === 'withdrawals' && (
                 <>
+                  {/* Loading state */}
+                  {withdrawalsLoading && (
+                    <div className="flex justify-center py-8">
+                      <div className="w-8 h-8 border-3 border-[rgba(255,255,255,0.1)] border-t-[#6366F1] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
+                    </div>
+                  )}
+
+                  {/* Error state */}
+                  {withdrawalsError && !withdrawalsLoading && (
+                    <div className="bg-[rgba(248,113,113,0.08)] border border-[rgba(248,113,113,0.15)] rounded-2xl p-4 mb-4 text-center">
+                      <div className="text-[0.82rem] text-[#F87171] mb-2">⚠️ Erreur: {esc(withdrawalsError)}</div>
+                      <button onClick={() => loadWithdrawals()} className="py-2 px-4 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer">Réessayer</button>
+                    </div>
+                  )}
+
+                  {!withdrawalsLoading && !withdrawalsError && (<>
                   {/* Stats */}
                   <div className="grid grid-cols-4 gap-1.5 mb-4">
                     {[
@@ -635,6 +685,7 @@ export default function AdminScreen() {
                       <p className="text-[0.65rem] text-[rgba(255,255,255,0.25)]">Les nouvelles demandes apparaîtront ici en temps réel</p>
                     </div>
                   )}
+                  </>)}
                 </>
               )}
 

@@ -23,8 +23,10 @@ async function checkAdmin(request: Request) {
 // GET — List all withdrawal requests (admin only)
 export async function GET(request: Request) {
   try {
-    const { error } = await checkAdmin(request);
+    const { error, admin } = await checkAdmin(request);
     if (error) return error;
+
+    console.log('[ADMIN-WITHDRAWALS] Admin:', admin?.name, 'fetching withdrawals...');
 
     const withdrawals = await db.withdrawal.findMany({
       orderBy: { createdAt: 'desc' },
@@ -33,6 +35,11 @@ export async function GET(request: Request) {
           select: { id: true, name: true, email: true, balance: true },
         },
       },
+    });
+
+    console.log('[ADMIN-WITHDRAWALS] Found', withdrawals.length, 'withdrawals');
+    withdrawals.forEach(w => {
+      console.log(`  - ${w.type} | ${w.status} | ${w.amount} | yasAccount: ${w.yasAccount} | trxAddress: ${w.trxAddress} | user: ${w.user?.name}`);
     });
 
     const stats = {
@@ -45,7 +52,8 @@ export async function GET(request: Request) {
     };
 
     return NextResponse.json({ success: true, data: withdrawals, stats });
-  } catch {
+  } catch (error) {
+    console.error('[ADMIN-WITHDRAWALS] GET Error:', error);
     return NextResponse.json({ success: false, error: 'Erreur serveur' });
   }
 }
