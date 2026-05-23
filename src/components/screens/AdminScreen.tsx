@@ -141,7 +141,7 @@ export default function AdminScreen() {
       console.log('[ADMIN-CHAT] Socket disconnected');
     });
 
-    // Real-time: receive new user messages
+    // Real-time: receive new user messages — uses real DB ID for dedup
     socket.on('new-user-message', (msgData: {
       id: string;
       content: string;
@@ -156,6 +156,8 @@ export default function AdminScreen() {
         setChatMessages(prev => {
           const existingIds = new Set(prev.map(m => m.id));
           if (existingIds.has(msgData.id)) return prev;
+          // Also dedup by content+time for robustness
+          if (prev.some(m => m.text === msgData.content && m.t === msgData.t)) return prev;
           return [...prev, {
             id: msgData.id,
             text: msgData.content,
@@ -171,7 +173,7 @@ export default function AdminScreen() {
       loadConversations();
     });
 
-    // Real-time: see admin messages sent from other admin tabs
+    // Real-time: see admin messages sent from other admin tabs — uses real DB ID
     socket.on('admin-message-sent', (msgData: {
       id: string;
       content: string;
@@ -184,6 +186,8 @@ export default function AdminScreen() {
         setChatMessages(prev => {
           const existingIds = new Set(prev.map(m => m.id));
           if (existingIds.has(msgData.id)) return prev;
+          // Also dedup by content+time
+          if (prev.some(m => m.text === msgData.content && m.t === msgData.t)) return prev;
           return [...prev, {
             id: msgData.id,
             text: msgData.content,
@@ -213,7 +217,12 @@ export default function AdminScreen() {
       if (d.success && d.messages?.length > 0) {
         setChatMessages(prev => {
           const existingIds = new Set(prev.map(m => m.id));
-          const newMsgs = d.messages.filter((m: AdminChatMsg) => !existingIds.has(m.id));
+          // Dedup by both ID and content+time for robustness
+          const newMsgs = d.messages.filter((m: AdminChatMsg) => {
+            if (existingIds.has(m.id)) return false;
+            if (prev.some(p => p.text === m.text && p.t === m.t)) return false;
+            return true;
+          });
           if (newMsgs.length > 0) {
             lastChatFetchId.current = newMsgs[newMsgs.length - 1].id;
             return [...prev, ...newMsgs];
@@ -266,7 +275,7 @@ export default function AdminScreen() {
       });
       const data = await res.json();
       if (data.success) {
-        // Add message from server response directly (instant)
+        // Add message from server response directly (instant, with real DB ID)
         if (data.message) {
           setChatMessages(prev => {
             const existingIds = new Set(prev.map(m => m.id));
@@ -275,13 +284,16 @@ export default function AdminScreen() {
           });
           lastChatFetchId.current = data.message.id;
         }
-        // Emit via Socket.io for real-time delivery to user
+        // Emit via Socket.io with real DB ID for real-time delivery to user
         if (socketRef.current?.connected) {
           socketRef.current.emit('admin-reply', {
+            id: data.message?.id,
             targetUserId: selectedUserId,
             content,
             adminId: user?.id,
             adminName: user?.name,
+            t: data.message?.t,
+            date: data.message?.date,
           });
         }
         loadConversations(); // Refresh conversation list

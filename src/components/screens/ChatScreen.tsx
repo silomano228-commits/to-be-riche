@@ -64,7 +64,7 @@ export default function ChatScreen() {
       setAdminOnline(data.online);
     });
 
-    // Real-time admin message
+    // Real-time admin message — uses real DB ID for dedup
     socket.on('admin-message', (msgData: {
       id: string;
       content: string;
@@ -73,8 +73,12 @@ export default function ChatScreen() {
       isAdmin: boolean;
     }) => {
       setMessages(prev => {
+        // Dedup by ID (real DB ID)
         const existingIds = new Set(prev.map(m => m.id));
         if (existingIds.has(msgData.id)) return prev;
+        // Also dedup by content+time to catch any edge cases
+        const isDuplicate = prev.some(m => m.text === msgData.content && m.t === msgData.t);
+        if (isDuplicate) return prev;
         const newMsg: ChatMsg = {
           id: msgData.id,
           text: msgData.content,
@@ -108,7 +112,12 @@ export default function ChatScreen() {
       if (data.success && data.messages?.length > 0) {
         setMessages(prev => {
           const existingIds = new Set(prev.map(m => m.id));
-          const newMsgs = data.messages.filter((m: ChatMsg) => !existingIds.has(m.id));
+          // Dedup by both ID and content+time for robustness
+          const newMsgs = data.messages.filter((m: ChatMsg) => {
+            if (existingIds.has(m.id)) return false;
+            if (prev.some(p => p.text === m.text && p.t === m.t)) return false;
+            return true;
+          });
           if (newMsgs.length > 0) {
             const updated = [...prev, ...newMsgs];
             lastFetchIdRef.current = newMsgs[newMsgs.length - 1].id;
@@ -157,7 +166,7 @@ export default function ChatScreen() {
       });
       const data = await res.json();
       if (data.success && data.message) {
-        // Add message to local state from server response
+        // Add message to local state from server response (with real DB ID)
         setMessages(prev => {
           const existingIds = new Set(prev.map(m => m.id));
           if (existingIds.has(data.message.id)) return prev;
@@ -165,12 +174,15 @@ export default function ChatScreen() {
         });
         lastFetchIdRef.current = data.message.id;
 
-        // Emit via Socket.io for real-time delivery to admin
+        // Emit via Socket.io with real DB ID and server timestamp for admin delivery
         if (socketRef.current?.connected) {
           socketRef.current.emit('user-message', {
+            id: data.message.id,
             content: text,
             userId: user?.id,
             userName: user?.name,
+            t: data.message.t,
+            date: data.message.date,
           });
         }
       } else if (data.success) {

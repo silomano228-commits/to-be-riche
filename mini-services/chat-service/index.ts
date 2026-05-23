@@ -43,17 +43,16 @@ io.on('connection', (socket) => {
 
   // ========== USER EVENTS ==========
 
-  // User sends a message to admin
-  socket.on('user-message', (data: { content: string; userId: string; userName: string }) => {
+  // User sends a message to admin — forward data with real DB ID from client
+  socket.on('user-message', (data: { id: string; content: string; userId: string; userName: string; t: string; date: string }) => {
     const msgData = {
-      id: `tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      id: data.id,
       content: data.content,
       userId: data.userId,
       userName: data.userName || 'Utilisateur',
       isAdmin: false,
-      timestamp: Date.now(),
-      t: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-      date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
+      t: data.t,
+      date: data.date,
     };
 
     // Broadcast to all admins
@@ -62,18 +61,17 @@ io.on('connection', (socket) => {
 
   // ========== ADMIN EVENTS ==========
 
-  // Admin sends a reply to a specific user
-  socket.on('admin-reply', (data: { targetUserId: string; content: string; adminId: string; adminName: string }) => {
+  // Admin sends a reply to a specific user — forward data with real DB ID from client
+  socket.on('admin-reply', (data: { id: string; targetUserId: string; content: string; adminId: string; adminName: string; t: string; date: string }) => {
     const msgData = {
-      id: `tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      id: data.id,
       content: data.content,
       userId: data.targetUserId,
       adminId: data.adminId,
       adminName: data.adminName || 'Admin',
       isAdmin: true,
-      timestamp: Date.now(),
-      t: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-      date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
+      t: data.t,
+      date: data.date,
     };
 
     // Send to the specific user

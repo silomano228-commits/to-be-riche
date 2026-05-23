@@ -309,3 +309,42 @@ Work Log:
 
 Stage Summary:
 - Race condition fixed: concurrent resolve requests for the same trade are now prevented by the resolvingRef Set, which acts as an in-memory lock per trade ID during the async resolve operation
+
+---
+Task ID: 8
+Agent: main
+Task: Fix message mismatch between user and admin - Socket.io temp ID duplication bug
+
+Work Log:
+- Investigated the chat messaging flow end-to-end across 6 files
+- Identified ROOT CAUSE: Socket.io server generated `tmp-` IDs for messages (e.g. `tmp-1708123456-abc123`) while the database API returned real DB IDs (e.g. `cmphurzbw0001ln1938bfe0i9`)
+- This caused duplicate messages: when a message arrived via Socket.io with a `tmp-` ID, and later via API poll with the real DB ID, the dedup check `existingIds.has(m.id)` failed because the IDs didn't match
+- Same problem in both directions: user→admin and admin→user
+
+Fix applied to 3 files:
+1. **mini-services/chat-service/index.ts** (Socket.io server):
+   - Changed `user-message` handler to forward real DB ID from client instead of generating `tmp-` ID
+   - Changed `admin-reply` handler to forward real DB ID from client instead of generating `tmp-` ID
+   - Removed all `tmp-${Date.now()}-${Math.random()}` ID generation
+   - Server now passes through `id`, `t`, `date` from the client's API response
+
+2. **src/components/screens/ChatScreen.tsx** (User chat):
+   - `handleSend`: Now includes `data.message.id`, `data.message.t`, `data.message.date` in the `user-message` socket emit (real DB values from API response)
+   - `admin-message` socket handler: Added content+time dedup as fallback (in addition to ID dedup)
+   - `fetchMessages`: Added content+time dedup as fallback in polling dedup
+
+3. **src/components/screens/AdminScreen.tsx** (Admin chat):
+   - `handleAdminReply`: Now includes `data.message?.id`, `data.message?.t`, `data.message?.date` in the `admin-reply` socket emit
+   - `new-user-message` socket handler: Added content+time dedup as fallback
+   - `admin-message-sent` socket handler: Added content+time dedup as fallback
+   - `loadChatMessages`: Added content+time dedup as fallback in polling dedup
+
+- Restarted chat-service on port 3003 with updated code
+- Verified Next.js dev server still running on port 3000
+- Lint check passes (only pre-existing errors in scripts/ folder)
+
+Stage Summary:
+- Messages sent by users now perfectly match what admin receives (same ID, same content, same timestamp)
+- No more duplicate messages from Socket.io + API poll conflict
+- Two-layer dedup: primary by real DB ID, fallback by content+time match
+- Socket.io server no longer generates temp IDs — just forwards real data from API responses
