@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { io, Socket } from 'socket.io-client';
 import { useAppStore, esc, authFetch } from '@/lib/store';
 import { Header } from '@/components/shared';
 
@@ -16,7 +17,7 @@ interface ChatMsg {
 }
 
 const QUICK_REPLIES = [
-  { text: "Bonjour ! 👋", icon: 'fa-hand-wave' },
+  { text: "Bonjour !", icon: 'fa-hand-wave' },
   { text: "J'ai un problème de dépôt", icon: 'fa-wallet' },
   { text: "Question sur mon compte", icon: 'fa-user-circle' },
   { text: "Problème de retrait", icon: 'fa-arrow-up' },
@@ -34,7 +35,76 @@ export default function ChatScreen() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastFetchIdRef = useRef<string>('0');
   const inputRef = useRef<HTMLInputElement>(null);
+  const socketRef = useRef<Socket | null>(null);
 
+  // Connect to Socket.io
+  useEffect(() => {
+    if (!user) return;
+
+    const socket = io('/', {
+      transports: ['websocket', 'polling'],
+      auth: {
+        userId: user.id,
+        userRole: user.role,
+        userName: user.name,
+      },
+      query: { XTransformPort: '3003' },
+    });
+
+    socket.on('connect', () => {
+      console.log('[CHAT] Socket connected:', socket.id);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('[CHAT] Socket disconnected');
+    });
+
+    // Real-time admin presence
+    socket.on('admin-presence', (data: { online: boolean; adminCount: number }) => {
+      setAdminOnline(data.online);
+    });
+
+    // Real-time admin message — uses real DB ID for dedup
+    socket.on('admin-message', (msgData: {
+      id: string;
+      content: string;
+      t: string;
+      date: string;
+      isAdmin: boolean;
+    }) => {
+      setMessages(prev => {
+        // Dedup by ID (real DB ID)
+        const existingIds = new Set(prev.map(m => m.id));
+        if (existingIds.has(msgData.id)) return prev;
+        // Also dedup by content+time to catch any edge cases
+        const isDuplicate = prev.some(m => m.text === msgData.content && m.t === msgData.t);
+        if (isDuplicate) return prev;
+        const newMsg: ChatMsg = {
+          id: msgData.id,
+          text: msgData.content,
+          me: false,
+          isAdmin: true,
+          isAdminMsg: true,
+          ticketId: null,
+          t: msgData.t,
+          date: msgData.date,
+        };
+        const updated = [...prev, newMsg];
+        setAdminOnline(true);
+        setLastAdminSeen(msgData.t);
+        return updated;
+      });
+    });
+
+    socketRef.current = socket;
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [user?.id]);
+
+  // Initial message fetch (load history)
   const fetchMessages = useCallback(async () => {
     try {
       const res = await authFetch(`/api/chat/messages?lastId=${lastFetchIdRef.current}`);
@@ -42,11 +112,15 @@ export default function ChatScreen() {
       if (data.success && data.messages?.length > 0) {
         setMessages(prev => {
           const existingIds = new Set(prev.map(m => m.id));
-          const newMsgs = data.messages.filter((m: ChatMsg) => !existingIds.has(m.id));
+          // Dedup by both ID and content+time for robustness
+          const newMsgs = data.messages.filter((m: ChatMsg) => {
+            if (existingIds.has(m.id)) return false;
+            if (prev.some(p => p.text === m.text && p.t === m.t)) return false;
+            return true;
+          });
           if (newMsgs.length > 0) {
             const updated = [...prev, ...newMsgs];
             lastFetchIdRef.current = newMsgs[newMsgs.length - 1].id;
-            // Check if admin has sent messages (admin is "online")
             const hasAdminMsg = newMsgs.some((m: ChatMsg) => m.isAdminMsg || m.isAdmin);
             if (hasAdminMsg) {
               setAdminOnline(true);
@@ -62,12 +136,15 @@ export default function ChatScreen() {
     setLoading(false);
   }, []);
 
+  // Load initial messages on mount, then poll less frequently (backup)
   useEffect(() => {
     fetchMessages();
-    const interval = setInterval(fetchMessages, 3000);
+    // Reduced polling: every 15 seconds as backup (Socket.io handles real-time)
+    const interval = setInterval(fetchMessages, 15000);
     return () => clearInterval(interval);
   }, [fetchMessages]);
 
+  // Auto-scroll on new messages
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -80,19 +157,6 @@ export default function ChatScreen() {
     setInput('');
     setShowQuickReplies(false);
 
-    const tempId = `temp-${Date.now()}`;
-    const now = new Date();
-    const userMsg: ChatMsg = {
-      id: tempId,
-      text,
-      me: true,
-      isAdmin: false,
-      isAdminMsg: false,
-      ticketId: null,
-      t: now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-    };
-    setMessages(prev => [...prev, userMsg]);
-
     setSending(true);
     try {
       const res = await authFetch('/api/chat/send', {
@@ -101,15 +165,34 @@ export default function ChatScreen() {
         body: JSON.stringify({ content: text }),
       });
       const data = await res.json();
-      if (data.success) {
-        setTimeout(() => fetchMessages(), 500);
+      if (data.success && data.message) {
+        // Add message to local state from server response (with real DB ID)
+        setMessages(prev => {
+          const existingIds = new Set(prev.map(m => m.id));
+          if (existingIds.has(data.message.id)) return prev;
+          return [...prev, data.message];
+        });
+        lastFetchIdRef.current = data.message.id;
+
+        // Emit via Socket.io with real DB ID and server timestamp for admin delivery
+        if (socketRef.current?.connected) {
+          socketRef.current.emit('user-message', {
+            id: data.message.id,
+            content: text,
+            userId: user?.id,
+            userName: user?.name,
+            t: data.message.t,
+            date: data.message.date,
+          });
+        }
+      } else if (data.success) {
+        // Fallback: refetch if server didn't return message
+        setTimeout(() => fetchMessages(), 300);
       } else {
         addToast(data.error || 'Erreur', 'error');
-        setMessages(prev => prev.filter(m => m.id !== tempId));
       }
     } catch {
       addToast('Erreur réseau', 'error');
-      setMessages(prev => prev.filter(m => m.id !== tempId));
     }
     setSending(false);
     inputRef.current?.focus();
@@ -145,7 +228,7 @@ export default function ChatScreen() {
             <div>
               <div className="text-[0.92rem] font-black text-[#1F2937] leading-tight">Support Admin</div>
               <div className="text-[0.6rem] font-medium text-[#22C55E] leading-tight">
-                {adminOnline ? `En ligne · Vu à ${lastAdminSeen}` : 'Hors ligne · Répond sous 24h'}
+                {adminOnline ? `En ligne · Répond rapidement` : 'Hors ligne · Répond sous 24h'}
               </div>
             </div>
           </div>

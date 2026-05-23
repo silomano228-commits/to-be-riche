@@ -10,20 +10,28 @@ function generateReferralCode(): string {
   return code;
 }
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
+    // Admin auth check
+    const token = request.headers.get('x-auth-token') ||
+      (request.headers.get('cookie') || '').match(/br_token=([^;]+)/)?.[1];
+    if (!token) return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
+    const user = await db.user.findUnique({ where: { id: token } });
+    if (!user || user.role !== 'admin') return NextResponse.json({ success: false, error: 'Accès refusé' }, { status: 403 });
+
     const results: string[] = [];
 
     // Create admin if not exists
-    const existingAdmin = await db.user.findUnique({ where: { email: 'admin@berich.com' } });
+    const existingAdmin = await db.user.findUnique({ where: { email: 'silomano228@gmail.com' } });
     if (!existingAdmin) {
       await db.user.create({
         data: {
-          email: 'admin@berich.com',
+          email: 'silomano228@gmail.com',
           name: 'Admin',
           password: 'Admin@2024',
           role: 'admin',
           referralCode: 'BR-ADMIN',
+          emailVerified: true,
         },
       });
       results.push('Admin created');
@@ -43,6 +51,7 @@ export async function POST() {
           role: 'user',
           referralCode: testReferral,
           referredByCode: 'BR-ADMIN',
+          emailVerified: true,
         },
       });
       // Increment admin's referral count

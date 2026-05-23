@@ -114,3 +114,13 @@ export function authFetch(url: string, options: RequestInit = {}): Promise<Respo
   }
   return fetch(url, { ...options, headers });
 }
+
+export async function refreshUser(): Promise<void> {
+  try {
+    const res = await authFetch('/api/auth/session');
+    const data = await res.json();
+    if (data.success && data.user) {
+      useAppStore.getState().setUser(data.user);
+    }
+  } catch { /* */ }
+}

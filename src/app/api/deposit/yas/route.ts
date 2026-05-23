@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { getTrxPrice, getTrxUsdPrice } from '@/lib/trongrid';
 
+export const dynamic = 'force-dynamic';
+
 function getToken(request: Request): string | null {
   const authHeader = request.headers.get('x-auth-token');
   if (authHeader) return authHeader;
@@ -11,6 +13,23 @@ function getToken(request: Request): string | null {
 
 async function getSiteConfig() {
   return db.siteConfig.findUnique({ where: { id: 'main' } });
+}
+
+/**
+ * Check if a user has ANY pending deposit (TRX or YAS)
+ */
+async function getAnyPendingDeposit(userId: string) {
+  const pendingTrx = await db.pendingDeposit.findFirst({
+    where: { userId, status: 'pending' }
+  });
+  if (pendingTrx) return { type: 'trx' as const, deposit: pendingTrx };
+
+  const pendingYas = await db.yasDeposit.findFirst({
+    where: { userId, status: 'pending' }
+  });
+  if (pendingYas) return { type: 'yas' as const, deposit: pendingYas };
+
+  return null;
 }
 
 // POST — Crée une demande de conversion Yas du Togo
@@ -24,6 +43,7 @@ export async function POST(request: Request) {
     if (!token) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
 
     const { amountCfa, yasAccount, trxAddress } = await request.json();
+    const safeTrxAddress = trxAddress?.trim() || '';
     const amtCfa = parseFloat(amountCfa);
 
     // Get CFA rate from config
@@ -46,8 +66,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Le numéro Yas doit commencer par 90-93 ou 70-73' });
     }
 
-    if (!trxAddress || !trxAddress.trim()) {
-      return NextResponse.json({ success: false, error: 'Adresse TRX Trust Wallet requise' });
+    // trxAddress is now optional for YAS deposits
+
+    // Vérifier s'il y a déjà un dépôt en attente (TRX OU YAS)
+    const anyPending = await getAnyPendingDeposit(token);
+    if (anyPending) {
+      const errorMsg = anyPending.type === 'trx'
+        ? 'Vous avez déjà un dépôt TRX en attente de confirmation. Attendez qu\'il soit traité avant de faire une nouvelle demande.'
+        : 'Vous avez déjà une demande de conversion Yas en attente.';
+      return NextResponse.json({ success: false, error: errorMsg });
     }
 
     // Calculate amounts
@@ -60,14 +87,6 @@ export async function POST(request: Request) {
 
     const amountTrx = Math.round((amountUsd / trxPrice) * 100) / 100;
 
-    // Vérifier s'il y a déjà une demande en attente
-    const existingPending = await db.yasDeposit.findFirst({
-      where: { userId: token, status: 'pending' }
-    });
-    if (existingPending) {
-      return NextResponse.json({ success: false, error: 'Vous avez déjà une demande de conversion en attente.' });
-    }
-
     const deposit = await db.yasDeposit.create({
       data: {
         userId: token,
@@ -76,7 +95,7 @@ export async function POST(request: Request) {
         amountTrx,
         trxPrice,
         yasAccount: yasAccount.trim(),
-        trxAddress: trxAddress.trim(),
+        trxAddress: safeTrxAddress || null,
         status: 'pending',
       },
     });
@@ -121,7 +140,13 @@ export async function GET(request: Request) {
       orderBy: { createdAt: 'desc' },
     });
 
-    // Also get the latest processed deposit
+    // Also check if user has a pending TRX deposit
+    const trxDeposit = await db.pendingDeposit.findFirst({
+      where: { userId: token, status: 'pending' },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Get the latest processed deposit
     const lastProcessed = await db.yasDeposit.findFirst({
       where: { userId: token, status: { in: ['approved', 'rejected'] } },
       orderBy: { updatedAt: 'desc' },
@@ -142,6 +167,13 @@ export async function GET(request: Request) {
           trxAddress: deposit.trxAddress,
           status: deposit.status,
           createdAt: deposit.createdAt,
+        } : null,
+        pendingTrxDeposit: trxDeposit ? {
+          id: trxDeposit.id,
+          amountUsd: trxDeposit.amountUsd,
+          amountTrx: trxDeposit.amountTrx,
+          status: trxDeposit.status,
+          createdAt: trxDeposit.createdAt,
         } : null,
         lastProcessed: lastProcessed ? {
           id: lastProcessed.id,

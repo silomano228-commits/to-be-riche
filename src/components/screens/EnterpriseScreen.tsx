@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useAppStore, formatMoney, esc, authFetch, type AppUser } from '@/lib/store';
+import { useAppStore, formatMoney, esc, authFetch, refreshUser as globalRefreshUser, type AppUser } from '@/lib/store';
 import { Header, LogoImg, Modal, INVEST_LEVELS, ENTERPRISE_TYPES, ENTERPRISE_NAMES } from '@/components/shared';
 
 export default function EnterpriseScreen() {
@@ -23,7 +23,7 @@ export default function EnterpriseScreen() {
 
   useEffect(() => { const t = setTimeout(() => { loadEnterprises(); }, 0); return () => clearTimeout(t); }, [loadEnterprises]);
 
-  const refreshUser = async () => { try { const r = await fetch('/api/auth/session'); const d = await r.json(); if (d.success) setUser(d.user); } catch { /* */ } };
+  const refreshUser = async () => { await globalRefreshUser(); };
 
   const handleCreate = async (type: string) => {
     const amt = parseFloat(createAmt);
@@ -130,7 +130,7 @@ export default function EnterpriseScreen() {
                       isFinished ? 'bg-[rgba(74,222,128,0.1)] text-[#4ADE80]' :
                       'bg-[rgba(0,0,0,0.05)] text-[rgba(0,0,0,0.6)]'
                     }`}>
-                      {isClaimable ? '✅ Réclamer' : isFinished ? 'Terminé' : 'En cours'}
+                      {isClaimable ? 'Réclamer' : isFinished ? 'Terminé' : 'En cours'}
                     </span>
                   </div>
                   <div className="w-full h-2 bg-[rgba(0,0,0,0.08)] rounded-full mb-2 overflow-hidden">
