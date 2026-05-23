@@ -28,6 +28,8 @@ export async function POST(request: Request) {
         me: true,
         isAdmin: message.isAdmin,
         isAdminMsg: message.isAdmin,
+        userId: token,
+        userName: user.name,
         t: message.createdAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
         date: message.createdAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
       },

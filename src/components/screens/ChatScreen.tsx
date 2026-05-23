@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { io, Socket } from 'socket.io-client';
 import { useAppStore, esc, authFetch } from '@/lib/store';
 import { Header } from '@/components/shared';
 
@@ -34,7 +35,72 @@ export default function ChatScreen() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastFetchIdRef = useRef<string>('0');
   const inputRef = useRef<HTMLInputElement>(null);
+  const socketRef = useRef<Socket | null>(null);
 
+  // Connect to Socket.io
+  useEffect(() => {
+    if (!user) return;
+
+    const socket = io('/', {
+      transports: ['websocket', 'polling'],
+      auth: {
+        userId: user.id,
+        userRole: user.role,
+        userName: user.name,
+      },
+      query: { XTransformPort: '3003' },
+    });
+
+    socket.on('connect', () => {
+      console.log('[CHAT] Socket connected:', socket.id);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('[CHAT] Socket disconnected');
+    });
+
+    // Real-time admin presence
+    socket.on('admin-presence', (data: { online: boolean; adminCount: number }) => {
+      setAdminOnline(data.online);
+    });
+
+    // Real-time admin message
+    socket.on('admin-message', (msgData: {
+      id: string;
+      content: string;
+      t: string;
+      date: string;
+      isAdmin: boolean;
+    }) => {
+      setMessages(prev => {
+        const existingIds = new Set(prev.map(m => m.id));
+        if (existingIds.has(msgData.id)) return prev;
+        const newMsg: ChatMsg = {
+          id: msgData.id,
+          text: msgData.content,
+          me: false,
+          isAdmin: true,
+          isAdminMsg: true,
+          ticketId: null,
+          t: msgData.t,
+          date: msgData.date,
+        };
+        const updated = [...prev, newMsg];
+        setAdminOnline(true);
+        setLastAdminSeen(msgData.t);
+        return updated;
+      });
+    });
+
+    socketRef.current = socket;
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [user?.id]);
+
+  // Initial message fetch (load history)
   const fetchMessages = useCallback(async () => {
     try {
       const res = await authFetch(`/api/chat/messages?lastId=${lastFetchIdRef.current}`);
@@ -61,12 +127,15 @@ export default function ChatScreen() {
     setLoading(false);
   }, []);
 
+  // Load initial messages on mount, then poll less frequently (backup)
   useEffect(() => {
     fetchMessages();
-    const interval = setInterval(fetchMessages, 3000);
+    // Reduced polling: every 15 seconds as backup (Socket.io handles real-time)
+    const interval = setInterval(fetchMessages, 15000);
     return () => clearInterval(interval);
   }, [fetchMessages]);
 
+  // Auto-scroll on new messages
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -88,16 +157,25 @@ export default function ChatScreen() {
       });
       const data = await res.json();
       if (data.success && data.message) {
-        // Use the server-returned message directly (no duplicate)
+        // Add message to local state from server response
         setMessages(prev => {
           const existingIds = new Set(prev.map(m => m.id));
           if (existingIds.has(data.message.id)) return prev;
           return [...prev, data.message];
         });
         lastFetchIdRef.current = data.message.id;
+
+        // Emit via Socket.io for real-time delivery to admin
+        if (socketRef.current?.connected) {
+          socketRef.current.emit('user-message', {
+            content: text,
+            userId: user?.id,
+            userName: user?.name,
+          });
+        }
       } else if (data.success) {
         // Fallback: refetch if server didn't return message
-        setTimeout(() => fetchMessages(), 500);
+        setTimeout(() => fetchMessages(), 300);
       } else {
         addToast(data.error || 'Erreur', 'error');
       }
@@ -138,7 +216,7 @@ export default function ChatScreen() {
             <div>
               <div className="text-[0.92rem] font-black text-[#1F2937] leading-tight">Support Admin</div>
               <div className="text-[0.6rem] font-medium text-[#22C55E] leading-tight">
-                {adminOnline ? `En ligne · Vu à ${lastAdminSeen}` : 'Hors ligne · Répond sous 24h'}
+                {adminOnline ? `En ligne · Répond rapidement` : 'Hors ligne · Répond sous 24h'}
               </div>
             </div>
           </div>

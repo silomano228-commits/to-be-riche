@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
 import { useAppStore, formatMoney, esc, authFetch, type AppUser } from '@/lib/store';
 import { Header, LogoImg, Modal, INVEST_LEVELS, ENTERPRISE_TYPES, ENTERPRISE_NAMES } from '@/components/shared';
 
@@ -71,6 +72,7 @@ export default function AdminScreen() {
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
   const lastChatFetchId = useRef<string>('0');
+  const socketRef = useRef<Socket | null>(null);
 
   // Ensure spin animation is available
   useEffect(() => {
@@ -111,6 +113,93 @@ export default function AdminScreen() {
     } catch { /* */ }
   }, []);
 
+  // Connect to Socket.io for real-time messaging
+  useEffect(() => {
+    if (!user || user.role !== 'admin') return;
+
+    const socket = io('/', {
+      transports: ['websocket', 'polling'],
+      auth: {
+        userId: user.id,
+        userRole: user.role,
+        userName: user.name,
+      },
+      query: { XTransformPort: '3003' },
+    });
+
+    socket.on('connect', () => {
+      console.log('[ADMIN-CHAT] Socket connected:', socket.id);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('[ADMIN-CHAT] Socket disconnected');
+    });
+
+    // Real-time: receive new user messages
+    socket.on('new-user-message', (msgData: {
+      id: string;
+      content: string;
+      userId: string;
+      userName: string;
+      isAdmin: boolean;
+      t: string;
+      date: string;
+    }) => {
+      // If we have this conversation open, add the message
+      if (selectedUserId === msgData.userId) {
+        setChatMessages(prev => {
+          const existingIds = new Set(prev.map(m => m.id));
+          if (existingIds.has(msgData.id)) return prev;
+          return [...prev, {
+            id: msgData.id,
+            text: msgData.content,
+            me: false,
+            isAdmin: false,
+            isAdminMsg: false,
+            t: msgData.t,
+            date: msgData.date,
+          }];
+        });
+      }
+      // Refresh conversations list to update unread count
+      loadConversations();
+    });
+
+    // Real-time: see admin messages sent from other admin tabs
+    socket.on('admin-message-sent', (msgData: {
+      id: string;
+      content: string;
+      userId: string;
+      isAdmin: boolean;
+      t: string;
+      date: string;
+    }) => {
+      if (selectedUserId === msgData.userId) {
+        setChatMessages(prev => {
+          const existingIds = new Set(prev.map(m => m.id));
+          if (existingIds.has(msgData.id)) return prev;
+          return [...prev, {
+            id: msgData.id,
+            text: msgData.content,
+            me: true,
+            isAdmin: true,
+            isAdminMsg: true,
+            t: msgData.t,
+            date: msgData.date,
+          }];
+        });
+      }
+      loadConversations();
+    });
+
+    socketRef.current = socket;
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [user?.id, selectedUserId, loadConversations]);
+
   const loadChatMessages = useCallback(async (userId: string) => {
     try {
       const r = await authFetch(`/api/chat/messages?userId=${userId}&lastId=${lastChatFetchId.current}`);
@@ -130,21 +219,23 @@ export default function AdminScreen() {
     setChatLoading(false);
   }, []);
 
-  // Poll chat messages when a conversation is open
+  // Poll chat messages as backup (Socket.io is primary)
   useEffect(() => {
     if (tab === 'messages' && selectedUserId) {
       loadChatMessages(selectedUserId);
-      const interval = setInterval(() => loadChatMessages(selectedUserId), 3000);
+      // Reduced polling: every 15 seconds as backup (Socket.io handles real-time)
+      const interval = setInterval(() => loadChatMessages(selectedUserId), 15000);
       return () => clearInterval(interval);
     }
   }, [tab, selectedUserId, loadChatMessages]);
 
-  // Load conversations when messages tab is selected
+  // Load conversations when messages tab is selected (reduced polling)
   useEffect(() => {
     if (tab === 'messages') {
       const load = () => { loadConversations(); };
       load();
-      const interval = setInterval(load, 5000);
+      // Reduced polling: every 20 seconds as backup (Socket.io handles real-time)
+      const interval = setInterval(load, 20000);
       return () => clearInterval(interval);
     }
   }, [tab, loadConversations]);
@@ -157,19 +248,36 @@ export default function AdminScreen() {
   }, [chatMessages]);
 
   const handleAdminReply = async () => {
-    if (!chatInput.trim() || !selectedUserId || chatSending) return;
+    const content = chatInput.trim();
+    if (!content || !selectedUserId || chatSending) return;
     setChatSending(true);
+    setChatInput('');
     try {
       const res = await authFetch('/api/admin/reply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetUserId: selectedUserId, content: chatInput.trim() }),
+        body: JSON.stringify({ targetUserId: selectedUserId, content }),
       });
       const data = await res.json();
       if (data.success) {
-        setChatInput('');
-        // Fetch new messages instead of adding locally to avoid duplicates
-        setTimeout(() => loadChatMessages(selectedUserId), 300);
+        // Add message from server response directly (instant)
+        if (data.message) {
+          setChatMessages(prev => {
+            const existingIds = new Set(prev.map(m => m.id));
+            if (existingIds.has(data.message.id)) return prev;
+            return [...prev, data.message];
+          });
+          lastChatFetchId.current = data.message.id;
+        }
+        // Emit via Socket.io for real-time delivery to user
+        if (socketRef.current?.connected) {
+          socketRef.current.emit('admin-reply', {
+            targetUserId: selectedUserId,
+            content,
+            adminId: user?.id,
+            adminName: user?.name,
+          });
+        }
         loadConversations(); // Refresh conversation list
       } else {
         addToast(data.error || 'Erreur', 'error');

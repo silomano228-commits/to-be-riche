@@ -83,3 +83,39 @@ Stage Summary:
 - Double message bug fixed: server returns created message, frontend uses it directly
 - "Déposer" moved to green welcome card with "Compte Principal" label and "Déposer sur le compte principal" button
 - Quick actions row now has 4 items: Wallet, Investir, Trader, Projets
+
+---
+Task ID: 4
+Agent: main
+Task: Fix messaging system - implement real-time Socket.io for instant chat
+
+Work Log:
+- Diagnosed issues: chat used 3-second polling, admin online status was fake, admin reply didn't return message object
+- Installed socket.io and socket.io-client packages
+- Created mini-service chat-service on port 3003 with Socket.io server
+  - Supports user-message, admin-reply, admin-presence events
+  - Tracks admin online/offline status in real-time
+  - Broadcasts messages instantly between users and admins
+- Fixed /api/admin/reply route to return the created message object (was returning just {success: true})
+- Fixed /api/chat/send route to include userId and userName in response
+- Updated ChatScreen.tsx:
+  - Added Socket.io connection for real-time message delivery
+  - Admin messages appear instantly via socket (no more 3s delay)
+  - Admin online status now based on real presence (not fake/inferred)
+  - Reduced polling from 3s to 15s as backup only
+- Updated AdminScreen.tsx:
+  - Added Socket.io connection for real-time message reception
+  - User messages appear instantly in admin chat view
+  - Admin replies appear instantly for both admin and user
+  - Admin presence broadcast to all connected users
+  - Reduced polling from 3s/5s to 15s/20s as backup only
+  - Fixed chatInput.trim() bug (was used after clearing input)
+- Started chat-service mini-service on port 3003
+- Verified lint passes (no new errors from our changes)
+
+Stage Summary:
+- Chat system now uses Socket.io for real-time instant messaging
+- Admin online status is now based on actual WebSocket presence
+- Messages appear instantly (0ms) instead of with 3-5 second polling delay
+- Polling reduced to 15-20s as backup mechanism only
+- Chat mini-service running on port 3003

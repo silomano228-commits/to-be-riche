@@ -27,11 +27,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Champs manquants' });
     }
 
-    await db.chatMessage.create({
+    const message = await db.chatMessage.create({
       data: { content: content.trim(), userId: targetUserId, isAdmin: true },
     });
 
-    return NextResponse.json({ success: true });
+    // Return the created message so the frontend can use it directly
+    return NextResponse.json({
+      success: true,
+      message: {
+        id: message.id,
+        text: message.content,
+        me: true,
+        isAdmin: true,
+        isAdminMsg: true,
+        t: message.createdAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        date: message.createdAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
+      },
+    });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
   }
