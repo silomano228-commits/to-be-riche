@@ -6,8 +6,27 @@ import { getTrxPrice, getAdminTrxAddress, getTrxUsdPrice } from '@/lib/trongrid'
 function getToken(request: Request): string | null {
   const authHeader = request.headers.get('x-auth-token');
   if (authHeader) return authHeader;
-  // cookies() is async in Next.js 16
-  return null; // Will fallback to cookies below
+  return null;
+}
+
+/**
+ * Check if a user has ANY pending deposit (TRX or YAS)
+ * Returns the pending deposit info or null
+ */
+async function getAnyPendingDeposit(userId: string) {
+  // Check TRX pending
+  const pendingTrx = await db.pendingDeposit.findFirst({
+    where: { userId, status: 'pending' }
+  });
+  if (pendingTrx) return { type: 'trx' as const, deposit: pendingTrx };
+
+  // Check YAS pending
+  const pendingYas = await db.yasDeposit.findFirst({
+    where: { userId, status: 'pending' }
+  });
+  if (pendingYas) return { type: 'yas' as const, deposit: pendingYas };
+
+  return null;
 }
 
 // POST — Crée un dépôt en attente (l'utilisateur entre le montant + son adresse TRX)
@@ -38,15 +57,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Paiement TRX non configuré. Contactez l\'administrateur.' });
     }
 
-    // Vérifier s'il y a déjà un dépôt en attente
-    const existingPending = await db.pendingDeposit.findFirst({
-      where: { userId: token, status: 'pending' }
-    });
-    if (existingPending) {
-      return NextResponse.json({ success: false, error: 'Vous avez déjà un dépôt en attente de confirmation.' });
+    // Vérifier s'il y a déjà un dépôt en attente (TRX OU YAS)
+    const anyPending = await getAnyPendingDeposit(token);
+    if (anyPending) {
+      const errorMsg = anyPending.type === 'trx'
+        ? 'Vous avez déjà un dépôt TRX en attente de confirmation.'
+        : 'Vous avez déjà une demande de conversion Yas en attente. Attendez qu\'elle soit traitée avant de faire un nouveau dépôt.';
+      return NextResponse.json({ success: false, error: errorMsg });
     }
 
-    // userAddress optionnel — si pas fourni, on utilise un placeholder
     const deposit = await db.pendingDeposit.create({
       data: {
         userId: token,
@@ -93,6 +112,12 @@ export async function GET(request: Request) {
       orderBy: { createdAt: 'desc' },
     });
 
+    // Also check if user has a pending YAS deposit
+    const yasDeposit = await db.yasDeposit.findFirst({
+      where: { userId: token, status: 'pending' },
+      orderBy: { createdAt: 'desc' },
+    });
+
     return NextResponse.json({
       success: true,
       data: {
@@ -105,6 +130,16 @@ export async function GET(request: Request) {
           userAddress: deposit.userAddress,
           status: deposit.status,
           createdAt: deposit.createdAt,
+        } : null,
+        pendingYasDeposit: yasDeposit ? {
+          id: yasDeposit.id,
+          amountCfa: yasDeposit.amountCfa,
+          amountUsd: yasDeposit.amountUsd,
+          amountTrx: yasDeposit.amountTrx,
+          yasAccount: yasDeposit.yasAccount,
+          trxAddress: yasDeposit.trxAddress,
+          status: yasDeposit.status,
+          createdAt: yasDeposit.createdAt,
         } : null,
       },
     });

@@ -20,6 +20,11 @@ function validateYasAccount(account: string): string | null {
   return null;
 }
 
+// Represents ANY pending deposit across both tables
+type ActivePendingDeposit = 
+  | { type: 'trx'; amountUsd: number; amountTrx: number; userAddress?: string; createdAt?: string }
+  | { type: 'yas'; amountCfa: number; amountUsd: number; amountTrx: number; yasAccount: string; trxAddress: string; createdAt?: string };
+
 export default function DepositScreen() {
   const { user, setUser, setPage, addToast } = useAppStore();
   const [method, setMethod] = useState<DepositMethod>('choose');
@@ -30,33 +35,41 @@ export default function DepositScreen() {
   const [userAddress, setUserAddress] = useState('');
   const [adminAddress, setAdminAddress] = useState('');
   const [trxPrice, setTrxPrice] = useState(0);
-  const [pendingDeposit, setPendingDeposit] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
   // Yas deposit state
   const [yasStep, setYasStep] = useState<YasStep>('amount');
-  const [yasAmount, setYasAmount] = useState(''); // CFA amount
+  const [yasAmount, setYasAmount] = useState('');
   const [yasAccount, setYasAccount] = useState('');
   const [yasTrxAddress, setYasTrxAddress] = useState('');
   const [yasSubmitting, setYasSubmitting] = useState(false);
-  const [yasPendingDeposit, setYasPendingDeposit] = useState<any>(null);
   const [cfaUsdRate, setCfaUsdRate] = useState(600);
   const [adminYasAccount, setAdminYasAccount] = useState('');
   const [yasCopied, setYasCopied] = useState(false);
 
-  // Load deposit info on mount
+  // Unified pending deposit — tracks ANY pending deposit from either table
+  const [activePending, setActivePending] = useState<ActivePendingDeposit | null>(null);
+
+  // Load deposit info on mount — check BOTH endpoints for any pending
   useEffect(() => {
     const loadInfo = async () => {
+      let foundPending: ActivePendingDeposit | null = null;
+
       try {
         const res = await authFetch('/api/deposit/trx');
         const data = await res.json();
         if (data.success) {
           setAdminAddress(data.data.adminAddress || '');
           setTrxPrice(data.data.trxPrice || 0.12);
+          // Check TRX pending
           if (data.data.pendingDeposit) {
-            setPendingDeposit(data.data.pendingDeposit);
+            foundPending = { type: 'trx', ...data.data.pendingDeposit };
+          }
+          // Also check YAS pending from this response
+          if (!foundPending && data.data.pendingYasDeposit) {
+            foundPending = { type: 'yas', ...data.data.pendingYasDeposit };
           }
         }
       } catch { /* */ }
@@ -68,12 +81,18 @@ export default function DepositScreen() {
           if (!trxPrice && data.data.trxPrice) setTrxPrice(data.data.trxPrice);
           if (data.data.cfaUsdRate) setCfaUsdRate(data.data.cfaUsdRate);
           if (data.data.adminYasAccount) setAdminYasAccount(data.data.adminYasAccount);
-          if (data.data.pendingDeposit) {
-            setYasPendingDeposit(data.data.pendingDeposit);
+          // Only set YAS pending if no TRX pending found yet
+          if (!foundPending && data.data.pendingDeposit) {
+            foundPending = { type: 'yas', ...data.data.pendingDeposit };
+          }
+          // Also check TRX pending from this response
+          if (!foundPending && data.data.pendingTrxDeposit) {
+            foundPending = { type: 'trx', ...data.data.pendingTrxDeposit };
           }
         }
       } catch { /* */ }
 
+      if (foundPending) setActivePending(foundPending);
       setLoading(false);
     };
     loadInfo();
@@ -135,6 +154,7 @@ export default function DepositScreen() {
       const data = await res.json();
       if (data.success) {
         setTrxStep('success');
+        setActivePending({ type: 'trx', amountUsd: amt, amountTrx: trxCalculatedAmountTrx });
         addToast('Dépôt soumis avec succès !', 'success');
         refreshUser();
       } else {
@@ -169,6 +189,7 @@ export default function DepositScreen() {
       const data = await res.json();
       if (data.success) {
         setYasStep('success');
+        setActivePending({ type: 'yas', amountCfa: amtCfa, amountUsd: yasAmountUsd, amountTrx: yasAmountTrx, yasAccount: yasAccount.trim(), trxAddress: yasTrxAddress.trim() });
         addToast('Demande de conversion soumise !', 'success');
         refreshUser();
       } else {
@@ -191,93 +212,77 @@ export default function DepositScreen() {
     </button>
   );
 
-  // ===================== PENDING DEPOSIT (TRX) =====================
-  if (pendingDeposit && method !== 'yas') {
-    return (
-      <>
-        <Header title="Dépôt en attente" icon="fa-clock" iconColor="#22C55E" leftElement={backBtn} />
-        <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
-          <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4 border border-[rgba(0,0,0,0.08)]">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-xl bg-[#22C55E] flex items-center justify-center shrink-0">
-                <i className="fas fa-clock text-[#050506] text-[1.2rem]"></i>
-              </div>
-              <div>
-                <h3 className="text-[1rem] font-bold text-[#1F2937]">Dépôt TRX en attente</h3>
-                <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Votre dépôt est en cours de vérification par l&apos;administrateur</p>
-              </div>
-            </div>
-            <div className="bg-[#F3F4F6] rounded-xl p-4 mb-3 border border-[rgba(0,0,0,0.08)]">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Montant USD</span>
-                <span className="text-[0.88rem] font-bold text-[#1F2937]">{formatMoney(pendingDeposit.amountUsd)}</span>
-              </div>
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Montant TRX</span>
-                <span className="text-[0.88rem] font-bold text-[#1F2937]">{pendingDeposit.amountTrx?.toFixed(2)} TRX</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Statut</span>
-                <span className="text-[0.72rem] font-semibold bg-[rgba(34,197,94,0.12)] text-[#22C55E] px-2 py-0.5 rounded-full">En attente</span>
-              </div>
-            </div>
-            <p className="text-[0.7rem] text-[rgba(0,0,0,0.55)] text-center">
-              <i className="fas fa-info-circle mr-1"></i>
-              Cela peut prendre quelques minutes. Vous serez notifié une fois confirmé.
-            </p>
-          </div>
-          <button onClick={() => setPage('wallet')} className="w-full py-3.5 rounded-xl bg-[#22C55E] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer">
-            <i className="fas fa-wallet mr-2"></i>Retour au portefeuille
-          </button>
-        </div>
-      </>
+  // ===================== PENDING DEPOSIT (UNIFIED - TRX or YAS) =====================
+  // Show this if user has ANY pending deposit, regardless of current method selection
+  if (activePending && (method === 'choose' || (activePending.type === 'trx' && method !== 'yas') || (activePending.type === 'yas' && method !== 'trx'))) {
+    // If user navigated to the OTHER method, still show pending
+    const isTrxPending = activePending.type === 'trx';
+    const pendingBackBtn = (
+      <button onClick={() => setPage('wallet')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] cursor-pointer border-none mr-1">
+        <i className="fas fa-arrow-left text-[0.8rem]"></i>
+      </button>
     );
-  }
 
-  // ===================== PENDING YAS DEPOSIT =====================
-  if (yasPendingDeposit && method !== 'trx') {
     return (
       <>
-        <Header title="Conversion en attente" icon="fa-clock" iconColor="#22C55E" leftElement={backBtn} />
+        <Header title={isTrxPending ? 'Dépôt en attente' : 'Conversion en attente'} icon="fa-clock" iconColor="#22C55E" leftElement={pendingBackBtn} />
         <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
           <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4 border border-[rgba(0,0,0,0.08)]">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-xl bg-[#22C55E] flex items-center justify-center shrink-0">
-                <i className="fas fa-exchange-alt text-[#050506] text-[1.2rem]"></i>
+                <i className={`fas ${isTrxPending ? 'fa-clock' : 'fa-exchange-alt'} text-[#050506] text-[1.2rem]`}></i>
               </div>
               <div>
-                <h3 className="text-[1rem] font-bold text-[#1F2937]">Conversion Yas en attente</h3>
-                <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">L&apos;administrateur va convertir votre argent et vous envoyer les TRX</p>
+                <h3 className="text-[1rem] font-bold text-[#1F2937]">
+                  {isTrxPending ? 'Dépôt TRX en attente' : 'Conversion Yas en attente'}
+                </h3>
+                <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">
+                  {isTrxPending 
+                    ? 'Votre dépôt est en cours de vérification par l\'administrateur'
+                    : 'L\'administrateur va convertir votre argent et vous envoyer les TRX'
+                  }
+                </p>
               </div>
             </div>
             <div className="bg-[#F3F4F6] rounded-xl p-4 mb-3 border border-[rgba(0,0,0,0.08)]">
-              {yasPendingDeposit.amountCfa > 0 && (
+              {activePending.type === 'yas' && (
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Montant CFA</span>
-                  <span className="text-[0.88rem] font-bold text-[#1F2937]">{Math.round(yasPendingDeposit.amountCfa).toLocaleString('fr-FR')} FCFA</span>
+                  <span className="text-[0.88rem] font-bold text-[#1F2937]">{Math.round(activePending.amountCfa).toLocaleString('fr-FR')} FCFA</span>
                 </div>
               )}
               <div className="flex justify-between items-center mb-2">
                 <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Montant USD</span>
-                <span className="text-[0.88rem] font-bold text-[#1F2937]">{formatMoney(yasPendingDeposit.amountUsd)}</span>
+                <span className="text-[0.88rem] font-bold text-[#1F2937]">{formatMoney(activePending.amountUsd)}</span>
               </div>
               <div className="flex justify-between items-center mb-2">
                 <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Montant TRX</span>
-                <span className="text-[0.88rem] font-bold text-[#1F2937]">{yasPendingDeposit.amountTrx?.toFixed(2)} TRX</span>
+                <span className="text-[0.88rem] font-bold text-[#1F2937]">{activePending.amountTrx?.toFixed(2)} TRX</span>
               </div>
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Compte Yas</span>
-                <span className="text-[0.78rem] font-bold text-[#1F2937]">{esc(yasPendingDeposit.yasAccount)}</span>
-              </div>
+              {activePending.type === 'yas' && (
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Compte Yas</span>
+                  <span className="text-[0.78rem] font-bold text-[#1F2937]">{esc(activePending.yasAccount)}</span>
+                </div>
+              )}
               <div className="flex justify-between items-center">
                 <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Statut</span>
                 <span className="text-[0.72rem] font-semibold bg-[rgba(34,197,94,0.12)] text-[#22C55E] px-2 py-0.5 rounded-full">En attente</span>
               </div>
             </div>
-            <p className="text-[0.7rem] text-[rgba(0,0,0,0.55)] text-center">
-              <i className="fas fa-info-circle mr-1"></i>
-              L&apos;administrateur va traiter votre demande et envoyer les TRX à votre adresse Trust Wallet.
-            </p>
+
+            {/* Info message explaining the user must wait */}
+            <div className="bg-[rgba(34,197,94,0.08)] rounded-xl p-3 mb-3 border border-[rgba(34,197,94,0.15)]">
+              <div className="flex items-start gap-2">
+                <i className="fas fa-info-circle text-[#22C55E] text-[0.8rem] mt-0.5"></i>
+                <p className="text-[0.7rem] text-[rgba(0,0,0,0.65)] leading-relaxed">
+                  {isTrxPending 
+                    ? 'Vous ne pouvez pas faire de nouveau dépôt tant que celui-ci n\'est pas confirmé. Cela peut prendre quelques minutes.'
+                    : 'Vous ne pouvez pas faire de nouveau dépôt tant que cette conversion n\'est pas traitée. L\'admin va traiter votre demande.'
+                  }
+                </p>
+              </div>
+            </div>
           </div>
           <button onClick={() => setPage('wallet')} className="w-full py-3.5 rounded-xl bg-[#22C55E] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer">
             <i className="fas fa-wallet mr-2"></i>Retour au portefeuille
@@ -289,9 +294,6 @@ export default function DepositScreen() {
 
   // ===================== CHOOSE METHOD =====================
   if (method === 'choose') {
-    const hasPendingTrx = !!pendingDeposit;
-    const hasPendingYas = !!yasPendingDeposit;
-
     return (
       <>
         <Header title="Déposer" icon="fa-arrow-down" iconColor="#22C55E" leftElement={
@@ -311,13 +313,8 @@ export default function DepositScreen() {
 
               {/* TRX Direct Deposit Card */}
               <button
-                onClick={() => { if (hasPendingTrx) return; setMethod('trx'); }}
-                disabled={hasPendingTrx}
-                className={`w-full text-left rounded-2xl p-5 mb-3 border transition-all ${
-                  hasPendingTrx
-                    ? 'border-[rgba(34,197,94,0.2)] bg-[#FFFFFF] opacity-70'
-                    : 'border-[rgba(0,0,0,0.08)] bg-[#FFFFFF] hover:border-[rgba(34,197,94,0.3)] active:scale-[0.98]'
-                } cursor-pointer`}
+                onClick={() => setMethod('trx')}
+                className="w-full text-left rounded-2xl p-5 mb-3 border border-[rgba(0,0,0,0.08)] bg-[#FFFFFF] hover:border-[rgba(34,197,94,0.3)] active:scale-[0.98] transition-all cursor-pointer"
               >
                 <div className="flex items-start gap-3.5">
                   <div className="w-12 h-12 rounded-xl bg-[rgba(34,197,94,0.12)] flex items-center justify-center shrink-0">
@@ -326,29 +323,18 @@ export default function DepositScreen() {
                   <div className="flex-1 min-w-0">
                     <h3 className="text-[0.95rem] font-bold text-[#1F2937] mb-0.5">Dépôt en Dollars (TRX)</h3>
                     <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)] leading-relaxed mb-2">Envoyez directement des TRX depuis votre wallet. Confirmation rapide par l&apos;administrateur.</p>
-                    {hasPendingTrx ? (
-                      <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#22C55E] bg-[rgba(34,197,94,0.12)] px-2 py-1 rounded-full">
-                        <i className="fas fa-clock"></i> Dépôt en attente
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#22C55E] bg-[rgba(34,197,94,0.12)] px-2 py-1 rounded-full">
-                        <i className="fas fa-bolt"></i> Rapide & direct
-                      </span>
-                    )}
+                    <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#22C55E] bg-[rgba(34,197,94,0.12)] px-2 py-1 rounded-full">
+                      <i className="fas fa-bolt"></i> Rapide & direct
+                    </span>
                   </div>
-                  {!hasPendingTrx && <i className="fas fa-chevron-right text-[rgba(0,0,0,0.35)] mt-3"></i>}
+                  <i className="fas fa-chevron-right text-[rgba(0,0,0,0.35)] mt-3"></i>
                 </div>
               </button>
 
               {/* Yas du Togo Conversion Card */}
               <button
-                onClick={() => { if (hasPendingYas) return; setMethod('yas'); setYasStep('amount'); }}
-                disabled={hasPendingYas}
-                className={`w-full text-left rounded-2xl p-5 mb-5 border transition-all ${
-                  hasPendingYas
-                    ? 'border-[rgba(34,197,94,0.2)] bg-[#FFFFFF] opacity-70'
-                    : 'border-[rgba(0,0,0,0.08)] bg-[#FFFFFF] hover:border-[rgba(34,197,94,0.3)] active:scale-[0.98]'
-                } cursor-pointer`}
+                onClick={() => { setMethod('yas'); setYasStep('amount'); }}
+                className="w-full text-left rounded-2xl p-5 mb-5 border border-[rgba(0,0,0,0.08)] bg-[#FFFFFF] hover:border-[rgba(34,197,94,0.3)] active:scale-[0.98] transition-all cursor-pointer"
               >
                 <div className="flex items-start gap-3.5">
                   <div className="w-12 h-12 rounded-xl bg-[rgba(34,197,94,0.12)] flex items-center justify-center shrink-0">
@@ -357,17 +343,11 @@ export default function DepositScreen() {
                   <div className="flex-1 min-w-0">
                     <h3 className="text-[0.95rem] font-bold text-[#1F2937] mb-0.5">Conversion Yas du Togo</h3>
                     <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)] leading-relaxed mb-2">Pas de TRX ? Convertissez l&apos;argent de votre compte Yas du Togo en TRX. L&apos;admin vous enverra les TRX sur votre Trust Wallet.</p>
-                    {hasPendingYas ? (
-                      <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#22C55E] bg-[rgba(34,197,94,0.12)] px-2 py-1 rounded-full">
-                        <i className="fas fa-clock"></i> Conversion en attente
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#22C55E] bg-[rgba(34,197,94,0.12)] px-2 py-1 rounded-full">
-                        <i className="fas fa-hand-holding-usd"></i> Sans TRX
-                      </span>
-                    )}
+                    <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#22C55E] bg-[rgba(34,197,94,0.12)] px-2 py-1 rounded-full">
+                      <i className="fas fa-hand-holding-usd"></i> Sans TRX
+                    </span>
                   </div>
-                  {!hasPendingYas && <i className="fas fa-chevron-right text-[rgba(0,0,0,0.35)] mt-3"></i>}
+                  <i className="fas fa-chevron-right text-[rgba(0,0,0,0.35)] mt-3"></i>
                 </div>
               </button>
 
@@ -647,7 +627,6 @@ export default function DepositScreen() {
 
   // ===================== YAS DU TOGO FLOW =====================
   if (method === 'yas') {
-    // Yas number validation state
     const yasAccountError = yasAccount ? validateYasAccount(yasAccount) : null;
 
     return (
@@ -750,7 +729,7 @@ export default function DepositScreen() {
                     </div>
                   </div>
 
-                  {/* Admin Yas Account - Show where to send money */}
+                  {/* Admin Yas Account */}
                   {adminYasAccount && (
                     <div className="bg-[#FFFFFF] rounded-2xl p-4 mb-4 border border-[rgba(0,0,0,0.08)] relative overflow-hidden">
                       <div className="absolute -top-8 -right-8 w-[100px] h-[100px] bg-[radial-gradient(circle,rgba(34,197,94,0.1),transparent_60%)]" />
@@ -799,7 +778,6 @@ export default function DepositScreen() {
               {/* ===================== YAS STEP 2: GUIDE ===================== */}
               {yasStep === 'guide' && (
                 <div style={{ animation: 'tIn 0.3s ease-out' }}>
-                  {/* Trust Wallet Guide */}
                   <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4 border border-[rgba(0,0,0,0.08)] relative overflow-hidden">
                     <div className="absolute -top-12 -right-12 w-[140px] h-[140px] bg-[radial-gradient(circle,rgba(34,197,94,0.1),transparent_60%)]" />
                     <div className="relative z-[1]">
@@ -832,7 +810,6 @@ export default function DepositScreen() {
                     </div>
                   </div>
 
-                  {/* Important notice */}
                   <div className="bg-[#FFFFFF] rounded-xl p-3.5 mb-4 border-l-[3px] border-l-[#22C55E] border-r border-r-[rgba(0,0,0,0.08)] border-t border-t-[rgba(0,0,0,0.08)] border-b border-b-[rgba(0,0,0,0.08)]">
                     <div className="flex items-start gap-2">
                       <i className="fas fa-exclamation-triangle text-[#22C55E] text-[0.8rem] mt-0.5"></i>
@@ -866,7 +843,6 @@ export default function DepositScreen() {
               {/* ===================== YAS STEP 3: YAS ACCOUNT + TRX ADDRESS ===================== */}
               {yasStep === 'wallet' && (
                 <div style={{ animation: 'tIn 0.3s ease-out' }}>
-                  {/* Summary card */}
                   <div className="bg-[#FFFFFF] rounded-2xl p-4 mb-4 border border-[rgba(0,0,0,0.08)]">
                     <h4 className="text-[0.82rem] font-bold text-[#1F2937] mb-2">Récapitulatif</h4>
                     <div className="space-y-1.5">
@@ -885,7 +861,6 @@ export default function DepositScreen() {
                     </div>
                   </div>
 
-                  {/* Yas Account Input */}
                   <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4 border border-[rgba(0,0,0,0.08)]">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-9 h-9 rounded-xl bg-[rgba(34,197,94,0.12)] flex items-center justify-center shrink-0">
@@ -923,7 +898,6 @@ export default function DepositScreen() {
                     )}
                   </div>
 
-                  {/* TRX Address Input */}
                   <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4 border border-[rgba(0,0,0,0.08)]">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-9 h-9 rounded-xl bg-[rgba(34,197,94,0.12)] flex items-center justify-center shrink-0">
@@ -943,7 +917,6 @@ export default function DepositScreen() {
                     />
                   </div>
 
-                  {/* Reminder about Trust Wallet */}
                   <div className="bg-[#FFFFFF] rounded-xl p-3.5 mb-4 border-l-[3px] border-l-[#22C55E] border-r border-r-[rgba(0,0,0,0.08)] border-t border-t-[rgba(0,0,0,0.08)] border-b border-b-[rgba(0,0,0,0.08)]">
                     <h4 className="text-[0.78rem] font-bold text-[#1F2937] mb-1.5">
                       <i className="fas fa-info-circle mr-1 text-[#22C55E]"></i> Rappel
