@@ -818,16 +818,25 @@ export default function DepositScreen() {
                   {/* Syntax preview */}
                   <div className="bg-[#FFFFFF] rounded-2xl p-4 mb-4 border border-[rgba(0,0,0,0.08)]">
                     <h4 className="text-[0.82rem] font-bold text-[#1F2937] mb-2">
-                      <i className="fas fa-code mr-1 text-[#22C55E]"></i> Format du code
+                      <i className="fas fa-code mr-1 text-[#22C55E]"></i> Code d&apos;envoi
                     </h4>
                     <div className="bg-[#F3F4F6] rounded-xl p-3 border border-[rgba(0,0,0,0.08)]">
                       <div className="text-[0.78rem] font-mono font-bold text-[#22C55E] text-center tracking-wide">
-                        *145*1(montant)*{adminYasAccount || 'XXXXXXXX'}*2#
+                        {yasAmountCfa >= 6000 && adminYasAccount
+                          ? `*145*1${Math.round(yasAmountCfa)}*${adminYasAccount}*2#`
+                          : `*145*1(montant)*${adminYasAccount || 'XXXXXXXX'}*2#`
+                        }
                       </div>
                     </div>
-                    <p className="text-[0.65rem] text-[rgba(0,0,0,0.45)] mt-2 text-center">
-                      Remplacez (montant) par le montant en FCFA que vous souhaitez envoyer
-                    </p>
+                    {yasAmountCfa >= 6000 ? (
+                      <p className="text-[0.65rem] text-[#22C55E] mt-2 text-center font-semibold">
+                        <i className="fas fa-check-circle mr-1"></i> Montant de {Math.round(yasAmountCfa).toLocaleString('fr-FR')} FCFA inclus automatiquement
+                      </p>
+                    ) : (
+                      <p className="text-[0.65rem] text-[rgba(0,0,0,0.45)] mt-2 text-center">
+                        Le montant sera rempli automatiquement à l&apos;étape suivante
+                      </p>
+                    )}
                   </div>
 
                   <div className="bg-[#FFFFFF] rounded-xl p-3.5 mb-4 border-l-[3px] border-l-[#22C55E] border-r border-r-[rgba(0,0,0,0.08)] border-t border-t-[rgba(0,0,0,0.08)] border-b border-b-[rgba(0,0,0,0.08)]">
