@@ -42,8 +42,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Minimum de retrait : 5 $' });
     }
 
-    // Can only withdraw from earnings (gains balance)
-    if (amt > user.earnings) {
+    // Can only withdraw from totalProfit (gains balance)
+    if (amt > user.totalProfit) {
       return NextResponse.json({ success: false, error: 'Solde de gains insuffisant. Seul le solde de gains est retirable.' });
     }
 
@@ -96,16 +96,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Vous avez déjà une demande de retrait en attente' });
     }
 
-    // Deduct from earnings and balance
-    await db.user.update({
-      where: { id: user.id },
-      data: {
-        earnings: { decrement: amt },
-        balance: { decrement: amt },
-      },
-    });
-
-    // Create withdrawal request
+    // Create withdrawal request (balance deduction happens on admin approval)
     const withdrawal = await db.withdrawal.create({
       data: {
         userId: user.id,
@@ -120,7 +111,6 @@ export async function POST(request: Request) {
       data: {
         type: 'withdrawal',
         amount: amt,
-        gain: 0,
         userId: user.id,
       },
     });

@@ -30,7 +30,7 @@ export async function GET(request: Request) {
       orderBy: { createdAt: 'desc' },
       include: {
         user: {
-          select: { id: true, name: true, email: true, earnings: true, balance: true },
+          select: { id: true, name: true, email: true, totalProfit: true, balance: true },
         },
       },
     });
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
     if (action === 'approve') {
       // Verify user still has enough earnings
       const user = await db.user.findUnique({ where: { id: withdrawal.userId } });
-      if (!user || user.earnings < withdrawal.amount) {
+      if (!user || user.totalProfit < withdrawal.amount) {
         return NextResponse.json({ success: false, error: 'L\'utilisateur n\'a plus assez de gains' });
       }
 
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
       await db.user.update({
         where: { id: withdrawal.userId },
         data: {
-          earnings: { decrement: withdrawal.amount },
+          totalProfit: { decrement: withdrawal.amount },
           balance: { decrement: withdrawal.amount },
         },
       });
@@ -92,7 +92,6 @@ export async function POST(request: Request) {
         data: {
           type: 'withdrawal',
           amount: withdrawal.amount,
-          gain: 0,
           userId: withdrawal.userId,
         },
       });

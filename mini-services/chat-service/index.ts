@@ -11,8 +11,8 @@ const io = new Server(httpServer, {
   },
 });
 
-// Track online admins
-const onlineAdmins = new Set<string>();
+// Track online admins with connection count
+const adminConnections = new Map<string, number>(); // userId -> connection count
 
 io.on('connection', (socket) => {
   const userId = socket.handshake.auth?.userId as string | undefined;
@@ -30,15 +30,15 @@ io.on('connection', (socket) => {
 
   // Track admin presence
   if (userRole === 'admin') {
-    onlineAdmins.add(userId);
+    adminConnections.set(userId, (adminConnections.get(userId) || 0) + 1);
     socket.join('admins');
     // Notify all users that admin is online
-    io.emit('admin-presence', { online: true, adminCount: onlineAdmins.size });
-    console.log(`[CHAT] Admin ${userName} (${userId}) connected. Total admins online: ${onlineAdmins.size}`);
+    io.emit('admin-presence', { online: adminConnections.size > 0, adminCount: adminConnections.size });
+    console.log(`[CHAT] Admin ${userName} (${userId}) connected. Total admins online: ${adminConnections.size}`);
   } else {
     console.log(`[CHAT] User ${userName} (${userId}) connected`);
     // Send current admin presence to the newly connected user
-    socket.emit('admin-presence', { online: onlineAdmins.size > 0, adminCount: onlineAdmins.size });
+    socket.emit('admin-presence', { online: adminConnections.size > 0, adminCount: adminConnections.size });
   }
 
   // ========== USER EVENTS ==========
@@ -84,17 +84,22 @@ io.on('connection', (socket) => {
 
   // Admin requests online status
   socket.on('get-admin-presence', () => {
-    socket.emit('admin-presence', { online: onlineAdmins.size > 0, adminCount: onlineAdmins.size });
+    socket.emit('admin-presence', { online: adminConnections.size > 0, adminCount: adminConnections.size });
   });
 
   // ========== DISCONNECT ==========
 
   socket.on('disconnect', () => {
     if (userRole === 'admin') {
-      onlineAdmins.delete(userId);
+      const currentCount = adminConnections.get(userId) || 0;
+      if (currentCount <= 1) {
+        adminConnections.delete(userId);
+      } else {
+        adminConnections.set(userId, currentCount - 1);
+      }
       // Notify all users about admin presence change
-      io.emit('admin-presence', { online: onlineAdmins.size > 0, adminCount: onlineAdmins.size });
-      console.log(`[CHAT] Admin ${userName} disconnected. Remaining admins: ${onlineAdmins.size}`);
+      io.emit('admin-presence', { online: adminConnections.size > 0, adminCount: adminConnections.size });
+      console.log(`[CHAT] Admin ${userName} disconnected. Remaining admins: ${adminConnections.size}`);
     } else {
       console.log(`[CHAT] User ${userName} disconnected`);
     }

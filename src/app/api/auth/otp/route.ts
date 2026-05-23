@@ -86,8 +86,15 @@ export async function POST(request: Request) {
         (i) => i.nextClaimAt && now >= i.nextClaimAt
       );
 
-      const canWithdraw = true;
-      const hoursUntilWithdrawal = 0;
+      // Check 48h withdrawal eligibility
+      const firstDepositDate = user.firstDepositAt;
+      const canWithdraw = firstDepositDate
+        ? (now.getTime() - new Date(firstDepositDate).getTime()) >= 48 * 60 * 60 * 1000
+        : false;
+
+      const hoursUntilWithdrawal = firstDepositDate && !canWithdraw
+        ? Math.ceil(48 - (now.getTime() - new Date(firstDepositDate).getTime()) / (60 * 60 * 1000))
+        : 0;
 
       const completedWithdrawals = await db.withdrawal.count({
         where: { userId: user.id, status: 'approved' },
@@ -110,8 +117,19 @@ export async function POST(request: Request) {
           canWithdraw,
           hoursUntilWithdrawal,
           completedWithdrawals,
-          requiredReferrals: 0,
-          needsReferral: false,
+          requiredReferrals: (() => {
+            const nextWithdrawalNumber = completedWithdrawals + 1;
+            return nextWithdrawalNumber >= 3
+              ? Math.ceil((nextWithdrawalNumber - 2) / 2)
+              : 0;
+          })(),
+          needsReferral: (() => {
+            const nextWithdrawalNumber = completedWithdrawals + 1;
+            const required = nextWithdrawalNumber >= 3
+              ? Math.ceil((nextWithdrawalNumber - 2) / 2)
+              : 0;
+            return required > user.referralCount;
+          })(),
         },
       });
 

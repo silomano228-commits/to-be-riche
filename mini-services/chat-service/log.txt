@@ -1,1 +1,2 @@
 $ bun --hot index.ts
+[CHAT-SERVICE] Socket.io server running on port 3003
