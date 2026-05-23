@@ -24,7 +24,7 @@ export async function GET(request: Request) {
   }
 }
 
-// POST — Create a TRX withdrawal request (no balance deduction — admin approves first)
+// POST — Create a TRX withdrawal request (no balance deduction — admin approves then executes)
 export async function POST(request: Request) {
   try {
     const token = getAuthToken(request);
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
 
     // Check referral requirement
     const completedWithdrawals = await db.withdrawal.count({
-      where: { userId: user.id, status: 'approved' },
+      where: { userId: user.id, status: 'executed' },
     });
     const nextWithdrawalNumber = completedWithdrawals + 1;
     const requiredReferrals = nextWithdrawalNumber >= 3
@@ -90,13 +90,13 @@ export async function POST(request: Request) {
 
     // Check if user already has a pending withdrawal (any type)
     const pendingW = await db.withdrawal.findFirst({
-      where: { userId: user.id, status: 'pending' },
+      where: { userId: user.id, status: { in: ['pending', 'approved'] } },
     });
     if (pendingW) {
       return NextResponse.json({ success: false, error: 'Vous avez déjà une demande de retrait en attente' });
     }
 
-    // Create withdrawal request (no balance deduction — admin approves first)
+    // Create withdrawal request (no balance deduction — admin approves then executes)
     const withdrawal = await db.withdrawal.create({
       data: {
         userId: user.id,
@@ -116,6 +116,19 @@ export async function POST(request: Request) {
         userId: user.id,
       },
     });
+
+    // Notify admin via Socket.io (fire and forget)
+    try {
+      const { io } = await import('@/lib/socket');
+      io.emit('new-withdrawal', {
+        withdrawalId: withdrawal.id,
+        type: 'trx',
+        userId: user.id,
+        userName: user.name,
+        amount: amt,
+        trxAddress,
+      });
+    } catch { /* Socket.io not available */ }
 
     return NextResponse.json({ success: true, data: { id: withdrawal.id, amount: amt, status: 'pending' } });
   } catch {

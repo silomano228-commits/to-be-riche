@@ -59,6 +59,23 @@ io.on('connection', (socket) => {
     io.to('admins').emit('new-user-message', msgData);
   });
 
+  // ========== WITHDRAWAL NOTIFICATION ==========
+  // Backend API will emit this event when a new withdrawal is created
+  socket.on('withdrawal-created', (data: {
+    withdrawalId: string;
+    type: 'trx' | 'yas';
+    userId: string;
+    userName: string;
+    amount: number;
+    amountCfa?: number;
+    yasAccount?: string;
+    trxAddress?: string;
+  }) => {
+    console.log(`[CHAT] Withdrawal notification: ${data.type} ${data.amount}$ from ${data.userName}`);
+    // Forward to all admins
+    io.to('admins').emit('new-withdrawal', data);
+  });
+
   // ========== ADMIN EVENTS ==========
 
   // Admin sends a reply to a specific user — forward data with real DB ID from client

@@ -48,7 +48,7 @@ export default function WithdrawScreen() {
         const res = await authFetch('/api/withdrawal');
         const data = await res.json();
         if (data.success && data.data) {
-          const pendingTrx = data.data.find((w: any) => w.type === 'trx' && w.status === 'pending');
+          const pendingTrx = data.data.find((w: any) => w.type === 'trx' && (w.status === 'pending' || w.status === 'approved'));
           if (pendingTrx) setPendingTrxWithdrawal(pendingTrx);
         }
       } catch { /* */ }

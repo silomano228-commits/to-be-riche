@@ -30,7 +30,7 @@ export async function GET(request: Request) {
       orderBy: { createdAt: 'desc' },
       include: {
         user: {
-          select: { id: true, name: true, email: true, totalProfit: true, balance: true },
+          select: { id: true, name: true, email: true, balance: true },
         },
       },
     });
@@ -39,8 +39,9 @@ export async function GET(request: Request) {
       total: withdrawals.length,
       pending: withdrawals.filter(w => w.status === 'pending').length,
       approved: withdrawals.filter(w => w.status === 'approved').length,
+      executed: withdrawals.filter(w => w.status === 'executed').length,
       rejected: withdrawals.filter(w => w.status === 'rejected').length,
-      totalAmount: withdrawals.filter(w => w.status === 'approved').reduce((s, w) => s + w.amount, 0),
+      totalAmount: withdrawals.filter(w => w.status === 'executed').reduce((s, w) => s + w.amount, 0),
     };
 
     return NextResponse.json({ success: true, data: withdrawals, stats });
@@ -49,7 +50,8 @@ export async function GET(request: Request) {
   }
 }
 
-// POST — Approve or reject a withdrawal request (admin only)
+// POST — Approve, execute, or reject a withdrawal request (admin only)
+// Flow: pending → approved (admin validates) → executed (admin sends funds, balance deducted)
 export async function POST(request: Request) {
   try {
     const { error } = await checkAdmin(request);
@@ -58,7 +60,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { withdrawalId, action, adminNote } = body;
 
-    if (!withdrawalId || !action || !['approve', 'reject'].includes(action)) {
+    if (!withdrawalId || !action || !['approve', 'execute', 'reject'].includes(action)) {
       return NextResponse.json({ success: false, error: 'Paramètres invalides' });
     }
 
@@ -67,12 +69,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Retrait introuvable' });
     }
 
-    if (withdrawal.status !== 'pending') {
-      return NextResponse.json({ success: false, error: 'Ce retrait a déjà été traité' });
+    // ========== APPROVE ==========
+    if (action === 'approve') {
+      if (withdrawal.status !== 'pending') {
+        return NextResponse.json({ success: false, error: 'Ce retrait n\'est plus en attente' });
+      }
+
+      await db.withdrawal.update({
+        where: { id: withdrawalId },
+        data: { status: 'approved', adminNote: adminNote || null },
+      });
+
+      return NextResponse.json({ success: true, message: 'Retrait approuvé — prêt pour exécution' });
     }
 
-    if (action === 'approve') {
-      // Use transaction for atomicity — deduct balance only on approval
+    // ========== EXECUTE ==========
+    if (action === 'execute') {
+      if (withdrawal.status !== 'approved') {
+        return NextResponse.json({ success: false, error: 'Le retrait doit d\'abord être approuvé' });
+      }
+
+      // Use transaction for atomicity — deduct balance on execution
       await db.$transaction(async (tx) => {
         // Verify user still has enough balance (compte principal)
         const user = await tx.user.findUnique({ where: { id: withdrawal.userId } });
@@ -94,21 +111,27 @@ export async function POST(request: Request) {
           data: {
             type: 'withdrawal',
             amount: withdrawal.amount,
-            detail: `Retrait ${typeLabel} approuvé — ${withdrawal.amount} $${withdrawal.type === 'yas' ? ` (${withdrawal.amountCfa.toLocaleString()} FCFA vers ${withdrawal.yasAccount})` : ` vers ${withdrawal.trxAddress}`}`,
+            detail: `Retrait ${typeLabel} exécuté — ${withdrawal.amount} $${withdrawal.type === 'yas' ? ` (${withdrawal.amountCfa.toLocaleString()} FCFA vers ${withdrawal.yasAccount})` : ` vers ${withdrawal.trxAddress}`}`,
             userId: withdrawal.userId,
           },
         });
 
-        // Update withdrawal status
+        // Update withdrawal status to executed
         await tx.withdrawal.update({
           where: { id: withdrawalId },
-          data: { status: 'approved', adminNote: adminNote || null },
+          data: { status: 'executed', adminNote: adminNote || null },
         });
       });
 
-      return NextResponse.json({ success: true, message: 'Retrait approuvé et débité' });
-    } else {
-      // Reject — no balance changes needed
+      return NextResponse.json({ success: true, message: 'Retrait exécuté — fonds envoyés et solde débité' });
+    }
+
+    // ========== REJECT ==========
+    if (action === 'reject') {
+      if (withdrawal.status !== 'pending' && withdrawal.status !== 'approved') {
+        return NextResponse.json({ success: false, error: 'Ce retrait ne peut plus être rejeté' });
+      }
+
       await db.withdrawal.update({
         where: { id: withdrawalId },
         data: { status: 'rejected', adminNote: adminNote || null },
@@ -116,10 +139,13 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ success: true, message: 'Retrait rejeté' });
     }
+
+    return NextResponse.json({ success: false, error: 'Action inconnue' });
   } catch (error: any) {
     if (error?.message === 'INSUFFICIENT_BALANCE') {
       return NextResponse.json({ success: false, error: 'L\'utilisateur n\'a plus assez de solde sur le compte principal' });
     }
+    console.error('[ADMIN-WITHDRAWALS] Error:', error);
     return NextResponse.json({ success: false, error: 'Erreur serveur' });
   }
 }

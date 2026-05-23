@@ -44,7 +44,7 @@ export async function POST(request: Request) {
 
     // Check referral requirement
     const completedWithdrawals = await db.withdrawal.count({
-      where: { userId: user.id, status: 'approved' },
+      where: { userId: user.id, status: 'executed' },
     });
     const nextWithdrawalNumber = completedWithdrawals + 1;
     const requiredReferrals = nextWithdrawalNumber >= 3
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
 
     // Check if user already has a pending withdrawal (any type)
     const pendingW = await db.withdrawal.findFirst({
-      where: { userId: user.id, status: 'pending' },
+      where: { userId: user.id, status: { in: ['pending', 'approved'] } },
     });
     if (pendingW) {
       return NextResponse.json({ success: false, error: 'Vous avez déjà une demande de retrait en attente' });
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
     const cfaUsdRate = config?.cfaUsdRate || 600;
     const amountCfa = Math.round(amt * cfaUsdRate);
 
-    // Create withdrawal request (no balance deduction yet — admin approves first)
+    // Create withdrawal request (no balance deduction yet — admin approves then executes)
     const withdrawal = await db.withdrawal.create({
       data: {
         userId: user.id,
@@ -106,6 +106,20 @@ export async function POST(request: Request) {
         userId: user.id,
       },
     });
+
+    // Notify admin via Socket.io (fire and forget)
+    try {
+      const { io } = await import('@/lib/socket');
+      io.emit('new-withdrawal', {
+        withdrawalId: withdrawal.id,
+        type: 'yas',
+        userId: user.id,
+        userName: user.name,
+        amount: amt,
+        amountCfa,
+        yasAccount: yasAccount.trim(),
+      });
+    } catch { /* Socket.io not available */ }
 
     return NextResponse.json({
       success: true,
@@ -136,7 +150,7 @@ export async function GET(request: Request) {
 
     // Check for pending YAS withdrawal
     const pendingYas = await db.withdrawal.findFirst({
-      where: { userId: user.id, type: 'yas', status: 'pending' },
+      where: { userId: user.id, type: 'yas', status: { in: ['pending', 'approved'] } },
     });
 
     return NextResponse.json({
