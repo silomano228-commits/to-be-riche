@@ -151,7 +151,10 @@ model Withdrawal {
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   amount      Float
-  trxAddress  String
+  amountCfa   Float    @default(0)
+  type        String   @default("trx")
+  trxAddress  String?
+  yasAccount  String?
   status      String   @default("pending")
   adminNote   String?
   createdAt   DateTime @default(now())

@@ -30,7 +30,7 @@ export async function GET(request: Request) {
       orderBy: { createdAt: 'desc' },
       include: {
         user: {
-          select: { id: true, name: true, email: true, earnings: true, balance: true },
+          select: { id: true, name: true, email: true, totalProfit: true, balance: true },
         },
       },
     });
@@ -72,40 +72,44 @@ export async function POST(request: Request) {
     }
 
     if (action === 'approve') {
-      // Verify user still has enough earnings
-      const user = await db.user.findUnique({ where: { id: withdrawal.userId } });
-      if (!user || user.earnings < withdrawal.amount) {
-        return NextResponse.json({ success: false, error: 'L\'utilisateur n\'a plus assez de gains' });
-      }
+      // Use transaction for atomicity — deduct balance only on approval
+      await db.$transaction(async (tx) => {
+        // Verify user still has enough totalProfit
+        const user = await tx.user.findUnique({ where: { id: withdrawal.userId } });
+        if (!user || user.totalProfit < withdrawal.amount) {
+          throw new Error('INSUFFICIENT_BALANCE');
+        }
 
-      // Deduct from earnings and balance
-      await db.user.update({
-        where: { id: withdrawal.userId },
-        data: {
-          earnings: { decrement: withdrawal.amount },
-          balance: { decrement: withdrawal.amount },
-        },
-      });
+        // Deduct from totalProfit and balance
+        await tx.user.update({
+          where: { id: withdrawal.userId },
+          data: {
+            totalProfit: { decrement: withdrawal.amount },
+            balance: { decrement: withdrawal.amount },
+          },
+        });
 
-      // Create a withdrawal transaction
-      await db.transaction.create({
-        data: {
-          type: 'withdrawal',
-          amount: withdrawal.amount,
-          gain: 0,
-          userId: withdrawal.userId,
-        },
-      });
+        // Create a withdrawal transaction record
+        const typeLabel = withdrawal.type === 'yas' ? 'Yas' : 'TRX';
+        await tx.transaction.create({
+          data: {
+            type: 'withdrawal',
+            amount: withdrawal.amount,
+            detail: `Retrait ${typeLabel} approuvé — ${withdrawal.amount} $${withdrawal.type === 'yas' ? ` (${withdrawal.amountCfa.toLocaleString()} FCFA vers ${withdrawal.yasAccount})` : ` vers ${withdrawal.trxAddress}`}`,
+            userId: withdrawal.userId,
+          },
+        });
 
-      // Update withdrawal status
-      await db.withdrawal.update({
-        where: { id: withdrawalId },
-        data: { status: 'approved', adminNote: adminNote || null },
+        // Update withdrawal status
+        await tx.withdrawal.update({
+          where: { id: withdrawalId },
+          data: { status: 'approved', adminNote: adminNote || null },
+        });
       });
 
       return NextResponse.json({ success: true, message: 'Retrait approuvé et débité' });
     } else {
-      // Reject
+      // Reject — no balance changes needed
       await db.withdrawal.update({
         where: { id: withdrawalId },
         data: { status: 'rejected', adminNote: adminNote || null },
@@ -113,7 +117,10 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ success: true, message: 'Retrait rejeté' });
     }
-  } catch {
+  } catch (error: any) {
+    if (error?.message === 'INSUFFICIENT_BALANCE') {
+      return NextResponse.json({ success: false, error: 'L\'utilisateur n\'a plus assez de gains' });
+    }
     return NextResponse.json({ success: false, error: 'Erreur serveur' });
   }
 }

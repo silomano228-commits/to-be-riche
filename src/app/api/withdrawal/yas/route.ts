@@ -4,27 +4,7 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-// GET — Check withdrawal status (pending withdrawals for current user)
-export async function GET(request: Request) {
-  try {
-    const token = getAuthToken(request);
-    if (!token) return NextResponse.json({ success: false, error: 'Non autorisé' });
-
-    const user = await db.user.findUnique({ where: { id: token } });
-    if (!user) return NextResponse.json({ success: false, error: 'Utilisateur introuvable' });
-
-    const withdrawals = await db.withdrawal.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    return NextResponse.json({ success: true, data: withdrawals });
-  } catch {
-    return NextResponse.json({ success: false, error: 'Erreur serveur' });
-  }
-}
-
-// POST — Create a TRX withdrawal request (no balance deduction — admin approves first)
+// POST — Create a YAS withdrawal request (user enters USD, we convert to CFA)
 export async function POST(request: Request) {
   try {
     const token = getAuthToken(request);
@@ -34,15 +14,15 @@ export async function POST(request: Request) {
     if (!user) return NextResponse.json({ success: false, error: 'Utilisateur introuvable' }, { status: 401 });
 
     const body = await request.json();
-    const { amount, trxAddress } = body;
+    const { amountUsd, yasAccount } = body;
 
     // Validate amount
-    const amt = parseFloat(amount);
+    const amt = parseFloat(amountUsd);
     if (isNaN(amt) || amt < 5) {
       return NextResponse.json({ success: false, error: 'Minimum de retrait : 5 $' });
     }
 
-    // Can only withdraw from totalProfit (gains)
+    // Check balance (can only withdraw from totalProfit/gains)
     if (amt > user.totalProfit) {
       return NextResponse.json({ success: false, error: 'Solde de gains insuffisant. Seul le solde de gains est retirable.' });
     }
@@ -83,9 +63,13 @@ export async function POST(request: Request) {
       });
     }
 
-    // Validate TRX address
-    if (!trxAddress || trxAddress.length < 20) {
-      return NextResponse.json({ success: false, error: 'Adresse TRX invalide' });
+    // Validate YAS account (phone number)
+    if (!yasAccount || !/^\d{8}$/.test(yasAccount.trim())) {
+      return NextResponse.json({ success: false, error: 'Numéro Yas invalide (8 chiffres requis)' });
+    }
+    const prefix = yasAccount.trim().substring(0, 2);
+    if (!['90', '91', '92', '93', '70', '71', '72', '73'].includes(prefix)) {
+      return NextResponse.json({ success: false, error: 'Le numéro doit commencer par 90-93 ou 70-73' });
     }
 
     // Check if user already has a pending withdrawal (any type)
@@ -96,13 +80,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Vous avez déjà une demande de retrait en attente' });
     }
 
-    // Create withdrawal request (no balance deduction — admin approves first)
+    // Get CFA rate from site config
+    const config = await db.siteConfig.findUnique({ where: { id: 'main' } });
+    const cfaUsdRate = config?.cfaUsdRate || 600;
+    const amountCfa = Math.round(amt * cfaUsdRate);
+
+    // Create withdrawal request (no balance deduction yet — admin approves first)
     const withdrawal = await db.withdrawal.create({
       data: {
         userId: user.id,
         amount: amt,
-        type: 'trx',
-        trxAddress,
+        amountCfa,
+        type: 'yas',
+        yasAccount: yasAccount.trim(),
         status: 'pending',
       },
     });
@@ -112,13 +102,51 @@ export async function POST(request: Request) {
       data: {
         type: 'withdrawal_pending',
         amount: -amt,
-        detail: `Retrait TRX en attente — ${amt} $ vers ${trxAddress}`,
+        detail: `Retrait Yas en attente — ${amt} $ (${amountCfa.toLocaleString()} FCFA) vers ${yasAccount.trim()}`,
         userId: user.id,
       },
     });
 
-    return NextResponse.json({ success: true, data: { id: withdrawal.id, amount: amt, status: 'pending' } });
+    return NextResponse.json({
+      success: true,
+      data: {
+        id: withdrawal.id,
+        amount: amt,
+        amountCfa,
+        yasAccount: yasAccount.trim(),
+        status: 'pending',
+      },
+    });
+  } catch (error) {
+    console.error('[YAS-WITHDRAWAL] Error:', error);
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
+  }
+}
+
+// GET — Check YAS config (cfaUsdRate) and pending YAS withdrawal for the form
+export async function GET(request: Request) {
+  try {
+    const token = getAuthToken(request);
+    if (!token) return NextResponse.json({ success: false }, { status: 401 });
+
+    const user = await db.user.findUnique({ where: { id: token } });
+    if (!user) return NextResponse.json({ success: false }, { status: 401 });
+
+    const config = await db.siteConfig.findUnique({ where: { id: 'main' } });
+
+    // Check for pending YAS withdrawal
+    const pendingYas = await db.withdrawal.findFirst({
+      where: { userId: user.id, type: 'yas', status: 'pending' },
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        cfaUsdRate: config?.cfaUsdRate || 600,
+        pendingYasWithdrawal: pendingYas,
+      },
+    });
   } catch {
-    return NextResponse.json({ success: false, error: 'Erreur serveur' });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }

@@ -425,33 +425,62 @@ export default function AdminScreen() {
                     ))}
                   </div>
                   {withdrawals.filter(w => w.status === 'pending').map((w: any) => (
-                    <div key={w.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] border-l-[3px] border-l-[#818CF8] rounded-2xl p-3 mb-2">
+                    <div key={w.id} className={`bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] border-l-[3px] rounded-2xl p-3 mb-2 ${w.type === 'yas' ? 'border-l-[#4ADE80]' : 'border-l-[#818CF8]'}`}>
                       <div className="flex items-center justify-between mb-2">
                         <div>
                           <div className="text-[0.78rem] font-bold text-[#EDEDEF]">{esc(w.user?.name || '?')}</div>
                           <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">{formatMoney(w.amount)}</div>
+                          {w.type === 'yas' && w.amountCfa > 0 && (
+                            <div className="text-[0.6rem] text-[#4ADE80]">{(w.amountCfa).toLocaleString('fr-FR')} FCFA</div>
+                          )}
                         </div>
-                        <span className="text-[0.6rem] bg-[rgba(96,165,250,0.12)] text-[#818CF8] px-2 py-0.5 rounded-full">En attente</span>
+                        {w.type === 'yas' ? (
+                          <span className="text-[0.6rem] bg-[rgba(74,222,128,0.12)] text-[#4ADE80] px-2 py-0.5 rounded-full font-semibold">Yas 🇹🇬</span>
+                        ) : (
+                          <span className="text-[0.6rem] bg-[rgba(96,165,250,0.12)] text-[#818CF8] px-2 py-0.5 rounded-full">TRX</span>
+                        )}
                       </div>
                       <div className="bg-[#161719] rounded-lg p-2.5 mb-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Adresse TRX retrait</span>
-                          <button
-                            onClick={async () => {
-                              try {
-                                await navigator.clipboard.writeText(w.trxAddress || '');
-                                addToast('Adresse copiée !', 'success');
-                              } catch {
-                                addToast('Erreur de copie', 'error');
-                              }
-                            }}
-                            className="text-[0.6rem] text-[#6366F1] hover:text-[#818CF8] cursor-pointer bg-transparent border-none flex items-center gap-1"
-                          >
-                            <i className="fas fa-copy text-[0.55rem]"></i> Copier
-                          </button>
-                        </div>
-                        <div className="text-[0.72rem] font-mono font-bold text-[#818CF8] break-all leading-relaxed mt-1">{esc(w.trxAddress || 'Non renseigné')}</div>
+                        {w.type === 'yas' ? (
+                          <>
+                            <div className="flex justify-between items-center mb-1.5">
+                              <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Numéro Yas</span>
+                              <span className="text-[0.75rem] font-bold text-[#EDEDEF]">{esc(w.yasAccount || '')}</span>
+                            </div>
+                            <div className="flex justify-between items-center mb-1.5">
+                              <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Montant USD</span>
+                              <span className="text-[0.75rem] font-bold text-[#4ADE80]">{formatMoney(w.amount)}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Montant FCFA</span>
+                              <span className="text-[0.75rem] font-bold text-[#4ADE80]">{(w.amountCfa || 0).toLocaleString('fr-FR')} FCFA</span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex justify-between items-center">
+                              <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Adresse TRX retrait</span>
+                              <button
+                                onClick={async () => {
+                                  try { await navigator.clipboard.writeText(w.trxAddress || ''); addToast('Adresse copiée !', 'success'); } catch { addToast('Erreur de copie', 'error'); }
+                                }}
+                                className="text-[0.6rem] text-[#6366F1] hover:text-[#818CF8] cursor-pointer bg-transparent border-none flex items-center gap-1"
+                              >
+                                <i className="fas fa-copy text-[0.55rem]"></i> Copier
+                              </button>
+                            </div>
+                            <div className="text-[0.72rem] font-mono font-bold text-[#818CF8] break-all leading-relaxed mt-1">{esc(w.trxAddress || 'Non renseigné')}</div>
+                          </>
+                        )}
                       </div>
+                      {w.type === 'yas' && (
+                        <div className="bg-[rgba(74,222,128,0.06)] border border-[rgba(74,222,128,0.12)] rounded-lg p-2 mb-2">
+                          <div className="flex items-center gap-2">
+                            <i className="fas fa-mobile-alt text-[#4ADE80] text-[0.7rem]"></i>
+                            <span className="text-[0.65rem] text-[rgba(255,255,255,0.65)]">Envoyez <strong className="text-[#4ADE80]">{(w.amountCfa || 0).toLocaleString('fr-FR')} FCFA</strong> au <strong className="text-[#EDEDEF]">{esc(w.yasAccount || '')}</strong></span>
+                          </div>
+                        </div>
+                      )}
                       <div className="flex gap-2">
                         <button
                           onClick={async () => {
@@ -461,12 +490,12 @@ export default function AdminScreen() {
                               body: JSON.stringify({ withdrawalId: w.id, action: 'approve' })
                             });
                             const data = await r.json();
-                            if (data.success) { addToast('Approuvé', 'success'); loadWithdrawals(); }
+                            if (data.success) { addToast(w.type === 'yas' ? 'Approuvé — envoyez les FCFA' : 'Approuvé', 'success'); loadWithdrawals(); }
                             else addToast(data.error, 'error');
                           }}
                           className="flex-1 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer"
                         >
-                          Approuver
+                          {w.type === 'yas' ? <><i className="fas fa-check mr-1"></i>Approuver</> : 'Approuver'}
                         </button>
                         <button
                           onClick={async () => {
