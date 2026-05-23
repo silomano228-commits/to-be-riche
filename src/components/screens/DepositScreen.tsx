@@ -732,39 +732,6 @@ export default function DepositScreen() {
                     </div>
                   </div>
 
-                  {/* Admin Yas Account */}
-                  {adminYasAccount && (
-                    <div className="bg-[#FFFFFF] rounded-2xl p-4 mb-4 border border-[rgba(0,0,0,0.08)] relative overflow-hidden">
-                      <div className="absolute -top-8 -right-8 w-[100px] h-[100px] bg-[radial-gradient(circle,rgba(34,197,94,0.1),transparent_60%)]" />
-                      <div className="relative z-[1]">
-                        <div className="text-[0.65rem] text-[rgba(0,0,0,0.35)] uppercase font-semibold tracking-[1px] mb-2">
-                          <i className="fas fa-university mr-1"></i> Envoyez l&apos;argent à ce compte Yas
-                        </div>
-                        <div className="bg-[#F3F4F6] rounded-xl p-3 mb-3 border border-[rgba(0,0,0,0.08)]">
-                          <div className="text-[1.1rem] font-mono font-bold text-[#22C55E] tracking-wide">
-                            {esc(adminYasAccount)}
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => handleCopyAddress(adminYasAccount, setYasCopied)}
-                          className={`w-full py-2.5 rounded-xl text-[0.78rem] font-semibold border-none cursor-pointer transition-all flex items-center justify-center gap-2 ${
-                            yasCopied ? 'bg-[#22C55E] text-[#050506]' : 'bg-[rgba(34,197,94,0.12)] text-[#22C55E]'
-                          }`}
-                        >
-                          <i className={`fas ${yasCopied ? 'fa-check' : 'fa-copy'}`}></i>
-                          {yasCopied ? 'Copié !' : 'Copier le numéro'}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {!adminYasAccount && (
-                    <div className="bg-[#FFFFFF] rounded-xl p-3 mb-4 border border-[rgba(0,0,0,0.08)] flex items-center gap-2">
-                      <i className="fas fa-exclamation-triangle text-[#EF4444] text-[0.8rem]"></i>
-                      <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Compte Yas admin non configuré. Contactez le support.</p>
-                    </div>
-                  )}
-
                   <button
                     onClick={() => {
                       if (!yasAmountCfa || yasAmountCfa < 6000) { addToast('Minimum 6 000 FCFA', 'error'); return; }
