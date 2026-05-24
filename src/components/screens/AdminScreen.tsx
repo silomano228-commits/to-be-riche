@@ -600,15 +600,32 @@ export default function AdminScreen() {
                         <div>
                           <div className="text-[0.78rem] font-bold text-[#EDEDEF]">{esc(w.user?.name || '?')}</div>
                           <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">{formatMoney(w.amount)}</div>
+                          {w.type === 'yas' && w.amountCfa > 0 && (
+                            <div className="text-[0.6rem] text-[#818CF8]">{(w.amountCfa || 0).toLocaleString('fr-FR')} FCFA</div>
+                          )}
                         </div>
-                        <span className="text-[0.6rem] bg-[rgba(96,165,250,0.12)] text-[#818CF8] px-2 py-0.5 rounded-full">En attente</span>
+                        <span className="text-[0.6rem] bg-[rgba(96,165,250,0.12)] text-[#818CF8] px-2 py-0.5 rounded-full">
+                          {w.type === 'yas' ? 'YAS 🇹🇬' : 'TRX'}
+                        </span>
                       </div>
                       <div className="bg-[#161719] rounded-lg p-2.5 mb-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Adresse TRX retrait</span>
-                          <button onClick={async () => { try { await navigator.clipboard.writeText(w.trxAddress || ''); addToast('Adresse copiée !', 'success'); } catch { addToast('Erreur de copie', 'error'); } }} className="text-[0.6rem] text-[#6366F1] hover:text-[#818CF8] cursor-pointer bg-transparent border-none flex items-center gap-1"><i className="fas fa-copy text-[0.55rem]"></i> Copier</button>
-                        </div>
-                        <div className="text-[0.72rem] font-mono font-bold text-[#818CF8] break-all leading-relaxed mt-1">{esc(w.trxAddress || 'Non renseigné')}</div>
+                        {w.type === 'yas' ? (
+                          <>
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Numéro Yas</span>
+                              <button onClick={async () => { try { await navigator.clipboard.writeText(w.yasAccount || ''); addToast('Numéro copié !', 'success'); } catch { addToast('Erreur de copie', 'error'); } }} className="text-[0.6rem] text-[#6366F1] hover:text-[#818CF8] cursor-pointer bg-transparent border-none flex items-center gap-1"><i className="fas fa-copy text-[0.55rem]"></i> Copier</button>
+                            </div>
+                            <div className="text-[0.82rem] font-bold text-[#818CF8] mt-1">{esc(w.yasAccount || 'Non renseigné')}</div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex justify-between items-center">
+                              <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Adresse TRX retrait</span>
+                              <button onClick={async () => { try { await navigator.clipboard.writeText(w.trxAddress || ''); addToast('Adresse copiée !', 'success'); } catch { addToast('Erreur de copie', 'error'); } }} className="text-[0.6rem] text-[#6366F1] hover:text-[#818CF8] cursor-pointer bg-transparent border-none flex items-center gap-1"><i className="fas fa-copy text-[0.55rem]"></i> Copier</button>
+                            </div>
+                            <div className="text-[0.72rem] font-mono font-bold text-[#818CF8] break-all leading-relaxed mt-1">{esc(w.trxAddress || 'Non renseigné')}</div>
+                          </>
+                        )}
                       </div>
                       <div className="flex gap-2">
                         <button onClick={async () => { const r = await authFetch('/api/admin/withdrawals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ withdrawalId: w.id, action: 'approve' }) }); const data = await r.json(); if (data.success) { addToast('Approuvé', 'success'); loadWithdrawals(); } else addToast(data.error, 'error'); }} className="flex-1 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer">Approuver</button>
