@@ -800,19 +800,19 @@ export default function DepositScreen() {
               ) : (
                 <div className="bg-[#FFFFFF] rounded-xl p-3.5 mb-4 border-l-[3px] border-l-[#22C55E] border-r border-r-[rgba(0,0,0,0.08)] border-t border-t-[rgba(0,0,0,0.08)] border-b border-b-[rgba(0,0,0,0.08)]">
                   <h4 className="text-[0.78rem] font-bold text-[#1F2937] mb-2">
-                    <i className="fas fa-info-circle mr-1 text-[#22C55E]"></i> Syntaxe TMoney
+                    <i className="fas fa-info-circle mr-1 text-[#22C55E]"></i> Code USSD TMoney
                   </h4>
                   <div className="bg-[#F3F4F6] rounded-lg p-2.5 mb-2 border border-[rgba(0,0,0,0.08)]">
                     <code className="text-[0.78rem] font-mono font-bold text-[#22C55E]">
-                      *145*1*{adminYasAccount}*{Math.round(yasAmountCfa)}*VOTRE_PIN#
+                      *145*1*{Math.round(yasAmountCfa)}*{adminYasAccount}*2#
                     </code>
                   </div>
                   <p className="text-[0.62rem] text-[rgba(0,0,0,0.45)] mb-2">
-                    <i className="fas fa-key mr-1"></i> Remplacez <strong>VOTRE_PIN</strong> par votre code secret TMoney
+                    <i className="fas fa-info-circle mr-1"></i> Composez ce code sur votre téléphone. Le <strong>2</strong> confirme le transfert.
                   </p>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => handleCopy(`*145*1*${adminYasAccount}*${Math.round(yasAmountCfa)}*0000#`, setSyntaxCopied)}
+                      onClick={() => handleCopy(`*145*1*${Math.round(yasAmountCfa)}*${adminYasAccount}*2#`, setSyntaxCopied)}
                       className={`flex-1 py-2 rounded-lg text-[0.72rem] font-semibold border-none cursor-pointer transition-all flex items-center justify-center gap-1 ${
                         syntaxCopied ? 'bg-[#22C55E] text-white' : 'bg-[rgba(34,197,94,0.12)] text-[#22C55E]'
                       }`}
@@ -821,12 +821,11 @@ export default function DepositScreen() {
                       {syntaxCopied ? 'Copié !' : 'Copier'}
                     </button>
                     <a
-                      href={`tel:*145*1*${adminYasAccount}*${Math.round(yasAmountCfa)}*0000%23`}
+                      href={`tel:*145*1*${Math.round(yasAmountCfa)}*${adminYasAccount}*2%23`}
                       className="flex-1 py-2 rounded-lg text-[0.72rem] font-semibold border-none cursor-pointer transition-all flex items-center justify-center gap-1 bg-[#22C55E] text-[#050506] no-underline"
-                      onClick={() => addToast('Modifiez 0000 par votre PIN avant d\'appeler', 'info')}
                     >
                       <i className="fas fa-phone text-[0.65rem]"></i>
-                      Lancer
+                      Lancer le code
                     </a>
                   </div>
                 </div>
