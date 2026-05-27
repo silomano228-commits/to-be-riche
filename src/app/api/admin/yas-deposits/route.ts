@@ -69,65 +69,35 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, message: 'Demande rejetée' });
     }
 
-    // Approuver — selon la destination
+    // Approuver — créditer le solde principal
     const depositUser = await db.user.findUnique({ where: { id: deposit.userId } });
     const isFirstDeposit = !depositUser?.hasInvested;
-    const destination = (deposit as any).destination || 'balance';
 
-    if (destination === 'trx') {
-      // Destination TRX: admin sends TRX directly to user's wallet, no balance credit
-      await db.$transaction([
-        db.yasDeposit.update({
-          where: { id: depositId },
-          data: { status: 'approved', adminNote: adminNote || 'Conversion effectuée. TRX envoyés à votre wallet.' },
-        }),
-        db.user.update({
-          where: { id: deposit.userId },
-          data: {
-            hasInvested: true,
-            depositCount: { increment: 1 },
-            firstDepositAt: isFirstDeposit ? new Date() : undefined,
-          },
-        }),
-        db.transaction.create({
-          data: {
-            type: 'deposit',
-            amount: deposit.amountUsd,
-            detail: `Yas → TRX conversion approved: $${deposit.amountUsd.toFixed(2)} → ${deposit.amountTrx.toFixed(2)} TRX sent to wallet`,
-            userId: deposit.userId,
-          },
-        }),
-      ]);
+    await db.$transaction([
+      db.yasDeposit.update({
+        where: { id: depositId },
+        data: { status: 'approved', adminNote: adminNote || 'Dépôt validé. Solde principal crédité.' },
+      }),
+      db.user.update({
+        where: { id: deposit.userId },
+        data: {
+          balance: { increment: deposit.amountUsd },
+          hasInvested: true,
+          depositCount: { increment: 1 },
+          firstDepositAt: isFirstDeposit ? new Date() : undefined,
+        },
+      }),
+      db.transaction.create({
+        data: {
+          type: 'deposit',
+          amount: deposit.amountUsd,
+          detail: `Yas deposit approved: $${deposit.amountUsd.toFixed(2)} credited to balance`,
+          userId: deposit.userId,
+        },
+      }),
+    ]);
 
-      return NextResponse.json({ success: true, message: 'Conversion TRX approuvée - TRX envoyés au wallet' });
-    } else {
-      // Destination balance: credit the user's main balance
-      await db.$transaction([
-        db.yasDeposit.update({
-          where: { id: depositId },
-          data: { status: 'approved', adminNote: adminNote || 'Dépôt validé. Solde principal crédité.' },
-        }),
-        db.user.update({
-          where: { id: deposit.userId },
-          data: {
-            balance: { increment: deposit.amountUsd },
-            hasInvested: true,
-            depositCount: { increment: 1 },
-            firstDepositAt: isFirstDeposit ? new Date() : undefined,
-          },
-        }),
-        db.transaction.create({
-          data: {
-            type: 'deposit',
-            amount: deposit.amountUsd,
-            detail: `Yas deposit approved: $${deposit.amountUsd.toFixed(2)} credited to balance`,
-            userId: deposit.userId,
-          },
-        }),
-      ]);
-
-      return NextResponse.json({ success: true, message: 'Dépôt approuvé et solde crédité' });
-    }
+    return NextResponse.json({ success: true, message: 'Dépôt approuvé et solde crédité' });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
   }

@@ -113,12 +113,9 @@ export async function POST(request: Request) {
 
       // Create a withdrawal transaction record
       let typeLabel = 'TRX';
-      let detailSuffix = ` vers ${withdrawal.trxAddress}`;
+      let detailSuffix = ` vers ${withdrawal.trxAddress || ''}`;
       if (withdrawal.type === 'yas') {
-        typeLabel = 'Yas';
-        detailSuffix = ` (${withdrawal.amountCfa?.toLocaleString() || 0} FCFA vers ${withdrawal.yasAccount})`;
-      } else if (withdrawal.type === 'convert_trx_tmoney') {
-        typeLabel = 'TRX→TMoney';
+        typeLabel = 'TMoney';
         detailSuffix = ` (${withdrawal.amountCfa?.toLocaleString() || 0} FCFA vers ${withdrawal.yasAccount})`;
       }
       await db.transaction.create({

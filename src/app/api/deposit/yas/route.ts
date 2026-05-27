@@ -43,9 +43,9 @@ export async function POST(request: Request) {
     if (!token) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
 
     const { amountCfa, yasAccount, trxAddress, destination } = await request.json();
-    const safeTrxAddress = trxAddress?.trim() || '';
-    const safeDestination = destination === 'trx' ? 'trx' : 'balance';
     const amtCfa = parseFloat(amountCfa);
+    // Always deposit to balance — no more TRX destination
+    const safeDestination = 'balance';
 
     // Get CFA rate from config
     const config = await getSiteConfig();
@@ -65,16 +65,6 @@ export async function POST(request: Request) {
     const prefix = yasNum.substring(0, 2);
     if (!['90', '91', '92', '93', '70', '71', '72', '73'].includes(prefix)) {
       return NextResponse.json({ success: false, error: 'Le numéro Yas doit commencer par 90-93 ou 70-73' });
-    }
-
-    // If destination is 'trx', trxAddress is required
-    if (safeDestination === 'trx') {
-      if (!safeTrxAddress) {
-        return NextResponse.json({ success: false, error: 'Adresse TRX requise pour la conversion vers TRX' });
-      }
-      if (!safeTrxAddress.startsWith('T') || safeTrxAddress.length < 30) {
-        return NextResponse.json({ success: false, error: 'Adresse TRX invalide (doit commencer par T et faire au moins 30 caractères)' });
-      }
     }
 
     // Vérifier s'il y a déjà un dépôt en attente (TRX OU YAS)
@@ -104,7 +94,7 @@ export async function POST(request: Request) {
         amountTrx,
         trxPrice,
         yasAccount: yasAccount.trim(),
-        trxAddress: safeTrxAddress || null,
+        trxAddress: null,
         destination: safeDestination,
         status: 'pending',
       },

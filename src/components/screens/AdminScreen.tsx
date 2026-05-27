@@ -509,12 +509,12 @@ export default function AdminScreen() {
               {tab === 'yas' && (
                 <>
                   <div className="bg-[#0E0F11] border border-[rgba(99,102,241,0.15)] rounded-2xl p-3 mb-4 flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center shrink-0">
-                      <i className="fas fa-exchange-alt text-[#6366F1] text-[0.9rem]"></i>
+                    <div className="w-8 h-8 rounded-lg bg-[rgba(34,197,94,0.12)] flex items-center justify-center shrink-0">
+                      <i className="fas fa-mobile-alt text-[#22C55E] text-[0.9rem]"></i>
                     </div>
                     <div>
-                      <div className="text-[#EDEDEF] text-[0.85rem] font-bold">Conversions Yas du Togo</div>
-                      <div className="text-[rgba(255,255,255,0.45)] text-[0.65rem]">Approuvez pour créditer et envoyer les TRX</div>
+                      <div className="text-[#EDEDEF] text-[0.85rem] font-bold">Dépôts TMoney (Yas)</div>
+                      <div className="text-[rgba(255,255,255,0.45)] text-[0.65rem]">Approuvez pour créditer le solde principal</div>
                     </div>
                   </div>
                   <div className="bg-[#0E0F11] border border-[rgba(99,102,241,0.12)] rounded-2xl p-3.5 mb-4">
@@ -557,35 +557,22 @@ export default function AdminScreen() {
                           {d.amountCfa > 0 && <div className="text-[0.6rem] text-[#818CF8]">{formatMoney(d.amountUsd)} USD</div>}
                         </div>
                         <div className="flex items-center gap-1.5">
-                          {d.destination === 'trx' ? (
-                            <span className="text-[0.6rem] bg-[rgba(245,158,11,0.12)] text-[#F59E0B] px-2 py-0.5 rounded-full font-semibold">→ TRX</span>
-                          ) : (
-                            <span className="text-[0.6rem] bg-[rgba(34,197,94,0.12)] text-[#22C55E] px-2 py-0.5 rounded-full font-semibold">→ Solde</span>
-                          )}
+                          <span className="text-[0.6rem] bg-[rgba(34,197,94,0.12)] text-[#22C55E] px-2 py-0.5 rounded-full font-semibold">→ Solde</span>
                           <span className="text-[0.6rem] bg-[rgba(99,102,241,0.12)] text-[#6366F1] px-2 py-0.5 rounded-full font-semibold">Yas 🇹🇬</span>
                         </div>
                       </div>
                       <div className="bg-[#161719] rounded-lg p-2.5 mb-2 space-y-1">
                         <div className="flex justify-between items-center"><span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Compte Yas client</span><span className="text-[0.7rem] font-bold text-[#EDEDEF]">{esc(d.yasAccount)}</span></div>
-                        {d.destination === 'trx' && d.trxAddress && (
-                          <>
-                            <div className="flex justify-between items-center">
-                              <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Adresse TRX destination</span>
-                              <button onClick={async () => { try { await navigator.clipboard.writeText(d.trxAddress || ''); addToast('Adresse copiée !', 'success'); } catch { addToast('Erreur de copie', 'error'); } }} className="text-[0.6rem] text-[#6366F1] hover:text-[#818CF8] cursor-pointer bg-transparent border-none flex items-center gap-1"><i className="fas fa-copy text-[0.55rem]"></i> Copier</button>
-                            </div>
-                            <div className="text-[0.72rem] font-mono font-bold text-[#818CF8] break-all leading-relaxed mt-1">{esc(d.trxAddress)}</div>
-                          </>
-                        )}
                       </div>
                       <div className="mb-2"><input type="text" value={yasNote[d.id] || ''} onChange={(e) => setYasNote(prev => ({ ...prev, [d.id]: e.target.value }))} placeholder="Note admin (optionnel)" className="w-full py-2 px-3 bg-[#161719] border-[1px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.72rem] text-white outline-none focus:border-[#6366F1]" /></div>
                       <div className="flex gap-2">
-                        <button onClick={async () => { const r = await authFetch('/api/admin/yas-deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId: d.id, action: 'approve', adminNote: yasNote[d.id] || (d.destination === 'trx' ? 'Conversion effectuée. TRX envoyés à votre wallet.' : 'Dépôt validé. Solde principal crédité.') }) }); const data = await r.json(); if (data.success) { addToast(d.destination === 'trx' ? 'Approuvé - TRX à envoyer au wallet' : 'Approuvé - Solde crédité', 'success'); loadYasDeposits(); } else addToast(data.error, 'error'); }} className="flex-1 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer"><i className="fas fa-check mr-1"></i>Approuver</button>
+                        <button onClick={async () => { const r = await authFetch('/api/admin/yas-deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId: d.id, action: 'approve', adminNote: yasNote[d.id] || 'Dépôt validé. Solde principal crédité.' }) }); const data = await r.json(); if (data.success) { addToast('Approuvé - Solde crédité', 'success'); loadYasDeposits(); } else addToast(data.error, 'error'); }} className="flex-1 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer"><i className="fas fa-check mr-1"></i>Approuver</button>
                         <button onClick={async () => { const r = await authFetch('/api/admin/yas-deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId: d.id, action: 'reject', adminNote: yasNote[d.id] || undefined }) }); const data = await r.json(); if (data.success) { addToast('Rejeté', 'info'); loadYasDeposits(); } else addToast(data.error, 'error'); }} className="flex-1 py-2 rounded-lg bg-[rgba(248,113,113,0.15)] text-[#F87171] text-[0.72rem] font-semibold border-none cursor-pointer">Rejeter</button>
                       </div>
                     </div>
                   ))}
                   {yasDeposits.filter(d => d.status === 'pending').length === 0 && (
-                    <div className="text-center py-6"><div className="w-12 h-12 rounded-full bg-[rgba(99,102,241,0.12)] flex items-center justify-center mx-auto mb-2"><i className="fas fa-check-circle text-[#6366F1] text-[1.2rem]"></i></div><p className="text-[0.82rem] text-[rgba(255,255,255,0.25)]">Aucune conversion Yas en attente</p></div>
+                    <div className="text-center py-6"><div className="w-12 h-12 rounded-full bg-[rgba(34,197,94,0.12)] flex items-center justify-center mx-auto mb-2"><i className="fas fa-check-circle text-[#22C55E] text-[1.2rem]"></i></div><p className="text-[0.82rem] text-[rgba(255,255,255,0.25)]">Aucun dépôt Yas en attente</p></div>
                   )}
                 </>
               )}
@@ -606,17 +593,16 @@ export default function AdminScreen() {
                     ))}
                   </div>
                   {withdrawals.filter(w => w.status === 'pending').map((w: any) => {
-                    const isConvert = w.type === 'convert_trx_tmoney';
                     const isYas = w.type === 'yas';
-                    const badgeText = isConvert ? 'TRX→TMoney' : isYas ? 'YAS 🇹🇬' : 'TRX';
-                    const badgeColor = isConvert ? '#F59E0B' : '#818CF8';
+                    const badgeText = isYas ? 'TMoney 🇹🇬' : 'TRX';
+                    const badgeColor = isYas ? '#22C55E' : '#818CF8';
                     return (
                       <div key={w.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] border-l-[3px] rounded-2xl p-3 mb-2" style={{ borderLeftColor: badgeColor }}>
                         <div className="flex items-center justify-between mb-2">
                           <div>
                             <div className="text-[0.78rem] font-bold text-[#EDEDEF]">{esc(w.user?.name || '?')}</div>
                             <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">{formatMoney(w.amount)}</div>
-                            {(isConvert || isYas) && w.amountCfa > 0 && (
+                            {isYas && w.amountCfa > 0 && (
                               <div className="text-[0.6rem]" style={{ color: badgeColor }}>{(w.amountCfa || 0).toLocaleString('fr-FR')} FCFA</div>
                             )}
                           </div>
@@ -625,29 +611,31 @@ export default function AdminScreen() {
                           </span>
                         </div>
                         <div className="bg-[#161719] rounded-lg p-2.5 mb-2 space-y-1.5">
-                          {/* TRX address - shown for all types */}
-                          <div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">{isConvert ? 'Adresse TRX client' : 'Adresse TRX retrait'}</span>
-                              <button onClick={async () => { try { await navigator.clipboard.writeText(w.trxAddress || ''); addToast('Adresse copiée !', 'success'); } catch { addToast('Erreur de copie', 'error'); } }} className="text-[0.6rem] text-[#6366F1] hover:text-[#818CF8] cursor-pointer bg-transparent border-none flex items-center gap-1"><i className="fas fa-copy text-[0.55rem]"></i> Copier</button>
+                          {/* TRX address - shown for TRX type */}
+                          {!isYas && w.trxAddress && (
+                            <div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Adresse TRX retrait</span>
+                                <button onClick={async () => { try { await navigator.clipboard.writeText(w.trxAddress || ''); addToast('Adresse copiée !', 'success'); } catch { addToast('Erreur de copie', 'error'); } }} className="text-[0.6rem] text-[#6366F1] hover:text-[#818CF8] cursor-pointer bg-transparent border-none flex items-center gap-1"><i className="fas fa-copy text-[0.55rem]"></i> Copier</button>
+                              </div>
+                              <div className="text-[0.72rem] font-mono font-bold text-[#818CF8] break-all leading-relaxed mt-0.5">{esc(w.trxAddress)}</div>
                             </div>
-                            <div className="text-[0.72rem] font-mono font-bold text-[#818CF8] break-all leading-relaxed mt-0.5">{esc(w.trxAddress || 'Non renseigné')}</div>
-                          </div>
-                          {/* Yas account - shown for convert and yas types */}
-                          {(isConvert || isYas) && w.yasAccount && (
+                          )}
+                          {/* Yas account - shown for yas type */}
+                          {isYas && w.yasAccount && (
                             <div>
                               <div className="flex justify-between items-center">
                                 <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Numéro Yas</span>
-                                <button onClick={async () => { try { await navigator.clipboard.writeText(w.yasAccount || ''); addToast('Numéro copié !', 'success'); } catch { addToast('Erreur de copie', 'error'); } }} className="text-[0.6rem] text-[#F59E0B] hover:text-[#FBBF24] cursor-pointer bg-transparent border-none flex items-center gap-1"><i className="fas fa-copy text-[0.55rem]"></i> Copier</button>
+                                <button onClick={async () => { try { await navigator.clipboard.writeText(w.yasAccount || ''); addToast('Numéro copié !', 'success'); } catch { addToast('Erreur de copie', 'error'); } }} className="text-[0.6rem] text-[#22C55E] hover:text-[#4ADE80] cursor-pointer bg-transparent border-none flex items-center gap-1"><i className="fas fa-copy text-[0.55rem]"></i> Copier</button>
                               </div>
-                              <div className="text-[0.82rem] font-bold text-[#F59E0B] mt-0.5">{esc(w.yasAccount)}</div>
+                              <div className="text-[0.82rem] font-bold text-[#22C55E] mt-0.5">{esc(w.yasAccount)}</div>
                             </div>
                           )}
-                          {isConvert && (
-                            <div className="bg-[rgba(245,158,11,0.08)] rounded-lg p-2 border border-[rgba(245,158,11,0.15)]">
+                          {isYas && (
+                            <div className="bg-[rgba(34,197,94,0.08)] rounded-lg p-2 border border-[rgba(34,197,94,0.15)]">
                               <p className="text-[0.6rem] text-[rgba(255,255,255,0.55)]">
-                                <i className="fas fa-info-circle mr-1 text-[#F59E0B]"></i>
-                                Vérifiez la réception des TRX, puis envoyez <strong className="text-[#F59E0B]">{(w.amountCfa || 0).toLocaleString('fr-FR')} FCFA</strong> sur le compte Yas du client.
+                                <i className="fas fa-info-circle mr-1 text-[#22C55E]"></i>
+                                Envoyez <strong className="text-[#22C55E]">{(w.amountCfa || 0).toLocaleString('fr-FR')} FCFA</strong> sur le compte Yas du client.
                               </p>
                             </div>
                           )}
