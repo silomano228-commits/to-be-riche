@@ -112,27 +112,26 @@ export default function GuideScreen() {
                     </div>
                     <ol className="space-y-1 text-[0.65rem] text-[rgba(0,0,0,0.65)] pl-4">
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Allez dans <strong className="text-[#1F2937]">Portefeuille → Déposer</strong></li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">Dépôt en Dollars (TRX)</strong></li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">TRX</strong></li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez le montant en $ (min 10 $)</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Envoyez les TRX à l&apos;adresse affichée</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez votre adresse TRX pour confirmer</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>L&apos;adresse TRX de notre équipe s&apos;affiche — envoyez les TRX depuis votre Trust Wallet</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez votre propre adresse TRX pour confirmer l&apos;envoi</li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Attendez la validation par notre équipe</li>
                     </ol>
                   </div>
                   <div className="bg-[rgba(0,0,0,0.04)] rounded-xl p-2.5 border border-[rgba(0,0,0,0.05)]">
                     <div className="flex items-center gap-2 mb-1.5">
                       <i className="fas fa-exchange-alt text-[#22C55E] text-[0.7rem]"></i>
-                      <span className="text-[0.72rem] font-bold text-[#1F2937]">Méthode Yas du Togo (FCFA)</span>
+                      <span className="text-[0.72rem] font-bold text-[#1F2937]">Méthode TMoney (Yas) — FCFA</span>
                     </div>
                     <ol className="space-y-1 text-[0.65rem] text-[rgba(0,0,0,0.65)] pl-4">
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">Conversion Yas du Togo</strong></li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez le montant en FCFA (min 6 000)</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Le montant est converti automatiquement en $ et TRX</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez votre numéro Yas (8 chiffres, 90-93 ou 70-73)</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Envoyez l&apos;argent via le code USSD TMoney affiché</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Téléchargez Trust Wallet, créez un portefeuille TRX</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez votre adresse TRX Trust Wallet</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Votre solde sera crédité après vérification du paiement</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Allez dans <strong className="text-[#1F2937]">Portefeuille → Déposer</strong></li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">TMoney (Yas)</strong></li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez le montant en FCFA (min 6 000 FCFA)</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Le code USSD s&apos;affiche : <strong className="text-[#1F2937]">*145*1*{`{montant}`}*{`{numéro_admin}`}*2#</strong></li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Copiez ou lancez le code, puis envoyez l&apos;argent</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez votre numéro Yas (8 chiffres, commence par 90-93 ou 70-73)</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Attendez la validation par notre équipe</li>
                     </ol>
                   </div>
                 </div>
@@ -172,7 +171,10 @@ export default function GuideScreen() {
                     </div>
                   </div>
                   <div className="bg-[rgba(20,184,166,0.1)] rounded-lg p-2 mt-1 border border-[rgba(20,184,166,0.1)]">
-                    <p className="text-[0.62rem] text-[#14B8A6]"><i className="fas fa-info-circle mr-1"></i>Allez dans <strong>Portefeuille</strong> puis cliquez sur <strong>Verser</strong> sur le compte de votre choix. Frais de 2% pour les transferts vers les sous-comptes.</p>
+                    <p className="text-[0.62rem] text-[#14B8A6]"><i className="fas fa-info-circle mr-1"></i>Allez dans <strong>Portefeuille</strong> puis cliquez sur <strong>Verser</strong> sur le compte de votre choix.</p>
+                    <p className="text-[0.62rem] text-[#14B8A6] mt-1"><i className="fas fa-arrow-right mr-1"></i>Transfert du Principal vers un sous-compte : <strong>frais de 2%</strong></p>
+                    <p className="text-[0.62rem] text-[#14B8A6] mt-0.5"><i className="fas fa-arrow-left mr-1"></i>Transfert d&apos;un sous-compte vers le Principal : <strong>sans frais</strong></p>
+                    <p className="text-[0.62rem] text-[#14B8A6] mt-0.5"><i className="fas fa-coins mr-1"></i>Montant minimum : <strong>2 $</strong></p>
                   </div>
                 </div>
               </div>
@@ -212,21 +214,41 @@ export default function GuideScreen() {
                   </div>
                   <div>
                     <div className="text-[0.85rem] font-bold text-[#1F2937]">Retirer vos gains</div>
-                    <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">Transformez vos gains en TRX</div>
+                    <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">Transformez vos gains en TRX ou TMoney</div>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <div className="flex items-start gap-2">
-                    <i className="fas fa-arrow-up text-[#EF4444] text-[0.65rem] mt-1"></i>
-                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Transférez vos gains depuis les sous-comptes vers le <strong className="text-[#1F2937]">Compte Principal</strong> (sans frais)</div>
+                  <div className="bg-[rgba(0,0,0,0.04)] rounded-xl p-2.5 border border-[rgba(0,0,0,0.05)]">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <i className="fab fa-gg-circle text-[#EF4444] text-[0.7rem]"></i>
+                      <span className="text-[0.72rem] font-bold text-[#1F2937]">Retrait en TRX</span>
+                    </div>
+                    <ol className="space-y-1 text-[0.65rem] text-[rgba(0,0,0,0.65)] pl-4">
+                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>Allez dans <strong className="text-[#1F2937]">Portefeuille → Retirer</strong></li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">TRX</strong></li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>Entrez le montant et votre adresse TRX</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>La demande est traitée par notre équipe</li>
+                    </ol>
+                  </div>
+                  <div className="bg-[rgba(0,0,0,0.04)] rounded-xl p-2.5 border border-[rgba(0,0,0,0.05)]">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <i className="fas fa-mobile-alt text-[#EF4444] text-[0.7rem]"></i>
+                      <span className="text-[0.72rem] font-bold text-[#1F2937]">Retrait en TMoney (Yas)</span>
+                    </div>
+                    <ol className="space-y-1 text-[0.65rem] text-[rgba(0,0,0,0.65)] pl-4">
+                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>Allez dans <strong className="text-[#1F2937]">Portefeuille → Retirer</strong></li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">TMoney (Yas)</strong></li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>Entrez le montant et votre numéro Yas</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>La demande est traitée par notre équipe</li>
+                    </ol>
                   </div>
                   <div className="flex items-start gap-2">
-                    <i className="fas fa-paper-plane text-[#EF4444] text-[0.65rem] mt-1"></i>
-                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Allez dans <strong className="text-[#1F2937]">Portefeuille → Retirer</strong> et entrez votre adresse TRX</div>
+                    <i className="fas fa-arrow-up text-[#EF4444] text-[0.65rem] mt-1"></i>
+                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Transférez d&apos;abord vos gains depuis les sous-comptes vers le <strong className="text-[#1F2937]">Compte Principal</strong> (sans frais)</div>
                   </div>
                   <div className="flex items-start gap-2">
                     <i className="fas fa-clock text-[#EF4444] text-[0.65rem] mt-1"></i>
-                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]"><strong className="text-[#1F2937]">Attention :</strong> Le premier retrait nécessite 48h après le 1er dépôt + 10 filleuls</div>
+                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]"><strong className="text-[#1F2937]">Attention :</strong> Le premier retrait nécessite 48h après le 1er dépôt + au moins 1 filleul</div>
                   </div>
                   <div className="bg-[rgba(239,68,68,0.1)] rounded-lg p-2 mt-1 border border-[rgba(239,68,68,0.1)]">
                     <p className="text-[0.62rem] text-[#EF4444]"><i className="fas fa-info-circle mr-1"></i>Seuls les <strong>gains</strong> peuvent être retirés, pas le capital investi.</p>
@@ -252,7 +274,11 @@ export default function GuideScreen() {
                   </div>
                   <div className="flex items-start gap-2">
                     <i className="fas fa-lock-open text-[#8B5CF6] text-[0.65rem] mt-1"></i>
-                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Avoir <strong className="text-[#1F2937]">10 filleuls</strong> est obligatoire pour débloquer votre premier retrait</div>
+                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Avoir <strong className="text-[#1F2937]">au moins 1 filleul</strong> est obligatoire pour débloquer votre premier retrait</div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <i className="fas fa-chart-line text-[#8B5CF6] text-[0.65rem] mt-1"></i>
+                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Plus de filleuls peuvent être nécessaires au fil de vos retraits</div>
                   </div>
                 </div>
               </div>
@@ -262,7 +288,7 @@ export default function GuideScreen() {
                 <div className="w-9 h-9 rounded-xl bg-[rgba(20,184,166,0.12)] flex items-center justify-center shrink-0 border border-[rgba(20,184,166,0.15)]"><i className="fas fa-robot text-[#14B8A6] text-[0.85rem]"></i></div>
                 <div className="flex-1 min-w-0">
                   <div className="text-[0.6rem] text-[rgba(20,184,166,0.7)] font-bold uppercase tracking-[1px] mb-0.5">Besoin d&apos;aide ?</div>
-                  <div className="text-[0.7rem] leading-relaxed text-[rgba(0,0,0,0.3)]">Utilisez le <strong className="text-[#1F2937]">Chat IA</strong> pour poser vos questions. L&apos;IA vous mettra en contact avec le support si besoin.</div>
+                  <div className="text-[0.7rem] leading-relaxed text-[rgba(0,0,0,0.3)]">Utilisez le <strong className="text-[#1F2937]">Chat IA</strong> pour poser vos questions. Notre équipe de support peut également vous répondre directement.</div>
                 </div>
               </div>
             </>

@@ -52,7 +52,7 @@ export function ToastContainer() {
   const toasts = useAppStore((s) => s.toasts);
   const removeToast = useAppStore((s) => s.removeToast);
   return (
-    <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[3000] w-[88%] max-w-[360px] flex flex-col-reverse gap-1.5 pointer-events-none items-center">
+    <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[9999] w-[88%] max-w-[360px] flex flex-col-reverse gap-1.5 pointer-events-none items-center">
       {toasts.map((t) => (
         <div key={t.id} className="bg-[#F3F4F6] text-[#1F2937] px-5 py-3 rounded-full text-center text-[0.8rem] shadow-[0_2px_8px_rgba(0,0,0,0.06)] pointer-events-auto font-medium flex items-center justify-center gap-2"
           style={{ animation: 'tIn 0.3s cubic-bezier(0.34,1.56,0.64,1)', borderLeft: `4px solid ${t.type === 'success' ? '#22C55E' : t.type === 'error' ? '#F87171' : '#3B82F6'}` }}>

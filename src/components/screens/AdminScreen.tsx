@@ -62,6 +62,17 @@ export default function AdminScreen() {
   const [savingYas, setSavingYas] = useState(false);
   const [savingConfig, setSavingConfig] = useState(false);
 
+  // Quick message state (Users tab)
+  const [messageUserId, setMessageUserId] = useState<string | null>(null);
+  const [messageInput, setMessageInput] = useState('');
+  const [messageSending, setMessageSending] = useState(false);
+
+  // Fund transfer state (Users tab)
+  const [transferUserId, setTransferUserId] = useState<string | null>(null);
+  const [transferAccount, setTransferAccount] = useState<'investBalance' | 'tradeBalance' | 'projectBalance'>('investBalance');
+  const [transferAmount, setTransferAmount] = useState('');
+  const [transferSending, setTransferSending] = useState(false);
+
   // Chat state
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -326,6 +337,69 @@ export default function AdminScreen() {
     }
   };
 
+  const handleQuickMessage = async (targetUserId: string) => {
+    const content = messageInput.trim();
+    if (!content || messageSending) return;
+    setMessageSending(true);
+    try {
+      const res = await authFetch('/api/admin/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetUserId, content }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Emit via Socket.io for real-time delivery to user
+        if (socketRef.current?.connected) {
+          socketRef.current.emit('admin-reply', {
+            id: data.message?.id,
+            targetUserId,
+            content,
+            adminId: user?.id,
+            adminName: user?.name,
+            t: data.message?.t,
+            date: data.message?.date,
+          });
+        }
+        addToast('Message envoyé !', 'success');
+        setMessageInput('');
+        setMessageUserId(null);
+        loadConversations();
+      } else {
+        addToast(data.error || 'Erreur', 'error');
+      }
+    } catch {
+      addToast('Erreur réseau', 'error');
+    }
+    setMessageSending(false);
+  };
+
+  const handleAdminTransfer = async (targetUserId: string) => {
+    const amt = parseFloat(transferAmount);
+    if (!amt || amt <= 0) { addToast('Montant invalide', 'error'); return; }
+    if (transferSending) return;
+    setTransferSending(true);
+    try {
+      const res = await authFetch('/api/admin/transfer-funds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: targetUserId, fromAccount: transferAccount, amount: amt }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        addToast(`Transféré $${amt.toFixed(2)} vers le solde principal`, 'success');
+        setTransferAmount('');
+        setTransferUserId(null);
+        loadData();
+      } else {
+        addToast(data.error || 'Erreur', 'error');
+      }
+    } catch {
+      addToast('Erreur réseau', 'error');
+    }
+    setTransferSending(false);
+  };
+
   const openConversation = (userId: string) => {
     setSelectedUserId(userId);
     setChatMessages([]);
@@ -424,7 +498,7 @@ export default function AdminScreen() {
                   {usersList.map((u: any) => (
                     <div key={u.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 mb-2">
                       <div className="flex items-center justify-between">
-                        <div>
+                        <div className="flex-1 min-w-0">
                           <div className="text-[0.78rem] font-bold text-[#EDEDEF]">
                             {esc(u.name)}{' '}
                             {u.role === 'admin' && (
@@ -433,11 +507,110 @@ export default function AdminScreen() {
                           </div>
                           <div className="text-[0.65rem] text-[rgba(255,255,255,0.25)]">{esc(u.email)}</div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-[0.75rem] font-bold text-[#EDEDEF]">{formatMoney(u.balance)}</div>
-                          <div className="text-[0.6rem] text-[#4ADE80]">Invest: {formatMoney(u.investBalance || 0)}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-right">
+                            <div className="text-[0.75rem] font-bold text-[#EDEDEF]">{formatMoney(u.balance)}</div>
+                            <div className="text-[0.55rem] text-[#4ADE80]">Invest: {formatMoney(u.investBalance || 0)} | Trade: {formatMoney(u.tradeBalance || 0)} | Projet: {formatMoney(u.projectBalance || 0)}</div>
+                          </div>
+                          {u.role !== 'admin' && (
+                            <>
+                              <button
+                                onClick={() => { setTransferUserId(transferUserId === u.id ? null : u.id); setMessageUserId(null); }}
+                                className="w-7 h-7 rounded-lg bg-[rgba(34,197,94,0.12)] flex items-center justify-center text-[#4ADE80] cursor-pointer border-none shrink-0 hover:bg-[rgba(34,197,94,0.2)] transition-colors"
+                                title="Transférer vers Principal"
+                              >
+                                <i className="fas fa-exchange-alt text-[0.55rem]"></i>
+                              </button>
+                              <button
+                                onClick={() => { setMessageUserId(messageUserId === u.id ? null : u.id); setTransferUserId(null); }}
+                                className="w-7 h-7 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center text-[#6366F1] cursor-pointer border-none shrink-0 hover:bg-[rgba(99,102,241,0.2)] transition-colors"
+                                title="Envoyer un message"
+                              >
+                                <i className="fas fa-comment text-[0.6rem]"></i>
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
+                      {/* Inline fund transfer */}
+                      {transferUserId === u.id && (
+                        <div className="mt-2.5 pt-2.5 border-t border-[rgba(255,255,255,0.06)]">
+                          <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)] mb-2 font-semibold">Transférer vers le solde principal</div>
+                          <div className="flex gap-2 mb-2">
+                            {([
+                              { key: 'investBalance' as const, label: 'Invest', bal: u.investBalance || 0, color: '#3B82F6' },
+                              { key: 'tradeBalance' as const, label: 'Trade', bal: u.tradeBalance || 0, color: '#F59E0B' },
+                              { key: 'projectBalance' as const, label: 'Projet', bal: u.projectBalance || 0, color: '#8B5CF6' },
+                            ]).map(acc => (
+                              <button key={acc.key} onClick={() => setTransferAccount(acc.key)}
+                                className={`flex-1 py-1.5 rounded-lg text-[0.6rem] font-semibold border-none cursor-pointer transition-all ${
+                                  transferAccount === acc.key ? 'bg-[#6366F1] text-white' : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)]'
+                                }`}
+                              >
+                                {acc.label}<br/><span className="text-[0.5rem]">{formatMoney(acc.bal)}</span>
+                              </button>
+                            ))}
+                          </div>
+                          <div className="flex gap-2">
+                            <input
+                              type="number" step="0.01" value={transferAmount}
+                              onChange={(e) => setTransferAmount(e.target.value)}
+                              placeholder="Montant $"
+                              className="flex-1 py-2 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.75rem] text-white outline-none focus:border-[#4ADE80]"
+                            />
+                            <button
+                              onClick={() => handleAdminTransfer(u.id)}
+                              disabled={transferSending || !transferAmount || parseFloat(transferAmount) <= 0}
+                              className="px-3 py-2 rounded-lg bg-[#22C55E] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer flex items-center justify-center gap-1 disabled:opacity-50"
+                            >
+                              {transferSending ? (
+                                <div className="w-3.5 h-3.5 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
+                              ) : (
+                                <i className="fas fa-arrow-right text-[0.6rem]"></i>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => { setTransferUserId(null); setTransferAmount(''); }}
+                              className="px-2 py-2 rounded-lg bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] text-[0.72rem] border-none cursor-pointer"
+                            >
+                              <i className="fas fa-times text-[0.6rem]"></i>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {/* Inline message input */}
+                      {messageUserId === u.id && (
+                        <div className="mt-2.5 pt-2.5 border-t border-[rgba(255,255,255,0.06)]">
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={messageInput}
+                              onChange={(e) => setMessageInput(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') handleQuickMessage(u.id); }}
+                              placeholder="Tapez votre message..."
+                              className="flex-1 py-2 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.75rem] text-white outline-none focus:border-[#6366F1]"
+                              autoFocus
+                            />
+                            <button
+                              onClick={() => handleQuickMessage(u.id)}
+                              disabled={messageSending || !messageInput.trim()}
+                              className="px-3 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer flex items-center justify-center gap-1 disabled:opacity-50"
+                            >
+                              {messageSending ? (
+                                <div className="w-3.5 h-3.5 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
+                              ) : (
+                                <i className="fas fa-paper-plane text-[0.6rem]"></i>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => { setMessageUserId(null); setMessageInput(''); }}
+                              className="px-2 py-2 rounded-lg bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] text-[0.72rem] border-none cursor-pointer"
+                            >
+                              <i className="fas fa-times text-[0.6rem]"></i>
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </>
