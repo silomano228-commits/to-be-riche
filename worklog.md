@@ -19,3 +19,27 @@ Stage Summary:
 - Backend API routes simplified (YAS deposit always goes to balance, no more TRX destination)
 - All existing API routes preserved for backward compatibility with legacy data
 - App compiles and runs on port 3000
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Fix TMoney deposit system - syntax, Lancer button, adminYasAccount warning
+
+Work Log:
+- Analyzed DepositScreen.tsx TMoney deposit flow (3 steps: amount → send → info → submit)
+- Identified issues: TMoney syntax showed 0000 without explaining it's a PIN placeholder, no "Lancer" (dial) button, no warning when adminYasAccount not configured
+- Fixed syntax display: changed `*145*1*{adminYasAccount}*{amount}*0000#` to show `VOTRE_PIN` instead of `0000`, with explanation text
+- Added "Lancer" button using `tel:` protocol: `tel:*145*1*{adminYasAccount}*{amount}*0000%23` - opens phone dialer with pre-filled USSD code
+- Added info toast on Lancer click: "Modifiez 0000 par votre PIN avant d'appeler"
+- Added warning banner in Step 1 (amount) when adminYasAccount is not configured
+- Added validation that blocks continuation when adminYasAccount is empty
+- Added warning in Step 2 (send) when adminYasAccount is not configured
+- Copier button still copies syntax with 0000 placeholder (for clipboard paste)
+- Lint check passed (no new errors)
+
+Stage Summary:
+- TMoney syntax now clearly shows VOTRE_PIN as placeholder
+- New "Lancer" button auto-dials USSD code on mobile (with PIN=0000 to be modified by user)
+- adminYasAccount warning displayed at Step 1 and Step 2 if not configured
+- Step 1 "Continuer" button disabled when adminYasAccount is empty
+- App running on port 3000

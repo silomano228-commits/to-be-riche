@@ -717,12 +717,20 @@ export default function DepositScreen() {
                 </div>
               </div>
 
+              {!adminYasAccount && (
+                <div className="bg-[rgba(239,68,68,0.08)] rounded-xl p-3 mb-4 border border-[rgba(239,68,68,0.2)] flex items-center gap-2">
+                  <i className="fas fa-exclamation-triangle text-[#EF4444] text-[0.8rem]"></i>
+                  <p className="text-[0.72rem] text-[rgba(0,0,0,0.65)]">Dépôt TMoney temporairement indisponible (numéro admin non configuré).</p>
+                </div>
+              )}
+
               <button
                 onClick={() => {
                   if (!yasAmount || parseFloat(yasAmount) < 6000) { addToast('Minimum 6 000 FCFA', 'error'); return; }
+                  if (!adminYasAccount) { addToast('Numéro admin non configuré', 'error'); return; }
                   setYasStep('send');
                 }}
-                disabled={!yasAmount || parseFloat(yasAmount) < 6000}
+                disabled={!yasAmount || parseFloat(yasAmount) < 6000 || !adminYasAccount}
                 className="w-full py-3.5 rounded-xl bg-[#22C55E] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Continuer <i className="fas fa-arrow-right ml-2"></i>
@@ -782,25 +790,47 @@ export default function DepositScreen() {
               </div>
 
               {/* TMoney syntax */}
-              <div className="bg-[#FFFFFF] rounded-xl p-3.5 mb-4 border-l-[3px] border-l-[#22C55E] border-r border-r-[rgba(0,0,0,0.08)] border-t border-t-[rgba(0,0,0,0.08)] border-b border-b-[rgba(0,0,0,0.08)]">
-                <h4 className="text-[0.78rem] font-bold text-[#1F2937] mb-2">
-                  <i className="fas fa-info-circle mr-1 text-[#22C55E]"></i> Syntaxe TMoney
-                </h4>
-                <div className="bg-[#F3F4F6] rounded-lg p-2.5 mb-2 border border-[rgba(0,0,0,0.08)]">
-                  <code className="text-[0.78rem] font-mono font-bold text-[#22C55E]">
-                    *145*1*{adminYasAccount || 'XXXXXXXX'}*{Math.round(yasAmountCfa)}*0000#
-                  </code>
+              {!adminYasAccount ? (
+                <div className="bg-[#FFFFFF] rounded-xl p-3.5 mb-4 border border-[rgba(239,68,68,0.3)]">
+                  <div className="flex items-center gap-2">
+                    <i className="fas fa-exclamation-triangle text-[#EF4444] text-[0.8rem]"></i>
+                    <p className="text-[0.72rem] text-[rgba(0,0,0,0.65)]">Numéro Yas admin non configuré. Contactez l&apos;administrateur.</p>
+                  </div>
                 </div>
-                <button
-                  onClick={() => handleCopy(`*145*1*${adminYasAccount}*${Math.round(yasAmountCfa)}*0000#`, setSyntaxCopied)}
-                  className={`w-full py-2 rounded-lg text-[0.72rem] font-semibold border-none cursor-pointer transition-all ${
-                    syntaxCopied ? 'bg-[#22C55E] text-white' : 'bg-[rgba(34,197,94,0.12)] text-[#22C55E]'
-                  }`}
-                >
-                  <i className={`fas ${syntaxCopied ? 'fa-check' : 'fa-copy'} mr-1`}></i>
-                  {syntaxCopied ? 'Copié !' : 'Copier la syntaxe'}
-                </button>
-              </div>
+              ) : (
+                <div className="bg-[#FFFFFF] rounded-xl p-3.5 mb-4 border-l-[3px] border-l-[#22C55E] border-r border-r-[rgba(0,0,0,0.08)] border-t border-t-[rgba(0,0,0,0.08)] border-b border-b-[rgba(0,0,0,0.08)]">
+                  <h4 className="text-[0.78rem] font-bold text-[#1F2937] mb-2">
+                    <i className="fas fa-info-circle mr-1 text-[#22C55E]"></i> Syntaxe TMoney
+                  </h4>
+                  <div className="bg-[#F3F4F6] rounded-lg p-2.5 mb-2 border border-[rgba(0,0,0,0.08)]">
+                    <code className="text-[0.78rem] font-mono font-bold text-[#22C55E]">
+                      *145*1*{adminYasAccount}*{Math.round(yasAmountCfa)}*VOTRE_PIN#
+                    </code>
+                  </div>
+                  <p className="text-[0.62rem] text-[rgba(0,0,0,0.45)] mb-2">
+                    <i className="fas fa-key mr-1"></i> Remplacez <strong>VOTRE_PIN</strong> par votre code secret TMoney
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleCopy(`*145*1*${adminYasAccount}*${Math.round(yasAmountCfa)}*0000#`, setSyntaxCopied)}
+                      className={`flex-1 py-2 rounded-lg text-[0.72rem] font-semibold border-none cursor-pointer transition-all flex items-center justify-center gap-1 ${
+                        syntaxCopied ? 'bg-[#22C55E] text-white' : 'bg-[rgba(34,197,94,0.12)] text-[#22C55E]'
+                      }`}
+                    >
+                      <i className={`fas ${syntaxCopied ? 'fa-check' : 'fa-copy'} text-[0.65rem]`}></i>
+                      {syntaxCopied ? 'Copié !' : 'Copier'}
+                    </button>
+                    <a
+                      href={`tel:*145*1*${adminYasAccount}*${Math.round(yasAmountCfa)}*0000%23`}
+                      className="flex-1 py-2 rounded-lg text-[0.72rem] font-semibold border-none cursor-pointer transition-all flex items-center justify-center gap-1 bg-[#22C55E] text-[#050506] no-underline"
+                      onClick={() => addToast('Modifiez 0000 par votre PIN avant d\'appeler', 'info')}
+                    >
+                      <i className="fas fa-phone text-[0.65rem]"></i>
+                      Lancer
+                    </a>
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-2">
                 <button
