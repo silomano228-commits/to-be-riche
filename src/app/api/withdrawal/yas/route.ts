@@ -56,9 +56,7 @@ export async function POST(request: Request) {
       where: { userId: user.id, status: 'executed' },
     });
     const nextWithdrawalNumber = completedWithdrawals + 1;
-    const requiredReferrals = nextWithdrawalNumber >= 3
-      ? Math.ceil((nextWithdrawalNumber - 2) / 2)
-      : 0;
+    const requiredReferrals = Math.max(1, Math.ceil(nextWithdrawalNumber / 2));
 
     if (requiredReferrals > user.referralCount) {
       const needed = requiredReferrals - user.referralCount;

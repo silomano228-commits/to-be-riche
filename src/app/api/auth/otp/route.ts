@@ -121,15 +121,11 @@ export async function POST(request: Request) {
           completedWithdrawals,
           requiredReferrals: (() => {
             const nextWithdrawalNumber = completedWithdrawals + 1;
-            return nextWithdrawalNumber >= 3
-              ? Math.ceil((nextWithdrawalNumber - 2) / 2)
-              : 0;
+            return Math.max(1, Math.ceil(nextWithdrawalNumber / 2));
           })(),
           needsReferral: (() => {
             const nextWithdrawalNumber = completedWithdrawals + 1;
-            const required = nextWithdrawalNumber >= 3
-              ? Math.ceil((nextWithdrawalNumber - 2) / 2)
-              : 0;
+            const required = Math.max(1, Math.ceil(nextWithdrawalNumber / 2));
             return required > user.referralCount;
           })(),
         },

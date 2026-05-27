@@ -85,9 +85,7 @@ export async function GET(request: Request) {
 
     // Calculate referral requirement for next withdrawal
     const nextWithdrawalNumber = completedWithdrawals + 1;
-    const requiredReferrals = nextWithdrawalNumber >= 3
-      ? Math.ceil((nextWithdrawalNumber - 2) / 2)
-      : 0;
+    const requiredReferrals = Math.max(1, Math.ceil(nextWithdrawalNumber / 2));
     const needsReferral = requiredReferrals > user.referralCount;
 
     return NextResponse.json({
