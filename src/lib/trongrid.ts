@@ -12,20 +12,14 @@ export async function getTrxPrice(): Promise<number> {
 }
 
 export async function getAdminTrxAddress(): Promise<string> {
-  const { db } = await import('@/lib/db');
-  let config = await db.siteConfig.findUnique({ where: { id: 'main' } });
-  if (!config) {
-    config = await db.siteConfig.create({ data: { id: 'main', adminTrxAddress: '', trxUsdPrice: 0.12 } });
-  }
+  const { ensureSiteConfig } = await import('@/lib/site-config');
+  const config = await ensureSiteConfig();
   return config.adminTrxAddress;
 }
 
 export async function getTrxUsdPrice(): Promise<number> {
-  const { db } = await import('@/lib/db');
-  let config = await db.siteConfig.findUnique({ where: { id: 'main' } });
-  if (!config) {
-    config = await db.siteConfig.create({ data: { id: 'main', adminTrxAddress: '', trxUsdPrice: 0.12 } });
-  }
+  const { ensureSiteConfig } = await import('@/lib/site-config');
+  const config = await ensureSiteConfig();
   return config.trxUsdPrice;
 }
 

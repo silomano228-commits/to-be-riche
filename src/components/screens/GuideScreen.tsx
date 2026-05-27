@@ -122,11 +122,11 @@ export default function GuideScreen() {
                   <div className="bg-[rgba(0,0,0,0.04)] rounded-xl p-2.5 border border-[rgba(0,0,0,0.05)]">
                     <div className="flex items-center gap-2 mb-1.5">
                       <i className="fas fa-exchange-alt text-[#22C55E] text-[0.7rem]"></i>
-                      <span className="text-[0.72rem] font-bold text-[#1F2937]">Méthode TMoney (Yas) — FCFA</span>
+                      <span className="text-[0.72rem] font-bold text-[#1F2937]">Méthode Yas — FCFA</span>
                     </div>
                     <ol className="space-y-1 text-[0.65rem] text-[rgba(0,0,0,0.65)] pl-4">
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Allez dans <strong className="text-[#1F2937]">Portefeuille → Déposer</strong></li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">TMoney (Yas)</strong></li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">Yas</strong></li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez le montant en FCFA (min 6 000 FCFA)</li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Le code USSD s&apos;affiche : <strong className="text-[#1F2937]">*145*1*{`{montant}`}*{`{numéro_admin}`}*2#</strong></li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Copiez ou lancez le code, puis envoyez l&apos;argent</li>
@@ -214,7 +214,7 @@ export default function GuideScreen() {
                   </div>
                   <div>
                     <div className="text-[0.85rem] font-bold text-[#1F2937]">Retirer vos gains</div>
-                    <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">Transformez vos gains en TRX ou TMoney</div>
+                    <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">Transformez vos gains en TRX ou Yas</div>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -233,11 +233,11 @@ export default function GuideScreen() {
                   <div className="bg-[rgba(0,0,0,0.04)] rounded-xl p-2.5 border border-[rgba(0,0,0,0.05)]">
                     <div className="flex items-center gap-2 mb-1.5">
                       <i className="fas fa-mobile-alt text-[#EF4444] text-[0.7rem]"></i>
-                      <span className="text-[0.72rem] font-bold text-[#1F2937]">Retrait en TMoney (Yas)</span>
+                      <span className="text-[0.72rem] font-bold text-[#1F2937]">Retrait via Yas</span>
                     </div>
                     <ol className="space-y-1 text-[0.65rem] text-[rgba(0,0,0,0.65)] pl-4">
                       <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>Allez dans <strong className="text-[#1F2937]">Portefeuille → Retirer</strong></li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">TMoney (Yas)</strong></li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">Yas</strong></li>
                       <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>Entrez le montant et votre numéro Yas</li>
                       <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>La demande est traitée par notre équipe</li>
                     </ol>

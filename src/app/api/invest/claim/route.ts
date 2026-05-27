@@ -74,8 +74,8 @@ export async function POST(request: Request) {
     // Add gain to user balance (principal account)
     const totalBalanceAdd = Math.round((gain + finalGain) * 100) / 100;
 
-    await db.$transaction([
-      db.investment.update({
+    await db.$transaction(async (tx) => {
+      await tx.investment.update({
         where: { id: investmentId },
         data: {
           doneCycles: newDoneCycles,
@@ -85,15 +85,15 @@ export async function POST(request: Request) {
           status: completed ? 'completed' : 'active',
           finishesAt: completed ? now : investment.finishesAt,
         },
-      }),
-      db.user.update({
+      });
+      await tx.user.update({
         where: { id: user.id },
         data: {
           investBalance: { increment: totalBalanceAdd },
           totalProfit: { increment: gain },
         },
-      }),
-      db.transaction.create({
+      });
+      await tx.transaction.create({
         data: {
           type: completed ? 'invest_claim_final' : 'invest_claim',
           amount: totalBalanceAdd,
@@ -102,8 +102,34 @@ export async function POST(request: Request) {
             : `Investment claim: $${gain.toFixed(2)} gain — Cycle ${newDoneCycles}/${investment.totalCycles}`,
           userId: user.id,
         },
-      }),
-    ]);
+      });
+
+      // 5% of filleul's investment gains to admin
+      if (user.referredByCode) {
+        const admin = await tx.user.findFirst({
+          where: { role: 'admin' },
+        });
+        if (admin) {
+          const adminBonus = Math.round(gain * 0.05 * 100) / 100;
+          if (adminBonus > 0) {
+            await tx.user.update({
+              where: { id: admin.id },
+              data: {
+                balance: { increment: adminBonus },
+              },
+            });
+            await tx.transaction.create({
+              data: {
+                type: 'referral_invest_bonus',
+                amount: adminBonus,
+                detail: `5% of filleul's investment gain ($${gain.toFixed(2)})`,
+                userId: admin.id,
+              },
+            });
+          }
+        }
+      }
+    });
 
     return NextResponse.json({
       success: true,

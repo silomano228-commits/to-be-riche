@@ -12,7 +12,7 @@ function getToken(request: Request): string | null {
 
 export const dynamic = 'force-dynamic';
 
-// POST — Create a TRX → TMoney (Yas) conversion request
+// POST — Create a TRX → Yas conversion request
 // User sends TRX from their wallet to admin's TRX address, then admin sends FCFA to user's Yas account
 export async function POST(request: Request) {
   try {
@@ -117,7 +117,7 @@ export async function POST(request: Request) {
       data: {
         type: 'withdrawal_pending',
         amount: -amt,
-        detail: `Conversion TRX→TMoney en attente — ${amt} $ (${amountCfa.toLocaleString()} FCFA vers ${trimmedYas})`,
+        detail: `Conversion TRX→Yas en attente — ${amt} $ (${amountCfa.toLocaleString()} FCFA vers ${trimmedYas})`,
         userId: user.id,
       },
     });

@@ -2,6 +2,7 @@ import { db } from '@/lib/db';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { getTrxPrice, getTrxUsdPrice } from '@/lib/trongrid';
+import { ensureSiteConfig } from '@/lib/site-config';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,9 +12,7 @@ function getToken(request: Request): string | null {
   return null;
 }
 
-async function getSiteConfig() {
-  return db.siteConfig.findUnique({ where: { id: 'main' } });
-}
+// getSiteConfig is replaced by ensureSiteConfig which auto-seeds defaults
 
 /**
  * Check if a user has ANY pending deposit (TRX or YAS)
@@ -47,9 +46,9 @@ export async function POST(request: Request) {
     // Always deposit to balance — no more TRX destination
     const safeDestination = 'balance';
 
-    // Get CFA rate from config
-    const config = await getSiteConfig();
-    const cfaUsdRate = config?.cfaUsdRate || 600;
+    // Get CFA rate from config (auto-seeded if missing)
+    const config = await ensureSiteConfig();
+    const cfaUsdRate = config.cfaUsdRate || 600;
 
     if (isNaN(amtCfa) || amtCfa < 6000) {
       return NextResponse.json({ success: false, error: 'Minimum 6 000 FCFA' });
@@ -131,10 +130,10 @@ export async function GET(request: Request) {
     const configPrice = await getTrxUsdPrice();
     if (configPrice > 0) trxPrice = configPrice;
 
-    // Get site config for cfaUsdRate and adminYasAccount
-    const config = await getSiteConfig();
-    const cfaUsdRate = config?.cfaUsdRate || 600;
-    const adminYasAccount = config?.adminYasAccount || '';
+    // Get site config for cfaUsdRate and adminYasAccount (auto-seeded if missing)
+    const config = await ensureSiteConfig();
+    const cfaUsdRate = config.cfaUsdRate || 600;
+    const adminYasAccount = config.adminYasAccount;
 
     const deposit = await db.yasDeposit.findFirst({
       where: { userId: token, status: 'pending' },

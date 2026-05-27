@@ -73,12 +73,12 @@ export async function POST(request: Request) {
     const depositUser = await db.user.findUnique({ where: { id: deposit.userId } });
     const isFirstDeposit = !depositUser?.hasInvested;
 
-    await db.$transaction([
-      db.pendingDeposit.update({
+    await db.$transaction(async (tx) => {
+      await tx.pendingDeposit.update({
         where: { id: depositId },
         data: { status: 'approved', txHash: txHash || null },
-      }),
-      db.user.update({
+      });
+      await tx.user.update({
         where: { id: deposit.userId },
         data: {
           balance: { increment: deposit.amountUsd },
@@ -86,16 +86,41 @@ export async function POST(request: Request) {
           depositCount: { increment: 1 },
           firstDepositAt: isFirstDeposit ? new Date() : undefined,
         },
-      }),
-      db.transaction.create({
+      });
+      await tx.transaction.create({
         data: {
           type: 'deposit',
           amount: deposit.amountUsd,
           detail: `Deposit approved: $${deposit.amountUsd.toFixed(2)} credited to principal balance`,
           userId: deposit.userId,
         },
-      }),
-    ]);
+      });
+
+      // 20% referral bonus on filleul's first deposit
+      if (isFirstDeposit && depositUser?.referredByCode) {
+        const referrer = await tx.user.findUnique({
+          where: { referralCode: depositUser.referredByCode },
+        });
+        if (referrer) {
+          const bonusAmount = Math.round(deposit.amountUsd * 0.2 * 100) / 100;
+          await tx.user.update({
+            where: { id: referrer.id },
+            data: {
+              balance: { increment: bonusAmount },
+              referralCount: { increment: 1 },
+            },
+          });
+          await tx.transaction.create({
+            data: {
+              type: 'referral_bonus',
+              amount: bonusAmount,
+              detail: `Referral bonus: 20% of filleul's first deposit ($${deposit.amountUsd.toFixed(2)})`,
+              userId: referrer.id,
+            },
+          });
+        }
+      }
+    });
 
     return NextResponse.json({ success: true, message: 'Dépôt approuvé et crédité au solde principal' });
   } catch (error) {

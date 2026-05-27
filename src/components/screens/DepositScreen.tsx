@@ -210,7 +210,7 @@ export default function DepositScreen() {
     const isTrxPending = activePending.type === 'trx';
     const pendingColor = isTrxPending ? '#6366F1' : '#22C55E';
     const pendingIcon = isTrxPending ? 'fa-clock' : 'fa-mobile-alt';
-    const pendingHeader = isTrxPending ? 'Dépôt TRX en attente' : 'Dépôt TMoney en attente';
+    const pendingHeader = isTrxPending ? 'Dépôt TRX en attente' : 'Dépôt Yas en attente';
     const pendingSubtext = isTrxPending
       ? 'Vous ne pouvez pas faire de nouveau dépôt tant que celui-ci n\'est pas confirmé.'
       : 'Notre équipe de validation vérifiera votre paiement sous peu.';
@@ -283,7 +283,7 @@ export default function DepositScreen() {
               <h2 className="text-[1.1rem] font-black text-[#1F2937] mb-1">Choisissez votre méthode</h2>
               <p className="text-[0.78rem] text-[rgba(0,0,0,0.55)] mb-5">Comment souhaitez-vous approvisionner votre compte ?</p>
 
-              {/* Option 1: TMoney (Yas) */}
+              {/* Option 1: Yas */}
               <button
                 onClick={() => { setMethod('yas'); setYasStep('amount'); }}
                 className="w-full text-left rounded-2xl p-5 mb-3 border border-[rgba(0,0,0,0.08)] bg-[#FFFFFF] hover:border-[rgba(34,197,94,0.3)] active:scale-[0.98] transition-all cursor-pointer"
@@ -293,8 +293,8 @@ export default function DepositScreen() {
                     <i className="fas fa-mobile-alt text-[#22C55E] text-[1.1rem]"></i>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-[0.95rem] font-bold text-[#1F2937] mb-0.5">Dépôt via TMoney (Yas)</h3>
-                    <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)] leading-relaxed mb-2">Envoyez de l&apos;argent via TMoney au numéro indiqué. Le montant sera crédité sur votre solde après vérification.</p>
+                    <h3 className="text-[0.95rem] font-bold text-[#1F2937] mb-0.5">Dépôt via Yas</h3>
+                    <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)] leading-relaxed mb-2">Envoyez de l&apos;argent via Yas au numéro indiqué. Le montant sera crédité sur votre solde après vérification.</p>
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#22C55E] bg-[rgba(34,197,94,0.12)] px-2 py-1 rounded-full">
                         <i className="fas fa-wallet"></i> Solde principal
@@ -338,7 +338,7 @@ export default function DepositScreen() {
                   <h4 className="text-[0.82rem] font-bold text-[#1F2937]">Besoin d&apos;aide ?</h4>
                 </div>
                 <p className="text-[0.7rem] text-[rgba(0,0,0,0.55)] leading-relaxed">
-                  <strong className="text-[#22C55E]">TMoney</strong> : Déposez via mobile money, votre solde sera crédité après vérification.<br />
+                  <strong className="text-[#22C55E]">Yas</strong> : Déposez via mobile money, votre solde sera crédité après vérification.<br />
                   <strong className="text-[#6366F1]">TRX</strong> : Vous avez déjà des TRX, envoyez-les directement à l&apos;adresse indiquée.
                 </p>
               </div>
@@ -598,7 +598,7 @@ export default function DepositScreen() {
     if (yasStep === 'success') {
       return (
         <>
-          <Header title="Dépôt TMoney" icon="fa-arrow-down" iconColor="#22C55E" leftElement={walletBackBtn} />
+          <Header title="Dépôt Yas" icon="fa-arrow-down" iconColor="#22C55E" leftElement={walletBackBtn} />
           <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
             <div className="text-center py-8">
               <div className="w-20 h-20 rounded-full bg-[rgba(34,197,94,0.12)] flex items-center justify-center mx-auto mb-4">
@@ -629,7 +629,7 @@ export default function DepositScreen() {
 
     return (
       <>
-        <Header title="Dépôt TMoney (Yas)" icon="fa-arrow-down" iconColor="#22C55E" leftElement={backBtn} />
+        <Header title="Dépôt Yas" icon="fa-arrow-down" iconColor="#22C55E" leftElement={backBtn} />
         <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
           {/* Step indicator */}
           <div className="flex items-center justify-center gap-2 mb-6">
@@ -720,14 +720,14 @@ export default function DepositScreen() {
               {!adminYasAccount && (
                 <div className="bg-[rgba(239,68,68,0.08)] rounded-xl p-3 mb-4 border border-[rgba(239,68,68,0.2)] flex items-center gap-2">
                   <i className="fas fa-exclamation-triangle text-[#EF4444] text-[0.8rem]"></i>
-                  <p className="text-[0.72rem] text-[rgba(0,0,0,0.65)]">Dépôt TMoney temporairement indisponible (service non configuré).</p>
+                  <p className="text-[0.72rem] text-[rgba(0,0,0,0.65)]">Dépôt Yas temporairement indisponible (service non configuré).</p>
                 </div>
               )}
 
               <button
                 onClick={() => {
                   if (!yasAmount || parseFloat(yasAmount) < 6000) { addToast('Minimum 6 000 FCFA', 'error'); return; }
-                  if (!adminYasAccount) { addToast('Service TMoney non configuré', 'error'); return; }
+                  if (!adminYasAccount) { addToast('Service Yas non configuré', 'error'); return; }
                   setYasStep('send');
                 }}
                 disabled={!yasAmount || parseFloat(yasAmount) < 6000 || !adminYasAccount}
@@ -747,7 +747,7 @@ export default function DepositScreen() {
                     <i className="fas fa-paper-plane text-white text-[0.9rem]"></i>
                   </div>
                   <div>
-                    <h3 className="text-[1rem] font-bold text-[#1F2937]">Envoyez via TMoney</h3>
+                    <h3 className="text-[1rem] font-bold text-[#1F2937]">Envoyez via Yas</h3>
                     <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Envoyez le montant au numéro ci-dessous</p>
                   </div>
                 </div>
@@ -766,18 +766,18 @@ export default function DepositScreen() {
                 </div>
               </div>
 
-              {/* TMoney syntax */}
+              {/* Yas syntax */}
               {!adminYasAccount ? (
                 <div className="bg-[#FFFFFF] rounded-xl p-3.5 mb-4 border border-[rgba(239,68,68,0.3)]">
                   <div className="flex items-center gap-2">
                     <i className="fas fa-exclamation-triangle text-[#EF4444] text-[0.8rem]"></i>
-                    <p className="text-[0.72rem] text-[rgba(0,0,0,0.65)]">Service TMoney non configuré. Contactez le support.</p>
+                    <p className="text-[0.72rem] text-[rgba(0,0,0,0.65)]">Service Yas non configuré. Contactez le support.</p>
                   </div>
                 </div>
               ) : (
                 <div className="bg-[#FFFFFF] rounded-xl p-3.5 mb-4 border-l-[3px] border-l-[#22C55E] border-r border-r-[rgba(0,0,0,0.08)] border-t border-t-[rgba(0,0,0,0.08)] border-b border-b-[rgba(0,0,0,0.08)]">
                   <h4 className="text-[0.78rem] font-bold text-[#1F2937] mb-2">
-                    <i className="fas fa-info-circle mr-1 text-[#22C55E]"></i> Code USSD TMoney
+                    <i className="fas fa-info-circle mr-1 text-[#22C55E]"></i> Code USSD Yas
                   </h4>
                   <div className="bg-[#F3F4F6] rounded-lg p-2.5 mb-2 border border-[rgba(0,0,0,0.08)]">
                     <code className="text-[0.78rem] font-mono font-bold text-[#22C55E]">

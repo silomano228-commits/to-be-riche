@@ -115,7 +115,7 @@ export async function POST(request: Request) {
       let typeLabel = 'TRX';
       let detailSuffix = ` vers ${withdrawal.trxAddress || ''}`;
       if (withdrawal.type === 'yas') {
-        typeLabel = 'TMoney';
+        typeLabel = 'Yas';
         detailSuffix = ` (${withdrawal.amountCfa?.toLocaleString() || 0} FCFA vers ${withdrawal.yasAccount})`;
       }
       await db.transaction.create({

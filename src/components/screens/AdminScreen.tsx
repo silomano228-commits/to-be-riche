@@ -686,7 +686,7 @@ export default function AdminScreen() {
                       <i className="fas fa-mobile-alt text-[#22C55E] text-[0.9rem]"></i>
                     </div>
                     <div>
-                      <div className="text-[#EDEDEF] text-[0.85rem] font-bold">Dépôts TMoney (Yas)</div>
+                      <div className="text-[#EDEDEF] text-[0.85rem] font-bold">Dépôts Yas</div>
                       <div className="text-[rgba(255,255,255,0.45)] text-[0.65rem]">Approuvez pour créditer le solde principal</div>
                     </div>
                   </div>
@@ -767,7 +767,7 @@ export default function AdminScreen() {
                   </div>
                   {withdrawals.filter(w => w.status === 'pending').map((w: any) => {
                     const isYas = w.type === 'yas';
-                    const badgeText = isYas ? 'TMoney 🇹🇬' : 'TRX';
+                    const badgeText = isYas ? 'Yas 🇹🇬' : 'TRX';
                     const badgeColor = isYas ? '#22C55E' : '#818CF8';
                     return (
                       <div key={w.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] border-l-[3px] rounded-2xl p-3 mb-2" style={{ borderLeftColor: badgeColor }}>

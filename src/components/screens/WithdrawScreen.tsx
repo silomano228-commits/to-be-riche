@@ -155,7 +155,7 @@ export default function WithdrawScreen() {
   if (pendingWithdrawal) {
     const isYas = pendingWithdrawal.type === 'yas';
     const badgeColor = isYas ? '#22C55E' : '#6366F1';
-    const badgeText = isYas ? 'TMoney (Yas)' : 'TRX';
+    const badgeText = isYas ? 'Yas' : 'TRX';
 
     return (
       <>
@@ -269,7 +269,7 @@ export default function WithdrawScreen() {
                     <i className="fas fa-mobile-alt text-[#22C55E] text-[1.1rem]"></i>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-[0.95rem] font-bold text-[#1F2937] mb-0.5">Retrait via TMoney (Yas)</h3>
+                    <h3 className="text-[0.95rem] font-bold text-[#1F2937] mb-0.5">Retrait via Yas</h3>
                     <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)] leading-relaxed mb-2">Recevez vos fonds en FCFA sur votre compte Yas du Togo.</p>
                     <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#22C55E] bg-[rgba(34,197,94,0.12)] px-2 py-1 rounded-full">
                       <i className="fas fa-mobile-alt"></i> En FCFA
@@ -289,7 +289,7 @@ export default function WithdrawScreen() {
                 </div>
                 <p className="text-[0.7rem] text-[rgba(0,0,0,0.55)] leading-relaxed">
                   Si vous avez un wallet TRX, choisissez <strong className="text-[#6366F1]">Retrait vers TRX</strong>.
-                  Si vous voulez recevoir en FCFA sur Yas, choisissez <strong className="text-[#22C55E]">Retrait via TMoney</strong>.
+                  Si vous voulez recevoir en FCFA sur Yas, choisissez <strong className="text-[#22C55E]">Retrait via Yas</strong>.
                 </p>
               </div>
             </>
@@ -416,7 +416,7 @@ export default function WithdrawScreen() {
     if (yasStep === 'success') {
       return (
         <>
-          <Header title="Retrait via TMoney" icon="fa-arrow-up" iconColor="#22C55E" leftElement={walletBackBtn} />
+          <Header title="Retrait via Yas" icon="fa-arrow-up" iconColor="#22C55E" leftElement={walletBackBtn} />
           <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
             <div className="text-center py-8">
               <div className="w-20 h-20 rounded-full bg-[rgba(34,197,94,0.12)] flex items-center justify-center mx-auto mb-4">
@@ -455,7 +455,7 @@ export default function WithdrawScreen() {
 
     return (
       <>
-        <Header title="Retrait via TMoney" icon="fa-arrow-up" iconColor="#22C55E" leftElement={backBtn} />
+        <Header title="Retrait via Yas" icon="fa-arrow-up" iconColor="#22C55E" leftElement={backBtn} />
         <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
           {/* Balance card */}
           <div className="bg-gradient-to-r from-[#22C55E] to-[#16A34A] rounded-2xl p-5 mb-5 text-white" style={{ boxShadow: '0 8px 24px rgba(34,197,94,0.25)' }}>
@@ -599,7 +599,7 @@ export default function WithdrawScreen() {
                   ) : (
                     <>
                       <i className="fas fa-arrow-up"></i>
-                      Retirer via TMoney
+                      Retirer via Yas
                     </>
                   )}
                 </button>
