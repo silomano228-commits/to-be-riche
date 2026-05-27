@@ -261,7 +261,7 @@ export default function ChatScreen() {
                 </div>
                 <h3 className="text-[1.05rem] font-black text-[#1F2937] mb-1">Chat Support</h3>
                 <p className="text-[0.72rem] text-[rgba(0,0,0,0.5)] leading-relaxed mb-4">
-                  Besoin d&apos;aide ? Écrivez-nous et un administrateur vous répondra rapidement.
+                  Besoin d&apos;aide ? Écrivez-nous et notre équipe vous répondra rapidement.
                 </p>
                 <div className="flex items-center justify-center gap-2 text-[0.65rem] text-[rgba(0,0,0,0.4)]">
                   <i className="fas fa-shield-alt text-[#22C55E]"></i>

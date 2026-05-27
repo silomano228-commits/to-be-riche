@@ -114,9 +114,9 @@ export default function GuideScreen() {
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Allez dans <strong className="text-[#1F2937]">Portefeuille → Déposer</strong></li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">Dépôt en Dollars (TRX)</strong></li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez le montant en $ (min 10 $)</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Envoyez les TRX à l&apos;adresse admin affichée</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Envoyez les TRX à l&apos;adresse affichée</li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez votre adresse TRX pour confirmer</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Attendez la validation par l&apos;admin</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Attendez la validation par notre équipe</li>
                     </ol>
                   </div>
                   <div className="bg-[rgba(0,0,0,0.04)] rounded-xl p-2.5 border border-[rgba(0,0,0,0.05)]">
@@ -129,10 +129,10 @@ export default function GuideScreen() {
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez le montant en FCFA (min 6 000)</li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Le montant est converti automatiquement en $ et TRX</li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez votre numéro Yas (8 chiffres, 90-93 ou 70-73)</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Envoyez l&apos;argent au numéro Yas de l&apos;admin</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Envoyez l&apos;argent via le code USSD TMoney affiché</li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Téléchargez Trust Wallet, créez un portefeuille TRX</li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez votre adresse TRX Trust Wallet</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>L&apos;admin vous enverra les TRX sur votre Trust Wallet</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Votre solde sera crédité après vérification du paiement</li>
                     </ol>
                   </div>
                 </div>
@@ -262,7 +262,7 @@ export default function GuideScreen() {
                 <div className="w-9 h-9 rounded-xl bg-[rgba(20,184,166,0.12)] flex items-center justify-center shrink-0 border border-[rgba(20,184,166,0.15)]"><i className="fas fa-robot text-[#14B8A6] text-[0.85rem]"></i></div>
                 <div className="flex-1 min-w-0">
                   <div className="text-[0.6rem] text-[rgba(20,184,166,0.7)] font-bold uppercase tracking-[1px] mb-0.5">Besoin d&apos;aide ?</div>
-                  <div className="text-[0.7rem] leading-relaxed text-[rgba(0,0,0,0.3)]">Utilisez le <strong className="text-[#1F2937]">Chat IA</strong> pour poser vos questions. L&apos;IA vous mettra en contact avec l&apos;admin si besoin.</div>
+                  <div className="text-[0.7rem] leading-relaxed text-[rgba(0,0,0,0.3)]">Utilisez le <strong className="text-[#1F2937]">Chat IA</strong> pour poser vos questions. L&apos;IA vous mettra en contact avec le support si besoin.</div>
                 </div>
               </div>
             </>

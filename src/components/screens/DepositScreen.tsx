@@ -130,7 +130,7 @@ export default function DepositScreen() {
   const handleTrxSubmit = async () => {
     const amt = parseFloat(depositAmt);
     if (!amt || amt < 10) { addToast('Minimum 10 $', 'error'); return; }
-    if (!adminAddress) { addToast('Adresse admin non configurée', 'error'); return; }
+    if (!adminAddress) { addToast('Adresse de paiement non configurée', 'error'); return; }
 
     setTrxSubmitting(true);
     try {
@@ -213,7 +213,7 @@ export default function DepositScreen() {
     const pendingHeader = isTrxPending ? 'Dépôt TRX en attente' : 'Dépôt TMoney en attente';
     const pendingSubtext = isTrxPending
       ? 'Vous ne pouvez pas faire de nouveau dépôt tant que celui-ci n\'est pas confirmé.'
-      : 'L\'administrateur validera votre paiement sous peu.';
+      : 'Notre équipe de validation vérifiera votre paiement sous peu.';
 
     return (
       <>
@@ -255,7 +255,7 @@ export default function DepositScreen() {
               <div className="flex items-start gap-2">
                 <i className="fas fa-info-circle text-[0.8rem] mt-0.5" style={{ color: pendingColor }}></i>
                 <p className="text-[0.7rem] text-[rgba(0,0,0,0.65)] leading-relaxed">
-                  Cela peut prendre quelques minutes. Vous serez crédité dès que l&apos;administrateur aura validé le dépôt.
+                  Cela peut prendre quelques minutes. Vous serez crédité dès que notre équipe aura validé le dépôt.
                 </p>
               </div>
             </div>
@@ -294,7 +294,7 @@ export default function DepositScreen() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-[0.95rem] font-bold text-[#1F2937] mb-0.5">Dépôt via TMoney (Yas)</h3>
-                    <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)] leading-relaxed mb-2">Envoyez de l&apos;argent via TMoney au numéro Yas de l&apos;admin. Le montant sera crédité sur votre solde après validation.</p>
+                    <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)] leading-relaxed mb-2">Envoyez de l&apos;argent via TMoney au numéro indiqué. Le montant sera crédité sur votre solde après vérification.</p>
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#22C55E] bg-[rgba(34,197,94,0.12)] px-2 py-1 rounded-full">
                         <i className="fas fa-wallet"></i> Solde principal
@@ -317,7 +317,7 @@ export default function DepositScreen() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-[0.95rem] font-bold text-[#1F2937] mb-0.5">Dépôt direct en TRX</h3>
-                    <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)] leading-relaxed mb-2">Envoyez des TRX à l&apos;adresse de l&apos;admin. Confirmation rapide après vérification.</p>
+                    <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)] leading-relaxed mb-2">Envoyez des TRX à l&apos;adresse indiquée. Confirmation rapide après vérification.</p>
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#6366F1] bg-[rgba(99,102,241,0.12)] px-2 py-1 rounded-full">
                         <i className="fas fa-bolt"></i> Rapide & direct
@@ -338,8 +338,8 @@ export default function DepositScreen() {
                   <h4 className="text-[0.82rem] font-bold text-[#1F2937]">Besoin d&apos;aide ?</h4>
                 </div>
                 <p className="text-[0.7rem] text-[rgba(0,0,0,0.55)] leading-relaxed">
-                  <strong className="text-[#22C55E]">TMoney</strong> : Déposez via mobile money, l&apos;admin crédite votre solde principal.<br />
-                  <strong className="text-[#6366F1]">TRX</strong> : Vous avez déjà des TRX, envoyez-les directement à l&apos;admin.
+                  <strong className="text-[#22C55E]">TMoney</strong> : Déposez via mobile money, votre solde sera crédité après vérification.<br />
+                  <strong className="text-[#6366F1]">TRX</strong> : Vous avez déjà des TRX, envoyez-les directement à l&apos;adresse indiquée.
                 </p>
               </div>
             </>
@@ -365,7 +365,7 @@ export default function DepositScreen() {
               </div>
               <h3 className="text-[1.2rem] font-bold text-[#1F2937] mb-2">Dépôt soumis !</h3>
               <p className="text-[0.82rem] text-[rgba(0,0,0,0.55)] mb-6 max-w-[280px] mx-auto">
-                Votre dépôt de <strong className="text-[#6366F1]">{formatMoney(parseFloat(depositAmt))}</strong> est en attente de confirmation par l&apos;administrateur.
+                Votre dépôt de <strong className="text-[#6366F1]">{formatMoney(parseFloat(depositAmt))}</strong> est en attente de confirmation par notre équipe.
               </p>
               <button onClick={() => setPage('wallet')} className="w-full py-3.5 rounded-xl bg-[#6366F1] text-white font-bold text-[0.88rem] border-none cursor-pointer">
                 <i className="fas fa-wallet mr-2"></i>Retour au portefeuille
@@ -466,7 +466,7 @@ export default function DepositScreen() {
                   {!adminAddress && (
                     <div className="bg-[#FFFFFF] rounded-xl p-3 mb-4 border border-[rgba(0,0,0,0.08)] flex items-center gap-2">
                       <i className="fas fa-exclamation-triangle text-[#EF4444] text-[0.8rem]"></i>
-                      <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Adresse TRX admin non configurée. Contactez le support.</p>
+                      <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Adresse TRX non configurée. Contactez le support.</p>
                     </div>
                   )}
 
@@ -474,7 +474,7 @@ export default function DepositScreen() {
                     onClick={() => {
                       const amt = parseFloat(depositAmt);
                       if (!amt || amt < 10) { addToast('Minimum 10 $', 'error'); return; }
-                      if (!adminAddress) { addToast('Adresse admin non configurée', 'error'); return; }
+                      if (!adminAddress) { addToast('Adresse de paiement non configurée', 'error'); return; }
                       setTrxStep('send');
                     }}
                     disabled={!depositAmt || parseFloat(depositAmt) < 10 || !adminAddress}
@@ -720,14 +720,14 @@ export default function DepositScreen() {
               {!adminYasAccount && (
                 <div className="bg-[rgba(239,68,68,0.08)] rounded-xl p-3 mb-4 border border-[rgba(239,68,68,0.2)] flex items-center gap-2">
                   <i className="fas fa-exclamation-triangle text-[#EF4444] text-[0.8rem]"></i>
-                  <p className="text-[0.72rem] text-[rgba(0,0,0,0.65)]">Dépôt TMoney temporairement indisponible (numéro admin non configuré).</p>
+                  <p className="text-[0.72rem] text-[rgba(0,0,0,0.65)]">Dépôt TMoney temporairement indisponible (service non configuré).</p>
                 </div>
               )}
 
               <button
                 onClick={() => {
                   if (!yasAmount || parseFloat(yasAmount) < 6000) { addToast('Minimum 6 000 FCFA', 'error'); return; }
-                  if (!adminYasAccount) { addToast('Numéro admin non configuré', 'error'); return; }
+                  if (!adminYasAccount) { addToast('Service TMoney non configuré', 'error'); return; }
                   setYasStep('send');
                 }}
                 disabled={!yasAmount || parseFloat(yasAmount) < 6000 || !adminYasAccount}
@@ -771,7 +771,7 @@ export default function DepositScreen() {
                 <div className="bg-[#FFFFFF] rounded-xl p-3.5 mb-4 border border-[rgba(239,68,68,0.3)]">
                   <div className="flex items-center gap-2">
                     <i className="fas fa-exclamation-triangle text-[#EF4444] text-[0.8rem]"></i>
-                    <p className="text-[0.72rem] text-[rgba(0,0,0,0.65)]">Numéro Yas admin non configuré. Contactez l&apos;administrateur.</p>
+                    <p className="text-[0.72rem] text-[rgba(0,0,0,0.65)]">Service TMoney non configuré. Contactez le support.</p>
                   </div>
                 </div>
               ) : (
@@ -830,7 +830,7 @@ export default function DepositScreen() {
             <div style={{ animation: 'tIn 0.3s ease-out' }}>
               <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4 border border-[rgba(0,0,0,0.08)]">
                 <h3 className="text-[1rem] font-bold text-[#1F2937] mb-1">Vos informations</h3>
-                <p className="text-[0.75rem] text-[rgba(0,0,0,0.55)] mb-4">Renseignez votre numéro Yas pour que l&apos;admin puisse vérifier votre paiement.</p>
+                <p className="text-[0.75rem] text-[rgba(0,0,0,0.55)] mb-4">Veuillez renseigner votre numéro Yas pour permettre la vérification du paiement.</p>
 
                 <div className="mb-3">
                   <label className="block mb-1 text-[0.75rem] font-semibold text-[rgba(0,0,0,0.55)]">Numéro de compte Yas du Togo</label>

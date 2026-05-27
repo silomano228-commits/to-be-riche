@@ -93,7 +93,7 @@ export default function WithdrawalScreen() {
             <i className="fas fa-hourglass-half text-[#F59E0B] text-[2rem]"></i>
           </div>
           <h3 className="text-[1.1rem] font-bold text-[#1A2332] mb-2">Demande en traitement</h3>
-          <p className="text-[0.82rem] text-[#64748B] mb-6 text-center">Votre demande de retrait de <strong>{pendingW ? formatMoney(pendingW.amount) : ''}</strong> est en cours de traitement par l&apos;administration.</p>
+          <p className="text-[0.82rem] text-[#64748B] mb-6 text-center">Votre demande de retrait de <strong>{pendingW ? formatMoney(pendingW.amount) : ''}</strong> est en cours de traitement par notre équipe.</p>
 
           <div className="bg-white rounded-xl border border-[rgba(0,0,0,0.05)] divide-y divide-[#F1F5F9] w-full mb-5">
             <div className="flex justify-between px-4 py-3">
@@ -164,7 +164,7 @@ export default function WithdrawalScreen() {
           <i className="fas fa-info-circle text-[#B45309] mt-0.5 shrink-0 text-[0.9rem]"></i>
           <div>
             <h4 className="text-[0.82rem] mb-0.5 font-bold text-[#B45309]">Retrait depuis les gains</h4>
-            <p className="text-[0.72rem] leading-relaxed text-[#92400E]">Vous pouvez retirer uniquement depuis votre <strong>compte de gains</strong>. Le retrait sera envoyé en TRX à votre adresse Trust Wallet après validation par l&apos;admin. Premier retrait possible 48h après le premier dépôt.</p>
+            <p className="text-[0.72rem] leading-relaxed text-[#92400E]">Vous pouvez retirer uniquement depuis votre <strong>compte de gains</strong>. Le retrait sera envoyé en TRX à votre adresse Trust Wallet après validation par notre équipe. Premier retrait possible 48h après le premier dépôt.</p>
           </div>
         </div>
 

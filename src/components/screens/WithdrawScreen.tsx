@@ -171,7 +171,7 @@ export default function WithdrawScreen() {
                   Retrait {badgeText} en attente
                 </h3>
                 <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">
-                  Votre demande est en cours de traitement par l&apos;administrateur
+                  Votre demande est en cours de traitement par notre équipe
                 </p>
               </div>
             </div>
@@ -207,7 +207,7 @@ export default function WithdrawScreen() {
             </div>
             <p className="text-[0.7rem] text-[rgba(0,0,0,0.55)] text-center">
               <i className="fas fa-info-circle mr-1"></i>
-              Veuillez patienter, l&apos;administrateur traitera votre demande.
+              Veuillez patienter, notre équipe traitera votre demande.
             </p>
           </div>
           <button onClick={() => setPage('wallet')} className="w-full py-3.5 rounded-xl text-white font-bold text-[0.88rem] border-none cursor-pointer" style={{ backgroundColor: badgeColor }}>
