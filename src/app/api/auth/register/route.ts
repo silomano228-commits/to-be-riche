@@ -1,6 +1,5 @@
 import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
-import { initiateOtp } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,9 +55,9 @@ export async function POST(request: Request) {
 
     const referralCode = await getUniqueReferralCode();
 
-    // Create user with emailVerified = false — must verify email via OTP
+    // Create user with emailVerified = true — no OTP verification needed
     const user = await db.user.create({
-      data: { email, name, password, role: 'user', referralCode, referredByCode, emailVerified: false },
+      data: { email, name, password, role: 'user', referralCode, referredByCode, emailVerified: true },
     });
 
     // If referred, increment the referrer's referral count
@@ -69,16 +68,41 @@ export async function POST(request: Request) {
       });
     }
 
-    // Send OTP for email verification
-    const otpResult = await initiateOtp(email, name, 'email_verification', 5);
+    // Direct login — return user data with cookie
+    const { password: _, ...safeUser } = user;
+    const now = new Date();
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
-      requires_verification: true,
-      email,
-      message: 'Vérifiez votre email pour activer votre compte',
-      plain_code: otpResult.plain_code, // only set in simulation mode
+      user: {
+        ...safeUser,
+        investBalance: user.investBalance,
+        tradeBalance: user.tradeBalance,
+        projectBalance: user.projectBalance,
+        totalProfit: user.totalProfit,
+        totalLoss: user.totalLoss,
+        transactions: [],
+        investments: [],
+        activeTradesCount: 0,
+        activeEnterprisesCount: 0,
+        claimableInvestments: 0,
+        canWithdraw: false,
+        hoursUntilWithdrawal: 0,
+        completedWithdrawals: 0,
+        requiredReferrals: 1,
+        needsReferral: true,
+      },
     });
+
+    response.cookies.set('br_token', user.id, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+      httpOnly: false,
+      sameSite: 'lax',
+      secure: false,
+    });
+
+    return response;
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
   }

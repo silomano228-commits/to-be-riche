@@ -28,50 +28,58 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Email ou mot de passe incorrect' });
     }
 
-    // Admin users skip OTP for convenience (direct access)
-    if (user.role === 'admin') {
-      const { password: _, ...safeUser } = user;
-      const transactions = await db.transaction.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } });
-      const investments = await db.investment.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } });
-      const activeTradesCount = await db.trade.count({ where: { userId: user.id, resolved: false } });
-      const activeEnterprisesCount = await db.enterprise.count({ where: { userId: user.id, status: 'active' } });
-      const now = new Date();
-      const activeInvestments = investments.filter((i) => i.status === 'active');
-      const claimableInvestments = activeInvestments.filter((i) => i.nextClaimAt && now >= i.nextClaimAt);
-      const completedWithdrawals = await db.withdrawal.count({ where: { userId: user.id, status: 'approved' } });
+    // Direct login for all users — no OTP required
+    const { password: _, ...safeUser } = user;
+    const transactions = await db.transaction.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } });
+    const investments = await db.investment.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } });
+    const activeTradesCount = await db.trade.count({ where: { userId: user.id, resolved: false } });
+    const activeEnterprisesCount = await db.enterprise.count({ where: { userId: user.id, status: 'active' } });
+    const now = new Date();
+    const activeInvestments = investments.filter((i) => i.status === 'active');
+    const claimableInvestments = activeInvestments.filter((i) => i.nextClaimAt && now >= i.nextClaimAt);
+    const completedWithdrawals = await db.withdrawal.count({ where: { userId: user.id, status: 'approved' } });
 
-      const response = NextResponse.json({
-        success: true,
-        user: {
-          ...safeUser,
-          investBalance: user.investBalance,
-          tradeBalance: user.tradeBalance,
-          projectBalance: user.projectBalance,
-          totalProfit: user.totalProfit,
-          totalLoss: user.totalLoss,
-          transactions,
-          investments,
-          activeTradesCount,
-          activeEnterprisesCount,
-          claimableInvestments: claimableInvestments.length,
-          canWithdraw: true,
-          hoursUntilWithdrawal: 0,
-          completedWithdrawals,
-          requiredReferrals: 0,
-          needsReferral: false,
-        },
-      });
-      response.cookies.set('br_token', user.id, { path: '/', maxAge: 60 * 60 * 24 * 7, httpOnly: false, sameSite: 'lax', secure: false });
-      return response;
-    }
+    // Check 48h withdrawal eligibility
+    const firstDepositDate = user.firstDepositAt;
+    const canWithdraw = user.role === 'admin' ? true : firstDepositDate
+      ? (now.getTime() - new Date(firstDepositDate).getTime()) >= 48 * 60 * 60 * 1000
+      : false;
 
-    // Password is correct — require OTP verification before full login
-    return NextResponse.json({
+    const hoursUntilWithdrawal = firstDepositDate && !canWithdraw
+      ? Math.ceil(48 - (now.getTime() - new Date(firstDepositDate).getTime()) / (60 * 60 * 1000))
+      : 0;
+
+    const response = NextResponse.json({
       success: true,
-      requires_otp: true,
-      email: user.email,
-      message: 'Vérification OTP requise',
+      user: {
+        ...safeUser,
+        investBalance: user.investBalance,
+        tradeBalance: user.tradeBalance,
+        projectBalance: user.projectBalance,
+        totalProfit: user.totalProfit,
+        totalLoss: user.totalLoss,
+        transactions,
+        investments,
+        activeTradesCount,
+        activeEnterprisesCount,
+        claimableInvestments: claimableInvestments.length,
+        canWithdraw,
+        hoursUntilWithdrawal,
+        completedWithdrawals,
+        requiredReferrals: (() => {
+          const nextWithdrawalNumber = completedWithdrawals + 1;
+          return Math.max(1, Math.ceil(nextWithdrawalNumber / 2));
+        })(),
+        needsReferral: (() => {
+          const nextWithdrawalNumber = completedWithdrawals + 1;
+          const required = Math.max(1, Math.ceil(nextWithdrawalNumber / 2));
+          return required > user.referralCount;
+        })(),
+      },
     });
+
+    response.cookies.set('br_token', user.id, { path: '/', maxAge: 60 * 60 * 24 * 7, httpOnly: false, sameSite: 'lax', secure: false });
+    return response;
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
   }

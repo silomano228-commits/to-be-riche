@@ -1,22 +1,13 @@
 import { db } from '@/lib/db';
+import { getAuthToken } from '@/lib/auth';
 import { NextResponse } from 'next/server';
-
-// Inline auth token extraction to avoid importing @/lib/auth which pulls in heavy nodemailer
-function getToken(request: Request): string | null {
-  const authHeader = request.headers.get('x-auth-token');
-  if (authHeader) return authHeader;
-  const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(/br_token=([^;]+)/);
-  if (match) return match[1];
-  return null;
-}
 
 export const dynamic = 'force-dynamic';
 
 // GET — Check withdrawal status (pending withdrawals for current user)
 export async function GET(request: Request) {
   try {
-    const token = getToken(request);
+    const token = getAuthToken(request);
     if (!token) return NextResponse.json({ success: false, error: 'Non autorisé' });
 
     const user = await db.user.findUnique({ where: { id: token } });
@@ -36,7 +27,7 @@ export async function GET(request: Request) {
 // POST — Create a TRX withdrawal request (no balance deduction — admin approves then executes)
 export async function POST(request: Request) {
   try {
-    const token = getToken(request);
+    const token = getAuthToken(request);
     if (!token) return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
 
     const user = await db.user.findUnique({ where: { id: token } });
