@@ -49,8 +49,8 @@ export default function WalletScreen() {
   };
 
   if (!user) return null;
-  const principalBalance = user.invested;
-  const gainsBalance = user.earnings;
+  const investBalance = user.investBalance || 0;
+  const totalProfit = user.totalProfit || 0;
   const totalPotentialGain = user.totalPotentialGain || 0;
   const projects = user.projects || [];
   const canWithdraw = user.canWithdraw;
@@ -83,14 +83,14 @@ export default function WalletScreen() {
                   <div className="w-5 h-5 rounded-md bg-[rgba(59,130,246,0.2)] flex items-center justify-center text-[0.5rem]"><i className="fas fa-shield-alt text-[#60A5FA]"></i></div>
                   <span className="text-[0.6rem] text-[rgba(255,255,255,0.4)] font-semibold uppercase tracking-[0.5px]">Principal</span>
                 </div>
-                <div className="text-[1.05rem] font-black text-white">{formatMoney(principalBalance)}</div>
+                <div className="text-[1.05rem] font-black text-white">{formatMoney(user.balance)}</div>
               </div>
               <div className="bg-[rgba(0,200,83,0.08)] rounded-xl p-3.5 border border-[rgba(0,200,83,0.12)]">
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <div className="w-5 h-5 rounded-md bg-[rgba(0,200,83,0.2)] flex items-center justify-center text-[0.5rem]"><i className="fas fa-chart-line text-[#00E676]"></i></div>
                   <span className="text-[0.6rem] text-[rgba(255,255,255,0.4)] font-semibold uppercase tracking-[0.5px]">Gains</span>
                 </div>
-                <div className="text-[1.05rem] font-black text-[#86EFAC]">{formatMoney(gainsBalance)}</div>
+                <div className="text-[1.05rem] font-black text-[#86EFAC]">{formatMoney(totalProfit)}</div>
               </div>
             </div>
 
@@ -132,8 +132,8 @@ export default function WalletScreen() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-2 mb-5">
           {[
-            { icon: 'fa-chart-line', color: 'bg-[#DCFCE7] text-[#166534]', val: formatMoney(user.earnings), label: 'Gains' },
-            { icon: 'fa-hand-holding-usd', color: 'bg-[#DBEAFE] text-[#1E40AF]', val: formatMoney(user.invested), label: 'Investi' },
+            { icon: 'fa-chart-line', color: 'bg-[#DCFCE7] text-[#166534]', val: formatMoney(totalProfit), label: 'Gains' },
+            { icon: 'fa-hand-holding-usd', color: 'bg-[#DBEAFE] text-[#1E40AF]', val: formatMoney(investBalance), label: 'Investi' },
             { icon: 'fa-percentage', color: 'bg-[#FEF3C7] text-[#92400E]', val: '7-15%', label: 'Rendement' },
           ].map((s, i) => (
             <div key={i} className="bg-white rounded-xl p-3.5 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)] border border-[rgba(0,0,0,0.03)]">

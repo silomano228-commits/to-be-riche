@@ -30,7 +30,7 @@ export default function WithdrawalScreen() {
     if (!user) return;
     const amt = parseFloat(amount);
     if (isNaN(amt) || amt < 5) { addToast('Minimum de retrait : 5 $', 'error'); return; }
-    if (amt > user.earnings) { addToast('Solde de gains insuffisant', 'error'); return; }
+    if (amt > user.balance) { addToast('Solde insuffisant', 'error'); return; }
     if (!trxAddress || trxAddress.length < 20) { addToast('Adresse TRX invalide', 'error'); return; }
 
     setLoading(true);
@@ -187,8 +187,8 @@ export default function WithdrawalScreen() {
         {/* Available gains */}
         <div className="bg-[#F0FDF4] rounded-2xl p-5 mb-5 border border-[#BBF7D0] text-center">
           <div className="text-[0.68rem] text-[#166534] font-semibold uppercase tracking-[0.5px] mb-1">Gains disponibles</div>
-          <div className="text-[1.8rem] font-black text-[#009624]">{formatMoney(user.earnings)}</div>
-          <div className="text-[0.65rem] text-[#15803D] mt-1">Minimum de retrait : 5 $</div>
+          <div className="text-[1.8rem] font-black text-[#009624]">{formatMoney(user.balance)}</div>
+          <div className="text-[0.65rem] text-[#15803D] mt-1">Solde principal · Minimum de retrait : 5 $</div>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -198,13 +198,13 @@ export default function WithdrawalScreen() {
               <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Min. 5 $" min={5} step={1} required className="w-full py-3 px-4 pr-16 bg-[rgba(0,0,0,0.02)] border-[1.5px] border-[rgba(0,0,0,0.07)] rounded-xl text-[0.88rem] outline-none transition-all font-[Inter] text-[#1A2332] focus:bg-white focus:border-[#F59E0B] focus:shadow-[0_0_0_3px_rgba(245,158,11,0.08)]" />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[0.7rem] font-bold text-[#94A3B8]">USD</span>
             </div>
-            {amount && parseFloat(amount) > user.earnings && (
+            {amount && parseFloat(amount) > user.balance && (
               <p className="text-red-500 text-[0.68rem] mt-1 font-medium">Dépasse vos gains disponibles</p>
             )}
           </div>
 
           <div className="flex gap-1.5 mb-4">
-            {[5, 10, 25, 50].filter(v => v <= user.earnings).map((v) => (
+            {[5, 10, 25, 50].filter(v => v <= user.balance).map((v) => (
               <button key={v} type="button" onClick={() => setAmount(String(v))} className="flex-1 py-2.5 rounded-lg text-[0.76rem] font-semibold text-center cursor-pointer border-[1.5px] border-[rgba(0,0,0,0.06)] bg-white text-[#1A2332] transition-all active:scale-95 font-[Inter]">{v} $</button>
             ))}
           </div>
@@ -215,7 +215,7 @@ export default function WithdrawalScreen() {
             <p className="text-[0.62rem] text-[#94A3B8] mt-1">L&apos;adresse où vous recevrez vos TRX</p>
           </div>
 
-          <button type="submit" disabled={loading || user.earnings < 5 || !user.canWithdraw || !!user.needsReferral} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#FBBF24] to-[#F59E0B] text-[#78350F] font-bold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(251,191,36,0.2)] font-[Inter] transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">
+          <button type="submit" disabled={loading || user.balance < 5 || !user.canWithdraw || !!user.needsReferral} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#FBBF24] to-[#F59E0B] text-[#78350F] font-bold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(251,191,36,0.2)] font-[Inter] transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">
             {loading ? <div className="w-4 h-4 border-2 border-[rgba(120,53,15,0.3)] border-t-[#78350F] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : !user.canWithdraw ? <><i className="fas fa-clock"></i> Attente 48h</> : user.needsReferral ? <><i className="fas fa-user-friends"></i> Parrainage requis</> : <><i className="fas fa-paper-plane"></i> Demander le retrait</>}
           </button>
         </form>

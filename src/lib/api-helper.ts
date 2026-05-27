@@ -6,11 +6,15 @@ export interface SafeUser {
   email: string;
   name: string;
   balance: number;
-  invested: number;
-  earnings: number;
+  investBalance: number;
+  tradeBalance: number;
+  projectBalance: number;
   hasInvested: boolean;
   role: string;
   depositCount: number;
+  emailVerified: boolean;
+  totalProfit: number;
+  totalLoss: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -20,11 +24,15 @@ export function toSafeUser(user: {
   email: string;
   name: string;
   balance: number;
-  invested: number;
-  earnings: number;
+  investBalance: number;
+  tradeBalance: number;
+  projectBalance: number;
   hasInvested: boolean;
   role: string;
   depositCount: number;
+  emailVerified: boolean;
+  totalProfit: number;
+  totalLoss: number;
   createdAt: Date;
   updatedAt: Date;
 }): SafeUser {
@@ -33,11 +41,15 @@ export function toSafeUser(user: {
     email: user.email,
     name: user.name,
     balance: user.balance,
-    invested: user.invested,
-    earnings: user.earnings,
+    investBalance: user.investBalance,
+    tradeBalance: user.tradeBalance,
+    projectBalance: user.projectBalance,
     hasInvested: user.hasInvested,
     role: user.role,
     depositCount: user.depositCount,
+    emailVerified: user.emailVerified,
+    totalProfit: user.totalProfit,
+    totalLoss: user.totalLoss,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
   };
