@@ -752,29 +752,6 @@ export default function DepositScreen() {
                   </div>
                 </div>
 
-                {/* Admin Yas number */}
-                <div className="bg-[#FFFFFF] rounded-xl p-4 mb-3 border border-[rgba(0,0,0,0.08)]">
-                  <div className="text-[0.68rem] text-[rgba(0,0,0,0.35)] uppercase font-semibold tracking-[1px] mb-2">
-                    <i className="fas fa-phone mr-1"></i> Numéro Yas de l&apos;administrateur
-                  </div>
-                  <div className="bg-[#F3F4F6] rounded-xl p-3 mb-2 border border-[rgba(0,0,0,0.08)]">
-                    <div className="text-[1.2rem] font-black text-[#22C55E] text-center tracking-[2px]">
-                      {adminYasAccount || 'Non configuré'}
-                    </div>
-                  </div>
-                  {adminYasAccount && (
-                    <button
-                      onClick={() => handleCopy(adminYasAccount, setYasCopied)}
-                      className={`w-full py-2 rounded-lg text-[0.72rem] font-semibold border-none cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
-                        yasCopied ? 'bg-[#22C55E] text-white' : 'bg-[rgba(34,197,94,0.12)] text-[#22C55E]'
-                      }`}
-                    >
-                      <i className={`fas ${yasCopied ? 'fa-check' : 'fa-copy'} text-[0.65rem]`}></i>
-                      {yasCopied ? 'Copié !' : 'Copier le numéro'}
-                    </button>
-                  )}
-                </div>
-
                 {/* Amount to send */}
                 <div className="bg-[#FFFFFF] rounded-xl p-4 border border-[rgba(0,0,0,0.08)]">
                   <div className="text-[0.68rem] text-[rgba(0,0,0,0.35)] uppercase font-semibold tracking-[1px] mb-2">
