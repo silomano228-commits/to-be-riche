@@ -348,3 +348,67 @@ Stage Summary:
 - No more duplicate messages from Socket.io + API poll conflict
 - Two-layer dedup: primary by real DB ID, fallback by content+time match
 - Socket.io server no longer generates temp IDs — just forwards real data from API responses
+
+---
+Task ID: 2
+Agent: main
+Task: Rewrite DepositScreen.tsx — Implement new "Volet de conversion TMoney ↔ TRX" deposit system
+
+Work Log:
+- Read existing DepositScreen.tsx (1060 lines), yas deposit API route, and Prisma schema
+- Updated Prisma schema: Added `destination String @default("balance")` to YasDeposit model
+- Ran `bun run db:push` to apply schema changes
+- Completely rewrote DepositScreen.tsx with new 3-method deposit flow:
+  - Method type changed from 'choose' | 'trx' | 'yas' to 'choose' | 'yas-balance' | 'yas-trx' | 'trx'
+  - Added YasTrxStep type for the TRX destination flow (amount → trustwallet → info → confirm → success)
+  - Added separate state for each Yas flow (yas-balance and yas-trx have independent state variables)
+  - Added validateTrxAddress() function for TRX address validation
+  - Updated ActivePendingDeposit type to include `destination` field for yas type
+- Method Selection Screen ("choose"): 3 options instead of 2
+  - Option 1: Dépôt via TMoney (Yas) → Compte principal (GREEN #22C55E, mobile-money icon)
+  - Option 2: Dépôt via TMoney (Yas) → Compte TRX (AMBER #F59E0B, exchange icon)
+  - Option 3: Dépôt direct en TRX (PURPLE #6366F1, crypto icon)
+  - Each card shows min amount and colored badge
+  - Help guide updated with 3 colored entries
+- TMoney → Compte Principal Flow (5 steps):
+  - Amount (CFA) → Guide (USSD code) → Info (Yas account) → Confirm → Success
+  - Submit: POST /api/deposit/yas with { amountCfa, yasAccount, destination: 'balance' }
+  - Success message: "L'administrateur validera votre paiement sous peu"
+- TMoney → Compte TRX Flow (5 steps):
+  - Amount (CFA) → Trust Wallet Guide (download links for Play Store/App Store) → Info (Yas account + TRX address required) → Confirm → Success
+  - Submit: POST /api/deposit/yas with { amountCfa, yasAccount, trxAddress, destination: 'trx' }
+  - Success message: "L'administrateur convertira votre paiement et enverra les TRX à votre wallet"
+  - Trust Wallet guide card with download buttons and step-by-step instructions
+  - TRX address validation (must start with T, min 30 chars)
+- TRX Direct Flow (3 steps): Same as before but with purple (#6366F1) color theme
+- Updated Pending Deposit screen to show destination-specific messages:
+  - TRX pending: purple theme
+  - Yas balance pending: green theme, "En attente" status
+  - Yas TRX pending: amber theme, "Conversion en cours" status
+- Updated /api/deposit/yas/route.ts:
+  - Added `destination` field handling (defaults to 'balance', validates 'trx')
+  - Made `trxAddress` required when destination is 'trx' (validates starts with T, min 30 chars)
+  - Stores destination in YasDeposit model
+  - Returns destination in response data
+  - GET endpoint now returns destination field in pendingDeposit
+- Updated /api/admin/yas-deposits/route.ts:
+  - Approval now branches based on destination field:
+    - destination='trx': Does NOT credit user balance (admin sends TRX to wallet externally), adminNote defaults to "Conversion effectuée. TRX envoyés à votre wallet."
+    - destination='balance': Credits user balance as before, adminNote defaults to "Dépôt validé. Solde principal crédité."
+- Updated AdminScreen.tsx:
+  - Yas deposit cards now show destination badge: "→ TRX" (amber) or "→ Solde" (green)
+  - TRX address only shown when destination='trx' (labeled "Adresse TRX destination" with copy button)
+  - Approve button toast message varies by destination
+  - Default adminNote varies by destination
+- Ran lint check: no new errors (only pre-existing ones in scripts/ folder)
+- Verified TypeScript compilation: no errors in our modified files
+- Dev server responding with HTTP 200
+
+Stage Summary:
+- Deposit system restructured from 2 methods to 3 methods with clear color coding
+- TMoney → Compte principal: green theme, credits balance on approval
+- TMoney → Compte TRX: amber theme, Trust Wallet guide, TRX sent to user's wallet on approval
+- TRX direct: purple theme, same as before
+- API routes properly handle destination field with validation
+- Admin panel shows destination badges and handles approval differently per destination
+- All existing functionality preserved (pending detection, copy buttons, USSD code generation)

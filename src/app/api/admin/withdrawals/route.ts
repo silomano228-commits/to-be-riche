@@ -112,12 +112,20 @@ export async function POST(request: Request) {
       });
 
       // Create a withdrawal transaction record
-      const typeLabel = withdrawal.type === 'yas' ? 'Yas' : 'TRX';
+      let typeLabel = 'TRX';
+      let detailSuffix = ` vers ${withdrawal.trxAddress}`;
+      if (withdrawal.type === 'yas') {
+        typeLabel = 'Yas';
+        detailSuffix = ` (${withdrawal.amountCfa?.toLocaleString() || 0} FCFA vers ${withdrawal.yasAccount})`;
+      } else if (withdrawal.type === 'convert_trx_tmoney') {
+        typeLabel = 'TRX→TMoney';
+        detailSuffix = ` (${withdrawal.amountCfa?.toLocaleString() || 0} FCFA vers ${withdrawal.yasAccount})`;
+      }
       await db.transaction.create({
         data: {
           type: 'withdrawal',
           amount: withdrawal.amount,
-          detail: `Retrait ${typeLabel} exécuté — ${withdrawal.amount} $${withdrawal.type === 'yas' ? ` (${withdrawal.amountCfa.toLocaleString()} FCFA vers ${withdrawal.yasAccount})` : ` vers ${withdrawal.trxAddress}`}`,
+          detail: `Retrait ${typeLabel} exécuté — ${withdrawal.amount} $${detailSuffix}`,
           userId: withdrawal.userId,
         },
       });

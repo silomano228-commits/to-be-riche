@@ -32,7 +32,7 @@ async function getAnyPendingDeposit(userId: string) {
   return null;
 }
 
-// POST — Crée une demande de conversion Yas du Togo
+// POST — Crée une demande de dépôt Yas (vers compte principal ou conversion TRX)
 export async function POST(request: Request) {
   try {
     let token = getToken(request);
@@ -42,8 +42,9 @@ export async function POST(request: Request) {
     }
     if (!token) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
 
-    const { amountCfa, yasAccount, trxAddress } = await request.json();
+    const { amountCfa, yasAccount, trxAddress, destination } = await request.json();
     const safeTrxAddress = trxAddress?.trim() || '';
+    const safeDestination = destination === 'trx' ? 'trx' : 'balance';
     const amtCfa = parseFloat(amountCfa);
 
     // Get CFA rate from config
@@ -66,14 +67,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Le numéro Yas doit commencer par 90-93 ou 70-73' });
     }
 
-    // trxAddress is now optional for YAS deposits
+    // If destination is 'trx', trxAddress is required
+    if (safeDestination === 'trx') {
+      if (!safeTrxAddress) {
+        return NextResponse.json({ success: false, error: 'Adresse TRX requise pour la conversion vers TRX' });
+      }
+      if (!safeTrxAddress.startsWith('T') || safeTrxAddress.length < 30) {
+        return NextResponse.json({ success: false, error: 'Adresse TRX invalide (doit commencer par T et faire au moins 30 caractères)' });
+      }
+    }
 
     // Vérifier s'il y a déjà un dépôt en attente (TRX OU YAS)
     const anyPending = await getAnyPendingDeposit(token);
     if (anyPending) {
       const errorMsg = anyPending.type === 'trx'
         ? 'Vous avez déjà un dépôt TRX en attente de confirmation. Attendez qu\'il soit traité avant de faire une nouvelle demande.'
-        : 'Vous avez déjà une demande de conversion Yas en attente.';
+        : 'Vous avez déjà une demande de dépôt Yas en attente.';
       return NextResponse.json({ success: false, error: errorMsg });
     }
 
@@ -96,6 +105,7 @@ export async function POST(request: Request) {
         trxPrice,
         yasAccount: yasAccount.trim(),
         trxAddress: safeTrxAddress || null,
+        destination: safeDestination,
         status: 'pending',
       },
     });
@@ -109,6 +119,7 @@ export async function POST(request: Request) {
         amountUsd,
         trxPrice: trxPrice.toFixed(4),
         cfaUsdRate,
+        destination: safeDestination,
       },
     });
   } catch (error) {
@@ -165,6 +176,7 @@ export async function GET(request: Request) {
           amountTrx: deposit.amountTrx,
           yasAccount: deposit.yasAccount,
           trxAddress: deposit.trxAddress,
+          destination: deposit.destination,
           status: deposit.status,
           createdAt: deposit.createdAt,
         } : null,

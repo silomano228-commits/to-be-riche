@@ -182,6 +182,7 @@ model YasDeposit {
   trxPrice      Float
   yasAccount    String
   trxAddress    String?
+  destination   String   @default("balance")
   status        String   @default("pending")
   adminNote     String?
   createdAt     DateTime @default(now())
