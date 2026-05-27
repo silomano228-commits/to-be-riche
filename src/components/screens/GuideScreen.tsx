@@ -153,7 +153,7 @@ export default function GuideScreen() {
                     <div className="w-6 h-6 rounded-md bg-[rgba(20,184,166,0.12)] flex items-center justify-center shrink-0 mt-0.5"><i className="fas fa-chart-line text-[0.55rem] text-[#14B8A6]"></i></div>
                     <div>
                       <div className="text-[0.72rem] font-bold text-[#1F2937]">Compte d&apos;Investissement</div>
-                      <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">Choisissez un palier (Micro à Elite), gagnez 5% à 12.5% par cycle. Réclamez vos gains chaque jour !</div>
+                      <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">Choisissez un palier (Starter à Elite), gagnez 5% à 12.5% par cycle. Réclamez vos gains chaque jour !</div>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
@@ -167,7 +167,7 @@ export default function GuideScreen() {
                     <div className="w-6 h-6 rounded-md bg-[rgba(20,184,166,0.12)] flex items-center justify-center shrink-0 mt-0.5"><i className="fas fa-building text-[0.55rem] text-[#14B8A6]"></i></div>
                     <div>
                       <div className="text-[0.72rem] font-bold text-[#1F2937]">Compte de Projet</div>
-                      <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">Investissez dans des entreprises. Rendement garanti à l&apos;échéance. Adaptez la durée selon vos objectifs !</div>
+                      <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">Investissez dans des entreprises virtuelles. Rendement de +15% à +95% selon la durée. Pas de risque de crash !</div>
                     </div>
                   </div>
                   <div className="bg-[rgba(20,184,166,0.1)] rounded-lg p-2 mt-1 border border-[rgba(20,184,166,0.1)]">
@@ -242,16 +242,27 @@ export default function GuideScreen() {
                       <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>La demande est traitée par notre équipe</li>
                     </ol>
                   </div>
+                  <div className="bg-[rgba(0,0,0,0.04)] rounded-xl p-2.5 border border-[rgba(0,0,0,0.05)]">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <i className="fas fa-exchange-alt text-[#EF4444] text-[0.7rem]"></i>
+                      <span className="text-[0.72rem] font-bold text-[#1F2937]">Conversion TRX → Yas</span>
+                    </div>
+                    <ol className="space-y-1 text-[0.65rem] text-[rgba(0,0,0,0.65)] pl-4">
+                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">Convertir TRX → Yas</strong></li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>Entrez le montant, votre adresse TRX et votre numéro Yas</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>Envoyez vos TRX à l&apos;admin, recevez les FCFA sur Yas</li>
+                    </ol>
+                  </div>
                   <div className="flex items-start gap-2">
                     <i className="fas fa-arrow-up text-[#EF4444] text-[0.65rem] mt-1"></i>
                     <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Transférez d&apos;abord vos gains depuis les sous-comptes vers le <strong className="text-[#1F2937]">Compte Principal</strong> (sans frais)</div>
                   </div>
                   <div className="flex items-start gap-2">
                     <i className="fas fa-clock text-[#EF4444] text-[0.65rem] mt-1"></i>
-                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]"><strong className="text-[#1F2937]">Attention :</strong> Le premier retrait nécessite 48h après le 1er dépôt + au moins 1 filleul</div>
+                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]"><strong className="text-[#1F2937]">Attention :</strong> 48h après le 1er dépôt + filleuls requis (max(1, ceil(N° retrait / 2)))</div>
                   </div>
                   <div className="bg-[rgba(239,68,68,0.1)] rounded-lg p-2 mt-1 border border-[rgba(239,68,68,0.1)]">
-                    <p className="text-[0.62rem] text-[#EF4444]"><i className="fas fa-info-circle mr-1"></i>Seuls les <strong>gains</strong> peuvent être retirés, pas le capital investi.</p>
+                    <p className="text-[0.62rem] text-[#EF4444]"><i className="fas fa-info-circle mr-1"></i>Minimum de retrait : <strong>5$</strong>. Un seul retrait en attente à la fois.</p>
                   </div>
                 </div>
               </div>
@@ -273,12 +284,16 @@ export default function GuideScreen() {
                     <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Partagez votre <strong className="text-[#1F2937]">code de parrainage</strong> (visible dans Profil) avec vos amis</div>
                   </div>
                   <div className="flex items-start gap-2">
-                    <i className="fas fa-lock-open text-[#8B5CF6] text-[0.65rem] mt-1"></i>
-                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Avoir <strong className="text-[#1F2937]">au moins 1 filleul</strong> est obligatoire pour débloquer votre premier retrait</div>
+                    <i className="fas fa-gift text-[#8B5CF6] text-[0.65rem] mt-1"></i>
+                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Recevez <strong className="text-[#1F2937]">20% du premier dépôt</strong> de votre filleul sur votre Compte Principal (sans déduction de son compte)</div>
                   </div>
                   <div className="flex items-start gap-2">
                     <i className="fas fa-chart-line text-[#8B5CF6] text-[0.65rem] mt-1"></i>
-                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Plus de filleuls peuvent être nécessaires au fil de vos retraits</div>
+                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Recevez aussi <strong className="text-[#1F2937]">5% des gains d&apos;investissement</strong> de vos filleuls à chaque réclamation</div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <i className="fas fa-lock-open text-[#8B5CF6] text-[0.65rem] mt-1"></i>
+                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Filleuls requis : <strong className="text-[#1F2937]">max(1, ceil(N° retrait / 2))</strong>. 1er retrait = 1 filleul, 3ème = 2, etc.</div>
                   </div>
                 </div>
               </div>
