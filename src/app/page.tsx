@@ -17,6 +17,7 @@ const ChatScreen = dynamic(() => import('@/components/screens/ChatScreen'), { ss
 const DepositScreen = dynamic(() => import('@/components/screens/DepositScreen'), { ssr: false });
 const GuideScreen = dynamic(() => import('@/components/screens/GuideScreen'), { ssr: false });
 const FloatingGift = dynamic(() => import('@/components/FloatingGift'), { ssr: false });
+const InstallPrompt = dynamic(() => import('@/components/InstallPrompt'), { ssr: false });
 
 // ==================== SPLASH ====================
 function SplashScreen({ onDone }: { onDone: () => void }) {
@@ -625,6 +626,18 @@ function BottomNav() {
   );
 }
 
+// ==================== SERVICE WORKER REGISTRAR ====================
+function ServiceWorkerRegistrar() {
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {
+        // SW registration failed silently
+      });
+    }
+  }, []);
+  return null;
+}
+
 // ==================== MAIN APP ====================
 export default function BeRichApp() {
   const { user, currentPage, setPage, setUser, showSplash, setShowSplash } = useAppStore();
@@ -687,10 +700,12 @@ export default function BeRichApp() {
           {user && currentPage === 'guide' && <GuideScreen />}
           {showNav && <BottomNav />}
           {user && currentPage === 'home' && <FloatingGift />}
+          <InstallPrompt />
         </div>
         <ToastContainer />
         <NotificationContainer />
       </div>
+      <ServiceWorkerRegistrar />
     </div>
   );
 }

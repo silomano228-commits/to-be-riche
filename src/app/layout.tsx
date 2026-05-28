@@ -12,13 +12,30 @@ export const viewport: Viewport = {
   initialScale: 1.0,
   maximumScale: 1.0,
   userScalable: false,
+  themeColor: "#22C55E",
 };
 
 export const metadata: Metadata = {
   title: "Be Rich - Investissez. Prospérez.",
-  description: "Plateforme d'investissement Be Rich",
+  description: "Plateforme d'investissement et de trading. Investissez, tradez et prospérez.",
+  manifest: "/manifest.json",
   icons: {
-    icon: "https://z-cdn-media.chatglm.cn/files/1153c12e-46c2-4ff4-9bfb-9ee1ea9ad677.png?auth_key=1875725907-dba9b296a2b347a582e281f8c13d5dd1-0-abc6e2dfe8db025886d8c5cccb41f197",
+    icon: [
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Be Rich",
+  },
+  openGraph: {
+    type: "website",
+    title: "Be Rich - Investissez. Prospérez.",
+    description: "Plateforme d'investissement et de trading. Investissez, tradez et prospérez.",
+    siteName: "Be Rich",
   },
 };
 
@@ -31,6 +48,9 @@ export default function RootLayout({
     <html lang="fr" suppressHydrationWarning>
       <head>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="format-detection" content="telephone=no" />
       </head>
       <body className={`${inter.variable} font-[Inter] antialiased`}>
         {children}
