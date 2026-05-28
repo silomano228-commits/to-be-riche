@@ -40,6 +40,16 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
 // ==================== AUTH SCREEN ====================
 function AuthScreen() {
   const { user, setUser, setPage, addToast } = useAppStore();
+  // Referral code from URL (lazy init before useState)
+  const { prefilledReferral, initialMode } = (() => {
+    if (typeof window === 'undefined') return { prefilledReferral: '', initialMode: 'login' as const };
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref');
+      if (ref) return { prefilledReferral: ref.toUpperCase(), initialMode: 'register' as const };
+    } catch { /* */ }
+    return { prefilledReferral: '', initialMode: 'login' as const };
+  })();
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState({ l: false, r: false, r2: false });
@@ -50,16 +60,6 @@ function AuthScreen() {
   const [otpCode, setOtpCode] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
   const [simCode, setSimCode] = useState('');
-  // Referral code from URL (lazy init to avoid effect setState)
-  const [prefilledReferral, initialMode] = (() => {
-    if (typeof window === 'undefined') return ['', 'login' as const];
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const ref = params.get('ref');
-      if (ref) return [ref.toUpperCase(), 'register' as const];
-    } catch { /* */ }
-    return ['', 'login' as const];
-  })();
 
   if (user) return null;
 
