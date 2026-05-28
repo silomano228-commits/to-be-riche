@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { getAuthToken } from '@/lib/auth';
+import { getRequiredReferrals } from '@/lib/referral';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -62,12 +63,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Aucun dépôt trouvé' });
     }
 
-    // Check referral requirement
+    // Check referral requirement (1 filleul par tranche de 4 retraits)
     const completedWithdrawals = await db.withdrawal.count({
       where: { userId: user.id, status: 'executed' },
     });
-    const nextWithdrawalNumber = completedWithdrawals + 1;
-    const requiredReferrals = Math.max(1, Math.ceil(nextWithdrawalNumber / 2));
+    const requiredReferrals = getRequiredReferrals(completedWithdrawals);
 
     if (requiredReferrals > user.referralCount) {
       const needed = requiredReferrals - user.referralCount;

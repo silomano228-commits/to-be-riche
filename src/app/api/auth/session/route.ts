@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { ensureSiteConfig } from '@/lib/site-config';
+import { getRequiredReferrals, needsMoreReferrals } from '@/lib/referral';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -81,10 +82,9 @@ export async function GET(request: Request) {
       where: { userId: user.id, status: 'approved' },
     });
 
-    // Calculate referral requirement for next withdrawal
-    const nextWithdrawalNumber = completedWithdrawals + 1;
-    const requiredReferrals = Math.max(1, Math.ceil(nextWithdrawalNumber / 2));
-    const needsReferral = requiredReferrals > user.referralCount;
+    // Calculate referral requirement for next withdrawal (1 filleul par tranche de 4 retraits)
+    const requiredReferrals = getRequiredReferrals(completedWithdrawals);
+    const needsReferral = needsMoreReferrals(completedWithdrawals, user.referralCount);
 
     return NextResponse.json({
       success: true,

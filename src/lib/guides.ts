@@ -287,7 +287,7 @@ export const WITHDRAW_GUIDE: GuideSection = {
   ],
   warnings: [
     'Délai de 48h obligatoire après le premier dépôt.',
-    'Filleuls requis selon la formule : Filleuls ≥ max(1, ceil(N° retrait / 2)). Exemple : 1er retrait = 1 filleul, 3ème = 2, 5ème = 3.',
+    'Filleuls requis : 0 pour les 4 premiers retraits, puis 1 filleul par tranche de 4 retraits supplémentaires.',
     'Sans filleuls suffisants, vos retraits seront bloqués.',
     'Assurez-vous que l\'adresse TRX est correcte. Les transactions crypto sont irréversibles.',
   ],
@@ -333,7 +333,7 @@ export const REFERRAL_GUIDE: GuideSection = {
     },
     {
       title: '6. Condition de retrait',
-      description: 'Pour pouvoir retirer, vous devez avoir des filleuls : Filleuls requis = max(1, ceil(N° retrait / 2)). Parrainez activement pour ne pas être bloqué.',
+      description: 'Après vos 4 premiers retraits, vous devez avoir au moins 1 filleul. Puis 1 filleul supplémentaire chaque 4 retraits.',
       icon: 'fa-exclamation-circle',
       color: '#EF4444',
     },
@@ -346,8 +346,8 @@ export const REFERRAL_GUIDE: GuideSection = {
   ],
   warnings: [
     'Sans filleuls suffisants, vos retraits seront bloqués.',
-    'Formule : Filleuls requis = max(1, ceil(N° retrait / 2)).',
-    'Exemple : 1er retrait = 1 filleul requis, 2ème = 1, 3ème = 2, 4ème = 2, 5ème = 3.',
+    'Formule : Filleuls requis = floor(retraits effectués / 4).',
+    'Exemple : Retraits 1-4 = 0 filleul, 5-8 = 1 filleul, 9-12 = 2 filleuls.',
   ],
 };
 

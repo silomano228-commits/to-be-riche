@@ -183,7 +183,7 @@ export default function WalletScreen() {
             <i className="fas fa-user-friends text-[#92400E] mt-0.5 shrink-0 text-[0.9rem]"></i>
             <div className="flex-1">
               <h4 className="text-[0.82rem] mb-0.5 font-bold text-[#92400E]">Parrainage requis</h4>
-              <p className="text-[0.72rem] leading-relaxed text-[#92400E]">Vous devez parrainer au moins {user.requiredReferrals} personne{user.requiredReferrals && user.requiredReferrals > 1 ? 's' : ''} pour retirer. Actuel : {user.referralCount || 0}. Partagez votre code <strong className="font-mono">{user.referralCode}</strong></p>
+              <p className="text-[0.72rem] leading-relaxed text-[#92400E]">Après 4 retraits, vous devez avoir au moins {user.requiredReferrals} filleul{user.requiredReferrals && user.requiredReferrals > 1 ? 's' : ''}. Actuel : {user.referralCount || 0}. Partagez votre code <strong className="font-mono">{user.referralCode}</strong></p>
             </div>
             <button className="py-2.5 px-3 text-[0.72rem] bg-gradient-to-r from-[#FBBF24] to-[#F59E0B] text-[#78350F] rounded-xl border-none cursor-pointer font-semibold font-[Inter] shadow-[0_4px_20px_rgba(251,191,36,0.2)] shrink-0" onClick={() => setPage('referral')}><i className="fas fa-share-alt mr-1"></i>Parrainer</button>
           </div>

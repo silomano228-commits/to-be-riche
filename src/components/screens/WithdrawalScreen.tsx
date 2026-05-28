@@ -174,7 +174,7 @@ export default function WithdrawalScreen() {
             <i className="fas fa-user-friends text-[#DC2626] mt-0.5 shrink-0 text-[0.9rem]"></i>
             <div className="flex-1">
               <h4 className="text-[0.82rem] mb-0.5 font-bold text-[#991B1B]">Parrainage obligatoire</h4>
-              <p className="text-[0.72rem] leading-relaxed text-[#991B1B]">Après votre {user.completedWithdrawals && user.completedWithdrawals >= 2 ? (user.completedWithdrawals + 1) + 'e' : '3e'} retrait, vous devez parrainer au moins {user.requiredReferrals} personne{user.requiredReferrals && user.requiredReferrals > 1 ? 's' : ''}. Vous avez {user.referralCount || 0} filleul{user.referralCount === 1 ? '' : 's'}.</p>
+              <p className="text-[0.72rem] leading-relaxed text-[#991B1B]">Après {user.completedWithdrawals && user.completedWithdrawals >= 4 ? 'vos ' + user.completedWithdrawals + ' retraits' : '4 retraits'}, vous devez parrainer au moins {user.requiredReferrals} personne{user.requiredReferrals && user.requiredReferrals > 1 ? 's' : ''}. Vous avez {user.referralCount || 0} filleul{user.referralCount === 1 ? '' : 's'}.</p>
               <div className="mt-2 flex items-center gap-2">
                 <span className="text-[0.68rem] text-[#991B1B] font-semibold">Votre code :</span>
                 <span className="bg-[#991B1B] text-white px-3 py-1 rounded-lg text-[0.78rem] font-bold font-mono">{user.referralCode}</span>

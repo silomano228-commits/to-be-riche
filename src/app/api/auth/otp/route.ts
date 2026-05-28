@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { initiateOtp, verifyOtp } from '@/lib/auth';
+import { getRequiredReferrals, needsMoreReferrals } from '@/lib/referral';
 
 export const dynamic = 'force-dynamic';
 
@@ -116,15 +117,8 @@ export async function POST(request: Request) {
           canWithdraw,
           hoursUntilWithdrawal,
           completedWithdrawals,
-          requiredReferrals: (() => {
-            const nextWithdrawalNumber = completedWithdrawals + 1;
-            return Math.max(1, Math.ceil(nextWithdrawalNumber / 2));
-          })(),
-          needsReferral: (() => {
-            const nextWithdrawalNumber = completedWithdrawals + 1;
-            const required = Math.max(1, Math.ceil(nextWithdrawalNumber / 2));
-            return required > user.referralCount;
-          })(),
+          requiredReferrals: getRequiredReferrals(completedWithdrawals),
+          needsReferral: needsMoreReferrals(completedWithdrawals, user.referralCount),
         },
       });
 
