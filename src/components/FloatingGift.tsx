@@ -267,23 +267,54 @@ export default function FloatingGift() {
                 >
                   {user.referralCode || '—'}
                 </div>
-                <button
-                  onClick={() => {
-                    if (user.referralCode) {
-                      navigator.clipboard?.writeText(user.referralCode);
-                      useAppStore.getState().addToast('Code copié !', 'success');
-                    }
-                  }}
-                  className="w-full py-2.5 rounded-lg text-[0.75rem] font-semibold border-none cursor-pointer flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
-                  style={{
-                    background: '#F59E0B',
-                    color: '#050506',
-                    boxShadow: '0 2px 12px rgba(245,158,11,0.25)',
-                  }}
-                >
-                  <i className="fas fa-copy text-[0.6rem]"></i>
-                  Copier le code
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      if (user.referralCode) {
+                        const link = `https://to-be-riche.vercel.app/?ref=${user.referralCode}`;
+                        if (navigator.share) {
+                          navigator.share({
+                            title: 'Be Rich - Investissement & Trading',
+                            text: `Rejoins Be Rich avec mon code de parrainage ${user.referralCode} et commence à investir ! 💰`,
+                            url: link,
+                          }).catch(() => {
+                            navigator.clipboard?.writeText(link);
+                            useAppStore.getState().addToast('Lien copié !', 'success');
+                          });
+                        } else {
+                          navigator.clipboard?.writeText(link);
+                          useAppStore.getState().addToast('Lien copié !', 'success');
+                        }
+                      }
+                    }}
+                    className="flex-1 py-2.5 rounded-lg text-[0.75rem] font-semibold border-none cursor-pointer flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
+                    style={{
+                      background: '#22C55E',
+                      color: '#050506',
+                      boxShadow: '0 2px 12px rgba(34,197,94,0.25)',
+                    }}
+                  >
+                    <i className="fas fa-share-alt text-[0.6rem]"></i>
+                    Partager
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (user.referralCode) {
+                        navigator.clipboard?.writeText(user.referralCode);
+                        useAppStore.getState().addToast('Code copié !', 'success');
+                      }
+                    }}
+                    className="flex-1 py-2.5 rounded-lg text-[0.75rem] font-semibold border-none cursor-pointer flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
+                    style={{
+                      background: '#F59E0B',
+                      color: '#050506',
+                      boxShadow: '0 2px 12px rgba(245,158,11,0.25)',
+                    }}
+                  >
+                    <i className="fas fa-copy text-[0.6rem]"></i>
+                    Copier
+                  </button>
+                </div>
               </div>
             </div>
           </div>

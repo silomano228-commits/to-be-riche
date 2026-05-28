@@ -10,6 +10,7 @@ export default function ProfileScreen() {
   const [referrals, setReferrals] = useState<any[]>([]);
   const [showReferrals, setShowReferrals] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [shared, setShared] = useState(false);
 
   const loadReferrals = async () => {
     try {
@@ -18,6 +19,8 @@ export default function ProfileScreen() {
       if (data.success) { setReferrals(data.referrals || []); setShowReferrals(true); }
     } catch { /* */ }
   };
+
+  const referralLink = `https://to-be-riche.vercel.app/?ref=${user?.referralCode || ''}`;
 
   const handleCopyCode = async () => {
     if (!user?.referralCode) return;
@@ -37,6 +40,32 @@ export default function ProfileScreen() {
       setCopied(true);
       addToast('Code copié !', 'success');
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleShare = async () => {
+    if (!user?.referralCode) return;
+    const shareData = {
+      title: 'Be Rich - Investissement & Trading',
+      text: `Rejoins Be Rich avec mon code de parrainage ${user.referralCode} et commence à investir ! 💰`,
+      url: referralLink,
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        addToast('Lien partagé !', 'success');
+      } else {
+        await navigator.clipboard.writeText(referralLink);
+        setShared(true);
+        addToast('Lien copié !', 'success');
+        setTimeout(() => setShared(false), 2000);
+      }
+    } catch {
+      // Fallback - copy link
+      await navigator.clipboard.writeText(referralLink);
+      setShared(true);
+      addToast('Lien copié !', 'success');
+      setTimeout(() => setShared(false), 2000);
     }
   };
 
@@ -161,17 +190,32 @@ export default function ProfileScreen() {
               <div className="text-[0.68rem] mb-0.5" style={{ color: 'rgba(0,0,0,0.45)' }}>Votre code</div>
               <div className="text-[1.1rem] font-mono font-black" style={{ color: '#F59E0B' }}>{user.referralCode}</div>
             </div>
-            <button
-              onClick={handleCopyCode}
-              className="w-10 h-10 rounded-xl flex items-center justify-center border-none cursor-pointer transition-all"
-              style={{
-                background: copied ? 'rgba(245,158,11,0.3)' : '#F59E0B',
-                color: copied ? '#F59E0B' : '#050506',
-                boxShadow: copied ? 'none' : '0 2px 12px rgba(245,158,11,0.25)',
-              }}
-            >
-              <i className={`fas ${copied ? 'fa-check' : 'fa-copy'} text-[0.85rem]`}></i>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleShare}
+                className="w-10 h-10 rounded-xl flex items-center justify-center border-none cursor-pointer transition-all"
+                style={{
+                  background: shared ? 'rgba(34,197,94,0.3)' : 'rgba(34,197,94,0.15)',
+                  color: shared ? '#22C55E' : '#22C55E',
+                  boxShadow: shared ? 'none' : '0 2px 12px rgba(34,197,94,0.15)',
+                }}
+                title="Partager le lien"
+              >
+                <i className={`fas ${shared ? 'fa-check' : 'fa-share-alt'} text-[0.85rem]`}></i>
+              </button>
+              <button
+                onClick={handleCopyCode}
+                className="w-10 h-10 rounded-xl flex items-center justify-center border-none cursor-pointer transition-all"
+                style={{
+                  background: copied ? 'rgba(245,158,11,0.3)' : '#F59E0B',
+                  color: copied ? '#F59E0B' : '#050506',
+                  boxShadow: copied ? 'none' : '0 2px 12px rgba(245,158,11,0.25)',
+                }}
+                title="Copier le code"
+              >
+                <i className={`fas ${copied ? 'fa-check' : 'fa-copy'} text-[0.85rem]`}></i>
+              </button>
+            </div>
           </div>
 
           {/* Referral Progress — light bg, gold bar */}

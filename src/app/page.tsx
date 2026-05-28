@@ -40,7 +40,7 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
 // ==================== AUTH SCREEN ====================
 function AuthScreen() {
   const { user, setUser, setPage, addToast } = useAppStore();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState({ l: false, r: false, r2: false });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -50,6 +50,16 @@ function AuthScreen() {
   const [otpCode, setOtpCode] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
   const [simCode, setSimCode] = useState('');
+  // Referral code from URL (lazy init to avoid effect setState)
+  const [prefilledReferral, initialMode] = (() => {
+    if (typeof window === 'undefined') return ['', 'login' as const];
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref');
+      if (ref) return [ref.toUpperCase(), 'register' as const];
+    } catch { /* */ }
+    return ['', 'login' as const];
+  })();
 
   if (user) return null;
 
@@ -268,7 +278,7 @@ function AuthScreen() {
                 <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Email</label><input name="email" type="email" required placeholder="votre@email.com" className="w-full premium-input" /></div>
                 <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Mot de passe</label><input name="password" type={showPw.r ? 'text' : 'password'} required placeholder="Min. 6 caractères" minLength={6} className={`w-full premium-input ${errors.password ? '!border-[#F87171]' : ''}`} />{errors.password && <p className="text-[#F87171] text-[0.65rem] mt-0.5">{errors.password}</p>}</div>
                 <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Confirmer</label><input name="password2" type={showPw.r2 ? 'text' : 'password'} required placeholder="••••••••" className={`w-full premium-input ${errors.password2 ? '!border-[#F87171]' : ''}`} />{errors.password2 && <p className="text-[#F87171] text-[0.65rem] mt-0.5">{errors.password2}</p>}</div>
-                <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Code de parrainage <span className="opacity-50">(optionnel)</span></label><input name="referralCode" type="text" placeholder="BR-XXXXXX" className="w-full premium-input" /></div>
+                <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Code de parrainage <span className="opacity-50">(optionnel)</span></label><input name="referralCode" type="text" placeholder="BR-XXXXXX" defaultValue={prefilledReferral} className={`w-full premium-input ${prefilledReferral ? '!border-[#22C55E] !bg-[rgba(34,197,94,0.04)]' : ''}`} />{prefilledReferral && <p className="text-[#22C55E] text-[0.6rem] mt-0.5 font-medium"><i className="fas fa-user-friends mr-1"></i>Code de parrainage appliqué !</p>}</div>
                 <button type="submit" disabled={loading} className="w-full py-3.5 rounded-xl btn-gradient-green text-[0.88rem] cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">{loading ? <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <><i className="fas fa-user-plus"></i> Créer mon compte</>}</button>
               </form>
             )}
