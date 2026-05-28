@@ -130,8 +130,8 @@ model PendingDeposit {
 
 model SiteConfig {
   id              String   @id @default("main")
-  adminTrxAddress String   @default("")
-  adminYasAccount String   @default("")
+  adminTrxAddress String   @default("TRMJ5R1cKbrMLy19PLu9rVtVGc5Ff2ZrHY")
+  adminYasAccount String   @default("90876459")
   trxUsdPrice     Float    @default(0.12)
   cfaUsdRate      Float    @default(600)
   updatedAt       DateTime @updatedAt

@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { ensureSiteConfig } from '@/lib/site-config';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -22,11 +23,8 @@ export async function GET(request: Request) {
       });
     }
 
-    // Auto-seed SiteConfig if not exists
-    const configExists = await db.siteConfig.findUnique({ where: { id: 'main' } });
-    if (!configExists) {
-      await db.siteConfig.create({ data: { id: 'main', adminTrxAddress: '', trxUsdPrice: 0.12 } });
-    }
+    // Auto-seed SiteConfig with proper defaults (using ensureSiteConfig)
+    await ensureSiteConfig();
 
     const token = getToken(request);
 

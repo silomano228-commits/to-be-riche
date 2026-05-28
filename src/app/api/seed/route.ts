@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { ensureSiteConfig } from '@/lib/site-config';
 import { NextResponse } from 'next/server';
 
 function generateReferralCode(): string {
@@ -64,20 +65,9 @@ export async function POST(request: Request) {
       results.push('Test user already exists');
     }
 
-    // Create SiteConfig if not exists
-    const existingConfig = await db.siteConfig.findUnique({ where: { id: 'main' } });
-    if (!existingConfig) {
-      await db.siteConfig.create({
-        data: {
-          id: 'main',
-          adminTrxAddress: '',
-          trxUsdPrice: 0.12,
-        },
-      });
-      results.push('SiteConfig created');
-    } else {
-      results.push('SiteConfig already exists');
-    }
+    // Create SiteConfig with proper defaults
+    await ensureSiteConfig();
+    results.push('SiteConfig ensured');
 
     return NextResponse.json({ success: true, message: results.join(', ') });
   } catch (error) {

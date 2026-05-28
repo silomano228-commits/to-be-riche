@@ -56,12 +56,14 @@ export default function DepositScreen() {
   useEffect(() => {
     const loadInfo = async () => {
       let foundPending: ActivePendingDeposit | null = null;
+      let gotYasAccount = false;
+      let gotTrxAddress = false;
 
       try {
         const res = await authFetch('/api/deposit/trx');
         const data = await res.json();
         if (data.success) {
-          setAdminAddress(data.data.adminAddress || '');
+          if (data.data.adminAddress) { setAdminAddress(data.data.adminAddress); gotTrxAddress = true; }
           setTrxPrice(data.data.trxPrice || 0.12);
           if (data.data.pendingDeposit) {
             foundPending = { type: 'trx', ...data.data.pendingDeposit };
@@ -78,7 +80,7 @@ export default function DepositScreen() {
         if (data.success) {
           if (!trxPrice && data.data.trxPrice) setTrxPrice(data.data.trxPrice);
           if (data.data.cfaUsdRate) setCfaUsdRate(data.data.cfaUsdRate);
-          if (data.data.adminYasAccount) setAdminYasAccount(data.data.adminYasAccount);
+          if (data.data.adminYasAccount) { setAdminYasAccount(data.data.adminYasAccount); gotYasAccount = true; }
           if (!foundPending && data.data.pendingDeposit) {
             foundPending = { type: 'yas', ...data.data.pendingDeposit };
           }
@@ -87,6 +89,18 @@ export default function DepositScreen() {
           }
         }
       } catch { /* */ }
+
+      // Fallback: if critical config is still missing, try admin config endpoint
+      if (!gotYasAccount || !gotTrxAddress) {
+        try {
+          const res = await authFetch('/api/admin/config');
+          const data = await res.json();
+          if (data.success && data.config) {
+            if (!gotYasAccount && data.config.adminYasAccount) setAdminYasAccount(data.config.adminYasAccount);
+            if (!gotTrxAddress && data.config.adminTrxAddress) setAdminAddress(data.config.adminTrxAddress);
+          }
+        } catch { /* */ }
+      }
 
       if (foundPending) setActivePending(foundPending);
       setLoading(false);

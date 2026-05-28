@@ -1,4 +1,4 @@
-// Script to push Prisma schema to Turso database
+// Script to push Prisma schema to Turso database + fix missing columns + seed SiteConfig
 import { createClient } from '@libsql/client'
 
 const tursoUrl = process.env.TURSO_DATABASE_URL!
@@ -132,8 +132,8 @@ async function pushSchema() {
 
     `CREATE TABLE IF NOT EXISTS SiteConfig (
       id TEXT PRIMARY KEY NOT NULL DEFAULT 'main',
-      adminTrxAddress TEXT NOT NULL DEFAULT '',
-      adminYasAccount TEXT NOT NULL DEFAULT '',
+      adminTrxAddress TEXT NOT NULL DEFAULT 'TRMJ5R1cKbrMLy19PLu9rVtVGc5Ff2ZrHY',
+      adminYasAccount TEXT NOT NULL DEFAULT '90876459',
       trxUsdPrice REAL NOT NULL DEFAULT 0.12,
       cfaUsdRate REAL NOT NULL DEFAULT 600,
       updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -153,7 +153,10 @@ async function pushSchema() {
       id TEXT PRIMARY KEY NOT NULL,
       userId TEXT NOT NULL,
       amount REAL NOT NULL,
-      trxAddress TEXT NOT NULL,
+      amountCfa REAL NOT NULL DEFAULT 0,
+      type TEXT NOT NULL DEFAULT 'trx',
+      trxAddress TEXT,
+      yasAccount TEXT,
       status TEXT NOT NULL DEFAULT 'pending',
       adminNote TEXT,
       createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -165,7 +168,7 @@ async function pushSchema() {
       id TEXT PRIMARY KEY NOT NULL,
       email TEXT NOT NULL,
       codeHash TEXT NOT NULL,
-      purpose TEXT NOT NULL DEFAULT 'login',
+      purpose TEXT NOT NULL DEFAULT 'email_verification',
       used BOOLEAN NOT NULL DEFAULT false,
       expiresAt DATETIME NOT NULL,
       createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -179,7 +182,8 @@ async function pushSchema() {
       amountTrx REAL NOT NULL,
       trxPrice REAL NOT NULL,
       yasAccount TEXT NOT NULL,
-      trxAddress TEXT NOT NULL,
+      trxAddress TEXT,
+      destination TEXT NOT NULL DEFAULT 'balance',
       status TEXT NOT NULL DEFAULT 'pending',
       adminNote TEXT,
       createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -204,14 +208,45 @@ async function pushSchema() {
     `CREATE INDEX IF NOT EXISTS User_email_idx ON User(email)`,
   ]
 
+  // ALTER TABLE statements for missing columns (safe - ignored if column already exists)
+  const alterTables = [
+    // Withdrawal: add missing columns from updated schema
+    { table: 'Withdrawal', column: 'amountCfa', sql: `ALTER TABLE Withdrawal ADD COLUMN amountCfa REAL NOT NULL DEFAULT 0` },
+    { table: 'Withdrawal', column: 'type', sql: `ALTER TABLE Withdrawal ADD COLUMN type TEXT NOT NULL DEFAULT 'trx'` },
+    { table: 'Withdrawal', column: 'yasAccount', sql: `ALTER TABLE Withdrawal ADD COLUMN yasAccount TEXT` },
+    // YasDeposit: add missing destination column
+    { table: 'YasDeposit', column: 'destination', sql: `ALTER TABLE YasDeposit ADD COLUMN destination TEXT NOT NULL DEFAULT 'balance'` },
+    { table: 'YasDeposit', column: 'adminNote', sql: `ALTER TABLE YasDeposit ADD COLUMN adminNote TEXT` },
+    { table: 'YasDeposit', column: 'trxAddress', sql: `ALTER TABLE YasDeposit ADD COLUMN trxAddress TEXT` },
+    // PendingDeposit: add txHash if missing
+    // SiteConfig: add adminYasAccount if missing
+    { table: 'SiteConfig', column: 'adminYasAccount', sql: `ALTER TABLE SiteConfig ADD COLUMN adminYasAccount TEXT NOT NULL DEFAULT '90876459'` },
+    // OtpCode: fix purpose default
+  ]
+
   for (const sql of tables) {
     try {
       await client.execute(sql)
-      const tableName = sql.match(/CREATE TABLE IF NOT EXISTS (\w+)/)?.[1]
-      console.log(`✅ Table ${tableName} created`)
+      const tableName = sql.match(/CREATE TABLE IF NOT EXISTS "?(\w+)"?/)?.[1]
+      console.log(`✅ Table ${tableName} ensured`)
     } catch (e: any) {
-      const tableName = sql.match(/CREATE TABLE IF NOT EXISTS (\w+)/)?.[1]
+      const tableName = sql.match(/CREATE TABLE IF NOT EXISTS "?(\w+)"?/)?.[1]
       console.log(`⚠️  Table ${tableName}: ${e.message}`)
+    }
+  }
+
+  // Apply ALTER TABLE for missing columns
+  console.log('\n📋 Adding missing columns...')
+  for (const alter of alterTables) {
+    try {
+      await client.execute(alter.sql)
+      console.log(`✅ Added column ${alter.table}.${alter.column}`)
+    } catch (e: any) {
+      if (e.message?.includes('duplicate column name') || e.message?.includes('already exists')) {
+        console.log(`⏭️  Column ${alter.table}.${alter.column} already exists`)
+      } else {
+        console.log(`⚠️  ${alter.table}.${alter.column}: ${e.message}`)
+      }
     }
   }
 
@@ -219,21 +254,57 @@ async function pushSchema() {
     try {
       await client.execute(sql)
       const idxName = sql.match(/CREATE INDEX IF NOT EXISTS (\w+)/)?.[1]
-      console.log(`✅ Index ${idxName} created`)
+      console.log(`✅ Index ${idxName} ensured`)
     } catch (e: any) {
       const idxName = sql.match(/CREATE INDEX IF NOT EXISTS (\w+)/)?.[1]
       console.log(`⚠️  Index ${idxName}: ${e.message}`)
     }
   }
 
-  console.log('\n🎉 Schema push to Turso completed!')
-  
-  // Test the connection by querying tables
+  // Fix SiteConfig: update empty values with proper defaults
+  console.log('\n🔧 Fixing SiteConfig values...')
+  try {
+    await client.execute({
+      sql: `UPDATE SiteConfig SET adminTrxAddress = ? WHERE id = 'main' AND (adminTrxAddress IS NULL OR adminTrxAddress = '')`,
+      args: ['TRMJ5R1cKbrMLy19PLu9rVtVGc5Ff2ZrHY']
+    })
+    await client.execute({
+      sql: `UPDATE SiteConfig SET adminYasAccount = ? WHERE id = 'main' AND (adminYasAccount IS NULL OR adminYasAccount = '')`,
+      args: ['90876459']
+    })
+    await client.execute({
+      sql: `UPDATE SiteConfig SET trxUsdPrice = 0.12 WHERE id = 'main' AND trxUsdPrice = 0`,
+    })
+    await client.execute({
+      sql: `UPDATE SiteConfig SET cfaUsdRate = 600 WHERE id = 'main' AND cfaUsdRate = 0`,
+    })
+    console.log('✅ SiteConfig values fixed')
+  } catch (e: any) {
+    console.log(`⚠️  SiteConfig fix: ${e.message}`)
+  }
+
+  // Verify SiteConfig
+  console.log('\n📋 Current SiteConfig:')
+  try {
+    const config = await client.execute("SELECT * FROM SiteConfig WHERE id = 'main'")
+    for (const row of config.rows) {
+      console.log(`  adminTrxAddress: ${row.adminTrxAddress}`)
+      console.log(`  adminYasAccount: ${row.adminYasAccount}`)
+      console.log(`  trxUsdPrice: ${row.trxUsdPrice}`)
+      console.log(`  cfaUsdRate: ${row.cfaUsdRate}`)
+    }
+  } catch (e: any) {
+    console.log(`⚠️  Could not read SiteConfig: ${e.message}`)
+  }
+
+  // List all tables
   const result = await client.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
   console.log('\n📋 Tables in Turso database:')
   for (const row of result.rows) {
     console.log(`  - ${row.name}`)
   }
+
+  console.log('\n🎉 Turso schema push completed!')
 }
 
 pushSchema().catch(console.error)

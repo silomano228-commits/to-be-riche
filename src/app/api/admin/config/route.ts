@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { ensureSiteConfig } from '@/lib/site-config';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -26,10 +27,7 @@ export async function GET(request: Request) {
     const { error } = await checkAdmin(request);
     if (error) return error;
 
-    let config = await db.siteConfig.findUnique({ where: { id: 'main' } });
-    if (!config) {
-      config = await db.siteConfig.create({ data: { id: 'main', adminTrxAddress: '', adminYasAccount: '', trxUsdPrice: 0.12, cfaUsdRate: 600 } });
-    }
+    const config = await ensureSiteConfig();
 
     return NextResponse.json({ success: true, data: config });
   } catch (error) {
@@ -53,7 +51,7 @@ export async function POST(request: Request) {
         ...(trxUsdPrice !== undefined ? { trxUsdPrice: parseFloat(trxUsdPrice) } : {}),
         ...(cfaUsdRate !== undefined ? { cfaUsdRate: parseFloat(cfaUsdRate) } : {}),
       },
-      create: { id: 'main', adminTrxAddress: adminTrxAddress?.trim() || '', adminYasAccount: adminYasAccount?.trim() || '', trxUsdPrice: parseFloat(trxUsdPrice) || 0.12, cfaUsdRate: parseFloat(cfaUsdRate) || 600 },
+      create: { id: 'main', adminTrxAddress: adminTrxAddress?.trim() || 'TRMJ5R1cKbrMLy19PLu9rVtVGc5Ff2ZrHY', adminYasAccount: adminYasAccount?.trim() || '90876459', trxUsdPrice: parseFloat(trxUsdPrice) || 0.12, cfaUsdRate: parseFloat(cfaUsdRate) || 600 },
     });
 
     return NextResponse.json({ success: true, data: config });
