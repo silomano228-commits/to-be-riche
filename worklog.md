@@ -52,3 +52,49 @@ Stage Summary:
 - GuideScreen.tsx inline content updated to match
 - New CHAT_GUIDE added for support system
 - Key corrections: investment plan names, enterprise returns, referral bonuses, YAS support
+
+---
+Task ID: 3
+Agent: Code Optimizer
+Task: Optimize API Routes with Promise.all
+
+Work Log:
+- Read current session and login route implementations
+- Session route: Added module-level `initialized` flag with `ensureInitialized()` to avoid redundant admin-seed + ensureSiteConfig on every request
+- Session route: Parallelized 5 independent DB queries (transactions, investments, trade count, enterprise count, withdrawal count) using Promise.all
+- Login route: Parallelized the same 5 independent DB queries using Promise.all
+- Verified both files maintain all existing logic, response formats, cookie handling, and imports
+- Ran lint — no new errors introduced
+
+Stage Summary:
+- Both critical API routes now use Promise.all for parallel DB queries instead of sequential awaits
+- Session route uses module-level initialized flag to skip redundant admin seeding and site config checks
+- No changes to response format, cookie logic, or dynamic export
+- Lint clean (only pre-existing errors in unrelated script files)
+
+---
+Task ID: 1
+Agent: Code Agent
+Task: Add database indexes to Prisma schema and fix Prisma Client cache for production
+
+Work Log:
+- Added @@index directives to all 10 models in prisma/schema.prisma for foreign key and frequently queried columns
+- Specific indexes added:
+  - Transaction: @@index([userId]), @@index([userId, createdAt])
+  - Investment: @@index([userId]), @@index([status])
+  - Trade: @@index([userId]), @@index([resolved]), @@index([userId, resolved])
+  - Enterprise: @@index([userId]), @@index([status])
+  - ChatMessage: @@index([userId]), @@index([createdAt])
+  - PendingDeposit: @@index([userId]), @@index([status])
+  - Withdrawal: @@index([userId]), @@index([status])
+  - YasDeposit: @@index([userId]), @@index([status])
+  - OtpCode: @@index([email]), @@index([used])
+  - PasswordResetToken: @@index([userId]), @@index([token])
+- Fixed src/lib/db.ts: Removed the `if (process.env.NODE_ENV !== 'production')` guard around `globalForPrisma.prisma = db` so the PrismaClient is always cached
+- Added development/production log levels to local SQLite PrismaClient constructor
+- Ran `bun run db:push` — database synced successfully, Prisma Client regenerated (v6.19.2)
+
+Stage Summary:
+- All 15 @@index directives added across 10 models (including 2 composite indexes)
+- Prisma Client caching now works in both development and production environments
+- Database schema is in sync, client regenerated

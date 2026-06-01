@@ -12,7 +12,6 @@ function createPrismaClient(): PrismaClient {
   // Use Turso cloud database if configured (production/Vercel)
   if (tursoUrl && tursoToken) {
     try {
-      // Prisma 6.x: PrismaLibSQL is a FACTORY - pass config object, not client instance
       const adapter = new PrismaLibSQL({
         url: tursoUrl,
         authToken: tursoToken,
@@ -24,10 +23,14 @@ function createPrismaClient(): PrismaClient {
     }
   }
 
-  // Local SQLite for development
-  return new PrismaClient()
+  // Local SQLite for development / self-hosted production
+  return new PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
+  })
 }
 
+// Always cache the PrismaClient instance to avoid creating multiple connections
+// On Vercel serverless, each invocation is isolated anyway
+// On self-hosted, this ensures connection reuse across requests
 export const db = globalForPrisma.prisma ?? createPrismaClient()
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
+globalForPrisma.prisma = db

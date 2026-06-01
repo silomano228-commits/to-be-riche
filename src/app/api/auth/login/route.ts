@@ -31,14 +31,19 @@ export async function POST(request: Request) {
 
     // Direct login for all users — no OTP required
     const { password: _, ...safeUser } = user;
-    const transactions = await db.transaction.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } });
-    const investments = await db.investment.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } });
-    const activeTradesCount = await db.trade.count({ where: { userId: user.id, resolved: false } });
-    const activeEnterprisesCount = await db.enterprise.count({ where: { userId: user.id, status: 'active' } });
+
+    // Parallelize all independent DB queries
+    const [transactions, investments, activeTradesCount, activeEnterprisesCount, completedWithdrawals] = await Promise.all([
+      db.transaction.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } }),
+      db.investment.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } }),
+      db.trade.count({ where: { userId: user.id, resolved: false } }),
+      db.enterprise.count({ where: { userId: user.id, status: 'active' } }),
+      db.withdrawal.count({ where: { userId: user.id, status: 'approved' } }),
+    ]);
+
     const now = new Date();
     const activeInvestments = investments.filter((i) => i.status === 'active');
     const claimableInvestments = activeInvestments.filter((i) => i.nextClaimAt && now >= i.nextClaimAt);
-    const completedWithdrawals = await db.withdrawal.count({ where: { userId: user.id, status: 'approved' } });
 
     // Check 48h withdrawal eligibility
     const firstDepositDate = user.firstDepositAt;

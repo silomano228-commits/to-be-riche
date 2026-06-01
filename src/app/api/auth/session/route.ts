@@ -5,6 +5,19 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
+let initialized = false;
+async function ensureInitialized() {
+  if (initialized) return;
+  const adminExists = await db.user.findUnique({ where: { email: 'silomano228@gmail.com' } });
+  if (!adminExists) {
+    await db.user.create({
+      data: { email: 'silomano228@gmail.com', name: 'Admin', password: 'Admin@2024', role: 'admin', referralCode: 'BR-ADMIN', emailVerified: true },
+    });
+  }
+  await ensureSiteConfig();
+  initialized = true;
+}
+
 function getToken(request: Request): string | null {
   const authHeader = request.headers.get('x-auth-token');
   if (authHeader) return authHeader;
@@ -16,16 +29,8 @@ function getToken(request: Request): string | null {
 
 export async function GET(request: Request) {
   try {
-    // Auto-seed admin if not exists
-    const adminExists = await db.user.findUnique({ where: { email: 'silomano228@gmail.com' } });
-    if (!adminExists) {
-      await db.user.create({
-        data: { email: 'silomano228@gmail.com', name: 'Admin', password: 'Admin@2024', role: 'admin', referralCode: 'BR-ADMIN', emailVerified: true },
-      });
-    }
-
-    // Auto-seed SiteConfig with proper defaults (using ensureSiteConfig)
-    await ensureSiteConfig();
+    // One-time initialization: seed admin & site config
+    await ensureInitialized();
 
     const token = getToken(request);
 
@@ -39,26 +44,15 @@ export async function GET(request: Request) {
     }
 
     const { password: _, ...safeUser } = user;
-    const transactions = await db.transaction.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: 'desc' },
-    });
 
-    // Investments
-    const investments = await db.investment.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    // Active trades count
-    const activeTradesCount = await db.trade.count({
-      where: { userId: user.id, resolved: false },
-    });
-
-    // Enterprises count
-    const activeEnterprisesCount = await db.enterprise.count({
-      where: { userId: user.id, status: 'active' },
-    });
+    // Parallelize all independent DB queries
+    const [transactions, investments, activeTradesCount, activeEnterprisesCount, completedWithdrawals] = await Promise.all([
+      db.transaction.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } }),
+      db.investment.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } }),
+      db.trade.count({ where: { userId: user.id, resolved: false } }),
+      db.enterprise.count({ where: { userId: user.id, status: 'active' } }),
+      db.withdrawal.count({ where: { userId: user.id, status: 'approved' } }),
+    ]);
 
     // Check if already claimed today for investments
     const now = new Date();
@@ -76,11 +70,6 @@ export async function GET(request: Request) {
     const hoursUntilWithdrawal = firstDepositDate && !canWithdraw
       ? Math.ceil(48 - (now.getTime() - new Date(firstDepositDate).getTime()) / (60 * 60 * 1000))
       : 0;
-
-    // Count completed withdrawals
-    const completedWithdrawals = await db.withdrawal.count({
-      where: { userId: user.id, status: 'approved' },
-    });
 
     // Calculate referral requirement for next withdrawal (1 filleul par tranche de 4 retraits)
     const requiredReferrals = getRequiredReferrals(completedWithdrawals);
