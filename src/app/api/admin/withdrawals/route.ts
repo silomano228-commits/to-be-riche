@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { notifyUser } from '@/lib/notify';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -88,6 +89,15 @@ export async function POST(request: Request) {
         data: { status: 'approved', adminNote: adminNote || null },
       });
 
+      // Notify user
+      await notifyUser({
+        userId: withdrawal.userId,
+        type: 'withdrawal_approved',
+        title: 'Retrait approuvé',
+        message: `Votre retrait de ${withdrawal.amount.toFixed(2)} $ a été approuvé. En attente d'exécution.`,
+        link: 'wallet',
+      });
+
       return NextResponse.json({ success: true, message: 'Retrait approuvé — prêt pour exécution' });
     }
 
@@ -133,6 +143,15 @@ export async function POST(request: Request) {
         data: { status: 'executed', adminNote: adminNote || null },
       });
 
+      // Notify user
+      await notifyUser({
+        userId: withdrawal.userId,
+        type: 'withdrawal_executed',
+        title: 'Retrait exécuté !',
+        message: `Votre retrait de ${withdrawal.amount.toFixed(2)} $ a été exécuté. Les fonds ont été envoyés.`,
+        link: 'wallet',
+      });
+
       return NextResponse.json({ success: true, message: 'Retrait exécuté — fonds envoyés et solde débité' });
     }
 
@@ -145,6 +164,15 @@ export async function POST(request: Request) {
       await db.withdrawal.update({
         where: { id: withdrawalId },
         data: { status: 'rejected', adminNote: adminNote || null },
+      });
+
+      // Notify user
+      await notifyUser({
+        userId: withdrawal.userId,
+        type: 'withdrawal_rejected',
+        title: 'Retrait rejeté',
+        message: `Votre retrait de ${withdrawal.amount.toFixed(2)} $ a été rejeté.`,
+        link: 'wallet',
       });
 
       return NextResponse.json({ success: true, message: 'Retrait rejeté' });

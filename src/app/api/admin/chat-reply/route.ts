@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { notifyUser } from '@/lib/notify';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -49,8 +50,14 @@ export async function POST(request: Request) {
       },
     });
 
-    // Create notification for the user (via in-app notification system)
-    // The user will see it when polling messages
+    // Create notification for the user
+    await notifyUser({
+      userId: ticket.userId,
+      type: 'new_message',
+      title: 'Nouveau message du support',
+      message: 'L\'administrateur a répondu à votre message.',
+      link: 'chat',
+    });
 
     return NextResponse.json({
       success: true,

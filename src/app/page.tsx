@@ -18,6 +18,7 @@ const DepositScreen = dynamic(() => import('@/components/screens/DepositScreen')
 const GuideScreen = dynamic(() => import('@/components/screens/GuideScreen'), { ssr: false });
 const FloatingGift = dynamic(() => import('@/components/FloatingGift'), { ssr: false });
 const InstallPrompt = dynamic(() => import('@/components/InstallPrompt'), { ssr: false });
+const NotificationBell = dynamic(() => import('@/components/NotificationBell'), { ssr: false });
 
 // ==================== SPLASH ====================
 function SplashScreen({ onDone }: { onDone: () => void }) {
@@ -308,7 +309,10 @@ function HomeScreen() {
   return (
     <>
       <Header title={<><LogoImg className="w-[26px] h-[26px] rounded-md" style={{ objectFit: 'contain' }} /> <span className="text-[#1F2937] font-black">Be Rich</span></>} rightElement={
-        <button onClick={refresh} className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.6)] backdrop-blur-sm text-[rgba(0,0,0,0.55)] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90"><i className={`fas fa-sync-alt ${refreshing ? 'animate-spin' : ''}`} /></button>
+        <div className="flex items-center gap-1.5">
+          <NotificationBell />
+          <button onClick={refresh} className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.6)] backdrop-blur-sm text-[rgba(0,0,0,0.55)] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90"><i className={`fas fa-sync-alt ${refreshing ? 'animate-spin' : ''}`} /></button>
+        </div>
       } />
       <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
         {/* Welcome + Balance Card — Premium Gradient */}

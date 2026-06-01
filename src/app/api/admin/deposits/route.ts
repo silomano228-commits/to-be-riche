@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { notifyUser } from '@/lib/notify';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -66,6 +67,14 @@ export async function POST(request: Request) {
         where: { id: depositId },
         data: { status: 'rejected' },
       });
+      // Notify user
+      await notifyUser({
+        userId: deposit.userId,
+        type: 'deposit_rejected',
+        title: 'Dépôt rejeté',
+        message: `Votre dépôt de ${deposit.amountUsd.toFixed(2)} $ a été rejeté.`,
+        link: 'deposit',
+      });
       return NextResponse.json({ success: true, message: 'Dépôt rejeté' });
     }
 
@@ -120,6 +129,15 @@ export async function POST(request: Request) {
           });
         }
       }
+    });
+
+    // Notify user
+    await notifyUser({
+      userId: deposit.userId,
+      type: 'deposit_approved',
+      title: 'Dépôt approuvé !',
+      message: `Votre dépôt de ${deposit.amountUsd.toFixed(2)} $ a été approuvé et crédité.`,
+      link: 'wallet',
     });
 
     return NextResponse.json({ success: true, message: 'Dépôt approuvé et crédité au solde principal' });

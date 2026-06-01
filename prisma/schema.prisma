@@ -36,6 +36,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   withdrawals     Withdrawal[]
   yasDeposits     YasDeposit[]
+  userNotifications UserNotification[]
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
@@ -218,4 +219,34 @@ model YasDeposit {
 
   @@index([userId])
   @@index([status])
+}
+
+model UserNotification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // deposit_approved, deposit_rejected, withdrawal_approved, withdrawal_rejected, new_message, referral_new, investment_claim, trade_result
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  link      String?  // optional navigation link (e.g. 'wallet', 'chat')
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, read])
+  @@index([createdAt])
+}
+
+model AdminNotification {
+  id        String   @id @default(cuid())
+  type      String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  ticketId  String?
+  userId    String?
+  createdAt DateTime @default(now())
+
+  @@index([read])
+  @@index([createdAt])
 }

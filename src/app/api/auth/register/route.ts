@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { notifyUser, notifyAdmin } from '@/lib/notify';
 import { NextResponse } from 'next/server';
 import { initiateOtp } from '@/lib/auth';
 
@@ -63,11 +64,27 @@ export async function POST(request: Request) {
 
     // If referred, increment the referrer's referral count
     if (referredByCode) {
-      await db.user.update({
+      const referrer = await db.user.update({
         where: { referralCode: referredByCode },
         data: { referralCount: { increment: 1 } },
       });
+      // Notify referrer about new filleul
+      await notifyUser({
+        userId: referrer.id,
+        type: 'referral_new',
+        title: 'Nouveau filleul !',
+        message: `${name} s'est inscrit avec votre code de parrainage.`,
+        link: 'profile',
+      });
     }
+
+    // Notify admin about new registration
+    await notifyAdmin({
+      type: 'new_user',
+      title: 'Nouvel utilisateur',
+      message: `${name} (${email}) vient de s'inscrire${referredByCode ? ` avec le code ${referredByCode}` : ''}.`,
+      userId: user.id,
+    });
 
     // Send OTP for email verification
     const otpResult = await initiateOtp(email, name, 'email_verification', 10);
