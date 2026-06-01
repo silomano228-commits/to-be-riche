@@ -12,16 +12,12 @@ export async function GET(request: Request) {
     const authUser = await db.user.findUnique({ where: { id: token } });
     if (!authUser || authUser.role !== 'admin') return NextResponse.json({ success: false, error: 'Accès refusé' }, { status: 403 });
 
-    const { PrismaClient } = await import('@prisma/client');
-    const client = new PrismaClient();
-    const count = await client.user.count();
-    await client.$disconnect();
+    const count = await db.user.count();
     
     return NextResponse.json({
       status: 'ok',
       userCount: count,
       databaseUrl: process.env.DATABASE_URL ? 'SET' : 'NOT SET',
-      tursoUrl: process.env.TURSO_DATABASE_URL ? 'SET' : 'NOT SET',
       nodeEnv: process.env.NODE_ENV,
     });
   } catch (e: any) {
