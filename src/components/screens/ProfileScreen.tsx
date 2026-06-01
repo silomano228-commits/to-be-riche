@@ -20,7 +20,7 @@ export default function ProfileScreen() {
     } catch { /* */ }
   };
 
-  const referralLink = `https://to-be-riche.vercel.app/?ref=${user?.referralCode || ''}`;
+  const referralLink = `http://beriche.duckdns.org/?ref=${user?.referralCode || ''}`;
 
   const handleCopyCode = async () => {
     if (!user?.referralCode) return;

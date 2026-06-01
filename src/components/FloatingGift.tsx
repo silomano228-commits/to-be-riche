@@ -271,7 +271,7 @@ export default function FloatingGift() {
                   <button
                     onClick={() => {
                       if (user.referralCode) {
-                        const link = `https://to-be-riche.vercel.app/?ref=${user.referralCode}`;
+                        const link = `http://beriche.duckdns.org/?ref=${user.referralCode}`;
                         if (navigator.share) {
                           navigator.share({
                             title: 'Be Rich - Investissement & Trading',

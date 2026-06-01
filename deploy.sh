@@ -12,8 +12,8 @@ set -e
 APP_NAME="be-rich"
 APP_DIR="/var/www/be-rich"
 APP_PORT=3000
-DOMAIN="votre-domaine.com"  # <-- REMPLACEZ PAR VOTRE DOMAINE
-REPO_URL=""                 # <-- REMPLACEZ PAR VOTRE URL GIT (si applicable)
+DOMAIN="beriche.duckdns.org"
+SERVER_IP="102.64.220.240"
 
 echo "🚀 Déploiement de Be Rich sur le serveur LWS..."
 echo "================================================"
