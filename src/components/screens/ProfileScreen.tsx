@@ -20,7 +20,7 @@ export default function ProfileScreen() {
     } catch { /* */ }
   };
 
-  const referralLink = `http://beriche.duckdns.org/?ref=${user?.referralCode || ''}`;
+  const referralLink = `https://beriche.duckdns.org/?ref=${user?.referralCode || ''}`;
 
   const handleCopyCode = async () => {
     if (!user?.referralCode) return;
