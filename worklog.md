@@ -98,3 +98,26 @@ Stage Summary:
 - All 15 @@index directives added across 10 models (including 2 composite indexes)
 - Prisma Client caching now works in both development and production environments
 - Database schema is in sync, client regenerated
+---
+Task ID: 4
+Agent: Main Agent
+Task: Fix client-side ChunkLoadError / 404 for static files in standalone deployment
+
+Work Log:
+- Analyzed browser console errors: all JS chunks, CSS files, and manifest.json returning 404
+- Identified root cause: Next.js `output: 'standalone'` does NOT copy `.next/static/` or `public/` into the `.next/standalone/` directory
+- The standalone server.js runs from `.next/standalone/` and looks for static files relative to its location
+- Without these files, ALL JS/CSS chunks fail to load → ChunkLoadError → complete client-side crash
+- Created `scripts/standalone-setup.js` postbuild script that copies:
+  1. `.next/static/` → `.next/standalone/.next/static/`
+  2. `public/` → `.next/standalone/public/`
+  3. `prisma/` → `.next/standalone/prisma/` (for schema access)
+  4. `db/` → `.next/standalone/db/` (for SQLite database)
+- Updated `package.json` build script to include `&& node scripts/standalone-setup.js`
+- Tested the script locally - all files copied correctly
+- Committed as 8c2eb62 and pushed to origin/main
+
+Stage Summary:
+- Root cause identified: missing static file copy in standalone deployment
+- Fix: postbuild script copies static files, public folder, prisma, and db into .next/standalone/
+- Push ready - user needs to pull and rebuild on VPS
