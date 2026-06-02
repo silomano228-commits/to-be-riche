@@ -1,9 +1,34 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Component } from 'react';
 import dynamic from 'next/dynamic';
-import { useAppStore, formatMoney, esc, authFetch, refreshUser, type AppUser } from '@/lib/store';
+import { useAppStore, formatMoney, esc, authFetch, refreshUser } from '@/lib/store';
 import { LogoImg, ToastContainer, NotificationContainer, Header, AI_TIPS } from '@/components/shared';
+
+// ==================== ERROR BOUNDARY ====================
+class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean; error?: string }> {
+  state = { hasError: false, error: '' };
+  static getDerivedStateFromError(e: Error) { return { hasError: true, error: e.message }; }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="bg-gradient-to-b from-[#F8F9FA] to-[#F1F5F9] min-h-screen flex items-center justify-center p-6">
+          <div className="text-center max-w-[320px]">
+            <div className="w-16 h-16 rounded-full bg-[rgba(34,197,94,0.1)] flex items-center justify-center mx-auto mb-4">
+              <i className="fas fa-exclamation-triangle text-[#F59E0B] text-2xl"></i>
+            </div>
+            <h2 className="text-lg font-bold text-[#1F2937] mb-2">Oups !</h2>
+            <p className="text-sm text-[rgba(0,0,0,0.5)] mb-4">Une erreur inattendue s&apos;est produite.</p>
+            <button onClick={() => { this.setState({ hasError: false }); window.location.reload(); }} className="px-6 py-3 rounded-xl bg-[#22C55E] text-white font-semibold border-none cursor-pointer">
+              Réessayer
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // Lazy load heavy screen components
 const InvestHubScreen = dynamic(() => import('@/components/screens/InvestHubScreen'), { ssr: false });
@@ -192,7 +217,7 @@ function AuthScreen() {
                     <i className="fas fa-magic mr-1"></i>Remplir automatiquement
                   </button>
                   <button
-                    onClick={() => { navigator.clipboard.writeText(simCode); addToast('Code copié', 'success'); }}
+                    onClick={() => { try { navigator.clipboard.writeText(simCode); } catch { /* */ } addToast('Code copié', 'success'); }}
                     className="py-2 px-3 rounded-lg bg-[rgba(245,158,11,0.15)] text-[0.72rem] text-[#D97706] font-semibold border border-[rgba(245,158,11,0.3)] cursor-pointer"
                   >
                     <i className="fas fa-copy mr-1"></i>Copier
@@ -670,6 +695,7 @@ export default function BeRichApp() {
   const showNav = user && !['auth'].includes(currentPage);
 
   return (
+    <ErrorBoundary>
     <div className="bg-gradient-to-b from-[#F8F9FA] to-[#F1F5F9] min-h-screen flex items-center justify-center">
       <div id="app" className="w-full max-w-[430px] h-[100dvh] max-h-[932px] bg-gradient-to-b from-[#F8F9FA] to-[#F1F5F9] relative overflow-hidden shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_4px_16px_rgba(0,0,0,0.04)] noise-bg">
         <style>{`
@@ -711,5 +737,6 @@ export default function BeRichApp() {
       </div>
       <ServiceWorkerRegistrar />
     </div>
+    </ErrorBoundary>
   );
 }

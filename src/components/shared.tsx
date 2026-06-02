@@ -40,9 +40,13 @@ export const ENTERPRISE_NAMES = [
 
 // ==================== LOGO ====================
 export function LogoImg({ className = '', style = {} }: { className?: string; style?: React.CSSProperties }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return <div className={`bg-[#22C55E] rounded-[22px] flex items-center justify-center text-[#050506] font-black ${className}`} style={style}>BR</div>;
+  }
   return (
     <img src={LOGO_URL} alt="Be Rich" className={className} style={{ objectFit: 'contain', ...style }}
-      onError={(e) => { const t = e.target as HTMLImageElement; const p = t.parentElement; if (p) { const div = document.createElement('div'); div.className = `bg-[#22C55E] rounded-[22px] flex items-center justify-center text-[#050506] font-black ${className}`; div.textContent = 'BR'; div.style.filter = t.style.filter; p.replaceChild(div, t); } }}
+      onError={() => setFailed(true)}
     />
   );
 }

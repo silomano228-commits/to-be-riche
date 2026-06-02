@@ -100,9 +100,7 @@ export function formatMoney(v: number): string {
 }
 
 export function esc(s: string): string {
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
+  return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] || c));
 }
 
 export function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
