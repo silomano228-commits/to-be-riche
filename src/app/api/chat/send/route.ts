@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { notifyAdmin } from '@/lib/notify';
 import { NextResponse } from 'next/server';
 import { getAuthToken } from '@/lib/auth';
 
@@ -20,6 +21,16 @@ export async function POST(request: Request) {
     const message = await db.chatMessage.create({
       data: { content: content.trim(), userId: token, isAdmin: user.role === 'admin' },
     });
+
+    // Notify admin if this is a non-admin user message
+    if (user.role !== 'admin') {
+      await notifyAdmin({
+        type: 'new_message',
+        title: 'Nouveau message',
+        message: `${user.name}: ${content.trim().slice(0, 80)}`,
+        userId: user.id,
+      });
+    }
 
     // Return the created message so the frontend can use it instead of refetching
     return NextResponse.json({

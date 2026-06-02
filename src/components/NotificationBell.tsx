@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppStore, authFetch } from '@/lib/store';
 
 interface Notif {
@@ -13,46 +13,47 @@ interface Notif {
   createdAt: string;
 }
 
-export default function NotificationBell() {
+export default function NotificationBell({ dark = false }: { dark?: boolean }) {
   const { user, setPage } = useAppStore();
   const [notifications, setNotifications] = useState<Notif[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
 
-  const fetchNotifications = useCallback(async () => {
-    if (!user) return;
-    try {
-      const res = await authFetch('/api/notifications?unreadOnly=true');
-      const data = await res.json();
-      if (data.success) {
-        setUnreadCount(data.unreadCount);
-      }
-    } catch { /* */ }
-  }, [user]);
-
-  const fetchAll = useCallback(async () => {
-    if (!user) return;
-    try {
-      const res = await authFetch('/api/notifications');
-      const data = await res.json();
-      if (data.success) {
-        setNotifications(data.notifications);
-        setUnreadCount(data.unreadCount);
-      }
-    } catch { /* */ }
-  }, [user]);
-
   // Poll for unread count every 15 seconds
   useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 15000);
-    return () => clearInterval(interval);
-  }, [fetchNotifications]);
+    let active = true;
+    const poll = async () => {
+      if (!user || !active) return;
+      try {
+        const res = await authFetch('/api/notifications?unreadOnly=true');
+        const data = await res.json();
+        if (data.success && active) {
+          setUnreadCount(data.unreadCount);
+        }
+      } catch { /* */ }
+    };
+    poll();
+    const interval = setInterval(poll, 15000);
+    return () => { active = false; clearInterval(interval); };
+  }, [user]);
 
   // Fetch all when dropdown opens
   useEffect(() => {
-    if (open) fetchAll();
-  }, [open, fetchAll]);
+    if (!open || !user) return;
+    let active = true;
+    const load = async () => {
+      try {
+        const res = await authFetch('/api/notifications');
+        const data = await res.json();
+        if (data.success && active) {
+          setNotifications(data.notifications);
+          setUnreadCount(data.unreadCount);
+        }
+      } catch { /* */ }
+    };
+    load();
+    return () => { active = false; };
+  }, [open, user]);
 
   const markAllRead = async () => {
     try {
@@ -107,14 +108,15 @@ export default function NotificationBell() {
 
   if (!user) return null;
 
+  const btnClass = dark
+    ? 'w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90 relative'
+    : 'w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.6)] backdrop-blur-sm text-[rgba(0,0,0,0.55)] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90 relative';
+
   return (
     <div className="relative">
       {/* Bell button */}
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.6)] backdrop-blur-sm text-[rgba(0,0,0,0.55)] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90 relative"
-      >
-        <i className={`fas ${open ? 'fa-bell' : 'fa-bell'}`} />
+      <button onClick={() => setOpen(!open)} className={btnClass}>
+        <i className="fas fa-bell" />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-[#F87171] text-white text-[0.55rem] font-bold rounded-full flex items-center justify-center" style={{ animation: 'pulse 2s ease-in-out infinite' }}>
             {unreadCount > 9 ? '9+' : unreadCount}

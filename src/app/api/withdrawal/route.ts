@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { getAuthToken } from '@/lib/auth';
 import { getRequiredReferrals } from '@/lib/referral';
+import { notifyAdmin } from '@/lib/notify';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -115,19 +116,13 @@ export async function POST(request: Request) {
       },
     });
 
-    // Notify admin (non-blocking HTTP call to chat service)
-    fetch('http://localhost:3003/notify-withdrawal', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        withdrawalId: withdrawal.id,
-        type: 'trx',
-        userId: user.id,
-        userName: user.name,
-        amount: amt,
-        trxAddress,
-      }),
-    }).catch(() => {});
+    // Notify admin about new withdrawal request
+    await notifyAdmin({
+      type: 'new_withdrawal',
+      title: 'Nouvelle demande de retrait',
+      message: `${user.name} demande un retrait de ${amt.toFixed(2)} $ (TRX) vers ${trxAddress}`,
+      userId: user.id,
+    });
 
     return NextResponse.json({ success: true, data: { id: withdrawal.id, amount: amt, status: 'pending' } });
   } catch {

@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { notifyUser } from '@/lib/notify';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -66,6 +67,14 @@ export async function POST(request: Request) {
         where: { id: depositId },
         data: { status: 'rejected', adminNote: adminNote || null },
       });
+      // Notify user about rejection
+      await notifyUser({
+        userId: deposit.userId,
+        type: 'deposit_rejected',
+        title: 'Dépôt Yas rejeté',
+        message: `Votre dépôt de ${deposit.amountCfa.toLocaleString()} FCFA a été rejeté.`,
+        link: 'deposit',
+      });
       return NextResponse.json({ success: true, message: 'Demande rejetée' });
     }
 
@@ -120,6 +129,15 @@ export async function POST(request: Request) {
           });
         }
       }
+    });
+
+    // Notify user about approval
+    await notifyUser({
+      userId: deposit.userId,
+      type: 'deposit_approved',
+      title: 'Dépôt Yas approuvé !',
+      message: `Votre dépôt de ${deposit.amountCfa.toLocaleString()} FCFA (${deposit.amountUsd.toFixed(2)} $) a été approuvé et crédité.`,
+      link: 'wallet',
     });
 
     return NextResponse.json({ success: true, message: 'Dépôt approuvé et solde crédité' });

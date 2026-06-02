@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { getAuthToken } from '@/lib/auth';
 import { getRequiredReferrals } from '@/lib/referral';
+import { notifyAdmin } from '@/lib/notify';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -105,20 +106,13 @@ export async function POST(request: Request) {
       },
     });
 
-    // Notify admin (non-blocking HTTP call to chat service)
-    fetch('http://localhost:3003/notify-withdrawal', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        withdrawalId: withdrawal.id,
-        type: 'yas',
-        userId: user.id,
-        userName: user.name,
-        amount: amt,
-        amountCfa,
-        yasAccount: yasAccount.trim(),
-      }),
-    }).catch(() => {});
+    // Notify admin about new YAS withdrawal request
+    await notifyAdmin({
+      type: 'new_withdrawal',
+      title: 'Nouvelle demande de retrait Yas',
+      message: `${user.name} demande un retrait de ${amt.toFixed(2)} $ (${amountCfa.toLocaleString()} FCFA) via Yas vers ${yasAccount.trim()}`,
+      userId: user.id,
+    });
 
     return NextResponse.json({
       success: true,

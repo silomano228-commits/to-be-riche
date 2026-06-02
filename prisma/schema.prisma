@@ -32,6 +32,7 @@ model User {
   trades          Trade[]
   enterprises     Enterprise[]
   chatMessages    ChatMessage[]
+  supportTickets  SupportTicket[]
   pendingDeposits PendingDeposit[]
   passwordResetTokens PasswordResetToken[]
   withdrawals     Withdrawal[]
@@ -120,15 +121,31 @@ model Enterprise {
 }
 
 model ChatMessage {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  content   String
-  isAdmin   Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content    String
+  isAdmin    Boolean   @default(false)
+  isAdminMsg Boolean   @default(false)
+  ticketId   String?
+  createdAt  DateTime  @default(now())
 
   @@index([userId])
   @@index([createdAt])
+  @@index([ticketId])
+}
+
+model SupportTicket {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reason    String
+  status    String   @default("open")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
 }
 
 model PendingDeposit {

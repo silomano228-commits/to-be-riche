@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAppStore, formatMoney, esc, authFetch, type AppUser } from '@/lib/store';
 import { Header, LogoImg, Modal, INVEST_LEVELS, ENTERPRISE_TYPES, ENTERPRISE_NAMES } from '@/components/shared';
+import NotificationBell from '@/components/NotificationBell';
 
 interface AdminChatMsg {
   id: string;
@@ -441,12 +442,15 @@ export default function AdminScreen() {
           </button>
         }
         rightElement={
-          <button
-            onClick={refreshAll}
-            className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] cursor-pointer border-none"
-          >
-            <i className="fas fa-sync-alt text-[0.7rem]"></i>
-          </button>
+          <div className="flex items-center gap-1.5">
+            <NotificationBell dark />
+            <button
+              onClick={refreshAll}
+              className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] cursor-pointer border-none"
+            >
+              <i className="fas fa-sync-alt text-[0.7rem]"></i>
+            </button>
+          </div>
         }
       />
       <div className="flex-1 w-full overflow-y-auto min-h-0">

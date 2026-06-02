@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { notifyAdmin } from '@/lib/notify';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { getTrxPrice, getAdminTrxAddress, getTrxUsdPrice } from '@/lib/trongrid';
@@ -78,6 +79,17 @@ export async function POST(request: Request) {
         status: 'pending',
       },
     });
+
+    // Notify admin about new TRX deposit request
+    const depositUser = await db.user.findUnique({ where: { id: token } });
+    if (depositUser) {
+      await notifyAdmin({
+        type: 'new_deposit',
+        title: 'Nouveau dépôt TRX',
+        message: `${depositUser.name} demande un dépôt de ${amt.toFixed(2)} $ (${amountTrx.toFixed(2)} TRX)`,
+        userId: token,
+      });
+    }
 
     return NextResponse.json({
       success: true,

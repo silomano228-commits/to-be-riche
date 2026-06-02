@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { notifyAdmin } from '@/lib/notify';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { getTrxPrice, getTrxUsdPrice } from '@/lib/trongrid';
@@ -98,6 +99,17 @@ export async function POST(request: Request) {
         status: 'pending',
       },
     });
+
+    // Notify admin about new YAS deposit request
+    const depositUser = await db.user.findUnique({ where: { id: token } });
+    if (depositUser) {
+      await notifyAdmin({
+        type: 'new_deposit',
+        title: 'Nouveau dépôt Yas',
+        message: `${depositUser.name} demande un dépôt de ${amtCfa.toLocaleString()} FCFA (${amountUsd.toFixed(2)} $) via Yas`,
+        userId: token,
+      });
+    }
 
     return NextResponse.json({
       success: true,
