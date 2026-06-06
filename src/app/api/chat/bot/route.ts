@@ -33,7 +33,7 @@ Informations clés sur Be Rich :
 - Investissement : 4 niveaux avec des taux de 5% à 12.5% par cycle (24h)
 - Trading : Prédiction HAUT/BAS, durée 1-10 min, gain max +85%, taux de réussite 35%
 - Projets : Court/Moyen/Long/Ultra long terme, rendements 40-150%, taux de succès 35%
-- Dépôts via TRX (TRON), minimum 10$
+- Dépôts via TRX (TRON), minimum 5$
 - Transfert entre comptes : 2% de frais vers Invest/Trade/Projet, gratuit vers Principal
 - Code de parrainage pour inviter des amis
 

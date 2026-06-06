@@ -29,7 +29,7 @@ export default function WithdrawalScreen() {
     e.preventDefault();
     if (!user) return;
     const amt = parseFloat(amount);
-    if (isNaN(amt) || amt < 5) { addToast('Minimum de retrait : 5 $', 'error'); return; }
+    if (isNaN(amt) || amt < 10) { addToast('Minimum de retrait : 10 $', 'error'); return; }
     if (amt > user.balance) { addToast('Solde insuffisant', 'error'); return; }
     if (!trxAddress || trxAddress.length < 20) { addToast('Adresse TRX invalide', 'error'); return; }
 
@@ -188,14 +188,14 @@ export default function WithdrawalScreen() {
         <div className="bg-[#F0FDF4] rounded-2xl p-5 mb-5 border border-[#BBF7D0] text-center">
           <div className="text-[0.68rem] text-[#166534] font-semibold uppercase tracking-[0.5px] mb-1">Gains disponibles</div>
           <div className="text-[1.8rem] font-black text-[#009624]">{formatMoney(user.balance)}</div>
-          <div className="text-[0.65rem] text-[#15803D] mt-1">Solde principal · Minimum de retrait : 5 $</div>
+          <div className="text-[0.65rem] text-[#15803D] mt-1">Solde principal · Minimum de retrait : 10 $</div>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4 w-full">
             <label className="block mb-1.5 text-[0.75rem] font-semibold text-[#64748B]">Montant à retirer (USD)</label>
             <div className="relative">
-              <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Min. 5 $" min={5} step={1} required className="w-full py-3 px-4 pr-16 bg-[rgba(0,0,0,0.02)] border-[1.5px] border-[rgba(0,0,0,0.07)] rounded-xl text-[0.88rem] outline-none transition-all font-[Inter] text-[#1A2332] focus:bg-white focus:border-[#F59E0B] focus:shadow-[0_0_0_3px_rgba(245,158,11,0.08)]" />
+              <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Min. 10 $" min={10} step={1} required className="w-full py-3 px-4 pr-16 bg-[rgba(0,0,0,0.02)] border-[1.5px] border-[rgba(0,0,0,0.07)] rounded-xl text-[0.88rem] outline-none transition-all font-[Inter] text-[#1A2332] focus:bg-white focus:border-[#F59E0B] focus:shadow-[0_0_0_3px_rgba(245,158,11,0.08)]" />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[0.7rem] font-bold text-[#94A3B8]">USD</span>
             </div>
             {amount && parseFloat(amount) > user.balance && (

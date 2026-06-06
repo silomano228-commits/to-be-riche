@@ -52,7 +52,7 @@ export default function InvestScreen() {
     e.preventDefault();
     if (!user) return;
     const amt = parseFloat(amount);
-    if (isNaN(amt) || amt < 10) { addToast('Minimum 10 $', 'error'); return; }
+    if (isNaN(amt) || amt < 5) { addToast('Minimum 5 $', 'error'); return; }
     if (!userAddress || userAddress.length < 20) { addToast('Adresse TRX invalide', 'error'); return; }
 
     setLoading(true);

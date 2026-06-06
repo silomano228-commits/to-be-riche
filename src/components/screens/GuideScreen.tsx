@@ -113,7 +113,7 @@ export default function GuideScreen() {
                     <ol className="space-y-1 text-[0.65rem] text-[rgba(0,0,0,0.65)] pl-4">
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Allez dans <strong className="text-[#1F2937]">Portefeuille → Déposer</strong></li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">TRX</strong></li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez le montant en $ (min 10 $)</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez le montant en $ (min 5 $)</li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>L&apos;adresse TRX de notre équipe s&apos;affiche — envoyez les TRX depuis votre Trust Wallet</li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez votre propre adresse TRX pour confirmer l&apos;envoi</li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Attendez la validation par notre équipe</li>
@@ -262,7 +262,7 @@ export default function GuideScreen() {
                     <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]"><strong className="text-[#1F2937]">Attention :</strong> 48h après le 1er dépôt + filleuls requis après 4 retraits</div>
                   </div>
                   <div className="bg-[rgba(239,68,68,0.1)] rounded-lg p-2 mt-1 border border-[rgba(239,68,68,0.1)]">
-                    <p className="text-[0.62rem] text-[#EF4444]"><i className="fas fa-info-circle mr-1"></i>Minimum de retrait : <strong>5$</strong>. Un seul retrait en attente à la fois.</p>
+                    <p className="text-[0.62rem] text-[#EF4444]"><i className="fas fa-info-circle mr-1"></i>Minimum de retrait : <strong>10$</strong>. Un seul retrait en attente à la fois.</p>
                   </div>
                 </div>
               </div>

@@ -42,7 +42,7 @@ export default function AddProjectScreen() {
           <div className="text-center py-12 px-5">
             <div className="w-[72px] h-[72px] rounded-[20px] bg-[rgba(255,255,255,0.03)] mx-auto mb-5 flex items-center justify-center text-[1.6rem] text-[#CBD5E1] shadow-[0_1px_3px_rgba(0,0,0,0.04)]"><i className="fas fa-lock"></i></div>
             <h3 className="mb-2 font-extrabold">Verrouillé</h3>
-            <p className="text-[#64748B] mb-6 leading-relaxed text-[0.82rem]">Investissez minimum <strong>10 $</strong> pour débloquer.</p>
+            <p className="text-[#64748B] mb-6 leading-relaxed text-[0.82rem]">Investissez minimum <strong>5 $</strong> pour débloquer.</p>
             <button className="bg-gradient-to-r from-[#00E676] to-[#00C853] text-white max-w-[220px] mx-auto w-full py-3.5 rounded-xl border-none cursor-pointer font-semibold text-[0.88rem] font-[Inter] shadow-[0_4px_20px_rgba(0,200,83,0.2)] transition-transform active:scale-[0.97] flex items-center justify-center gap-2" onClick={() => setPage('invest')}><i className="fas fa-rocket"></i> Investir</button>
           </div>
         ) : (

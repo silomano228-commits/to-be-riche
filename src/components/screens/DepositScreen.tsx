@@ -143,7 +143,7 @@ export default function DepositScreen() {
   // TRX deposit submit
   const handleTrxSubmit = async () => {
     const amt = parseFloat(depositAmt);
-    if (!amt || amt < 10) { addToast('Minimum 10 $', 'error'); return; }
+    if (!amt || amt < 5) { addToast('Minimum 5 $', 'error'); return; }
     if (!adminAddress) { addToast('Adresse de paiement non configurée', 'error'); return; }
 
     setTrxSubmitting(true);
@@ -336,7 +336,7 @@ export default function DepositScreen() {
                       <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#6366F1] bg-[rgba(99,102,241,0.12)] px-2 py-1 rounded-full">
                         <i className="fas fa-bolt"></i> Rapide & direct
                       </span>
-                      <span className="text-[0.6rem] text-[rgba(0,0,0,0.35)]">Min: $10</span>
+                      <span className="text-[0.6rem] text-[rgba(0,0,0,0.35)]">Min: $5</span>
                     </div>
                   </div>
                   <i className="fas fa-chevron-right text-[rgba(0,0,0,0.35)] mt-3"></i>
@@ -432,14 +432,14 @@ export default function DepositScreen() {
                 <div style={{ animation: 'tIn 0.3s ease-out' }}>
                   <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4 border border-[rgba(0,0,0,0.08)]">
                     <h3 className="text-[1rem] font-bold text-[#1F2937] mb-1">Entrez le montant</h3>
-                    <p className="text-[0.75rem] text-[rgba(0,0,0,0.55)] mb-4">Minimum 10 $. Le montant sera converti en TRX au taux actuel.</p>
+                    <p className="text-[0.75rem] text-[rgba(0,0,0,0.55)] mb-4">Minimum 5 $. Le montant sera converti en TRX au taux actuel.</p>
 
                     <div className="relative mb-3">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[1rem] font-bold text-[rgba(0,0,0,0.35)]">$</span>
                       <input
                         type="number"
                         step="0.01"
-                        min="10"
+                        min="5"
                         value={depositAmt}
                         onChange={(e) => setDepositAmt(e.target.value)}
                         placeholder="0.00"
@@ -447,7 +447,7 @@ export default function DepositScreen() {
                       />
                     </div>
 
-                    {parseFloat(depositAmt) >= 10 && (
+                    {parseFloat(depositAmt) >= 5 && (
                       <div className="bg-[#F3F4F6] rounded-xl p-3 border border-[rgba(0,0,0,0.08)]">
                         <div className="flex justify-between items-center">
                           <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Équivalent TRX</span>
@@ -461,7 +461,7 @@ export default function DepositScreen() {
                     )}
 
                     <div className="grid grid-cols-4 gap-2 mt-3">
-                      {[10, 25, 50, 100].map(amt => (
+                      {[5, 10, 25, 50].map(amt => (
                         <button
                           key={amt}
                           onClick={() => setDepositAmt(String(amt))}
@@ -487,11 +487,11 @@ export default function DepositScreen() {
                   <button
                     onClick={() => {
                       const amt = parseFloat(depositAmt);
-                      if (!amt || amt < 10) { addToast('Minimum 10 $', 'error'); return; }
+                      if (!amt || amt < 5) { addToast('Minimum 5 $', 'error'); return; }
                       if (!adminAddress) { addToast('Adresse de paiement non configurée', 'error'); return; }
                       setTrxStep('send');
                     }}
-                    disabled={!depositAmt || parseFloat(depositAmt) < 10 || !adminAddress}
+                    disabled={!depositAmt || parseFloat(depositAmt) < 5 || !adminAddress}
                     className="w-full py-3.5 rounded-xl bg-[#6366F1] text-white font-bold text-[0.88rem] border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Continuer <i className="fas fa-arrow-right ml-2"></i>

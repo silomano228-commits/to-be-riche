@@ -44,8 +44,8 @@ export async function POST(request: Request) {
 
     const { amountUsd, userAddress } = await request.json();
     const amt = parseFloat(amountUsd);
-    if (isNaN(amt) || amt < 10) {
-      return NextResponse.json({ success: false, error: 'Minimum 10 $' });
+    if (isNaN(amt) || amt < 5) {
+      return NextResponse.json({ success: false, error: 'Minimum 5 $' });
     }
 
     // Prix TRX

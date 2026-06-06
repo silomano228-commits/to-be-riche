@@ -20,8 +20,8 @@ export async function POST(request: Request) {
 
     // Validate amount
     const amt = parseFloat(amountUsd);
-    if (isNaN(amt) || amt < 5) {
-      return NextResponse.json({ success: false, error: 'Minimum de retrait : 5 $' });
+    if (isNaN(amt) || amt < 10) {
+      return NextResponse.json({ success: false, error: 'Minimum de retrait : 10 $' });
     }
 
     // Check balance (can only withdraw from compte principal)

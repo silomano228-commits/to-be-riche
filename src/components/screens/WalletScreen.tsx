@@ -150,7 +150,7 @@ export default function WalletScreen() {
             <i className="fas fa-exclamation-circle text-[#B45309] mt-0.5 shrink-0 text-[0.9rem]"></i>
             <div className="flex-1">
               <h4 className="text-[0.82rem] mb-0.5 font-bold text-[#B45309]">Compte Limité</h4>
-              <p className="text-[0.78rem] leading-relaxed text-[#92400E]">Faites un premier dépôt de 10 $ pour commencer à gagner.</p>
+              <p className="text-[0.78rem] leading-relaxed text-[#92400E]">Faites un premier dépôt de 5 $ pour commencer à gagner.</p>
             </div>
             <button className="py-2.5 px-4 text-[0.76rem] bg-gradient-to-r from-[#00E676] to-[#00C853] text-white rounded-xl border-none cursor-pointer font-semibold font-[Inter] shadow-[0_4px_20px_rgba(0,200,83,0.2)] shrink-0" onClick={() => setPage('invest')}><i className="fas fa-rocket mr-1"></i>Investir</button>
           </div>

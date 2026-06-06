@@ -68,7 +68,7 @@ export const WALLET_GUIDE: GuideSection = {
     'Les transferts VERS les comptes Investissement/Trading/Projet ont des frais de 2%.',
     'Les transferts RETOUR vers le Principal sont sans frais.',
     'Minimum de transfert : 2 $.',
-    'Minimum de dépôt : 10 $ en TRX ou 6 000 FCFA en YAS.',
+    'Minimum de dépôt : 5 $ en TRX ou 6 000 FCFA en YAS.',
   ],
   warnings: [
     'Attendez la confirmation de l\'admin avant de considérer un dépôt comme validé.',
@@ -249,7 +249,7 @@ export const WITHDRAW_GUIDE: GuideSection = {
     },
     {
       title: '2. Solde suffisant',
-      description: 'Les retraits se font depuis le Compte Principal (minimum 5$). Si vos fonds sont sur un autre compte, transférez-les d\'abord vers le Principal (sans frais).',
+      description: 'Les retraits se font depuis le Compte Principal (minimum 10$). Si vos fonds sont sur un autre compte, transférez-les d\'abord vers le Principal (sans frais).',
       icon: 'fa-wallet',
       color: '#00C853',
     },
@@ -283,7 +283,7 @@ export const WITHDRAW_GUIDE: GuideSection = {
     'Vérifiez bien votre adresse TRX ou numéro YAS avant de soumettre.',
     'Utilisez une adresse TRC-20 (commence par T) pour les retraits TRX.',
     'Un seul retrait en attente à la fois.',
-    'Minimum de retrait : 5$.',
+    'Minimum de retrait : 10$.',
   ],
   warnings: [
     'Délai de 48h obligatoire après le premier dépôt.',
@@ -361,7 +361,7 @@ export const DEPOSIT_GUIDE: GuideSection = {
   steps: [
     {
       title: '1. Dépôt par TRX (Crypto)',
-      description: 'Cliquez "Déposer" et choisissez TRX. Achetez des TRX sur un exchange (Binance, KuCoin...), envoyez-les à l\'adresse admin affichée, puis soumettez le montant en USD (minimum 10$).',
+      description: 'Cliquez "Déposer" et choisissez TRX. Achetez des TRX sur un exchange (Binance, KuCoin...), envoyez-les à l\'adresse admin affichée, puis soumettez le montant en USD (minimum 5$).',
       icon: 'fa-coins',
       color: '#FBBF24',
     },
@@ -400,7 +400,7 @@ export const DEPOSIT_GUIDE: GuideSection = {
   warnings: [
     'N\'envoyez QUE des TRX à l\'adresse TRX indiquée.',
     'Les envois sur un mauvais réseau seront perdus.',
-    'Minimum de dépôt : 10$ en TRX ou 6 000 FCFA en YAS.',
+    'Minimum de dépôt : 5$ en TRX ou 6 000 FCFA en YAS.',
     'Un seul dépôt en attente à la fois (TRX ou YAS).',
   ],
 };
