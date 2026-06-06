@@ -74,6 +74,11 @@ export default function AdminScreen() {
   const [transferAmount, setTransferAmount] = useState('');
   const [transferSending, setTransferSending] = useState(false);
 
+  // Delete user state (Users tab)
+  const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
+  const [deleteUserName, setDeleteUserName] = useState('');
+  const [deletingUser, setDeletingUser] = useState(false);
+
   // Chat state
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -401,6 +406,30 @@ export default function AdminScreen() {
     setTransferSending(false);
   };
 
+  const handleDeleteUser = async (userId: string) => {
+    if (deletingUser) return;
+    setDeletingUser(true);
+    try {
+      const res = await authFetch('/api/admin/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        addToast(`Utilisateur ${deleteUserName} supprimé`, 'success');
+        setDeleteUserId(null);
+        setDeleteUserName('');
+        loadData();
+      } else {
+        addToast(data.error || 'Erreur', 'error');
+      }
+    } catch {
+      addToast('Erreur réseau', 'error');
+    }
+    setDeletingUser(false);
+  };
+
   const openConversation = (userId: string) => {
     setSelectedUserId(userId);
     setChatMessages([]);
@@ -531,6 +560,13 @@ export default function AdminScreen() {
                                 title="Envoyer un message"
                               >
                                 <i className="fas fa-comment text-[0.6rem]"></i>
+                              </button>
+                              <button
+                                onClick={() => { setDeleteUserId(u.id); setDeleteUserName(u.name); }}
+                                className="w-7 h-7 rounded-lg bg-[rgba(248,113,113,0.12)] flex items-center justify-center text-[#F87171] cursor-pointer border-none shrink-0 hover:bg-[rgba(248,113,113,0.2)] transition-colors"
+                                title="Supprimer cet utilisateur"
+                              >
+                                <i className="fas fa-trash text-[0.55rem]"></i>
                               </button>
                             </>
                           )}
@@ -1021,6 +1057,66 @@ export default function AdminScreen() {
           )}
         </div>
       </div>
+      {/* Delete User Confirmation Modal */}
+      {deleteUserId && (
+        <div
+          className="fixed inset-0 backdrop-blur-sm z-[7000] flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.5)' }}
+          onClick={() => { setDeleteUserId(null); setDeleteUserName(''); }}
+        >
+          <div
+            className="rounded-2xl p-7 w-[88%] max-w-[320px] text-center"
+            style={{
+              background: '#1A1B1E',
+              border: '1px solid rgba(255,255,255,0.08)',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+              animation: 'modalIn 0.25s ease-out',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-14 h-14 rounded-full bg-[rgba(248,113,113,0.12)] flex items-center justify-center mx-auto mb-4">
+              <i className="fas fa-exclamation-triangle text-[#F87171] text-[1.3rem]"></i>
+            </div>
+            <h3 className="mb-2 text-[1.05rem] font-extrabold text-[#EDEDEF]">Supprimer l&apos;utilisateur</h3>
+            <p className="text-[0.82rem] mb-1 leading-relaxed text-[rgba(255,255,255,0.55)]">
+              Voulez-vous vraiment supprimer
+            </p>
+            <p className="text-[0.95rem] font-bold text-[#F87171] mb-2">{deleteUserName} ?</p>
+            <p className="text-[0.68rem] text-[rgba(255,255,255,0.35)] mb-5">
+              Cette action est irréversible. Toutes les données seront perdues.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setDeleteUserId(null); setDeleteUserName(''); }}
+                className="flex-1 py-3 rounded-xl font-semibold text-[0.82rem] cursor-pointer transition-all active:scale-95"
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1.5px solid rgba(255,255,255,0.1)',
+                  color: 'rgba(255,255,255,0.55)',
+                }}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => handleDeleteUser(deleteUserId)}
+                disabled={deletingUser}
+                className="flex-1 py-3 rounded-xl font-semibold text-[0.82rem] cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                style={{
+                  background: 'rgba(248,113,113,0.2)',
+                  border: '1px solid rgba(248,113,113,0.3)',
+                  color: '#F87171',
+                }}
+              >
+                {deletingUser ? (
+                  <div className="w-4 h-4 border-2 border-[rgba(248,113,113,0.3)] border-t-[#F87171] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
+                ) : (
+                  <><i className="fas fa-trash text-[0.7rem]"></i> Supprimer</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
