@@ -45,7 +45,7 @@ interface Conversation {
 
 export default function AdminScreen() {
   const { user, addToast } = useAppStore();
-  const [tab, setTab] = useState<'users' | 'deposits' | 'yas' | 'withdrawals' | 'messages' | 'config'>('users');
+  const [tab, setTab] = useState<'users' | 'deposits' | 'yas' | 'withdrawals' | 'messages' | 'notif' | 'config'>('users');
   const [adminData, setAdminData] = useState<any>(null);
   const [pendingDeposits, setPendingDeposits] = useState<any[]>([]);
   const [depositStats, setDepositStats] = useState<any>({});
@@ -78,6 +78,14 @@ export default function AdminScreen() {
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [deleteUserName, setDeleteUserName] = useState('');
   const [deletingUser, setDeletingUser] = useState(false);
+
+  // Notification state (Notif tab)
+  const [notifTarget, setNotifTarget] = useState<'all' | 'individual'>('all');
+  const [notifUserId, setNotifUserId] = useState('');
+  const [notifTitle, setNotifTitle] = useState('');
+  const [notifMessage, setNotifMessage] = useState('');
+  const [notifSending, setNotifSending] = useState(false);
+  const [notifSearch, setNotifSearch] = useState('');
 
   // Chat state
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -430,6 +438,47 @@ export default function AdminScreen() {
     setDeletingUser(false);
   };
 
+  const handleSendNotification = async () => {
+    if (!notifTitle.trim() || !notifMessage.trim()) {
+      addToast('Titre et message requis', 'error');
+      return;
+    }
+    if (notifTarget === 'individual' && !notifUserId) {
+      addToast('Sélectionnez un utilisateur', 'error');
+      return;
+    }
+    if (notifSending) return;
+    setNotifSending(true);
+    try {
+      const res = await authFetch('/api/admin/send-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          target: notifTarget,
+          userId: notifTarget === 'individual' ? notifUserId : undefined,
+          title: notifTitle.trim(),
+          message: notifMessage.trim(),
+          type: notifTarget === 'all' ? 'admin_broadcast' : 'admin_individual',
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        addToast(data.message || 'Notification envoyée !', 'success');
+        setNotifTitle('');
+        setNotifMessage('');
+        if (notifTarget === 'all') {
+          setNotifTarget('all');
+          setNotifUserId('');
+        }
+      } else {
+        addToast(data.error || 'Erreur', 'error');
+      }
+    } catch {
+      addToast('Erreur réseau', 'error');
+    }
+    setNotifSending(false);
+  };
+
   const openConversation = (userId: string) => {
     setSelectedUserId(userId);
     setChatMessages([]);
@@ -491,6 +540,7 @@ export default function AdminScreen() {
             { k: 'yas', l: 'Yas 🇹🇬' },
             { k: 'withdrawals', l: 'Retraits' },
             { k: 'messages', l: `Messages${totalUnread > 0 ? ` (${totalUnread})` : ''}` },
+            { k: 'notif', l: 'Notifs' },
             { k: 'config', l: 'Config' },
           ].map(t => (
             <button
@@ -1022,6 +1072,163 @@ export default function AdminScreen() {
                       ))}
                     </>
                   )}
+                </>
+              )}
+
+              {/* Notifications Tab */}
+              {tab === 'notif' && (
+                <>
+                  {/* Header card */}
+                  <div className="bg-[#0E0F11] border border-[rgba(99,102,241,0.15)] rounded-2xl p-3 mb-4 flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center shrink-0">
+                      <i className="fas fa-bell text-[#6366F1] text-[0.9rem]"></i>
+                    </div>
+                    <div>
+                      <div className="text-[#EDEDEF] text-[0.85rem] font-bold">Envoyer des notifications</div>
+                      <div className="text-[rgba(255,255,255,0.45)] text-[0.65rem]">Envoyez des notifications aux utilisateurs</div>
+                    </div>
+                  </div>
+
+                  {/* Target selector */}
+                  <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 mb-3">
+                    <div className="text-[0.72rem] font-bold text-[#EDEDEF] mb-2.5">Destinataire</div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setNotifTarget('all')}
+                        className={`flex-1 py-2.5 rounded-xl text-[0.72rem] font-semibold border-none cursor-pointer transition-all ${
+                          notifTarget === 'all'
+                            ? 'bg-[#6366F1] text-white'
+                            : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)]'
+                        }`}
+                      >
+                        <i className="fas fa-users mr-1 text-[0.6rem]"></i> Tous les utilisateurs
+                      </button>
+                      <button
+                        onClick={() => setNotifTarget('individual')}
+                        className={`flex-1 py-2.5 rounded-xl text-[0.72rem] font-semibold border-none cursor-pointer transition-all ${
+                          notifTarget === 'individual'
+                            ? 'bg-[#6366F1] text-white'
+                            : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)]'
+                        }`}
+                      >
+                        <i className="fas fa-user mr-1 text-[0.6rem]"></i> Un utilisateur
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Individual user selector */}
+                  {notifTarget === 'individual' && (
+                    <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 mb-3">
+                      <div className="text-[0.72rem] font-bold text-[#EDEDEF] mb-2">Sélectionner l&apos;utilisateur</div>
+                      <input
+                        type="text"
+                        value={notifSearch}
+                        onChange={(e) => setNotifSearch(e.target.value)}
+                        placeholder="Rechercher par nom ou email..."
+                        className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.78rem] text-white outline-none focus:border-[#6366F1] mb-2"
+                      />
+                      <div className="max-h-40 overflow-y-auto space-y-1">
+                        {usersList
+                          .filter((u: any) => u.role !== 'admin')
+                          .filter((u: any) => {
+                            if (!notifSearch.trim()) return true;
+                            const search = notifSearch.toLowerCase();
+                            return u.name?.toLowerCase().includes(search) || u.email?.toLowerCase().includes(search);
+                          })
+                          .slice(0, 20)
+                          .map((u: any) => (
+                            <button
+                              key={u.id}
+                              onClick={() => { setNotifUserId(u.id); setNotifSearch(''); }}
+                              className={`w-full text-left py-2 px-3 rounded-lg text-[0.72rem] border-none cursor-pointer transition-all ${
+                                notifUserId === u.id
+                                  ? 'bg-[#6366F1] text-white'
+                                  : 'bg-[rgba(255,255,255,0.04)] text-[rgba(255,255,255,0.65)] hover:bg-[rgba(255,255,255,0.08)]'
+                              }`}
+                            >
+                              <span className="font-semibold">{esc(u.name)}</span>
+                              <span className="text-[rgba(255,255,255,0.35)] ml-2">{esc(u.email)}</span>
+                            </button>
+                          ))}
+                      </div>
+                      {notifUserId && (
+                        <div className="mt-2 flex items-center gap-2 bg-[rgba(99,102,241,0.08)] rounded-lg px-3 py-2">
+                          <i className="fas fa-check-circle text-[#6366F1] text-[0.7rem]"></i>
+                          <span className="text-[0.72rem] text-[#818CF8] font-semibold">
+                            {esc(usersList.find((u: any) => u.id === notifUserId)?.name || 'Utilisateur sélectionné')}
+                          </span>
+                          <button
+                            onClick={() => setNotifUserId('')}
+                            className="ml-auto text-[rgba(255,255,255,0.35)] hover:text-[#F87171] cursor-pointer bg-transparent border-none"
+                          >
+                            <i className="fas fa-times text-[0.6rem]"></i>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Notification form */}
+                  <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 mb-3">
+                    <div className="text-[0.72rem] font-bold text-[#EDEDEF] mb-2.5">Contenu de la notification</div>
+                    <div className="mb-2.5">
+                      <label className="block mb-1 text-[0.65rem] font-semibold text-[rgba(255,255,255,0.45)]">Titre</label>
+                      <input
+                        type="text"
+                        value={notifTitle}
+                        onChange={(e) => setNotifTitle(e.target.value)}
+                        placeholder="Ex: Mise à jour importante"
+                        maxLength={100}
+                        className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.82rem] text-white outline-none focus:border-[#6366F1]"
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label className="block mb-1 text-[0.65rem] font-semibold text-[rgba(255,255,255,0.45)]">Message</label>
+                      <textarea
+                        value={notifMessage}
+                        onChange={(e) => setNotifMessage(e.target.value)}
+                        placeholder="Tapez votre message ici..."
+                        maxLength={500}
+                        rows={3}
+                        className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.82rem] text-white outline-none focus:border-[#6366F1] resize-none"
+                      />
+                      <div className="text-right text-[0.55rem] text-[rgba(255,255,255,0.2)] mt-0.5">{notifMessage.length}/500</div>
+                    </div>
+
+                    {/* Preview */}
+                    {(notifTitle || notifMessage) && (
+                      <div className="mb-3 bg-[#161719] rounded-xl p-3 border border-[rgba(255,255,255,0.04)]">
+                        <div className="text-[0.55rem] text-[rgba(255,255,255,0.3)] mb-1.5 uppercase font-semibold">Aperçu</div>
+                        <div className="flex items-start gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center shrink-0 mt-0.5">
+                            <i className="fas fa-bell text-[#6366F1] text-[0.65rem]"></i>
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-[0.75rem] font-bold text-[#EDEDEF]">{notifTitle || 'Titre...'}</div>
+                            <div className="text-[0.68rem] text-[rgba(255,255,255,0.5)] mt-0.5 leading-relaxed">{notifMessage || 'Message...'}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={handleSendNotification}
+                      disabled={notifSending || !notifTitle.trim() || !notifMessage.trim() || (notifTarget === 'individual' && !notifUserId)}
+                      className="w-full py-3 rounded-xl bg-[#6366F1] text-[#050506] text-[0.85rem] font-bold border-none cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 transition-all active:scale-[0.98]"
+                    >
+                      {notifSending ? (
+                        <div className="w-4 h-4 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
+                      ) : (
+                        <i className="fas fa-paper-plane text-[0.7rem]"></i>
+                      )}
+                      {notifSending
+                        ? 'Envoi en cours...'
+                        : notifTarget === 'all'
+                          ? 'Envoyer à tous les utilisateurs'
+                          : 'Envoyer à l\'utilisateur'
+                      }
+                    </button>
+                  </div>
                 </>
               )}
 
