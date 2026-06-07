@@ -19,42 +19,71 @@ async function getUser(request: Request) {
 }
 
 const INVESTMENT_LEVELS: Record<number, {
-  minAmount: number; maxAmount: number; totalCycles: number; rate: number; label: string;
+  minAmount: number; maxAmount: number; totalCycles: number; rate: number;
+  label: string; requiredReferrals: number; unlockFee: number;
 }> = {
-  1: { minAmount: 2, maxAmount: 5, totalCycles: 35, rate: 5, label: 'Level 1 — Starter' },
-  2: { minAmount: 5.5, maxAmount: 10, totalCycles: 25, rate: 7.5, label: 'Level 2 — Growth' },
-  3: { minAmount: 10.5, maxAmount: 20, totalCycles: 20, rate: 9.5, label: 'Level 3 — Premium' },
-  4: { minAmount: 20.5, maxAmount: 50, totalCycles: 20, rate: 12.5, label: 'Level 4 — Elite' },
+  1: { minAmount: 5, maxAmount: 10, totalCycles: 15, rate: 10, label: 'Niveau 1 — Micro', requiredReferrals: 0, unlockFee: 0 },
+  2: { minAmount: 10.5, maxAmount: 25, totalCycles: 15, rate: 12, label: 'Niveau 2 — Standard', requiredReferrals: 2, unlockFee: 5 },
+  3: { minAmount: 25.5, maxAmount: 60, totalCycles: 15, rate: 13.33, label: 'Niveau 3 — Premium', requiredReferrals: 5, unlockFee: 10 },
+  4: { minAmount: 60.5, maxAmount: 150, totalCycles: 15, rate: 15.33, label: 'Niveau 4 — Elite', requiredReferrals: 10, unlockFee: 12 },
+  5: { minAmount: 150.5, maxAmount: 500, totalCycles: 15, rate: 20, label: 'Niveau 5 — VIP', requiredReferrals: 20, unlockFee: 15 },
 };
 
 export async function POST(request: Request) {
   try {
     const user = await getUser(request);
     if (!user) {
-      return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
+      return NextResponse.json({ success: false, error: 'Non authentifié' }, { status: 401 });
     }
 
     const body = await request.json();
     const { level, amount: requestedAmount } = body;
 
-    if (!level || ![1, 2, 3, 4].includes(level)) {
-      return NextResponse.json({ success: false, error: 'Invalid level. Must be 1-4.' }, { status: 400 });
+    if (!level || ![1, 2, 3, 4, 5].includes(level)) {
+      return NextResponse.json({ success: false, error: 'Niveau invalide. Doit être entre 1 et 5.' }, { status: 400 });
     }
 
     const config = INVESTMENT_LEVELS[level];
 
     if (requestedAmount == null || typeof requestedAmount !== 'number' || isNaN(requestedAmount)) {
-      return NextResponse.json({ success: false, error: 'Invalid amount. Must be a number.' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Montant invalide.' }, { status: 400 });
     }
 
     const amount = Math.round(requestedAmount * 100) / 100;
 
     if (amount < config.minAmount || amount > config.maxAmount) {
-      return NextResponse.json({ success: false, error: `Amount must be between $${config.minAmount} and $${config.maxAmount} for ${config.label}` }, { status: 400 });
+      return NextResponse.json({ success: false, error: `Le montant doit être entre $${config.minAmount} et $${config.maxAmount} pour ${config.label}` }, { status: 400 });
+    }
+
+    // Check level unlock — user.unlockedLevel tracks the highest unlocked level
+    if (level > user.unlockedLevel) {
+      return NextResponse.json({
+        success: false,
+        error: `Niveau ${level} verrouillé. Débloquez-le d'abord.`,
+        locked: true,
+        level,
+        requiredReferrals: config.requiredReferrals,
+        currentReferrals: user.referralCount,
+        unlockFee: config.unlockFee,
+      }, { status: 403 });
+    }
+
+    // Sequential requirement: must have invested in previous level (for level > 1)
+    if (level > 1) {
+      const prevLevelInvestment = await db.investment.findFirst({
+        where: { userId: user.id, level: level - 1 },
+      });
+      if (!prevLevelInvestment) {
+        return NextResponse.json({
+          success: false,
+          error: `Vous devez d'abord investir au Niveau ${level - 1} avant d'accéder au Niveau ${level}.`,
+          needPreviousLevel: true,
+        }, { status: 403 });
+      }
     }
 
     if (user.investBalance < amount) {
-      return NextResponse.json({ success: false, error: `Insufficient invest balance. Need $${amount.toFixed(2)}, have $${user.investBalance.toFixed(2)}` }, { status: 400 });
+      return NextResponse.json({ success: false, error: `Solde insuffisant. Besoin de $${amount.toFixed(2)}, vous avez $${user.investBalance.toFixed(2)}` }, { status: 400 });
     }
 
     const now = new Date();
@@ -87,7 +116,7 @@ export async function POST(request: Request) {
       data: {
         type: 'invest_create',
         amount: -amount,
-        detail: `Investment created: ${config.label} — $${amount.toFixed(2)} at ${config.rate}%/cycle for ${config.totalCycles} cycles`,
+        detail: `Investissement créé: ${config.label} — $${amount.toFixed(2)} à ${config.rate}%/jour pendant ${config.totalCycles} jours`,
         userId: user.id,
       },
     });
@@ -95,7 +124,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       investment,
-      message: `Investment created: $${amount.toFixed(2)} at ${config.rate}%/cycle for ${config.totalCycles} cycles`,
+      message: `Investissement créé: $${amount.toFixed(2)} à ${config.rate}%/jour pendant ${config.totalCycles} jours`,
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });

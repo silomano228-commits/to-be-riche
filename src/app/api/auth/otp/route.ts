@@ -119,6 +119,7 @@ export async function POST(request: Request) {
           completedWithdrawals,
           requiredReferrals: getRequiredReferrals(completedWithdrawals),
           needsReferral: needsMoreReferrals(completedWithdrawals, user.referralCount),
+          unlockedLevel: user.unlockedLevel,
         },
       });
 

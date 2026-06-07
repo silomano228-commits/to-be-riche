@@ -27,6 +27,7 @@ model User {
   referralCount   Int           @default(0)
   totalProfit     Float         @default(0)
   totalLoss       Float         @default(0)
+  unlockedLevel   Int           @default(1)
   transactions    Transaction[]
   investments     Investment[]
   trades          Trade[]

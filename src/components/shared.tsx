@@ -6,10 +6,11 @@ import { useAppStore, formatMoney, esc, authFetch } from '@/lib/store';
 export const LOGO_URL = 'https://z-cdn-media.chatglm.cn/files/1153c12e-46c2-4ff4-9bfb-9ee1ea9ad677.png?auth_key=1875725907-dba9b296a2b347a582e281f8c13d5dd1-0-abc6e2dfe8db025886d8c5cccb41f197';
 
 export const INVEST_LEVELS = [
-  { level: 1, name: 'Micro', color: '#22C55E', bg: 'bg-[rgba(34,197,94,0.12)]', border: 'border-[rgba(34,197,94,0.15)]', min: 2, max: 5, cycles: 35, rate: 5, icon: 'fa-seedling' },
-  { level: 2, name: 'Standard', color: '#3B82F6', bg: 'bg-[rgba(59,130,246,0.12)]', border: 'border-[rgba(59,130,246,0.15)]', min: 5.5, max: 10, cycles: 25, rate: 7.5, icon: 'fa-chart-line' },
-  { level: 3, name: 'High Yield', color: '#F59E0B', bg: 'bg-[rgba(245,158,11,0.12)]', border: 'border-[rgba(245,158,11,0.15)]', min: 10.5, max: 20, cycles: 20, rate: 9.5, icon: 'fa-fire' },
-  { level: 4, name: 'Elite', color: '#8B5CF6', bg: 'bg-[rgba(139,92,246,0.12)]', border: 'border-[rgba(139,92,246,0.15)]', min: 20.5, max: 50, cycles: 20, rate: 12.5, icon: 'fa-crown' },
+  { level: 1, name: 'Micro', color: '#22C55E', bg: 'bg-[rgba(34,197,94,0.12)]', border: 'border-[rgba(34,197,94,0.15)]', min: 5, max: 10, cycles: 15, rate: 10, icon: 'fa-seedling', requiredReferrals: 0, unlockFee: 0 },
+  { level: 2, name: 'Standard', color: '#3B82F6', bg: 'bg-[rgba(59,130,246,0.12)]', border: 'border-[rgba(59,130,246,0.15)]', min: 10.5, max: 25, cycles: 15, rate: 12, icon: 'fa-chart-line', requiredReferrals: 2, unlockFee: 5 },
+  { level: 3, name: 'Premium', color: '#8B5CF6', bg: 'bg-[rgba(139,92,246,0.12)]', border: 'border-[rgba(139,92,246,0.15)]', min: 25.5, max: 60, cycles: 15, rate: 13.33, icon: 'fa-crown', requiredReferrals: 5, unlockFee: 10 },
+  { level: 4, name: 'Elite', color: '#F59E0B', bg: 'bg-[rgba(245,158,11,0.12)]', border: 'border-[rgba(245,158,11,0.15)]', min: 60.5, max: 150, cycles: 15, rate: 15.33, icon: 'fa-gem', requiredReferrals: 10, unlockFee: 12 },
+  { level: 5, name: 'VIP', color: '#EF4444', bg: 'bg-[rgba(239,68,68,0.12)]', border: 'border-[rgba(239,68,68,0.15)]', min: 150.5, max: 500, cycles: 15, rate: 20, icon: 'fa-rocket', requiredReferrals: 20, unlockFee: 15 },
 ];
 
 export const ENTERPRISE_TYPES = [
@@ -20,15 +21,15 @@ export const ENTERPRISE_TYPES = [
 ];
 
 export const AI_TIPS = [
-  "Le marché tech est en hausse. Investissez maintenant.",
+  "Le niveau Micro est libre d'accès. Commencez dès maintenant !",
+  "Débloquez le niveau Standard avec 2 filleuls ou un petit paiement.",
+  "Le niveau VIP offre 20% par jour pendant 15 jours — 300% de rendement !",
   "Volatilité détectée sur le marché. Prudence recommandée.",
-  "L'Elite Investment offre 12.5%/cycle. Opportunité rare.",
-  "Tendance haussière sur 3 jours. Le momentum est fort.",
-  "Conseil IA: Diversifiez vos investissements entre les niveaux.",
+  "Chaque niveau supérieur nécessite d'avoir investi au niveau précédent.",
   "Nouveau projet entreprise disponible. Rendement élevé possible.",
   "Le trading rapide peut être lucratif, mais restez prudent.",
   "Marché en correction. C'est le moment d'acheter bas.",
-  "Les investisseurs élites gagnent 2x plus. Passez au niveau supérieur.",
+  "Parrainez des amis pour débloquer les niveaux supérieurs gratuitement !",
   "Réclamez vos gains quotidiens pour maximiser vos profits.",
 ];
 

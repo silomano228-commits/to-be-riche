@@ -94,6 +94,7 @@ export async function GET(request: Request) {
         completedWithdrawals,
         requiredReferrals,
         needsReferral,
+        unlockedLevel: user.unlockedLevel,
       },
     });
   } catch {

@@ -34,6 +34,7 @@ export interface AppUser {
   activeTradesCount?: number;
   activeEnterprisesCount?: number;
   claimableInvestments?: number;
+  unlockedLevel?: number;
 }
 
 export interface Toast {
