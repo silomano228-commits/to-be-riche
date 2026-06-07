@@ -134,7 +134,7 @@ export default function WalletScreen() {
           {[
             { icon: 'fa-chart-line', color: 'bg-[#DCFCE7] text-[#166534]', val: formatMoney(totalProfit), label: 'Gains' },
             { icon: 'fa-hand-holding-usd', color: 'bg-[#DBEAFE] text-[#1E40AF]', val: formatMoney(investBalance), label: 'Investi' },
-            { icon: 'fa-percentage', color: 'bg-[#FEF3C7] text-[#92400E]', val: '7-15%', label: 'Rendement' },
+            { icon: 'fa-percentage', color: 'bg-[#FEF3C7] text-[#92400E]', val: '3-13%', label: 'Rendement' },
           ].map((s, i) => (
             <div key={i} className="bg-white rounded-xl p-3.5 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)] border border-[rgba(0,0,0,0.03)]">
               <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center mx-auto mb-1.5 text-[0.85rem] ${s.color}`}><i className={`fas ${s.icon}`}></i></div>

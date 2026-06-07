@@ -233,7 +233,8 @@ export default function InvestHubScreen() {
             const canInvest = isUnlocked && hasPrevLevel;
             const unlockInfo = getUnlockInfo(lvl.level);
             const dailyGain = lvl.min * lvl.rate / 100;
-            const totalReturn = lvl.rate * lvl.cycles;
+            const totalReturn = lvl.totalReturn || (lvl.rate * lvl.cycles);
+            const profitPct = lvl.profit || (lvl.rate * lvl.cycles);
 
             return (
               <div
@@ -287,6 +288,10 @@ export default function InvestHubScreen() {
                     <span className="flex items-center gap-1">
                       <i className="fas fa-coins text-[0.5rem]"></i>
                       Rendement: {totalReturn}%
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <i className="fas fa-chart-line text-[0.5rem]"></i>
+                      Profit: {profitPct}%
                     </span>
                     <span className="flex items-center gap-1">
                       <i className="fas fa-clock text-[0.5rem]"></i>
@@ -417,7 +422,8 @@ export default function InvestHubScreen() {
       {showCreate && (() => {
         const lvl = INVEST_LEVELS[showCreate - 1];
         if (!lvl) return null;
-        const totalReturn = lvl.rate * lvl.cycles;
+        const totalReturn = lvl.totalReturn || (lvl.rate * lvl.cycles);
+        const profitPct = lvl.profit || (lvl.rate * lvl.cycles);
         return (
           <div className="fixed inset-0 backdrop-blur-sm z-[6000] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)' }} onClick={() => setShowCreate(null)}>
             <div className="rounded-2xl p-6 w-[88%] max-w-[340px]" style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 8px 24px rgba(0,0,0,0.1)', animation: 'modalIn 0.25s ease-out' }} onClick={(e) => e.stopPropagation()}>
@@ -434,10 +440,10 @@ export default function InvestHubScreen() {
               {/* Return info */}
               <div className="rounded-lg p-3 mb-3" style={{ background: hexToRgba(lvl.color, 0.08), border: `1px solid ${hexToRgba(lvl.color, 0.1)}` }}>
                 <div className="text-[0.68rem] mb-1" style={{ color: '#22C55E' }}>
-                  <i className="fas fa-calculator mr-1"></i>Rendement total: <span className="font-bold">{totalReturn}%</span>
+                  <i className="fas fa-calculator mr-1"></i>Rendement total: <span className="font-bold">{totalReturn}%</span> · Profit: <span className="font-bold">{profitPct}%</span>
                 </div>
                 <div className="text-[0.62rem]" style={{ color: 'rgba(0,0,0,0.5)' }}>
-                  Gain/jour: {lvl.rate}% du dépôt · Durée: {lvl.cycles} jours
+                  Gain/jour: {lvl.rate}% du dépôt · Durée: {lvl.cycles} jours · Capital retourné à la fin
                 </div>
               </div>
 
@@ -448,7 +454,10 @@ export default function InvestHubScreen() {
                     Gain quotidien: +{formatMoney(parseFloat(createAmt) * lvl.rate / 100)}
                   </div>
                   <div className="text-[0.62rem]" style={{ color: 'rgba(0,0,0,0.5)' }}>
-                    Total après {lvl.cycles} jours: +{formatMoney(parseFloat(createAmt) * lvl.rate / 100 * lvl.cycles)} (rendement {totalReturn}%)
+                    Profit total après {lvl.cycles} jours: +{formatMoney(parseFloat(createAmt) * lvl.rate / 100 * lvl.cycles)} · Rendement {totalReturn}%
+                  </div>
+                  <div className="text-[0.6rem]" style={{ color: 'rgba(0,0,0,0.4)' }}>
+                    Capital de {formatMoney(parseFloat(createAmt))} retourné à la fin
                   </div>
                 </div>
               )}
@@ -520,7 +529,7 @@ export default function InvestHubScreen() {
               <div className="rounded-lg p-2.5 mb-4" style={{ background: hexToRgba(lvl.color, 0.06), border: `1px solid ${hexToRgba(lvl.color, 0.1)}` }}>
                 <div className="text-[0.62rem]" style={{ color: 'rgba(0,0,0,0.5)' }}>
                   <i className="fas fa-info-circle mr-1"></i>
-                  Niveau {lvl.level}: ${lvl.min}-${lvl.max} · {lvl.rate}%/jour · Rendement {lvl.rate * lvl.cycles}% sur {lvl.cycles} jours
+                  Niveau {lvl.level}: ${lvl.min}-${lvl.max} · {lvl.rate}%/jour · Rendement {lvl.totalReturn || lvl.rate * lvl.cycles}% · Profit {lvl.profit || lvl.rate * lvl.cycles}% sur {lvl.cycles} jours
                 </div>
               </div>
 

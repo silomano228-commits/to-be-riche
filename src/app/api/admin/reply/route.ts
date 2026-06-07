@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { notifyUser } from '@/lib/notify';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -29,6 +30,15 @@ export async function POST(request: Request) {
 
     const message = await db.chatMessage.create({
       data: { content: content.trim(), userId: targetUserId, isAdmin: true },
+    });
+
+    // Send a user notification so they know they have a new message
+    await notifyUser({
+      userId: targetUserId,
+      type: 'new_message',
+      title: 'Nouveau message',
+      message: `L'admin vous a envoyé un message`,
+      link: 'chat',
     });
 
     // Return the created message so the frontend can use it directly

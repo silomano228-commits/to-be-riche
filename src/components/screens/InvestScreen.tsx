@@ -87,7 +87,7 @@ export default function InvestScreen() {
             <i className="fas fa-info-circle text-[#1E40AF] mt-0.5 shrink-0 text-[0.9rem]"></i>
             <div>
               <h4 className="text-[0.82rem] mb-0.5 font-bold text-[#1E40AF]">Dépôt via Trust Wallet (TRX)</h4>
-              <p className="text-[0.72rem] leading-relaxed text-[#1E3A5F]">Envoyez des TRX depuis votre portefeuille Trust Wallet. Le dépôt est vérifié automatiquement. Vous pourrez réclamer vos <strong>gains journaliers (7-15%)</strong> chaque jour.</p>
+              <p className="text-[0.72rem] leading-relaxed text-[#1E3A5F]">Envoyez des TRX depuis votre portefeuille Trust Wallet. Le dépôt est vérifié automatiquement. Vous pourrez réclamer vos <strong>gains journaliers (3.33-13.33%)</strong> chaque jour.</p>
             </div>
           </div>
 
@@ -199,7 +199,7 @@ export default function InvestScreen() {
             </div>
             <div className="flex justify-between px-4 py-3">
               <span className="text-[0.75rem] text-[#64748B]">Rendement</span>
-              <span className="text-[0.8rem] font-bold text-[#00C853]">7-15% / jour</span>
+              <span className="text-[0.8rem] font-bold text-[#00C853]">3.33-13.33% / jour</span>
             </div>
             <div className="flex justify-between px-4 py-3">
               <span className="text-[0.75rem] text-[#64748B]">Réseau</span>
@@ -242,7 +242,7 @@ export default function InvestScreen() {
           <i className="fas fa-check text-[#00C853] text-[2rem]"></i>
         </div>
         <h3 className="text-[1.1rem] font-bold text-[#1A2332] mb-2">Paiement confirmé !</h3>
-        <p className="text-[0.82rem] text-[#64748B] mb-6 text-center">Votre dépôt a été vérifié et crédité sur votre solde. Réclamez vos gains journaliers (7-15%) chaque jour !</p>
+        <p className="text-[0.82rem] text-[#64748B] mb-6 text-center">Votre dépôt a été vérifié et crédité sur votre solde. Réclamez vos gains journaliers (3.33-13.33%) chaque jour !</p>
         <button onClick={() => setPage('wallet')} className="w-full max-w-[260px] py-3.5 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(0,200,83,0.2)] font-[Inter] transition-transform active:scale-[0.97] flex items-center justify-center gap-2">
           <i className="fas fa-coins"></i> Réclamer mes gains
         </button>

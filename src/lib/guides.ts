@@ -35,7 +35,7 @@ export const WALLET_GUIDE: GuideSection = {
     },
     {
       title: '2. Compte d\'Investissement',
-      description: 'Transférez des fonds ici pour investir dans les niveaux Micro, Standard, Premium, Elite ou VIP. Chaque niveau offre un rendement quotidien de 10% à 20% pendant 15 jours.',
+      description: 'Transférez des fonds ici pour investir dans les niveaux Micro, Standard, Premium, Elite ou VIP. Chaque niveau offre un rendement quotidien de 3.33% à 13.33% pendant 15 jours (rendement total 150%-300%).',
       icon: 'fa-chart-line',
       color: '#22C55E',
     },
@@ -86,7 +86,7 @@ export const INVEST_GUIDE: GuideSection = {
   steps: [
     {
       title: '1. Choisir un niveau',
-      description: '5 niveaux séquentiels : Micro (5-10$, 10%/jour, 15j, libre), Standard (10.5-25$, 12%/jour, 15j, 2 filleuls), Premium (25.5-60$, 13.33%/jour, 15j, 5 filleuls), Elite (60.5-150$, 15.33%/jour, 15j, 10 filleuls) et VIP (150.5-500$, 20%/jour, 15j, 20 filleuls). Vous devez investir au niveau précédent avant d\'accéder au suivant.',
+      description: '5 niveaux séquentiels : Micro (5-10$, 3.33%/jour, 150% rendement, libre), Standard (10.5-25$, 4.67%/jour, 170% rendement, 2 filleuls), Premium (25.5-60$, 6.67%/jour, 200% rendement, 5 filleuls), Elite (60.5-150$, 8.67%/jour, 230% rendement, 10 filleuls) et VIP (150.5-500$, 13.33%/jour, 300% rendement, 20 filleuls). Vous devez investir au niveau précédent avant d\'accéder au suivant.',
       icon: 'fa-layer-group',
       color: '#22C55E',
     },

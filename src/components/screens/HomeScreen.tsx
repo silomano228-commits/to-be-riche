@@ -21,7 +21,7 @@ export default function HomeScreen() {
           <div className="relative z-[1] text-center">
             <LogoImg className="w-[64px] h-[64px] mx-auto mb-3" style={{ filter: 'drop-shadow(0 4px 20px rgba(0,200,83,0.25))' }} />
             <h2 className="text-[1.5rem] font-black tracking-[-0.5px] mb-1 bg-gradient-to-r from-[#FCD34D] via-[#FBBF24] to-[#F59E0B] bg-[length:200%_auto] text-transparent bg-clip-text" style={{ animation: 'gs 3s linear infinite' }}>Investissez. Prospérez.</h2>
-            <p className="text-[rgba(255,255,255,0.5)] text-[0.78rem] leading-relaxed mt-2 mb-4">Be Rich vous permet d&apos;investir via TRX et de gagner entre 7% et 15% de rendement journalier sur vos dépôts. Réclamez vos gains chaque jour et retirez quand vous voulez.</p>
+            <p className="text-[rgba(255,255,255,0.5)] text-[0.78rem] leading-relaxed mt-2 mb-4">Be Rich vous permet d&apos;investir via TRX et de gagner entre 3% et 13% de rendement journalier sur vos dépôts. Réclamez vos gains chaque jour et retirez quand vous voulez.</p>
             <button onClick={() => user.hasInvested ? setPage('wallet') : setPage('invest')} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(0,200,83,0.25)] font-[Inter] transition-transform active:scale-[0.97] flex items-center justify-center gap-2">
               <i className="fas fa-rocket"></i> Commencer
             </button>
@@ -32,7 +32,7 @@ export default function HomeScreen() {
         <h3 className="text-[0.9rem] font-bold text-[#1A2332] mb-3">Pourquoi Be Rich ?</h3>
         <div className="grid grid-cols-2 gap-2.5 mb-5">
           {[
-            { icon: 'fa-coins', iconColor: '#16A34A', title: 'Investissement simplifié', desc: 'Déposez via TRX et gagnez 7-15% par jour', color: 'bg-[#DCFCE7] border-[#BBF7D0]' },
+            { icon: 'fa-coins', iconColor: '#16A34A', title: 'Investissement simplifié', desc: 'Déposez via TRX et gagnez 3-13% par jour', color: 'bg-[#DCFCE7] border-[#BBF7D0]' },
             { icon: 'fa-chart-line', iconColor: '#2563EB', title: 'Suivi en temps réel', desc: 'Suivez vos gains et votre portefeuille', color: 'bg-[#DBEAFE] border-[#BFDBFE]' },
             { icon: 'fa-shield-alt', iconColor: '#D97706', title: 'Sécurisé', desc: 'Vos fonds sont protégés', color: 'bg-[#FEF3C7] border-[#FDE68A]' },
             { icon: 'fa-bolt', iconColor: '#7C3AED', title: 'Retrait facile', desc: 'Retirez vos gains quand vous voulez', color: 'bg-[#F3E8FF] border-[#E9D5FF]' },
@@ -51,7 +51,7 @@ export default function HomeScreen() {
           {[
             { step: 1, title: 'Créez votre compte', desc: 'Inscrivez-vous en quelques secondes', icon: 'fa-user-plus', color: '#00C853' },
             { step: 2, title: 'Déposez via TRX', desc: 'Envoyez des TRX depuis Trust Wallet', icon: 'fa-wallet', color: '#FBBF24' },
-            { step: 3, title: 'Gagnez chaque jour', desc: '7-15% de rendement journalier à réclamer', icon: 'fa-coins', color: '#00C853' },
+            { step: 3, title: 'Gagnez chaque jour', desc: '3-13% de rendement journalier à réclamer', icon: 'fa-coins', color: '#00C853' },
           ].map((s, i) => (
             <div key={i} className={`flex items-start gap-3 ${i < 2 ? 'mb-4' : ''}`}>
               <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-[0.72rem] shrink-0 shadow-sm" style={{ background: `linear-gradient(135deg, ${s.color}, ${s.color}dd)` }}>{s.step}</div>

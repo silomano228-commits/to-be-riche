@@ -69,12 +69,27 @@ export async function GET(request: Request) {
       }
     }
 
+    // Get investment data per user (total gains + daily gains)
+    const allInvestments = await db.investment.findMany({
+      select: { userId: true, amount: true, rate: true, earned: true, status: true },
+    });
+    const investMap = new Map<string, { totalEarned: number; dailyGain: number }>();
+    for (const inv of allInvestments) {
+      const existing = investMap.get(inv.userId) || { totalEarned: 0, dailyGain: 0 };
+      existing.totalEarned += inv.earned;
+      if (inv.status === 'active') {
+        existing.dailyGain += Math.round(inv.amount * inv.rate / 100 * 100) / 100;
+      }
+      investMap.set(inv.userId, existing);
+    }
+
     const safeUsers = users.map(({ password: _, firstDepositAt: fda, lastClaimAt: lca, ...u }) => ({
       ...u,
       investBalance: u.investBalance,
       totalProfit: u.totalProfit,
       totalLoss: u.totalLoss,
       referredUsers: referralMap.get(u.id) || [],
+      investGains: investMap.get(u.id) || { totalEarned: 0, dailyGain: 0 },
     }));
 
     return NextResponse.json({

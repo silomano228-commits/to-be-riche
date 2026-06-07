@@ -21,12 +21,13 @@ async function getUser(request: Request) {
 const INVESTMENT_LEVELS: Record<number, {
   minAmount: number; maxAmount: number; totalCycles: number; rate: number;
   label: string; requiredReferrals: number; unlockFee: number;
+  totalReturn: number; profit: number;
 }> = {
-  1: { minAmount: 5, maxAmount: 10, totalCycles: 15, rate: 10, label: 'Niveau 1 — Micro', requiredReferrals: 0, unlockFee: 0 },
-  2: { minAmount: 10.5, maxAmount: 25, totalCycles: 15, rate: 12, label: 'Niveau 2 — Standard', requiredReferrals: 2, unlockFee: 5 },
-  3: { minAmount: 25.5, maxAmount: 60, totalCycles: 15, rate: 13.33, label: 'Niveau 3 — Premium', requiredReferrals: 5, unlockFee: 10 },
-  4: { minAmount: 60.5, maxAmount: 150, totalCycles: 15, rate: 15.33, label: 'Niveau 4 — Elite', requiredReferrals: 10, unlockFee: 12 },
-  5: { minAmount: 150.5, maxAmount: 500, totalCycles: 15, rate: 20, label: 'Niveau 5 — VIP', requiredReferrals: 20, unlockFee: 15 },
+  1: { minAmount: 5, maxAmount: 10, totalCycles: 15, rate: 3.33, label: 'Niveau 1 — Micro', requiredReferrals: 0, unlockFee: 0, totalReturn: 150, profit: 50 },
+  2: { minAmount: 10.5, maxAmount: 25, totalCycles: 15, rate: 4.67, label: 'Niveau 2 — Standard', requiredReferrals: 2, unlockFee: 5, totalReturn: 170, profit: 70 },
+  3: { minAmount: 25.5, maxAmount: 60, totalCycles: 15, rate: 6.67, label: 'Niveau 3 — Premium', requiredReferrals: 5, unlockFee: 10, totalReturn: 200, profit: 100 },
+  4: { minAmount: 60.5, maxAmount: 150, totalCycles: 15, rate: 8.67, label: 'Niveau 4 — Elite', requiredReferrals: 10, unlockFee: 12, totalReturn: 230, profit: 130 },
+  5: { minAmount: 150.5, maxAmount: 500, totalCycles: 15, rate: 13.33, label: 'Niveau 5 — VIP', requiredReferrals: 20, unlockFee: 15, totalReturn: 300, profit: 200 },
 };
 
 export async function POST(request: Request) {

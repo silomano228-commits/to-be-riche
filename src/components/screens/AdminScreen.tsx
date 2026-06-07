@@ -594,6 +594,13 @@ export default function AdminScreen() {
                           <div className="text-right">
                             <div className="text-[0.75rem] font-bold text-[#EDEDEF]">{formatMoney(u.balance)}</div>
                             <div className="text-[0.55rem] text-[#4ADE80]">Invest: {formatMoney(u.investBalance || 0)} | Trade: {formatMoney(u.tradeBalance || 0)} | Projet: {formatMoney(u.projectBalance || 0)}</div>
+                            <div className="text-[0.5rem] text-[#818CF8] mt-0.5">
+                              <i className="fas fa-users text-[0.4rem] mr-0.5"></i>Parrainages: {u.referralCount || 0}
+                              <span className="mx-1">·</span>
+                              <i className="fas fa-chart-line text-[0.4rem] mr-0.5"></i>Gain total: {formatMoney(u.investGains?.totalEarned || 0)}
+                              <span className="mx-1">·</span>
+                              <i className="fas fa-clock text-[0.4rem] mr-0.5"></i>/jour: {formatMoney(u.investGains?.dailyGain || 0)}
+                            </div>
                           </div>
                           {u.role !== 'admin' && (
                             <>

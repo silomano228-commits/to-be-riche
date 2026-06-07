@@ -194,6 +194,60 @@ export default function AnalyticsScreen() {
           </>
         )}
 
+        {/* Transaction History with Dates */}
+        {user.transactions && user.transactions.length > 0 && (
+          <>
+            <SectionHeader icon="fa-list" title="Historique des transactions" />
+            <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl overflow-hidden mb-5">
+              {user.transactions.slice(0, 15).map((tx: Transaction, i: number) => {
+                const isPositive = tx.amount >= 0;
+                const txDate = new Date(tx.createdAt);
+                const dateStr = txDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+                const timeStr = txDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                const typeLabels: Record<string, string> = {
+                  'invest_create': 'Investissement',
+                  'invest_claim': 'Gain invest.',
+                  'invest_claim_final': 'Gain final',
+                  'deposit_approved': 'Dépôt',
+                  'deposit_yas_approved': 'Dépôt Yas',
+                  'withdrawal': 'Retrait',
+                  'withdrawal_approved': 'Retrait approuvé',
+                  'level_unlock': 'Déblocage niveau',
+                  'level_unlock_fee': 'Frais de déblocage',
+                  'trade_create': 'Trade',
+                  'trade_result': 'Résultat trade',
+                  'enterprise_create': 'Entreprise',
+                  'enterprise_claim': 'Gain entreprise',
+                  'referral_invest_bonus': 'Bonus filleul',
+                  'transfer_in': 'Transfert',
+                  'transfer_out': 'Transfert',
+                };
+                const label = typeLabels[tx.type] || tx.type;
+                return (
+                  <div
+                    key={tx.id || i}
+                    className="flex items-center gap-3 px-4 py-3"
+                    style={{ borderBottom: i < Math.min(user.transactions.length, 15) - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}
+                  >
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isPositive ? 'bg-[rgba(34,197,94,0.1)]' : 'bg-[rgba(248,113,113,0.08)]'}`}>
+                      <i className={`fas ${isPositive ? 'fa-arrow-down' : 'fa-arrow-up'} text-[0.55rem]`} style={{ color: isPositive ? '#22C55E' : '#F87171' }}></i>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[0.78rem] font-semibold text-[#1F2937] truncate">{label}</div>
+                      <div className="text-[0.6rem] text-[rgba(0,0,0,0.35)]">{dateStr} à {timeStr}</div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className={`text-[0.82rem] font-bold ${isPositive ? 'text-[#22C55E]' : 'text-[#F87171]'}`}>
+                        {isPositive ? '+' : ''}{formatMoney(tx.amount)}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
         {/* AI Recommendation */}
         <SectionHeader icon="fa-robot" title="Recommandation IA" />
         <div className="relative overflow-hidden bg-[#FFFFFF] text-[#1F2937] rounded-2xl p-5 mb-4 border border-[rgba(99,102,241,0.15)]">
