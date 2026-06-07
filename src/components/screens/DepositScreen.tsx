@@ -171,7 +171,7 @@ export default function DepositScreen() {
   // YAS deposit submit
   const handleYasSubmit = async () => {
     const amtCfa = parseFloat(yasAmount);
-    if (!amtCfa || amtCfa < 6000) { addToast('Minimum 6 000 FCFA', 'error'); return; }
+    if (!amtCfa || amtCfa < 3000) { addToast('Minimum 3 000 FCFA', 'error'); return; }
 
     const yasErr = validateYasAccount(yasAccount);
     if (yasErr) { addToast(yasErr, 'error'); return; }
@@ -313,7 +313,7 @@ export default function DepositScreen() {
                       <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#22C55E] bg-[rgba(34,197,94,0.12)] px-2 py-1 rounded-full">
                         <i className="fas fa-wallet"></i> Solde principal
                       </span>
-                      <span className="text-[0.6rem] text-[rgba(0,0,0,0.35)]">Min: 6 000 FCFA</span>
+                      <span className="text-[0.6rem] text-[rgba(0,0,0,0.35)]">Min: 3 000 FCFA</span>
                     </div>
                   </div>
                   <i className="fas fa-chevron-right text-[rgba(0,0,0,0.35)] mt-3"></i>
@@ -676,14 +676,14 @@ export default function DepositScreen() {
             <div style={{ animation: 'tIn 0.3s ease-out' }}>
               <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4 border border-[rgba(0,0,0,0.08)]">
                 <h3 className="text-[1rem] font-bold text-[#1F2937] mb-1">Montant du dépôt</h3>
-                <p className="text-[0.75rem] text-[rgba(0,0,0,0.55)] mb-4">Entrez le montant en FCFA. Minimum 6 000 FCFA.</p>
+                <p className="text-[0.75rem] text-[rgba(0,0,0,0.55)] mb-4">Entrez le montant en FCFA. Minimum 3 000 FCFA (5 $).</p>
 
                 <div className="relative mb-3">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[1rem] font-bold text-[rgba(0,0,0,0.35)]">₣</span>
                   <input
                     type="number"
                     step="500"
-                    min="6000"
+                    min="3000"
                     value={yasAmount}
                     onChange={(e) => setYasAmount(e.target.value)}
                     placeholder="0"
@@ -691,7 +691,7 @@ export default function DepositScreen() {
                   />
                 </div>
 
-                {parseFloat(yasAmount) >= 6000 && (
+                {parseFloat(yasAmount) >= 3000 && (
                   <div className="bg-[#F3F4F6] rounded-xl p-3 border border-[rgba(0,0,0,0.08)]">
                     <div className="flex justify-between items-center mb-1.5">
                       <span className="text-[0.72rem] text-[rgba(0,0,0,0.55)]">Montant FCFA</span>
@@ -715,7 +715,7 @@ export default function DepositScreen() {
                 )}
 
                 <div className="grid grid-cols-4 gap-2 mt-3">
-                  {[6000, 10000, 25000, 50000].map(amt => (
+                  {[3000, 5000, 10000, 25000].map(amt => (
                     <button
                       key={amt}
                       onClick={() => setYasAmount(String(amt))}
@@ -740,11 +740,11 @@ export default function DepositScreen() {
 
               <button
                 onClick={() => {
-                  if (!yasAmount || parseFloat(yasAmount) < 6000) { addToast('Minimum 6 000 FCFA', 'error'); return; }
+                  if (!yasAmount || parseFloat(yasAmount) < 3000) { addToast('Minimum 3 000 FCFA', 'error'); return; }
                   if (!adminYasAccount) { addToast('Service Yas non configuré', 'error'); return; }
                   setYasStep('send');
                 }}
-                disabled={!yasAmount || parseFloat(yasAmount) < 6000 || !adminYasAccount}
+                disabled={!yasAmount || parseFloat(yasAmount) < 3000 || !adminYasAccount}
                 className="w-full py-3.5 rounded-xl bg-[#22C55E] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Continuer <i className="fas fa-arrow-right ml-2"></i>

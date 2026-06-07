@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     }
 
     const message = await db.chatMessage.create({
-      data: { content: content.trim(), userId: targetUserId, isAdmin: true },
+      data: { content: content.trim(), userId: targetUserId, isAdmin: true, isAdminMsg: true },
     });
 
     // Send a user notification so they know they have a new message
