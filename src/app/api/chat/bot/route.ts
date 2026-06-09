@@ -33,7 +33,7 @@ Informations clés sur Be Rich :
 - Investissement : 5 niveaux séquentiels (Micro à VIP), taux de 10% à 20%/jour pendant 15 jours. Chaque niveau supérieur nécessite d'avoir investi au niveau précédent + des filleuls (ou paiement). Micro=libre, Standard=2 filleuls, Premium=5 filleuls, Elite=10 filleuls, VIP=20 filleuls.
 - Trading : Prédiction HAUT/BAS, durée 1-10 min, gain max +85%, taux de réussite 35%
 - Projets : Court/Moyen/Long/Ultra long terme, rendements 40-150%, taux de succès 35%
-- Dépôts via TRX (minimum 5$) ou YAS (minimum 3 000 FCFA = 5$)
+- Dépôts via TRX (minimum 10$) ou YAS (minimum 6 000 FCFA = 10$)
 - Transfert entre comptes : 2% de frais vers Invest/Trade/Projet, gratuit vers Principal
 - Code de parrainage pour inviter des amis
 

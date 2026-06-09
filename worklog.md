@@ -53,3 +53,37 @@ Stage Summary:
 - Minimum deposit is $5 for TRX and 3,000 FCFA for YAS everywhere in the codebase
 - The local app works perfectly - user's issue is likely with the production deployment on their VPS
 - Production site needs SSH access to VPS to diagnose and fix
+
+---
+Task ID: 3
+Agent: Main Agent
+Task: Change minimum deposit from $5 to $10 for YAS and TRX everywhere in the codebase
+
+Work Log:
+- Found all references to deposit minimum across the codebase (8+ files)
+- Updated backend API routes:
+  - /api/deposit/trx/route.ts: 5 → 10, error message "Minimum 5 $" → "Minimum 10 $"
+  - /api/deposit/route.ts: 5 → 10, error message "Minimum 5 $" → "Minimum 10 $"
+  - /api/deposit/yas/route.ts: 3000 → 6000, error message "Minimum 3 000 FCFA" → "Minimum 6 000 FCFA"
+  - /api/withdrawal/convert-trx-tmoney/route.ts: 5 → 10, error message updated
+- Updated frontend DepositScreen.tsx (16 changes):
+  - TRX: minimum check 5→10, "Min: $5" → "Min: $10", min attribute, disabled state, quick buttons [5,10,25,50] → [10,25,50,100]
+  - YAS: minimum check 3000→6000, "Min: 3 000 FCFA" → "Min: 6 000 FCFA", min attribute, disabled state, quick buttons [3000,5000,10000,25000] → [6000,10000,20000,50000]
+  - Description texts: "Minimum 5 $" → "Minimum 10 $", "Minimum 3 000 FCFA (5 $)" → "Minimum 6 000 FCFA (10 $)"
+- Updated guides.ts (4 changes):
+  - WALLET_GUIDE tips: "Minimum de dépôt : 5 $" → "10 $", "3 000 FCFA" → "6 000 FCFA"
+  - DEPOSIT_GUIDE: TRX minimum "5$" → "10$", YAS minimum "3 000 FCFA" → "6 000 FCFA"
+  - DEPOSIT_GUIDE warnings: "5$" → "10$", "3 000 FCFA" → "6 000 FCFA"
+- Updated GuideScreen.tsx: "min 5 $" → "min 10 $", "min 3 000 FCFA" → "min 6 000 FCFA"
+- Updated chat bot system prompt: "minimum 5$" → "minimum 10$", "minimum 3 000 FCFA = 5$" → "minimum 6 000 FCFA = 10$"
+- Verified with agent browser:
+  - Deposit screen: "Min: 6 000 FCFA" ✅ and "Min: $10" ✅
+  - YAS form: "Minimum 6 000 FCFA (10 $)" ✅, quick buttons 6K/10K/20K/50K ✅
+  - TRX form: quick buttons 10$/25$/50$/100$ ✅
+  - Guide screen: "min 10 $" and "min 6 000 FCFA" ✅
+
+Stage Summary:
+- Minimum deposit changed from $5 to $10 for TRX across all files
+- Minimum deposit changed from 3,000 FCFA to 6,000 FCFA for YAS across all files
+- All 8 files updated consistently: 4 backend API routes + DepositScreen + guides.ts + GuideScreen + chat bot
+- Verified in browser - all UI shows the new $10 / 6,000 FCFA minimum

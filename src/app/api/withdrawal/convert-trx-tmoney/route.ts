@@ -28,8 +28,8 @@ export async function POST(request: Request) {
 
     // Validate amount
     const amt = parseFloat(amountUsd);
-    if (isNaN(amt) || amt < 5) {
-      return NextResponse.json({ success: false, error: 'Minimum de conversion : 5 $' });
+    if (isNaN(amt) || amt < 10) {
+      return NextResponse.json({ success: false, error: 'Minimum de conversion : 10 $' });
     }
 
     // Can only convert from main balance

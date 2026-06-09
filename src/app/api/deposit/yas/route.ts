@@ -51,8 +51,8 @@ export async function POST(request: Request) {
     const config = await ensureSiteConfig();
     const cfaUsdRate = config.cfaUsdRate || 600;
 
-    if (isNaN(amtCfa) || amtCfa < 3000) {
-      return NextResponse.json({ success: false, error: 'Minimum 3 000 FCFA' });
+    if (isNaN(amtCfa) || amtCfa < 6000) {
+      return NextResponse.json({ success: false, error: 'Minimum 6 000 FCFA' });
     }
     if (!yasAccount || !yasAccount.trim()) {
       return NextResponse.json({ success: false, error: 'Numéro de compte Yas du Togo requis' });

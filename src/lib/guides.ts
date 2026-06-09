@@ -68,7 +68,7 @@ export const WALLET_GUIDE: GuideSection = {
     'Les transferts VERS les comptes Investissement/Trading/Projet ont des frais de 2%.',
     'Les transferts RETOUR vers le Principal sont sans frais.',
     'Minimum de transfert : 2 $.',
-    'Minimum de dépôt : 5 $ en TRX ou 3 000 FCFA en YAS.',
+    'Minimum de dépôt : 10 $ en TRX ou 6 000 FCFA en YAS.',
   ],
   warnings: [
     'Attendez la confirmation de l\'admin avant de considérer un dépôt comme validé.',
@@ -363,7 +363,7 @@ export const DEPOSIT_GUIDE: GuideSection = {
   steps: [
     {
       title: '1. Dépôt par TRX (Crypto)',
-      description: 'Cliquez "Déposer" et choisissez TRX. Achetez des TRX sur un exchange (Binance, KuCoin...), envoyez-les à l\'adresse admin affichée, puis soumettez le montant en USD (minimum 5$).',
+      description: 'Cliquez "Déposer" et choisissez TRX. Achetez des TRX sur un exchange (Binance, KuCoin...), envoyez-les à l\'adresse admin affichée, puis soumettez le montant en USD (minimum 10$).',
       icon: 'fa-coins',
       color: '#FBBF24',
     },
@@ -375,7 +375,7 @@ export const DEPOSIT_GUIDE: GuideSection = {
     },
     {
       title: '3. Dépôt par YAS (Mobile Money)',
-      description: 'Cliquez "Déposer" et choisissez YAS. Entrez le montant en FCFA (minimum 3 000 FCFA) et votre numéro de compte YAS (8 chiffres, préfixe 90-93 ou 70-73).',
+      description: 'Cliquez "Déposer" et choisissez YAS. Entrez le montant en FCFA (minimum 6 000 FCFA) et votre numéro de compte YAS (8 chiffres, préfixe 90-93 ou 70-73).',
       icon: 'fa-mobile-alt',
       color: '#22C55E',
     },
@@ -402,7 +402,7 @@ export const DEPOSIT_GUIDE: GuideSection = {
   warnings: [
     'N\'envoyez QUE des TRX à l\'adresse TRX indiquée.',
     'Les envois sur un mauvais réseau seront perdus.',
-    'Minimum de dépôt : 5$ en TRX ou 3 000 FCFA en YAS.',
+    'Minimum de dépôt : 10$ en TRX ou 6 000 FCFA en YAS.',
     'Un seul dépôt en attente à la fois (TRX ou YAS).',
   ],
 };
