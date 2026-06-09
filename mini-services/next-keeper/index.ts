@@ -9,7 +9,7 @@ function startNext() {
   
   const child = spawn('node', ['node_modules/.bin/next', 'dev', '-p', String(PORT), '--turbopack'], {
     cwd: PROJECT_DIR,
-    env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=4096' },
+    env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=512' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 
