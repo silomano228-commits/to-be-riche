@@ -18,38 +18,45 @@ async function getUser(request: Request) {
   return db.user.findUnique({ where: { id: token } });
 }
 
-// Updated: projects always win, tiered returns with max slightly below next tier's min
+// New enterprise config: 5 levels, 30-90 days, 100-300% returns, min $10
 const ENTERPRISE_CONFIG: Record<string, {
   durationDays: number; minAmount: number; minReturn: number; maxReturn: number;
   categories: string[];
 }> = {
-  short: {
-    durationDays: 5,
-    minAmount: 5,
-    minReturn: 15,
-    maxReturn: 28,
-    categories: ['Tech Startup', 'App Development', 'Digital Marketing'],
+  starter: {
+    durationDays: 30,
+    minAmount: 10,
+    minReturn: 100,
+    maxReturn: 100,
+    categories: ['Tech Startup', 'App Development', 'Digital Marketing', 'E-Commerce'],
   },
-  medium: {
-    durationDays: 10,
-    minAmount: 5,
-    minReturn: 30,
-    maxReturn: 48,
+  growth: {
+    durationDays: 45,
+    minAmount: 10,
+    minReturn: 150,
+    maxReturn: 150,
     categories: ['GreenEnergy Ltd', 'Logistics Corp', 'FoodChain Inc', 'Real Estate Fund'],
   },
-  long: {
-    durationDays: 20,
-    minAmount: 5,
-    minReturn: 50,
-    maxReturn: 68,
+  premium: {
+    durationDays: 60,
+    minAmount: 10,
+    minReturn: 200,
+    maxReturn: 200,
     categories: ['BioTech Holdings', 'Aerospace Ventures', 'Infrastructure Group', 'Mining Corp'],
   },
-  ultralong: {
-    durationDays: 30,
-    minAmount: 5,
-    minReturn: 70,
-    maxReturn: 95,
-    categories: ['DeepTech Labs', 'Quantum Industries', 'Space Ventures', 'Neural AI Corp', 'Fusion Energy'],
+  elite: {
+    durationDays: 75,
+    minAmount: 10,
+    minReturn: 250,
+    maxReturn: 250,
+    categories: ['DeepTech Labs', 'Quantum Industries', 'Space Ventures', 'Neural AI Corp'],
+  },
+  vip: {
+    durationDays: 90,
+    minAmount: 10,
+    minReturn: 300,
+    maxReturn: 300,
+    categories: ['Fusion Energy', 'Galactic Ventures', 'Omega Holdings', 'Apex Capital'],
   },
 };
 
@@ -69,8 +76,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Missing fields: type, amount' }, { status: 400 });
     }
 
-    if (!['short', 'medium', 'long', 'ultralong'].includes(type)) {
-      return NextResponse.json({ success: false, error: 'Invalid type. Must be short, medium, long, or ultralong.' }, { status: 400 });
+    if (!['starter', 'growth', 'premium', 'elite', 'vip'].includes(type)) {
+      return NextResponse.json({ success: false, error: 'Invalid type. Must be starter, growth, premium, elite, or vip.' }, { status: 400 });
     }
 
     const config = ENTERPRISE_CONFIG[type];
@@ -92,7 +99,7 @@ export async function POST(request: Request) {
     const category = config.categories[Math.floor(Math.random() * config.categories.length)];
     const enterpriseName = `${prefix} ${category}`;
 
-    // Projects always succeed now (no crash)
+    // Projects always succeed
     const status = 'active';
 
     const enterprise = await db.enterprise.create({
@@ -123,7 +130,7 @@ export async function POST(request: Request) {
       data: {
         type: 'enterprise_create',
         amount: -investAmount,
-        detail: `Projet créé: ${enterpriseName} ($${investAmount.toFixed(2)}) — ${config.durationDays} jours, +${config.minReturn}-${config.maxReturn}% de rendement`,
+        detail: `Projet créé: ${enterpriseName} ($${investAmount.toFixed(2)}) — ${config.durationDays} jours, +${config.minReturn}% de rendement`,
         userId: user.id,
       },
     });
@@ -142,7 +149,7 @@ export async function POST(request: Request) {
         finishesAt: enterprise.finishesAt,
       },
       crashed: false,
-      message: `Projet créé: ${enterpriseName} — $${investAmount.toFixed(2)} pour ${config.durationDays} jours (+${config.minReturn}-${config.maxReturn}% de rendement garanti).`,
+      message: `Projet créé: ${enterpriseName} — $${investAmount.toFixed(2)} pour ${config.durationDays} jours (+${config.minReturn}% de rendement garanti).`,
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });

@@ -4,6 +4,36 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAppStore, formatMoney, esc, authFetch, refreshUser as globalRefreshUser, type AppUser } from '@/lib/store';
 import { Header, LogoImg, Modal, INVEST_LEVELS, ENTERPRISE_TYPES, ENTERPRISE_NAMES } from '@/components/shared';
 
+// Countdown component: shows days, hours, minutes, seconds
+function CountdownTimer({ finishesAt }: { finishesAt: string }) {
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const end = new Date(finishesAt).getTime();
+  const diff = Math.max(0, end - now);
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+  return (
+    <div className="flex items-center gap-1">
+      <span className="bg-[rgba(139,92,246,0.1)] text-[#8B5CF6] font-mono font-bold text-[0.65rem] px-1.5 py-0.5 rounded">{days}j</span>
+      <span className="text-[rgba(0,0,0,0.3)] text-[0.6rem]">:</span>
+      <span className="bg-[rgba(139,92,246,0.1)] text-[#8B5CF6] font-mono font-bold text-[0.65rem] px-1.5 py-0.5 rounded">{String(hours).padStart(2, '0')}h</span>
+      <span className="text-[rgba(0,0,0,0.3)] text-[0.6rem]">:</span>
+      <span className="bg-[rgba(139,92,246,0.1)] text-[#8B5CF6] font-mono font-bold text-[0.65rem] px-1.5 py-0.5 rounded">{String(minutes).padStart(2, '0')}m</span>
+      <span className="text-[rgba(0,0,0,0.3)] text-[0.6rem]">:</span>
+      <span className="bg-[rgba(139,92,246,0.1)] text-[#8B5CF6] font-mono font-bold text-[0.65rem] px-1.5 py-0.5 rounded">{String(seconds).padStart(2, '0')}s</span>
+    </div>
+  );
+}
+
 export default function EnterpriseScreen() {
   const { user, setUser, addToast } = useAppStore();
   const [enterprises, setEnterprises] = useState<any[]>([]);
@@ -28,7 +58,7 @@ export default function EnterpriseScreen() {
   const handleCreate = async (type: string) => {
     const amt = parseFloat(createAmt);
     const entType = ENTERPRISE_TYPES.find(e => e.type === type);
-    if (!amt || amt < (entType?.minAmount || 5)) { addToast(`Minimum ${entType?.minAmount || 5} $`, 'error'); return; }
+    if (!amt || amt < (entType?.minAmount || 10)) { addToast(`Minimum ${entType?.minAmount || 10} $`, 'error'); return; }
     setCreating(true);
     try {
       const res = await authFetch('/api/enterprise/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, amount: amt }) });
@@ -50,12 +80,13 @@ export default function EnterpriseScreen() {
     } catch { addToast('Erreur', 'error'); }
   };
 
-  // Map enterprise types to new guaranteed return tiers
+  // Map enterprise types to new tiers
   const TYPE_INFO: Record<string, { icon: string; label: string; retRange: string }> = {
-    short: { icon: 'fa-bolt', label: 'Court terme', retRange: '+15-28%' },
-    medium: { icon: 'fa-building', label: 'Moyen terme', retRange: '+30-48%' },
-    long: { icon: 'fa-industry', label: 'Long terme', retRange: '+50-68%' },
-    ultralong: { icon: 'fa-rocket', label: 'Ultra long', retRange: '+70-95%' },
+    starter: { icon: 'fa-seedling', label: 'Starter', retRange: '+100%' },
+    growth: { icon: 'fa-chart-line', label: 'Growth', retRange: '+150%' },
+    premium: { icon: 'fa-crown', label: 'Premium', retRange: '+200%' },
+    elite: { icon: 'fa-gem', label: 'Elite', retRange: '+250%' },
+    vip: { icon: 'fa-rocket', label: 'VIP', retRange: '+300%' },
   };
 
   if (!user) return null;
@@ -64,14 +95,14 @@ export default function EnterpriseScreen() {
     <>
       <Header title="Entreprises" icon="fa-building" iconColor="#8B5CF6" leftElement={<button onClick={() => useAppStore.getState().setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] cursor-pointer border-none mr-1"><i className="fas fa-arrow-left text-[0.8rem]"></i></button>} />
       <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0 bg-[#F8F9FA]">
-        {/* Balance - White card with gold accent */}
+        {/* Balance */}
         <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4 mb-4">
           <div className="text-[0.7rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[1.5px] mb-1">Compte de Projet</div>
           <div className="text-[1.5rem] font-black text-[#8B5CF6]">{formatMoney(user.projectBalance)}</div>
           <button onClick={() => useAppStore.getState().setPage('wallet')} className="text-[0.72rem] text-[#8B5CF6] font-semibold mt-1"><i className="fas fa-plus mr-1"></i>Verser des fonds</button>
         </div>
 
-        {/* Enterprise Types - White cards, NO risk bars, guaranteed returns */}
+        {/* Enterprise Types */}
         <h3 className="text-[0.88rem] font-bold text-[#1F2937] mb-2.5">Types de projets</h3>
         <div className="space-y-2.5 mb-5">
           {ENTERPRISE_TYPES.map((ent) => {
@@ -80,16 +111,16 @@ export default function EnterpriseScreen() {
               <button key={ent.type} onClick={() => setShowCreate(ent.type)} className="w-full bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-xl p-3.5 text-left cursor-pointer transition-transform active:scale-[0.98]">
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[rgba(139,92,246,0.12)]">
-                      <i className={`fas ${info?.icon || ent.icon} text-[#8B5CF6]`}></i>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${ent.color}18` }}>
+                      <i className={`fas ${info?.icon || ent.icon}`} style={{ color: ent.color }}></i>
                     </div>
                     <div>
                       <div className="text-[0.82rem] font-bold text-[#1F2937]">{ent.name}</div>
-                      <div className="text-[0.65rem] text-[rgba(0,0,0,0.5)]">{ent.days} jours</div>
+                      <div className="text-[0.65rem] text-[rgba(0,0,0,0.5)]">{ent.days} jours · Min {ent.minAmount} $</div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-[0.82rem] font-bold text-[#8B5CF6]">{info?.retRange || `+${ent.minRet}-${ent.maxRet}%`}</div>
+                    <div className="text-[0.88rem] font-black" style={{ color: ent.color }}>{info?.retRange || `+${ent.minRet}%`}</div>
                     <div className="text-[0.55rem] text-[rgba(0,0,0,0.4)]">Rendement garanti</div>
                   </div>
                 </div>
@@ -102,7 +133,7 @@ export default function EnterpriseScreen() {
           })}
         </div>
 
-        {/* Active Enterprises - White cards, NO crash styling */}
+        {/* Active Enterprises */}
         {enterprises.length > 0 && (
           <>
             <h3 className="text-[0.88rem] font-bold text-[#1F2937] mb-2.5">Mes entreprises</h3>
@@ -112,8 +143,8 @@ export default function EnterpriseScreen() {
               const isClaimable = isFinished && ent.canClaim;
 
               return (
-                <div key={ent.id} className={`bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-xl p-4 mb-2.5 transition-all ${
-                  isClaimable ? 'border-[rgba(139,92,246,0.3)]' : ''
+                <div key={ent.id} className={`bg-[#FFFFFF] border rounded-xl p-4 mb-2.5 transition-all ${
+                  isClaimable ? 'border-[rgba(139,92,246,0.3)]' : 'border-[rgba(0,0,0,0.08)]'
                 }`}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -122,7 +153,7 @@ export default function EnterpriseScreen() {
                       }`} style={isClaimable ? { animation: 'pulseGlow 1.5s ease-in-out infinite' } : undefined}></div>
                       <div className="min-w-0">
                         <div className="text-[0.82rem] font-bold text-[#1F2937]">{esc(ent.name)}</div>
-                        <div className="text-[0.65rem] text-[rgba(0,0,0,0.5)]">{formatMoney(ent.amount)} · {ent.durationDays}j · +{ent.minReturn}-{ent.maxReturn}%</div>
+                        <div className="text-[0.65rem] text-[rgba(0,0,0,0.5)]">{formatMoney(ent.amount)} · {ent.durationDays}j · +{ent.minReturn}%</div>
                       </div>
                     </div>
                     <span className={`text-[0.65rem] font-semibold px-2.5 py-1 rounded-full shrink-0 ${
@@ -145,7 +176,11 @@ export default function EnterpriseScreen() {
                     ></div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[0.65rem] text-[rgba(0,0,0,0.5)]">{ent.daysElapsed}/{ent.durationDays} jours</span>
+                    {!isFinished && ent.finishesAt ? (
+                      <CountdownTimer finishesAt={ent.finishesAt} />
+                    ) : (
+                      <span className="text-[0.65rem] text-[rgba(0,0,0,0.5)]">{ent.daysElapsed}/{ent.durationDays} jours</span>
+                    )}
                     {isClaimable && (
                       <button
                         onClick={() => handleClaim(ent.id)}
@@ -170,7 +205,7 @@ export default function EnterpriseScreen() {
         )}
       </div>
 
-      {/* Create Enterprise Modal - Light themed */}
+      {/* Create Enterprise Modal */}
       {showCreate && (
         <div className="fixed inset-0 bg-[rgba(0,0,0,0.3)] backdrop-blur-sm z-[6000] flex items-center justify-center" onClick={() => setShowCreate(null)}>
           <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-6 w-[88%] max-w-[320px]" onClick={(e) => e.stopPropagation()}>
@@ -181,12 +216,12 @@ export default function EnterpriseScreen() {
               return (
                 <>
                   <div className="flex items-center gap-2 mb-1">
-                    <i className={`fas ${info?.icon || et.icon} text-[#8B5CF6]`}></i>
+                    <i className={`fas ${info?.icon || et.icon}`} style={{ color: et.color }}></i>
                     <h3 className="text-[1rem] font-bold text-[#1F2937]">{et.name}</h3>
                   </div>
-                  <p className="text-[0.75rem] text-[rgba(0,0,0,0.55)] mb-1">{et.days} jours · {info?.retRange || `+${et.minRet}-${et.maxRet}%`}</p>
+                  <p className="text-[0.75rem] text-[rgba(0,0,0,0.55)] mb-1">{et.days} jours · {info?.retRange || `+${et.minRet}%`}</p>
                   <div className="flex items-center gap-2 mb-4">
-                    <span className="text-[0.68rem] text-[#8B5CF6] font-semibold">Rendement garanti à l&apos;échéance</span>
+                    <span className="text-[0.68rem] font-semibold" style={{ color: et.color }}>Rendement garanti à l&apos;échéance</span>
                   </div>
                   <input type="number" step="0.01" value={createAmt} onChange={(e) => setCreateAmt(e.target.value)} placeholder={`Montant (min ${et.minAmount} $)`} className="w-full py-3 px-4 bg-[rgba(0,0,0,0.05)] border-[1.5px] border-[rgba(0,0,0,0.1)] rounded-xl text-[0.88rem] outline-none mb-4 text-[#1F2937] placeholder:text-[rgba(0,0,0,0.3)] focus:border-[#8B5CF6]" />
                   <div className="flex gap-2">

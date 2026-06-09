@@ -32,7 +32,7 @@ class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError:
 
 // Lazy load heavy screen components
 const InvestHubScreen = dynamic(() => import('@/components/screens/InvestHubScreen'), { ssr: false });
-const TradingScreen = dynamic(() => import('@/components/screens/TradingScreen'), { ssr: false });
+const TradingArenaScreen = dynamic(() => import('@/components/screens/TradingArenaScreen'), { ssr: false });
 const EnterpriseScreen = dynamic(() => import('@/components/screens/EnterpriseScreen'), { ssr: false });
 const ProfileScreen = dynamic(() => import('@/components/screens/ProfileScreen'), { ssr: false });
 const AnalyticsScreen = dynamic(() => import('@/components/screens/AnalyticsScreen'), { ssr: false });
@@ -620,7 +620,7 @@ function FinanceScreen() {
       {/* Content */}
       <div className="flex-1 flex flex-col overflow-hidden min-h-0">
         {subTab === 'invest' && <InvestHubScreen />}
-        {subTab === 'trading' && <TradingScreen />}
+        {subTab === 'trading' && <TradingArenaScreen />}
         {subTab === 'projects' && <EnterpriseScreen />}
       </div>
     </div>

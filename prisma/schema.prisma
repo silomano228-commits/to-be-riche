@@ -39,6 +39,7 @@ model User {
   withdrawals     Withdrawal[]
   yasDeposits     YasDeposit[]
   userNotifications UserNotification[]
+  tradingPositions  TradingPosition[]
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
@@ -267,4 +268,29 @@ model AdminNotification {
 
   @@index([read])
   @@index([createdAt])
+}
+
+model TradingPosition {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  asset       String   // EUR/USD, GBP/USD, BTC/USD, ETH/USD, GOLD/USD, SILVER/USD
+  direction   String   // BUY or SELL
+  amount      Float    // Amount in USD
+  entryPrice  Float    // Price when position was opened
+  currentPrice Float?  // Latest price (updated by system)
+  stopLoss    Float?   // Stop loss percentage (e.g. 5 means 5%)
+  takeProfit  Float?   // Take profit percentage (e.g. 15 means 15%)
+  profitLoss  Float?   // Current P/L in USD
+  plPercent   Float?   // Current P/L percentage
+  status      String   @default("open") // open, closed, liquidated
+  closePrice  Float?   // Price when position was closed
+  closeReason String?  // manual, stop_loss, take_profit, liquidated
+  result      String?  // win, loss
+  openedAt    DateTime @default(now())
+  closedAt    DateTime?
+
+  @@index([userId])
+  @@index([status])
+  @@index([userId, status])
 }

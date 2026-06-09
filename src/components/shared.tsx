@@ -14,10 +14,11 @@ export const INVEST_LEVELS = [
 ];
 
 export const ENTERPRISE_TYPES = [
-  { type: 'short', name: 'Court terme', days: 5, minRet: 15, maxRet: 28, color: '#22C55E', icon: 'fa-bolt', risk: 'Faible', minAmount: 5 },
-  { type: 'medium', name: 'Moyen terme', days: 10, minRet: 30, maxRet: 48, color: '#3B82F6', icon: 'fa-building', risk: 'Modéré', minAmount: 5 },
-  { type: 'long', name: 'Long terme', days: 20, minRet: 50, maxRet: 68, color: '#8B5CF6', icon: 'fa-industry', risk: 'Considéré', minAmount: 5 },
-  { type: 'ultralong', name: 'Ultra long', days: 30, minRet: 70, maxRet: 95, color: '#F59E0B', icon: 'fa-rocket', risk: 'Élevé', minAmount: 5 },
+  { type: 'starter', name: 'Starter', days: 30, minRet: 100, maxRet: 100, color: '#22C55E', icon: 'fa-seedling', risk: 'Faible', minAmount: 10 },
+  { type: 'growth', name: 'Growth', days: 45, minRet: 150, maxRet: 150, color: '#3B82F6', icon: 'fa-chart-line', risk: 'Modéré', minAmount: 10 },
+  { type: 'premium', name: 'Premium', days: 60, minRet: 200, maxRet: 200, color: '#8B5CF6', icon: 'fa-crown', risk: 'Considéré', minAmount: 10 },
+  { type: 'elite', name: 'Elite', days: 75, minRet: 250, maxRet: 250, color: '#F59E0B', icon: 'fa-gem', risk: 'Élevé', minAmount: 10 },
+  { type: 'vip', name: 'VIP', days: 90, minRet: 300, maxRet: 300, color: '#EF4444', icon: 'fa-rocket', risk: 'Très élevé', minAmount: 10 },
 ];
 
 export const AI_TIPS = [
