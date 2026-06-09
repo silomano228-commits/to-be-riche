@@ -94,7 +94,7 @@ export async function POST(request: Request) {
         userId: withdrawal.userId,
         type: 'withdrawal_approved',
         title: 'Retrait approuvé',
-        message: `Votre retrait de ${withdrawal.amount.toFixed(2)} $ a été approuvé. En attente d'exécution.`,
+        message: `Votre retrait de ${withdrawal.amount.toFixed(2)} $ a été approuvé. Il sera exécuté prochainement.`,
         link: 'wallet',
       });
 
@@ -148,7 +148,7 @@ export async function POST(request: Request) {
         userId: withdrawal.userId,
         type: 'withdrawal_executed',
         title: 'Retrait exécuté !',
-        message: `Votre retrait de ${withdrawal.amount.toFixed(2)} $ a été exécuté. Les fonds ont été envoyés.`,
+        message: `Votre retrait de ${withdrawal.amount.toFixed(2)} $ a été exécuté avec succès. Les fonds ont été envoyés.`,
         link: 'wallet',
       });
 

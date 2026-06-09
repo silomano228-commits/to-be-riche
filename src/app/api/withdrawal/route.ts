@@ -1,7 +1,7 @@
 import { db } from '@/lib/db';
 import { getAuthToken } from '@/lib/auth';
 import { getRequiredReferrals } from '@/lib/referral';
-import { notifyAdmin } from '@/lib/notify';
+import { notifyAdmin, notifyUser } from '@/lib/notify';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -122,6 +122,15 @@ export async function POST(request: Request) {
       title: 'Nouvelle demande de retrait',
       message: `${user.name} demande un retrait de ${amt.toFixed(2)} $ (TRX) vers ${trxAddress}`,
       userId: user.id,
+    });
+
+    // Notify user that their withdrawal request has been received
+    await notifyUser({
+      userId: user.id,
+      type: 'withdrawal_pending',
+      title: 'Demande de retrait prise en compte',
+      message: 'Votre demande de retrait a été prise en compte et sera traitée prochainement.',
+      link: 'wallet',
     });
 
     return NextResponse.json({ success: true, data: { id: withdrawal.id, amount: amt, status: 'pending' } });

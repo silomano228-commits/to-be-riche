@@ -44,6 +44,8 @@ const GuideScreen = dynamic(() => import('@/components/screens/GuideScreen'), { 
 const FloatingGift = dynamic(() => import('@/components/FloatingGift'), { ssr: false });
 const InstallPrompt = dynamic(() => import('@/components/InstallPrompt'), { ssr: false });
 const NotificationBell = dynamic(() => import('@/components/NotificationBell'), { ssr: false });
+const WithdrawalTicker = dynamic(() => import('@/components/WithdrawalTicker'), { ssr: false });
+const PromoBanner = dynamic(() => import('@/components/PromoBanner'), { ssr: false });
 
 // ==================== SPLASH ====================
 function SplashScreen({ onDone }: { onDone: () => void }) {
@@ -321,6 +323,28 @@ function HomeScreen() {
   const { user, setPage, setUser, addToast } = useAppStore();
   const [tip] = useState(() => AI_TIPS[Math.floor(Math.random() * AI_TIPS.length)]);
   const [refreshing, setRefreshing] = useState(false);
+  const [dailyNotif, setDailyNotif] = useState<{ message: string; referrals: number; required: number; code: string } | null>(null);
+  const [dailyNotifShown, setDailyNotifShown] = useState(false);
+
+  // Fetch daily notification once per session
+  useEffect(() => {
+    if (!user) return;
+    const today = new Date().toDateString();
+    const lastShown = typeof window !== 'undefined' ? localStorage.getItem('br_daily_notif_date') : '';
+    if (lastShown === today || dailyNotifShown) return;
+    (async () => {
+      try {
+        const res = await authFetch('/api/notifications/daily');
+        const data = await res.json();
+        if (data.success && data.data) {
+          setDailyNotif({ message: data.data.message, referrals: data.data.referralCount || 0, required: data.data.requiredReferrals || 10, code: data.data.referralCode || '' });
+          localStorage.setItem('br_daily_notif_date', today);
+        }
+      } catch { /* */ }
+    })();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDailyNotifShown(true);
+  }, [user, dailyNotifShown]);
 
   const refresh = async () => {
     setRefreshing(true);
@@ -340,6 +364,23 @@ function HomeScreen() {
         </div>
       } />
       <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
+        {/* Daily Notification Popup */}
+        {dailyNotif && (
+          <div className="mb-4 rounded-2xl p-4 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #22C55E, #16A34A)', animation: 'modalIn 0.4s cubic-bezier(0.34,1.56,0.64,1)' }}>
+            <button onClick={() => setDailyNotif(null)} className="absolute top-2 right-3 bg-transparent border-none text-white/60 cursor-pointer text-[0.75rem]"><i className="fas fa-times"></i></button>
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0"><i className="fas fa-bullhorn text-white text-[0.85rem]"></i></div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[0.68rem] text-white/70 font-bold uppercase tracking-[1px] mb-1">Notification du jour</div>
+                <div className="text-[0.78rem] text-white font-semibold leading-snug mb-2">{dailyNotif.message}</div>
+                <div className="flex items-center gap-3 text-[0.65rem] text-white/80">
+                  <span><i className="fas fa-users mr-1"></i>{dailyNotif.referrals}/{dailyNotif.required} filleuls</span>
+                  <span><i className="fas fa-key mr-1"></i>{dailyNotif.code}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Welcome + Balance Card — Premium Gradient */}
         <div className="gradient-card rounded-2xl p-5 mb-4 relative overflow-hidden">
           {/* Decorative orbs */}
@@ -397,22 +438,25 @@ function HomeScreen() {
         <div className="flex gap-2 mb-4">
           {[
             { icon: 'fa-wallet', label: 'Wallet', page: 'wallet', color: '#22C55E', bg: 'rgba(34,197,94,0.12)', borderColor: 'border-[#22C55E]' },
-            { icon: 'fa-chart-line', label: 'Investir', page: 'finance', color: '#3B82F6', bg: 'rgba(59,130,246,0.12)', borderColor: 'border-[#3B82F6]' },
-            { icon: 'fa-bolt', label: 'Trader', page: 'finance', color: '#F87171', bg: 'rgba(248,113,113,0.12)', borderColor: 'border-[#F87171]' },
-            { icon: 'fa-building', label: 'Projets', page: 'finance', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)', borderColor: 'border-[#8B5CF6]' },
+            { icon: 'fa-chart-line', label: 'Investir', page: 'invest', color: '#3B82F6', bg: 'rgba(59,130,246,0.12)', borderColor: 'border-[#3B82F6]' },
+            { icon: 'fa-bolt', label: 'Trader', page: 'trading', color: '#F87171', bg: 'rgba(248,113,113,0.12)', borderColor: 'border-[#F87171]' },
+            { icon: 'fa-building', label: 'Projets', page: 'enterprise', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)', borderColor: 'border-[#8B5CF6]' },
           ].map((a, i) => (
-            <button key={i} onClick={() => setPage(a.page)} className={`flex-1 glass-card rounded-xl py-2.5 px-1 text-center cursor-pointer transition-all active:scale-95 hover:shadow-md border-b-2 ${a.borderColor}`}>
-              <div className="w-9 h-9 icon-box mx-auto mb-1" style={{ backgroundColor: a.bg }}><i className={`fas ${a.icon} text-[0.8rem]`} style={{ color: a.color }}></i></div>
+            <button key={i} onClick={() => setPage(a.page)} className={`flex-1 glass-card rounded-xl py-2.5 px-1 text-center cursor-pointer transition-all active:scale-95 hover:shadow-md hover:scale-[1.04] border-b-2 ${a.borderColor}`}>
+              <div className="w-10 h-10 icon-box mx-auto mb-1" style={{ backgroundColor: a.bg }}><i className={`fas ${a.icon} text-[0.9rem]`} style={{ color: a.color }}></i></div>
               <div className="text-[0.6rem] font-semibold text-[rgba(0,0,0,0.55)] leading-tight">{a.label}</div>
             </button>
           ))}
         </div>
 
         {/* AI Tip Card — Purple gradient left border + glow */}
-        <div className="bg-[rgba(139,92,246,0.04)] border border-[rgba(139,92,246,0.12)] rounded-xl p-3.5 mb-4 flex items-center gap-3" style={{ borderLeft: '4px solid', borderImage: 'linear-gradient(to bottom, #8B5CF6, #6D28D9) 1' }}>
+        <div className="bg-[rgba(139,92,246,0.04)] border border-[rgba(139,92,246,0.12)] rounded-xl p-3.5 mb-4 flex items-center gap-3" style={{ borderLeft: '5px solid', borderImage: 'linear-gradient(to bottom, #8B5CF6, #6D28D9) 1', boxShadow: '0 0 12px rgba(139,92,246,0.08)' }}>
           <div className="w-10 h-10 icon-box bg-[rgba(139,92,246,0.12)] shrink-0 border border-[rgba(139,92,246,0.15)]"><i className="fas fa-robot text-[#8B5CF6] text-[0.9rem]"></i></div>
           <div className="flex-1 min-w-0"><div className="text-[0.6rem] text-[#8B5CF6] font-bold uppercase tracking-[1px] mb-0.5">IA Be Rich</div><div className="text-[0.75rem] leading-relaxed text-[rgba(0,0,0,0.7)]">{tip}</div></div>
         </div>
+
+        {/* Promo Banner */}
+        <PromoBanner />
 
         {/* Quick Guide Link — Teal left border accent */}
         <button onClick={() => setPage('guide')} className="w-full glass-card rounded-xl p-3.5 mb-4 flex items-center gap-3 cursor-pointer transition-all active:scale-[0.98] hover:translate-x-1" style={{ borderLeft: '4px solid #14B8A6' }}>
@@ -426,7 +470,7 @@ function HomeScreen() {
 
         {/* Referral Gift Teaser — Gold gradient left border + shimmer */}
         <button onClick={() => setPage('profile')} className="w-full glass-card rounded-xl p-3 mb-4 flex items-center gap-3 cursor-pointer transition-all active:scale-[0.98]" style={{ borderLeft: '4px solid', borderImage: 'linear-gradient(to bottom, #F59E0B, #D97706) 1' }}>
-          <div className="w-9 h-9 icon-box bg-[rgba(245,158,11,0.12)] shrink-0"><i className="fas fa-gift text-[#F59E0B] text-[0.9rem]" style={{ animation: 'shimmer 2s linear infinite', background: 'linear-gradient(90deg, #F59E0B 0%, #FCD34D 50%, #F59E0B 100%)', backgroundSize: '200% 100%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}></i></div>
+          <div className="w-9 h-9 icon-box bg-[rgba(245,158,11,0.15)] shrink-0"><i className="fas fa-gift text-[#F59E0B] text-[0.9rem]" style={{ animation: 'shimmer 1.5s linear infinite', background: 'linear-gradient(90deg, #D97706 0%, #FCD34D 30%, #FBBF24 50%, #FCD34D 70%, #D97706 100%)', backgroundSize: '200% 100%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}></i></div>
           <div className="flex-1 text-left">
             <div className="text-[0.75rem] font-bold text-[#1F2937]">Un cadeau vous attend</div>
             <div className="text-[0.58rem] text-[rgba(0,0,0,0.45)]">Parrainez vos amis pour débloquer des horizons</div>
@@ -437,13 +481,13 @@ function HomeScreen() {
         {/* Recent Activity */}
         {txs.length > 0 && (
           <>
-            <h3 className="text-[0.88rem] font-bold text-[#1F2937] mb-2.5">Activité récente</h3>
+            <h3 className="text-[0.88rem] font-bold text-[#1F2937] mb-2.5 flex items-center gap-2"><span className="w-1 h-4 rounded-full bg-[#22C55E] inline-block"></span>Activité récente</h3>
             <div className="glass-card rounded-2xl p-4 mb-4">
               {txs.map((tx, i) => {
                 const isD = tx.type === 'deposit' || tx.type === 'claim' || tx.type === 'enterprise_claim' || tx.type === 'trade_win';
                 const isW = tx.type === 'withdrawal' || tx.type === 'trade_lose' || tx.type === 'enterprise_crash';
                 return (
-                  <div key={tx.id || i} className={`flex items-center gap-3 py-2.5 stagger-${i + 1} ${i < txs.length - 1 ? 'border-b border-[rgba(0,0,0,0.08)]' : ''}`}>
+                  <div key={tx.id || i} className={`flex items-center gap-3 py-2.5 stagger-${i + 1} rounded-lg px-1 -mx-1 transition-all hover:bg-[rgba(34,197,94,0.04)] ${i < txs.length - 1 ? 'border-b border-[rgba(0,0,0,0.08)]' : ''}`}>
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[0.7rem] shrink-0 ${isD ? 'bg-[rgba(74,222,128,0.12)] text-[#4ADE80]' : isW ? 'bg-[rgba(248,113,113,0.12)] text-[#F87171]' : 'bg-[rgba(34,197,94,0.12)] text-[#22C55E]'}`}>
                       <i className={`fas fa-${isW ? 'arrow-up' : isD ? 'arrow-down' : 'exchange-alt'}`}></i>
                     </div>
@@ -518,6 +562,9 @@ function WalletScreen() {
             </div>
           </div>
         </div>
+
+        {/* Promo Banner — compact */}
+        <PromoBanner compact />
 
         {/* Other Accounts — Glass Cards with colored left border */}
         {accounts.slice(1).map((acc) => (
@@ -646,7 +693,7 @@ function BottomNav() {
     <nav className="h-[60px] bg-white/90 backdrop-blur-xl border-t border-[rgba(0,0,0,0.06)] flex items-center justify-around px-2 shrink-0 safe-area-bottom">
       {tabs.map(t => (
         <button key={t.id} onClick={() => setPage(t.id)} className={`flex flex-col items-center justify-center py-1.5 px-2 border-none cursor-pointer transition-all relative ${isActive(t.id) ? 'text-[#22C55E]' : 'text-[rgba(0,0,0,0.3)]'}`}>
-          {isActive(t.id) && <div className="absolute -top-0.5 w-1 h-1 rounded-full bg-[#22C55E]"></div>}
+          {isActive(t.id) && <div className="absolute -top-0.5 w-5 h-[3px] rounded-full bg-[#22C55E]"></div>}
           <i className={`fas ${t.icon} text-[0.95rem] mb-0.5`}></i>
           <span className={`text-[0.55rem] ${isActive(t.id) ? 'font-bold text-[#22C55E]' : 'font-semibold'}`}>{t.label}</span>
         </button>
@@ -718,9 +765,9 @@ export default function BeRichApp() {
           {user && currentPage === 'home' && <HomeScreen />}
           {user && currentPage === 'wallet' && <WalletScreen />}
           {user && currentPage === 'finance' && <FinanceScreen />}
-          {user && currentPage === 'invest' && <FinanceScreen />}
-          {user && currentPage === 'trading' && <FinanceScreen />}
-          {user && currentPage === 'enterprise' && <FinanceScreen />}
+          {user && currentPage === 'invest' && <InvestHubScreen />}
+          {user && currentPage === 'trading' && <TradingArenaScreen />}
+          {user && currentPage === 'enterprise' && <EnterpriseScreen />}
           {user && currentPage === 'profile' && <ProfileScreen />}
           {user && currentPage === 'analytics' && <AnalyticsScreen />}
           {user && currentPage === 'withdraw' && <WithdrawScreen />}
@@ -734,6 +781,7 @@ export default function BeRichApp() {
         </div>
         <ToastContainer />
         <NotificationContainer />
+        {user && <WithdrawalTicker />}
       </div>
       <ServiceWorkerRegistrar />
     </div>

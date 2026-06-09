@@ -53,8 +53,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get current simulated price
-    const currentPrice = getSimulatedPriceWithWalk(position.asset);
+    // Get manipulated closing price (40% win rate built in)
+    const currentPrice = getSimulatedPriceWithWalk(
+      position.asset,
+      position.direction,
+      position.entryPrice,
+      user.id,
+      position.amount
+    );
 
     // Calculate P/L
     const { profitLoss, plPercent } = calculatePL(
@@ -112,8 +118,8 @@ export async function POST(request: Request) {
     });
 
     // Create transaction record
-    const txType = result === 'win' ? 'trading_close_win' : 'trading_close_loss';
-    const detail = `Trading Arena: Closed ${position.direction} $${position.amount.toFixed(2)} ${position.asset} — P/L: $${profitLoss.toFixed(2)} (${plPercent.toFixed(2)}%) [${closeReason}]`;
+    const txType = result === 'win' ? 'trade_win' : 'trade_lose';
+    const detail = `Trading: ${position.direction} $${position.amount.toFixed(2)} ${position.asset} — P/L: ${profitLoss >= 0 ? '+' : ''}$${profitLoss.toFixed(2)} [${closeReason}]`;
 
     await db.transaction.create({
       data: {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAppStore, esc } from '@/lib/store';
+import { useAppStore, esc, authFetch } from '@/lib/store';
 
 const REQUIRED_REFERRALS = 10;
 
@@ -21,15 +21,38 @@ const STAGE_MESSAGES = [
 ];
 
 export default function FloatingGift() {
-  const { user } = useAppStore();
+  const { user, addToast } = useAppStore();
   const [open, setOpen] = useState(false);
   const [animClass, setAnimClass] = useState('');
   const [pulse, setPulse] = useState(0);
+  const [worldLink, setWorldLink] = useState<string | null>(null);
+  const [worldLinkSeen, setWorldLinkSeen] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => setPulse(p => p + 1), 4000);
     return () => clearInterval(t);
   }, []);
+
+  // Fetch world link when modal opens and user has 10+ referrals
+  useEffect(() => {
+    if (!open || !user) return;
+    const referralCount = user.referralCount || 0;
+    if (referralCount < REQUIRED_REFERRALS) return;
+
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await authFetch('/api/user/world-link');
+        const data = await res.json();
+        if (!cancelled && data.success && data.data?.link) {
+          setWorldLink(data.data.link);
+          setWorldLinkSeen(data.data.seen || false);
+        }
+      } catch { /* */ }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [open, user]);
 
   if (!user) return null;
 
@@ -39,64 +62,102 @@ export default function FloatingGift() {
   const isComplete = referralCount >= REQUIRED_REFERRALS;
   const remaining = Math.max(0, REQUIRED_REFERRALS - referralCount);
 
+  const handleWorldLinkClick = async () => {
+    if (!worldLink) return;
+    // Mark as seen
+    try {
+      await authFetch('/api/user/world-link', { method: 'POST' });
+      setWorldLinkSeen(true);
+    } catch { /* */ }
+    // Open link
+    window.open(worldLink, '_blank', 'noopener');
+  };
+
   return (
     <>
-      {/* Floating Gift Button */}
-      <button
-        onClick={() => { setOpen(true); setAnimClass('giftModalIn'); }}
-        className="fixed z-[100] cursor-pointer border-none bg-transparent p-0"
+      {/* Floating Gift Button + Parrainez Banner */}
+      <div
+        className="fixed z-[100] cursor-pointer"
         style={{ bottom: '80px', right: '18px' }}
+        onClick={() => { setOpen(true); setAnimClass('giftModalIn'); }}
       >
-        <div className="relative">
-          {/* Gold glow ring — subtle */}
-          <div className="absolute inset-0 w-[52px] h-[52px] rounded-full"
-            style={{
-              background: 'radial-gradient(circle, rgba(245,158,11,0.25) 0%, transparent 70%)',
-              animation: 'giftGlow 3s ease-in-out infinite',
-              transform: 'scale(1.4)',
-            }}
-          />
-          {/* Main circle — white with gold border */}
-          <div
-            className="w-[52px] h-[52px] rounded-full flex items-center justify-center transition-all duration-300"
-            style={{
-              background: '#FFFFFF',
-              border: '1.5px solid rgba(245,158,11,0.3)',
-              boxShadow: isComplete
-                ? '0 0 20px rgba(245,158,11,0.25), 0 1px 4px rgba(0,0,0,0.05)'
-                : '0 1px 4px rgba(0,0,0,0.05)',
-              animation: pulse % 2 === 0 ? 'giftFloat 3s ease-in-out infinite' : 'giftBreathe 4s ease-in-out infinite',
-            }}
-          >
-            <span className="text-[1.3rem]">{stage.emoji}</span>
+        <div className="flex items-center gap-2">
+          {/* Parrainez Banner — visible when not complete */}
+          {!isComplete && (
+            <div
+              className="px-3 py-1.5 rounded-full text-[0.6rem] font-bold whitespace-nowrap"
+              style={{
+                background: 'linear-gradient(135deg, #F59E0B, #FBBF24)',
+                color: '#050506',
+                boxShadow: '0 2px 12px rgba(245,158,11,0.35)',
+                animation: 'bannerPulse 2.5s ease-in-out infinite',
+              }}
+            >
+              <i className="fas fa-gift mr-1 text-[0.5rem]"></i>
+              Parrainez !
+            </div>
+          )}
+
+          {/* Main button */}
+          <div className="relative">
+            {/* Prominent pulsing glow ring — larger */}
+            <div className="absolute inset-0 w-[64px] h-[64px] rounded-full"
+              style={{
+                background: 'radial-gradient(circle, rgba(245,158,11,0.35) 0%, transparent 70%)',
+                animation: 'giftGlow 2.5s ease-in-out infinite',
+                transform: 'scale(1.8)',
+              }}
+            />
+            {/* Second glow ring for extra prominence */}
+            <div className="absolute inset-0 w-[64px] h-[64px] rounded-full"
+              style={{
+                background: 'radial-gradient(circle, rgba(245,158,11,0.15) 0%, transparent 60%)',
+                animation: 'giftGlowOuter 3s ease-in-out infinite 0.5s',
+                transform: 'scale(2.4)',
+              }}
+            />
+            {/* Main circle — 64px with gold border */}
+            <div
+              className="w-[64px] h-[64px] rounded-full flex items-center justify-center transition-all duration-300"
+              style={{
+                background: '#FFFFFF',
+                border: '2px solid rgba(245,158,11,0.4)',
+                boxShadow: isComplete
+                  ? '0 0 24px rgba(245,158,11,0.35), 0 2px 8px rgba(0,0,0,0.08)'
+                  : '0 2px 8px rgba(0,0,0,0.08)',
+                animation: pulse % 2 === 0 ? 'giftFloat 3s ease-in-out infinite' : 'giftBreathe 4s ease-in-out infinite',
+              }}
+            >
+              <span className="text-[1.6rem]">{stage.emoji}</span>
+            </div>
+            {/* Referral count badge — gold */}
+            {referralCount > 0 && !isComplete && (
+              <div
+                className="absolute -top-1 -right-1 min-w-[20px] h-[20px] rounded-full flex items-center justify-center text-[0.6rem] font-bold px-1"
+                style={{
+                  background: '#F59E0B',
+                  color: '#050506',
+                  boxShadow: '0 2px 8px rgba(245,158,11,0.4)',
+                }}
+              >
+                {referralCount}
+              </div>
+            )}
+            {isComplete && (
+              <div
+                className="absolute -top-1 -right-1 w-[20px] h-[20px] rounded-full flex items-center justify-center text-[0.6rem] font-bold"
+                style={{
+                  background: '#F59E0B',
+                  color: '#050506',
+                  boxShadow: '0 2px 8px rgba(245,158,11,0.4)',
+                }}
+              >
+                ✓
+              </div>
+            )}
           </div>
-          {/* Referral count badge — gold */}
-          {referralCount > 0 && !isComplete && (
-            <div
-              className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[0.55rem] font-bold px-1"
-              style={{
-                background: '#F59E0B',
-                color: '#050506',
-                boxShadow: '0 2px 8px rgba(245,158,11,0.4)',
-              }}
-            >
-              {referralCount}
-            </div>
-          )}
-          {isComplete && (
-            <div
-              className="absolute -top-1 -right-1 w-[18px] h-[18px] rounded-full flex items-center justify-center text-[0.55rem] font-bold"
-              style={{
-                background: '#F59E0B',
-                color: '#050506',
-                boxShadow: '0 2px 8px rgba(245,158,11,0.4)',
-              }}
-            >
-              ✓
-            </div>
-          )}
         </div>
-      </button>
+      </div>
 
       {/* Modal Overlay */}
       {open && (
@@ -252,6 +313,42 @@ export default function FloatingGift() {
                 </div>
               )}
 
+              {/* World Link Section — shown when 10+ referrals and link exists */}
+              {isComplete && worldLink && (
+                <div
+                  className="rounded-xl p-4 mb-4 relative overflow-hidden"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(59,130,246,0.08))',
+                    border: '1px solid rgba(139,92,246,0.15)',
+                  }}
+                >
+                  <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full" style={{ background: 'rgba(139,92,246,0.06)' }} />
+                  <div className="relative">
+                    <div className="flex items-center gap-2 mb-2">
+                      <i className="fas fa-globe text-[0.7rem]" style={{ color: '#8B5CF6' }}></i>
+                      <span className="text-[0.72rem] font-semibold" style={{ color: '#8B5CF6' }}>Un nouvel horizon s'offre à vous</span>
+                    </div>
+                    <p className="text-[0.6rem] mb-3" style={{ color: 'rgba(0,0,0,0.45)' }}>
+                      Découvrez des opportunités exclusives réservées aux membres les plus actifs.
+                    </p>
+                    <button
+                      onClick={handleWorldLinkClick}
+                      className="w-full py-2.5 rounded-lg text-[0.75rem] font-semibold border-none cursor-pointer flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
+                      style={{
+                        background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
+                        color: '#FFFFFF',
+                        boxShadow: '0 2px 12px rgba(139,92,246,0.3)',
+                      }}
+                    >
+                      <i className="fas fa-external-link-alt text-[0.6rem]"></i>
+                      Découvrir
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* World Link loading indicator — simple spinner */}
+
               {/* Referral code — light bg, gold copy button */}
               <div
                 className="rounded-xl p-4"
@@ -325,15 +422,19 @@ export default function FloatingGift() {
       <style>{`
         @keyframes giftFloat {
           0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-4px); }
+          50% { transform: translateY(-5px); }
         }
         @keyframes giftBreathe {
           0%, 100% { transform: scale(1); }
           50% { transform: scale(1.04); }
         }
         @keyframes giftGlow {
-          0%, 100% { opacity: 0.4; transform: scale(1.4); }
-          50% { opacity: 0.8; transform: scale(1.6); }
+          0%, 100% { opacity: 0.5; transform: scale(1.8); }
+          50% { opacity: 1; transform: scale(2.1); }
+        }
+        @keyframes giftGlowOuter {
+          0%, 100% { opacity: 0.2; transform: scale(2.4); }
+          50% { opacity: 0.5; transform: scale(2.8); }
         }
         @keyframes giftWiggle {
           0%, 100% { transform: rotate(0deg); }
@@ -350,6 +451,10 @@ export default function FloatingGift() {
         @keyframes sparkle {
           0%, 100% { opacity: 0.2; transform: scale(0.8); }
           50% { opacity: 0.8; transform: scale(1.1); }
+        }
+        @keyframes bannerPulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.05); opacity: 0.85; }
         }
         .giftModalIn {
           animation: giftModalIn 0.35s cubic-bezier(0.34,1.56,0.64,1);

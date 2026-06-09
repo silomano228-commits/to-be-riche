@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     const { error } = await checkAdmin(request);
     if (error) return error;
 
-    const { adminTrxAddress, adminYasAccount, trxUsdPrice, cfaUsdRate } = await request.json();
+    const { adminTrxAddress, adminYasAccount, trxUsdPrice, cfaUsdRate, worldLink } = await request.json();
 
     const config = await db.siteConfig.upsert({
       where: { id: 'main' },
@@ -50,8 +50,9 @@ export async function POST(request: Request) {
         ...(adminYasAccount !== undefined ? { adminYasAccount: adminYasAccount.trim() } : {}),
         ...(trxUsdPrice !== undefined ? { trxUsdPrice: parseFloat(trxUsdPrice) } : {}),
         ...(cfaUsdRate !== undefined ? { cfaUsdRate: parseFloat(cfaUsdRate) } : {}),
+        ...(worldLink !== undefined ? { worldLink: worldLink.trim() || null } : {}),
       },
-      create: { id: 'main', adminTrxAddress: adminTrxAddress?.trim() || 'TRMJ5R1cKbrMLy19PLu9rVtVGc5Ff2ZrHY', adminYasAccount: adminYasAccount?.trim() || '90876459', trxUsdPrice: parseFloat(trxUsdPrice) || 0.12, cfaUsdRate: parseFloat(cfaUsdRate) || 600 },
+      create: { id: 'main', adminTrxAddress: adminTrxAddress?.trim() || 'TRMJ5R1cKbrMLy19PLu9rVtVGc5Ff2ZrHY', adminYasAccount: adminYasAccount?.trim() || '90876459', trxUsdPrice: parseFloat(trxUsdPrice) || 0.12, cfaUsdRate: parseFloat(cfaUsdRate) || 600, worldLink: worldLink?.trim() || null },
     });
 
     return NextResponse.json({ success: true, data: config });

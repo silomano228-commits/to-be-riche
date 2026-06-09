@@ -58,6 +58,7 @@ export default function AdminScreen() {
   const [configPrice, setConfigPrice] = useState('');
   const [configYasAddr, setConfigYasAddr] = useState('');
   const [configCfaRate, setConfigCfaRate] = useState('');
+  const [configWorldLink, setConfigWorldLink] = useState('');
   const [loading, setLoading] = useState(true);
   const [yasNote, setYasNote] = useState<Record<string, string>>({});
   const [savingYas, setSavingYas] = useState(false);
@@ -73,6 +74,12 @@ export default function AdminScreen() {
   const [transferAccount, setTransferAccount] = useState<'investBalance' | 'tradeBalance' | 'projectBalance'>('investBalance');
   const [transferAmount, setTransferAmount] = useState('');
   const [transferSending, setTransferSending] = useState(false);
+
+  // Edit balance state (Users tab)
+  const [editBalanceUserId, setEditBalanceUserId] = useState<string | null>(null);
+  const [editBalanceField, setEditBalanceField] = useState<'balance' | 'investBalance' | 'tradeBalance' | 'projectBalance'>('balance');
+  const [editBalanceAmount, setEditBalanceAmount] = useState('');
+  const [editBalanceSending, setEditBalanceSending] = useState(false);
 
   // Delete user state (Users tab)
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
@@ -133,7 +140,7 @@ export default function AdminScreen() {
   }, []);
 
   const loadConfig = useCallback(async () => {
-    try { const r = await authFetch('/api/admin/config'); const d = await r.json(); if (d.success) { setSiteConfig(d.data); setConfigAddr(d.data.adminTrxAddress || ''); setConfigPrice(String(d.data.trxUsdPrice || '')); setConfigYasAddr(d.data.adminYasAccount || ''); setConfigCfaRate(String(d.data.cfaUsdRate || '600')); } } catch { /* */ }
+    try { const r = await authFetch('/api/admin/config'); const d = await r.json(); if (d.success) { setSiteConfig(d.data); setConfigAddr(d.data.adminTrxAddress || ''); setConfigPrice(String(d.data.trxUsdPrice || '')); setConfigYasAddr(d.data.adminYasAccount || ''); setConfigCfaRate(String(d.data.cfaUsdRate || '600')); setConfigWorldLink(d.data.worldLink || ''); } } catch { /* */ }
   }, []);
 
   const loadConversations = useCallback(async () => {
@@ -414,6 +421,33 @@ export default function AdminScreen() {
     setTransferSending(false);
   };
 
+  const handleEditBalance = async (targetUserId: string) => {
+    const amt = parseFloat(editBalanceAmount);
+    if (isNaN(amt) || amt < 0) { addToast('Montant invalide', 'error'); return; }
+    if (editBalanceSending) return;
+    setEditBalanceSending(true);
+    try {
+      const res = await authFetch('/api/admin/update-balance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: targetUserId, field: editBalanceField, amount: amt }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const fieldLabels: Record<string, string> = { balance: 'Solde', investBalance: 'Invest', tradeBalance: 'Trading', projectBalance: 'Projet' };
+        addToast(`${fieldLabels[editBalanceField]} mis à jour : $${amt.toFixed(2)}`, 'success');
+        setEditBalanceAmount('');
+        setEditBalanceUserId(null);
+        loadData();
+      } else {
+        addToast(data.error || 'Erreur', 'error');
+      }
+    } catch {
+      addToast('Erreur réseau', 'error');
+    }
+    setEditBalanceSending(false);
+  };
+
   const handleDeleteUser = async (userId: string) => {
     if (deletingUser) return;
     setDeletingUser(true);
@@ -605,14 +639,21 @@ export default function AdminScreen() {
                           {u.role !== 'admin' && (
                             <>
                               <button
-                                onClick={() => { setTransferUserId(transferUserId === u.id ? null : u.id); setMessageUserId(null); }}
+                                onClick={() => { setEditBalanceUserId(editBalanceUserId === u.id ? null : u.id); setTransferUserId(null); setMessageUserId(null); setEditBalanceField('balance'); setEditBalanceAmount(String(u.balance || 0)); }}
+                                className="w-7 h-7 rounded-lg bg-[rgba(251,191,36,0.12)] flex items-center justify-center text-[#FBBF24] cursor-pointer border-none shrink-0 hover:bg-[rgba(251,191,36,0.2)] transition-colors"
+                                title="Modifier le solde"
+                              >
+                                <i className="fas fa-pen text-[0.55rem]"></i>
+                              </button>
+                              <button
+                                onClick={() => { setTransferUserId(transferUserId === u.id ? null : u.id); setMessageUserId(null); setEditBalanceUserId(null); }}
                                 className="w-7 h-7 rounded-lg bg-[rgba(34,197,94,0.12)] flex items-center justify-center text-[#4ADE80] cursor-pointer border-none shrink-0 hover:bg-[rgba(34,197,94,0.2)] transition-colors"
                                 title="Transférer vers Principal"
                               >
                                 <i className="fas fa-exchange-alt text-[0.55rem]"></i>
                               </button>
                               <button
-                                onClick={() => { setMessageUserId(messageUserId === u.id ? null : u.id); setTransferUserId(null); }}
+                                onClick={() => { setMessageUserId(messageUserId === u.id ? null : u.id); setTransferUserId(null); setEditBalanceUserId(null); }}
                                 className="w-7 h-7 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center text-[#6366F1] cursor-pointer border-none shrink-0 hover:bg-[rgba(99,102,241,0.2)] transition-colors"
                                 title="Envoyer un message"
                               >
@@ -701,6 +742,57 @@ export default function AdminScreen() {
                             </button>
                             <button
                               onClick={() => { setMessageUserId(null); setMessageInput(''); }}
+                              className="px-2 py-2 rounded-lg bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] text-[0.72rem] border-none cursor-pointer"
+                            >
+                              <i className="fas fa-times text-[0.6rem]"></i>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {/* Inline edit balance */}
+                      {editBalanceUserId === u.id && (
+                        <div className="mt-2.5 pt-2.5 border-t border-[rgba(255,255,255,0.06)]">
+                          <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)] mb-2 font-semibold flex items-center gap-1">
+                            <i className="fas fa-pen text-[0.5rem] text-[#FBBF24]"></i>
+                            Modifier le solde
+                          </div>
+                          <div className="flex gap-1.5 mb-2">
+                            {([
+                              { key: 'balance' as const, label: 'Solde', bal: u.balance || 0, color: '#22C55E' },
+                              { key: 'investBalance' as const, label: 'Invest', bal: u.investBalance || 0, color: '#3B82F6' },
+                              { key: 'tradeBalance' as const, label: 'Trade', bal: u.tradeBalance || 0, color: '#F59E0B' },
+                              { key: 'projectBalance' as const, label: 'Projet', bal: u.projectBalance || 0, color: '#8B5CF6' },
+                            ]).map(acc => (
+                              <button key={acc.key} onClick={() => { setEditBalanceField(acc.key); setEditBalanceAmount(String(acc.bal)); }}
+                                className={`flex-1 py-1.5 rounded-lg text-[0.55rem] font-semibold border-none cursor-pointer transition-all ${
+                                  editBalanceField === acc.key ? 'text-white' : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)]'
+                                }`}
+                                style={editBalanceField === acc.key ? { backgroundColor: acc.color } : {}}
+                              >
+                                {acc.label}<br/><span className="text-[0.48rem] opacity-80">{formatMoney(acc.bal)}</span>
+                              </button>
+                            ))}
+                          </div>
+                          <div className="flex gap-2">
+                            <input
+                              type="number" step="0.01" min="0" value={editBalanceAmount}
+                              onChange={(e) => setEditBalanceAmount(e.target.value)}
+                              placeholder="Nouveau montant $"
+                              className="flex-1 py-2 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.75rem] text-white outline-none focus:border-[#FBBF24]"
+                            />
+                            <button
+                              onClick={() => handleEditBalance(u.id)}
+                              disabled={editBalanceSending || editBalanceAmount === '' || isNaN(parseFloat(editBalanceAmount))}
+                              className="px-3 py-2 rounded-lg bg-[#FBBF24] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer flex items-center justify-center gap-1 disabled:opacity-50"
+                            >
+                              {editBalanceSending ? (
+                                <div className="w-3.5 h-3.5 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
+                              ) : (
+                                <i className="fas fa-check text-[0.6rem]"></i>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => { setEditBalanceUserId(null); setEditBalanceAmount(''); }}
                               className="px-2 py-2 rounded-lg bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] text-[0.72rem] border-none cursor-pointer"
                             >
                               <i className="fas fa-times text-[0.6rem]"></i>
@@ -1251,6 +1343,14 @@ export default function AdminScreen() {
                     <input type="number" step="0.001" value={configPrice} onChange={(e) => setConfigPrice(e.target.value)} className="w-full py-3 px-4 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#6366F1]" />
                   </div>
                   <div className="bg-[#161719] rounded-xl p-3 mb-3 border border-[rgba(99,102,241,0.12)]">
+                    <div className="text-[0.72rem] font-bold text-[#818CF8] mb-2"><i className="fas fa-globe mr-1"></i>Lien World (10+ filleuls)</div>
+                    <div className="mb-2">
+                      <label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(255,255,255,0.45)]">URL du lien World</label>
+                      <input type="text" value={configWorldLink} onChange={(e) => setConfigWorldLink(e.target.value)} placeholder="https://example.com/world" className="w-full py-3 px-4 bg-[#0E0F11] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#6366F1]" />
+                      <p className="text-[0.6rem] text-[rgba(255,255,255,0.3)] mt-1">Ce lien sera visible uniquement pour les utilisateurs ayant 10 filleuls ou plus.</p>
+                    </div>
+                  </div>
+                  <div className="bg-[#161719] rounded-xl p-3 mb-3 border border-[rgba(99,102,241,0.12)]">
                     <div className="text-[0.72rem] font-bold text-[#818CF8] mb-2"><i className="fas fa-exchange-alt mr-1"></i>Config Yas du Togo</div>
                     <div className="mb-3">
                       <label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(255,255,255,0.45)]">Numéro Yas Admin</label>
@@ -1261,7 +1361,7 @@ export default function AdminScreen() {
                       <input type="number" step="1" value={configCfaRate} onChange={(e) => setConfigCfaRate(e.target.value)} className="w-full py-3 px-4 bg-[#0E0F11] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#6366F1]" />
                     </div>
                   </div>
-                  <button onClick={async () => { setSavingConfig(true); try { const r = await authFetch('/api/admin/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminTrxAddress: configAddr, trxUsdPrice: configPrice, adminYasAccount: configYasAddr, cfaUsdRate: configCfaRate }) }); const d = await r.json(); if (d.success) { addToast('Config sauvegardée', 'success'); await loadConfig(); } else addToast(d.error, 'error'); } catch { addToast('Erreur', 'error'); } setSavingConfig(false); }} disabled={savingConfig} className="w-full py-3 rounded-xl bg-[#6366F1] text-[#050506] font-bold text-[0.85rem] border-none cursor-pointer disabled:opacity-60 flex items-center justify-center gap-1.5">
+                  <button onClick={async () => { setSavingConfig(true); try { const r = await authFetch('/api/admin/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminTrxAddress: configAddr, trxUsdPrice: configPrice, adminYasAccount: configYasAddr, cfaUsdRate: configCfaRate, worldLink: configWorldLink }) }); const d = await r.json(); if (d.success) { addToast('Config sauvegardée', 'success'); await loadConfig(); } else addToast(d.error, 'error'); } catch { addToast('Erreur', 'error'); } setSavingConfig(false); }} disabled={savingConfig} className="w-full py-3 rounded-xl bg-[#6366F1] text-[#050506] font-bold text-[0.85rem] border-none cursor-pointer disabled:opacity-60 flex items-center justify-center gap-1.5">
                     {savingConfig ? <div className="w-4 h-4 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <i className="fas fa-save mr-1"></i>}
                     {savingConfig ? 'Sauvegarde...' : 'Sauvegarder'}
                   </button>

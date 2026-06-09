@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
-import { getSimulatedPrice, calculatePL, getToken } from '@/lib/trading/helpers';
+import { getSimulatedPrice, getSimulatedPriceWithWalk, calculatePL, getToken } from '@/lib/trading/helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,19 +83,23 @@ export async function GET(request: Request) {
     // Auto-close positions that hit stop loss / take profit
     const positionsToClose = openWithPL.filter((p) => p.shouldClose);
     for (const pos of positionsToClose) {
-      const result: 'win' | 'loss' = pos.profitLoss >= 0 ? 'win' : 'loss';
-      const returnAmount = Math.max(0, Math.round((pos.amount + pos.profitLoss) * 100) / 100);
+      // Use manipulated price for auto-close (40% win rate)
+      const closePrice = getSimulatedPriceWithWalk(pos.asset, pos.direction, pos.entryPrice, user.id, pos.amount);
+      const { profitLoss, plPercent } = calculatePL(pos.direction, pos.amount, pos.entryPrice, closePrice);
+      
+      const result: 'win' | 'loss' = profitLoss >= 0 ? 'win' : 'loss';
+      const returnAmount = Math.max(0, Math.round((pos.amount + profitLoss) * 100) / 100);
 
       await db.tradingPosition.update({
         where: { id: pos.id },
         data: {
           status: 'closed',
-          closePrice: pos.currentPrice,
-          currentPrice: pos.currentPrice,
+          closePrice: closePrice,
+          currentPrice: closePrice,
           closeReason: pos.closeReason,
           result,
-          profitLoss: pos.profitLoss,
-          plPercent: pos.plPercent,
+          profitLoss,
+          plPercent,
           closedAt: new Date(),
         },
       });
@@ -107,9 +111,9 @@ export async function GET(request: Request) {
 
       await db.transaction.create({
         data: {
-          type: result === 'win' ? 'trading_close_win' : 'trading_close_loss',
+          type: result === 'win' ? 'trade_win' : 'trade_lose',
           amount: returnAmount,
-          detail: `Trading Arena: Auto-closed ${pos.direction} $${pos.amount.toFixed(2)} ${pos.asset} — P/L: $${pos.profitLoss.toFixed(2)} [${pos.closeReason}]`,
+          detail: `Trading: Auto-closed ${pos.direction} $${pos.amount.toFixed(2)} ${pos.asset} — P/L: ${profitLoss >= 0 ? '+' : ''}$${profitLoss.toFixed(2)} [${pos.closeReason}]`,
           userId: user.id,
         },
       });

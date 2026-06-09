@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { notifyAdmin } from '@/lib/notify';
+import { notifyAdmin, notifyUser } from '@/lib/notify';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { getTrxPrice, getAdminTrxAddress, getTrxUsdPrice } from '@/lib/trongrid';
@@ -90,6 +90,15 @@ export async function POST(request: Request) {
         userId: token,
       });
     }
+
+    // Notify user that their deposit request has been received
+    await notifyUser({
+      userId: token,
+      type: 'deposit_pending',
+      title: 'Demande de dépôt prise en compte',
+      message: 'Votre demande de dépôt a été prise en compte. Elle sera vérifiée prochainement.',
+      link: 'wallet',
+    });
 
     return NextResponse.json({
       success: true,

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { BASE_PRICES, getToken } from '@/lib/trading/helpers';
+import { BASE_PRICES, getSimulatedPrice, getBidAsk, getToken } from '@/lib/trading/helpers';
 import { db } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
@@ -26,13 +26,14 @@ function generateCandlestickData(
   volatility: number,
   decimals: number,
   timeframe: string,
-  count: number
+  count: number,
+  currentLivePrice: number
 ) {
   const tfSeconds = TIMEFRAME_SECONDS[timeframe] || 60;
   const now = Date.now();
 
-  // Seeded PRNG for consistent data within a time window
-  const timeBucket = Math.floor(Date.now() / 30000);
+  // Seeded PRNG for consistent data within a short time window
+  const timeBucket = Math.floor(Date.now() / 5000); // Refresh every 5s for faster updates
   let seed = Math.round(basePrice * 1000) + timeBucket * 7 + count * 3;
   const rand = () => {
     seed = (seed * 16807 + 0) % 2147483647;
@@ -53,32 +54,47 @@ function generateCandlestickData(
     volume: number;
   }[] = [];
 
-  let price = basePrice;
-  let vol = volatility / basePrice; // Convert to percentage volatility
+  let price = basePrice * (0.97 + rand() * 0.06); // Start near base
+  let vol = volatility / basePrice;
   const baseVolume = 500 + basePrice * 10;
+
+  // Generate trend phase for more realistic movement
+  const trendPhase = rand() * Math.PI * 2;
+  const trendStrength = (rand() - 0.5) * 0.003;
 
   for (let i = 0; i < count; i++) {
     const time = now - (count - i) * tfSeconds * 1000;
+    const progress = i / count;
 
-    // Volatility clustering
+    // Cyclical trend component
+    const cycleTrend = Math.sin(trendPhase + progress * Math.PI * 2) * trendStrength;
+
+    // Volatility clustering (GARCH-like)
     const volShock = randNorm() * 0.002;
     vol = Math.max(0.003, Math.min(0.025, vol * 0.94 + volShock + 0.008 * 0.06));
 
     // Mean reversion
-    const meanReversion = (basePrice - price) / basePrice * 0.002;
+    const meanReversion = (basePrice - price) / basePrice * 0.003;
 
-    // Random walk
-    const returnPct = meanReversion + randNorm() * vol;
+    // Random walk with trend
+    const returnPct = meanReversion + cycleTrend + randNorm() * vol;
     price = Math.max(basePrice * 0.7, Math.min(basePrice * 1.3, price * (1 + returnPct)));
 
-    // Generate OHLC
-    const intraVol = vol * 0.6;
-    const open = price * (1 + randNorm() * intraVol * 0.3);
-    const close = price * (1 + randNorm() * intraVol * 0.3);
-    const high = Math.max(open, close) * (1 + Math.abs(randNorm()) * intraVol * 0.5);
-    const low = Math.min(open, close) * (1 - Math.abs(randNorm()) * intraVol * 0.5);
+    // Generate OHLC with realistic intra-candle movement
+    const intraVol = vol * 0.7;
+    const open = price * (1 + randNorm() * intraVol * 0.2);
+    
+    // More realistic wick generation
+    const bodyDirection = rand() > 0.5 ? 1 : -1;
+    const bodySize = Math.abs(randNorm()) * intraVol * 0.4;
+    const close = open * (1 + bodyDirection * bodySize);
+    
+    const upperWick = Math.abs(randNorm()) * intraVol * 0.6;
+    const lowerWick = Math.abs(randNorm()) * intraVol * 0.6;
+    const high = Math.max(open, close) * (1 + upperWick);
+    const low = Math.min(open, close) * (1 - lowerWick);
 
-    // Volume
+    // Volume with spikes
     const moveSize = Math.abs(returnPct) / vol;
     const volMultiplier = 1 + moveSize * 1.5 + rand() * 0.5;
     const volume = Math.round(baseVolume * volMultiplier * (0.6 + rand() * 0.8));
@@ -87,13 +103,35 @@ function generateCandlestickData(
       Math.round(n * Math.pow(10, decimals)) / Math.pow(10, decimals);
 
     candles.push({
-      time: Math.floor(time / 1000), // Unix timestamp in seconds
+      time: Math.floor(time / 1000),
       open: roundTo(open),
       high: roundTo(high),
       low: roundTo(low),
       close: roundTo(close),
       volume,
     });
+  }
+
+  // Replace the last candle with live data for the current period
+  if (candles.length > 0) {
+    const lastCandle = candles[candles.length - 1];
+    const currentPeriodStart = Math.floor(now / (tfSeconds * 1000)) * tfSeconds * 1000;
+    
+    if (lastCandle.time * 1000 >= currentPeriodStart - tfSeconds * 1000) {
+      // This is the current live candle - update it with the real simulated price
+      const liveOpen = lastCandle.open;
+      const liveClose = currentLivePrice;
+      const liveHigh = Math.max(lastCandle.high, liveClose);
+      const liveLow = Math.min(lastCandle.low, liveClose);
+      
+      candles[candles.length - 1] = {
+        ...lastCandle,
+        close: liveClose,
+        high: liveHigh,
+        low: liveLow,
+        volume: lastCandle.volume + Math.floor(Math.random() * 50),
+      };
+    }
   }
 
   return candles;
@@ -108,8 +146,8 @@ export async function GET(request: Request) {
 
     const url = new URL(request.url);
     const asset = url.searchParams.get('asset') || 'EUR/USD';
-    const timeframe = url.searchParams.get('timeframe') || '5m';
-    const count = Math.min(200, Math.max(10, parseInt(url.searchParams.get('count') || '60')));
+    const timeframe = url.searchParams.get('timeframe') || '1m';
+    const count = Math.min(200, Math.max(10, parseInt(url.searchParams.get('count') || '80')));
 
     const info = BASE_PRICES[asset];
     if (!info) {
@@ -126,12 +164,17 @@ export async function GET(request: Request) {
       );
     }
 
+    // Get current live price for the last candle
+    const currentLivePrice = getSimulatedPrice(asset);
+    const bidAsk = getBidAsk(asset);
+
     const candles = generateCandlestickData(
       info.base,
       info.volatility,
       info.decimals,
       timeframe,
-      count
+      count,
+      currentLivePrice
     );
 
     // Current price info
@@ -146,7 +189,10 @@ export async function GET(request: Request) {
       timeframe,
       count,
       candles,
-      currentPrice: lastCandle.close,
+      currentPrice: currentLivePrice,
+      bid: bidAsk.bid,
+      ask: bidAsk.ask,
+      spread: bidAsk.spread,
       change: Math.round(change * Math.pow(10, info.decimals)) / Math.pow(10, info.decimals),
       changePercent: Math.round(changePercent * 100) / 100,
     });
