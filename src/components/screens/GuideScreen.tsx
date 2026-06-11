@@ -29,10 +29,10 @@ const PROJECT_SECTORS = [
 ];
 
 const PROJECT_TIERS = [
-  { name: 'Court terme', days: 5, minRet: 15, maxRet: 28, icon: 'fa-bolt' },
-  { name: 'Moyen terme', days: 10, minRet: 30, maxRet: 48, icon: 'fa-building' },
-  { name: 'Long terme', days: 20, minRet: 50, maxRet: 68, icon: 'fa-industry' },
-  { name: 'Ultra long', days: 30, minRet: 70, maxRet: 95, icon: 'fa-rocket' },
+  { name: 'Court terme', days: 5, minRet: 150, maxRet: 150, icon: 'fa-bolt' },
+  { name: 'Moyen terme', days: 10, minRet: 200, maxRet: 200, icon: 'fa-building' },
+  { name: 'Long terme', days: 20, minRet: 300, maxRet: 300, icon: 'fa-industry' },
+  { name: 'Ultra long', days: 30, minRet: 400, maxRet: 400, icon: 'fa-rocket' },
 ];
 
 const TRADING_TIPS = [
@@ -167,7 +167,7 @@ export default function GuideScreen() {
                     <div className="w-6 h-6 rounded-md bg-[rgba(20,184,166,0.12)] flex items-center justify-center shrink-0 mt-0.5"><i className="fas fa-building text-[0.55rem] text-[#14B8A6]"></i></div>
                     <div>
                       <div className="text-[0.72rem] font-bold text-[#1F2937]">Compte de Projet</div>
-                      <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">Investissez dans des entreprises virtuelles. Rendement de +15% à +95% selon la durée. Pas de risque de crash !</div>
+                      <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">Investissez dans des entreprises virtuelles. Rendement de +150% à +400% selon la durée. Pas de risque de crash !</div>
                     </div>
                   </div>
                   <div className="bg-[rgba(20,184,166,0.1)] rounded-lg p-2 mt-1 border border-[rgba(20,184,166,0.1)]">
@@ -259,7 +259,7 @@ export default function GuideScreen() {
                   </div>
                   <div className="flex items-start gap-2">
                     <i className="fas fa-clock text-[#EF4444] text-[0.65rem] mt-1"></i>
-                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]"><strong className="text-[#1F2937]">Attention :</strong> 48h après le 1er dépôt + filleuls requis après 4 retraits</div>
+                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]"><strong className="text-[#1F2937]">Attention :</strong> 48h après le 1er dépôt + parrainés requis après 4 retraits</div>
                   </div>
                   <div className="bg-[rgba(239,68,68,0.1)] rounded-lg p-2 mt-1 border border-[rgba(239,68,68,0.1)]">
                     <p className="text-[0.62rem] text-[#EF4444]"><i className="fas fa-info-circle mr-1"></i>Minimum de retrait : <strong>5$</strong>. Un seul retrait en attente à la fois.</p>
@@ -285,15 +285,15 @@ export default function GuideScreen() {
                   </div>
                   <div className="flex items-start gap-2">
                     <i className="fas fa-gift text-[#8B5CF6] text-[0.65rem] mt-1"></i>
-                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Recevez <strong className="text-[#1F2937]">20% du premier dépôt</strong> de votre filleul sur votre Compte Principal (sans déduction de son compte)</div>
+                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Recevez <strong className="text-[#1F2937]">20% du premier dépôt</strong> de votre parrainé sur votre Compte Principal (sans déduction de son compte)</div>
                   </div>
                   <div className="flex items-start gap-2">
                     <i className="fas fa-chart-line text-[#8B5CF6] text-[0.65rem] mt-1"></i>
-                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Recevez aussi <strong className="text-[#1F2937]">5% des gains d&apos;investissement</strong> de vos filleuls à chaque réclamation</div>
+                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Recevez aussi <strong className="text-[#1F2937]">5% des gains d&apos;investissement</strong> de vos parrainés à chaque réclamation</div>
                   </div>
                   <div className="flex items-start gap-2">
                     <i className="fas fa-lock-open text-[#8B5CF6] text-[0.65rem] mt-1"></i>
-                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Filleuls requis : <strong className="text-[#1F2937]">1 filleul par tranche de 4 retraits</strong>. Les 4 premiers retraits sont libres.</div>
+                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Parrainés requis : <strong className="text-[#1F2937]">1 parrainé par tranche de 4 retraits</strong>. Les 4 premiers retraits sont libres.</div>
                   </div>
                 </div>
               </div>

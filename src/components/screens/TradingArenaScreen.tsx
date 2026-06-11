@@ -228,7 +228,7 @@ function ProChart({
   const pinchZoom = useRef(1);
 
   // Calculate visible range based on zoom
-  const visibleCount = Math.max(5, Math.min(20, Math.round(candles.length / zoomLevel)));
+  const visibleCount = Math.max(5, Math.min(15, Math.round(candles.length / zoomLevel)));
   const maxOffset = Math.max(0, candles.length - visibleCount);
   const startIdx = Math.min(Math.max(0, panOffset), maxOffset);
   const endIdx = Math.min(startIdx + visibleCount, candles.length);
@@ -252,8 +252,8 @@ function ProChart({
   const yRange = yMax - yMin;
 
   const candleSpacing = visibleCandles.length > 0 ? chartW / visibleCandles.length : 1;
-  const candleWidth = Math.max(3, Math.min(45, candleSpacing * 0.82));
-  const wickWidth = Math.max(1, candleWidth * 0.35);
+  const candleWidth = Math.max(4, Math.min(55, candleSpacing * 0.88));
+  const wickWidth = Math.max(1.5, candleWidth * 0.3);
 
   const toX = (i: number) => pad.left + i * candleSpacing + candleSpacing / 2;
   const toY = (price: number) => pad.top + (1 - (price - yMin) / yRange) * mainH;
@@ -765,8 +765,8 @@ export default function TradingArenaScreen() {
   const [showMACD, setShowMACD] = useState(false);
 
   // Zoom & Pan (keyed by asset+timeframe so they reset when either changes)
-  const [chartZoomPan, setChartZoomPan] = useState({ asset: 'EUR/USD', tf: '1m', zoom: 2.5, pan: 0 });
-  const zoomLevel = chartZoomPan.asset === selectedAsset && chartZoomPan.tf === timeframe ? chartZoomPan.zoom : 2.5;
+  const [chartZoomPan, setChartZoomPan] = useState({ asset: 'EUR/USD', tf: '1m', zoom: 3.5, pan: 0 });
+  const zoomLevel = chartZoomPan.asset === selectedAsset && chartZoomPan.tf === timeframe ? chartZoomPan.zoom : 3.5;
   const panOffset = chartZoomPan.asset === selectedAsset && chartZoomPan.tf === timeframe ? chartZoomPan.pan : 0;
 
   // Crosshair
@@ -782,12 +782,12 @@ export default function TradingArenaScreen() {
   // Chart sizing
   const chartRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState(360);
-  const mainChartHeight = 450;
+  const mainChartHeight = 550;
   const rsiHeight = 60;
   const macdHeight = 70;
 
   // Computed visible range for passing to sub-charts
-  const visibleCount = Math.max(5, Math.min(20, Math.round(candles.length / zoomLevel)));
+  const visibleCount = Math.max(5, Math.min(15, Math.round(candles.length / zoomLevel)));
   const maxPanOffset = Math.max(0, candles.length - visibleCount);
   const chartStartIdx = Math.min(Math.max(0, panOffset), maxPanOffset);
 
@@ -966,7 +966,7 @@ export default function TradingArenaScreen() {
   }, []);
 
   const handleZoomReset = useCallback(() => {
-    setChartZoomPan(prev => ({ ...prev, zoom: 2.5, pan: 0 }));
+    setChartZoomPan(prev => ({ ...prev, zoom: 3.5, pan: 0 }));
   }, []);
 
   // ===== HELPERS =====

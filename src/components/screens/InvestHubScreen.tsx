@@ -110,9 +110,9 @@ export default function InvestHubScreen() {
       const missingReferrals = Math.max(0, lvl.requiredReferrals - user.referralCount);
       const fee = missingReferrals * lvl.unlockFee;
       if (missingReferrals > 0) {
-        return { canInvest: false, reason: `${lvl.requiredReferrals} filleuls requis ou $${fee.toFixed(2)} de frais` };
+        return { canInvest: false, reason: `${lvl.requiredReferrals} parrainés requis` };
       }
-      return { canInvest: false, reason: `${lvl.requiredReferrals} filleuls requis` };
+      return { canInvest: false, reason: `${lvl.requiredReferrals} parrainés requis` };
     }
 
     // Check if invested in previous level
@@ -313,7 +313,7 @@ export default function InvestHubScreen() {
                     {lvl.requiredReferrals > 0 && (
                       <span className="flex items-center gap-1" style={{ color: isUnlocked ? '#22C55E' : 'rgba(0,0,0,0.5)' }}>
                         <i className="fas fa-users text-[0.5rem]"></i>
-                        {lvl.requiredReferrals} filleuls
+                        {lvl.requiredReferrals} parrainés
                         {isUnlocked && <i className="fas fa-check text-[0.5rem] ml-0.5"></i>}
                       </span>
                     )}
@@ -330,7 +330,7 @@ export default function InvestHubScreen() {
                   <div className="px-4 py-2 flex items-center gap-2" style={{ background: 'rgba(0,0,0,0.03)', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
                     <i className="fas fa-lock text-[0.55rem]" style={{ color: 'rgba(0,0,0,0.25)' }}></i>
                     <span className="text-[0.6rem]" style={{ color: 'rgba(0,0,0,0.4)' }}>
-                      {lvl.requiredReferrals} filleuls actifs requis ou {lvl.unlockFee}$/filleul manquant
+                      {lvl.requiredReferrals} parrainés actifs requis
                     </span>
                   </div>
                 )}
@@ -516,7 +516,7 @@ export default function InvestHubScreen() {
               <div className="rounded-lg p-3 mb-3" style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.06)' }}>
                 <div className="text-[0.72rem] font-semibold mb-2" style={{ color: '#1F2937' }}>Conditions de déblocage</div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[0.68rem]" style={{ color: 'rgba(0,0,0,0.55)' }}>Filleuls requis</span>
+                  <span className="text-[0.68rem]" style={{ color: 'rgba(0,0,0,0.55)' }}>Parrainés requis</span>
                   <span className="text-[0.68rem] font-bold" style={{ color: canUnlockFree ? '#22C55E' : '#1F2937' }}>
                     {user.referralCount}/{info.requiredReferrals}
                     {canUnlockFree && <i className="fas fa-check text-[0.55rem] ml-1"></i>}
@@ -525,21 +525,11 @@ export default function InvestHubScreen() {
                 {info.missingReferrals > 0 && (
                   <>
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[0.68rem]" style={{ color: 'rgba(0,0,0,0.55)' }}>Filleuls manquants</span>
+                      <span className="text-[0.68rem]" style={{ color: 'rgba(0,0,0,0.55)' }}>Parrainés manquants</span>
                       <span className="text-[0.68rem] font-bold" style={{ color: '#F59E0B' }}>{info.missingReferrals}</span>
                     </div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[0.68rem]" style={{ color: 'rgba(0,0,0,0.55)' }}>Frais par filleul manquant</span>
-                      <span className="text-[0.68rem] font-bold" style={{ color: '#1F2937' }}>${info.unlockFee}</span>
-                    </div>
-                    <div className="border-t mt-2 pt-2" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[0.72rem] font-bold" style={{ color: '#1F2937' }}>Frais totaux</span>
-                        <span className="text-[0.82rem] font-black" style={{ color: '#F59E0B' }}>${info.fee.toFixed(2)}</span>
-                      </div>
-                    </div>
-                    <div className="mt-1.5 text-[0.6rem]" style={{ color: 'rgba(0,0,0,0.4)' }}>
-                      Solde principal: {formatMoney(user.balance)}
+                    <div className="mt-2 text-[0.6rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>
+                      <i className="fas fa-info-circle mr-1"></i>Parrainez des amis pour débloquer ce niveau. Aucune option de paiement disponible.
                     </div>
                   </>
                 )}
@@ -555,14 +545,20 @@ export default function InvestHubScreen() {
 
               <div className="flex gap-2">
                 <button onClick={() => setUnlockLevel(null)} className="flex-1 py-3 rounded-xl font-semibold text-[0.82rem] cursor-pointer transition-colors" style={{ background: 'rgba(0,0,0,0.05)', border: '1.5px solid rgba(0,0,0,0.1)', color: 'rgba(0,0,0,0.55)' }}>Annuler</button>
-                <button
-                  onClick={() => handleUnlock(unlockLevel)}
-                  disabled={unlocking || (!canUnlockFree && user.balance < info.fee)}
-                  className="flex-1 py-3 rounded-xl font-semibold text-[0.82rem] border-none cursor-pointer disabled:opacity-50 transition-all active:scale-[0.97]"
-                  style={{ background: lvl.color, color: '#FFFFFF', boxShadow: `0 4px 16px ${hexToRgba(lvl.color, 0.25)}` }}
-                >
-                  {unlocking ? '...' : canUnlockFree ? 'Débloquer gratuitement' : `Payer $${info.fee.toFixed(2)}`}
-                </button>
+                {canUnlockFree ? (
+                  <button
+                    onClick={() => handleUnlock(unlockLevel)}
+                    disabled={unlocking}
+                    className="flex-1 py-3 rounded-xl font-semibold text-[0.82rem] border-none cursor-pointer disabled:opacity-50 transition-all active:scale-[0.97]"
+                    style={{ background: lvl.color, color: '#FFFFFF', boxShadow: `0 4px 16px ${hexToRgba(lvl.color, 0.25)}` }}
+                  >
+                    {unlocking ? '...' : 'Débloquer gratuitement'}
+                  </button>
+                ) : (
+                  <div className="flex-1 py-3 rounded-xl text-[0.78rem] font-semibold text-center" style={{ background: 'rgba(0,0,0,0.05)', color: 'rgba(0,0,0,0.4)' }}>
+                    <i className="fas fa-users mr-1"></i>Parrainés insuffisants
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -48,6 +48,7 @@ export default function DepositScreen() {
   const [adminYasAccount, setAdminYasAccount] = useState('');
   const [yasCopied, setYasCopied] = useState(false);
   const [syntaxCopied, setSyntaxCopied] = useState(false);
+  const [yasConfirmed, setYasConfirmed] = useState(false);
 
   // Unified pending deposit
   const [activePending, setActivePending] = useState<ActivePendingDeposit | null>(null);
@@ -755,6 +756,17 @@ export default function DepositScreen() {
           {/* ===================== STEP 2: SEND ===================== */}
           {yasStep === 'send' && (
             <div style={{ animation: 'tIn 0.3s ease-out' }}>
+              {/* Important warning */}
+              <div className="bg-[rgba(239,68,68,0.08)] rounded-xl p-3 mb-4 border border-[rgba(239,68,68,0.2)]">
+                <div className="flex items-start gap-2">
+                  <i className="fas fa-exclamation-triangle text-[#EF4444] text-[0.85rem] mt-0.5"></i>
+                  <div>
+                    <p className="text-[0.78rem] font-bold text-[#EF4444]">Important !</p>
+                    <p className="text-[0.68rem] text-[rgba(0,0,0,0.65)]">Effectuez d&apos;abord le transfert sur votre téléphone AVANT de cliquer sur &quot;J&apos;ai envoyé&quot;. L&apos;administrateur vérifiera la réception de l&apos;argent sur son compte Yas.</p>
+                  </div>
+                </div>
+              </div>
+
               <div className="bg-[rgba(34,197,94,0.08)] rounded-2xl p-5 mb-4 border border-[rgba(34,197,94,0.2)]">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-10 h-10 rounded-xl bg-[#22C55E] flex items-center justify-center shrink-0">
@@ -822,16 +834,37 @@ export default function DepositScreen() {
                 </div>
               )}
 
+              {/* Mandatory confirmation */}
+              <div className="bg-[rgba(245,158,11,0.08)] rounded-xl p-3 mb-4 border border-[rgba(245,158,11,0.2)]">
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={yasConfirmed}
+                    onChange={(e) => setYasConfirmed(e.target.checked)}
+                    className="mt-0.5 w-5 h-5 rounded accent-[#22C55E] shrink-0"
+                  />
+                  <div>
+                    <p className="text-[0.75rem] font-bold text-[#1F2937]">
+                      ⚠️ Je confirme avoir effectué le transfert
+                    </p>
+                    <p className="text-[0.65rem] text-[rgba(0,0,0,0.55)] mt-0.5">
+                      Je certifie avoir envoyé <strong className="text-[#22C55E]">{Math.round(yasAmountCfa).toLocaleString('fr-FR')} FCFA</strong> au numéro <strong className="text-[#22C55E]">{adminYasAccount}</strong> depuis mon téléphone. Toute fausse déclaration entraînera des sanctions.
+                    </p>
+                  </div>
+                </label>
+              </div>
+
               <div className="flex gap-2">
                 <button
-                  onClick={() => setYasStep('amount')}
+                  onClick={() => { setYasStep('amount'); setYasConfirmed(false); }}
                   className="flex-1 py-3.5 rounded-xl bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] font-semibold text-[0.82rem] cursor-pointer border-none"
                 >
                   <i className="fas fa-arrow-left mr-1"></i> Retour
                 </button>
                 <button
                   onClick={() => setYasStep('info')}
-                  className="flex-[2] py-3.5 rounded-xl bg-[#22C55E] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer"
+                  disabled={!yasConfirmed}
+                  className="flex-[2] py-3.5 rounded-xl bg-[#22C55E] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   J&apos;ai envoyé <i className="fas fa-arrow-right ml-2"></i>
                 </button>

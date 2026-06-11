@@ -14,9 +14,9 @@ function getToken(request: Request): string | null {
 }
 
 const LEVEL_CONFIG: Record<number, { requiredReferrals: number; unlockFee: number; label: string; category: string }> = {
-  2: { requiredReferrals: 2, unlockFee: 5, label: 'Standard', category: 'petit' },
-  3: { requiredReferrals: 10, unlockFee: 5, label: 'Premium', category: 'gros' },
-  4: { requiredReferrals: 15, unlockFee: 5, label: 'Elite', category: 'gros' },
+  2: { requiredReferrals: 2, unlockFee: 0, label: 'Standard', category: 'petit' },
+  3: { requiredReferrals: 10, unlockFee: 0, label: 'Premium', category: 'gros' },
+  4: { requiredReferrals: 15, unlockFee: 0, label: 'Elite', category: 'gros' },
 };
 
 export async function POST(request: Request) {
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // Check if user has enough referrals
+    // Check if user has enough referrals — ONLY referral unlock, no payment option
     if (user.referralCount >= config.requiredReferrals) {
       // Free unlock via referrals
       await db.user.update({
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
         data: {
           type: 'level_unlock',
           amount: 0,
-          detail: `Niveau ${level} (${config.label}) débloqué grâce à ${user.referralCount} filleuls`,
+          detail: `Niveau ${level} (${config.label}) débloqué grâce à ${user.referralCount} parrainés`,
           userId: user.id,
         },
       });
@@ -80,63 +80,24 @@ export async function POST(request: Request) {
         userId: user.id,
         type: 'level_unlocked',
         title: `Niveau ${level} débloqué !`,
-        message: `Vous avez débloqué le Niveau ${level} (${config.label}) grâce à vos filleuls. Vous pouvez maintenant y investir !`,
+        message: `Vous avez débloqué le Niveau ${level} (${config.label}) grâce à vos parrainés. Vous pouvez maintenant y investir !`,
         link: 'invest',
       });
 
       return NextResponse.json({
         success: true,
-        message: `Niveau ${level} (${config.label}) débloqué ! Vos ${user.referralCount} filleuls vous y donnent accès gratuitement.`,
+        message: `Niveau ${level} (${config.label}) débloqué ! Vos ${user.referralCount} parrainés vous donnent accès gratuitement.`,
         unlockedBy: 'referrals',
       });
     }
 
-    // Need to pay for missing referrals
+    // Not enough referrals — no payment option available
     const missingReferrals = config.requiredReferrals - user.referralCount;
-    const fee = Math.round(missingReferrals * config.unlockFee * 100) / 100;
-
-    if (user.balance < fee) {
-      return NextResponse.json({
-        success: false,
-        error: `Solde insuffisant. Vous avez ${missingReferrals} filleul${missingReferrals > 1 ? 's' : ''} manquant${missingReferrals > 1 ? 's' : ''}. Frais de débloquage: $${fee.toFixed(2)}. Solde: $${user.balance.toFixed(2)}`,
-        fee,
-        missingReferrals,
-      });
-    }
-
-    // Deduct fee and unlock
-    await db.$transaction(async (tx) => {
-      await tx.user.update({
-        where: { id: user.id },
-        data: {
-          unlockedLevel: level,
-          balance: { decrement: fee },
-        },
-      });
-
-      await tx.transaction.create({
-        data: {
-          type: 'level_unlock_fee',
-          amount: -fee,
-          detail: `Frais de débloquage Niveau ${level} (${config.label}): $${fee.toFixed(2)} (${missingReferrals} filleul${missingReferrals > 1 ? 's' : ''} manquant${missingReferrals > 1 ? 's' : ''} × $${config.unlockFee})`,
-          userId: user.id,
-        },
-      });
-    });
-
-    await notifyUser({
-      userId: user.id,
-      type: 'level_unlocked',
-      title: `Niveau ${level} débloqué !`,
-      message: `Vous avez débloqué le Niveau ${level} (${config.label}) pour $${fee.toFixed(2)}. Vous pouvez maintenant y investir !`,
-      link: 'invest',
-    });
-
     return NextResponse.json({
-      success: true,
-      message: `Niveau ${level} (${config.label}) débloqué pour $${fee.toFixed(2)} !`,
-      unlockedBy: 'payment',
-      fee,
+      success: false,
+      error: `Parrainés insuffisants. Vous avez ${user.referralCount} parrainé${user.referralCount > 1 ? 's' : ''} mais il vous en faut ${config.requiredReferrals}. Il vous manque ${missingReferrals} parrainé${missingReferrals > 1 ? 's' : ''}.`,
+      missingReferrals,
+      requiredReferrals: config.requiredReferrals,
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });

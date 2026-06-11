@@ -7,23 +7,23 @@ export const LOGO_URL = 'https://z-cdn-media.chatglm.cn/files/1153c12e-46c2-4ff4
 
 export const INVEST_LEVELS = [
   { level: 1, name: 'Micro',    color: '#22C55E', bg: 'bg-[rgba(34,197,94,0.12)]', border: 'border-[rgba(34,197,94,0.15)]', min: 5, max: 10, cycles: 999999, rate: 10, totalReturn: 0, profit: 0, icon: 'fa-seedling',   requiredReferrals: 0,  unlockFee: 0, category: 'petit' },
-  { level: 2, name: 'Standard', color: '#3B82F6', bg: 'bg-[rgba(59,130,246,0.12)]', border: 'border-[rgba(59,130,246,0.15)]', min: 10.5, max: 20, cycles: 999999, rate: 10, totalReturn: 0, profit: 0, icon: 'fa-chart-line', requiredReferrals: 2,  unlockFee: 5, category: 'petit' },
-  { level: 3, name: 'Premium',  color: '#8B5CF6', bg: 'bg-[rgba(139,92,246,0.12)]', border: 'border-[rgba(139,92,246,0.15)]', min: 65, max: 250, cycles: 999999, rate: 10, totalReturn: 0, profit: 0, icon: 'fa-crown',      requiredReferrals: 10, unlockFee: 5, category: 'gros' },
-  { level: 4, name: 'Elite',    color: '#F59E0B', bg: 'bg-[rgba(245,158,11,0.12)]', border: 'border-[rgba(245,158,11,0.15)]', min: 300, max: 1000, cycles: 999999, rate: 10, totalReturn: 0, profit: 0, icon: 'fa-gem',        requiredReferrals: 15, unlockFee: 5, category: 'gros' },
+  { level: 2, name: 'Standard', color: '#3B82F6', bg: 'bg-[rgba(59,130,246,0.12)]', border: 'border-[rgba(59,130,246,0.15)]', min: 10.5, max: 20, cycles: 999999, rate: 10, totalReturn: 0, profit: 0, icon: 'fa-chart-line', requiredReferrals: 2,  unlockFee: 0, category: 'petit' },
+  { level: 3, name: 'Premium',  color: '#8B5CF6', bg: 'bg-[rgba(139,92,246,0.12)]', border: 'border-[rgba(139,92,246,0.15)]', min: 65, max: 250, cycles: 999999, rate: 10, totalReturn: 0, profit: 0, icon: 'fa-crown',      requiredReferrals: 10, unlockFee: 0, category: 'gros' },
+  { level: 4, name: 'Elite',    color: '#F59E0B', bg: 'bg-[rgba(245,158,11,0.12)]', border: 'border-[rgba(245,158,11,0.15)]', min: 300, max: 1000, cycles: 999999, rate: 10, totalReturn: 0, profit: 0, icon: 'fa-gem',        requiredReferrals: 15, unlockFee: 0, category: 'gros' },
 ];
 
 export const ENTERPRISE_TYPES = [
-  { type: 'starter', name: 'Starter', days: 30, minRet: 100, maxRet: 100, color: '#22C55E', icon: 'fa-seedling', risk: 'Faible', minAmount: 10 },
-  { type: 'growth', name: 'Growth', days: 45, minRet: 150, maxRet: 150, color: '#3B82F6', icon: 'fa-chart-line', risk: 'Modéré', minAmount: 10 },
-  { type: 'premium', name: 'Premium', days: 60, minRet: 200, maxRet: 200, color: '#8B5CF6', icon: 'fa-crown', risk: 'Considéré', minAmount: 10 },
-  { type: 'elite', name: 'Elite', days: 75, minRet: 250, maxRet: 250, color: '#F59E0B', icon: 'fa-gem', risk: 'Élevé', minAmount: 10 },
-  { type: 'vip', name: 'VIP', days: 90, minRet: 300, maxRet: 300, color: '#EF4444', icon: 'fa-rocket', risk: 'Très élevé', minAmount: 10 },
+  { type: 'starter', name: 'Starter', days: 30, minRet: 150, maxRet: 150, color: '#22C55E', icon: 'fa-seedling', risk: 'Faible', minAmount: 10 },
+  { type: 'growth', name: 'Growth', days: 45, minRet: 200, maxRet: 200, color: '#3B82F6', icon: 'fa-chart-line', risk: 'Modéré', minAmount: 10 },
+  { type: 'premium', name: 'Premium', days: 60, minRet: 275, maxRet: 275, color: '#8B5CF6', icon: 'fa-crown', risk: 'Considéré', minAmount: 10 },
+  { type: 'elite', name: 'Elite', days: 75, minRet: 350, maxRet: 350, color: '#F59E0B', icon: 'fa-gem', risk: 'Élevé', minAmount: 10 },
+  { type: 'vip', name: 'VIP', days: 90, minRet: 450, maxRet: 450, color: '#EF4444', icon: 'fa-rocket', risk: 'Très élevé', minAmount: 10 },
 ];
 
 export const AI_TIPS = [
   "Le niveau Micro est libre d'accès. Commencez dès maintenant !",
   "Petit investissement : 10% de gains quotidiens sur vos investissements !",
-  "Débloquez le niveau Standard avec 2 filleuls actifs ou un petit paiement.",
+  "Débloquez le niveau Standard avec 2 parrainés actifs.",
   "Gros investissement : des rendements de 10%/jour à partir de 65 $ !",
   "Chaque niveau supérieur nécessite d'avoir investi au niveau précédent.",
   "Nouveau projet entreprise disponible. Rendement élevé possible.",

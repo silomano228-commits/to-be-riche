@@ -24,9 +24,9 @@ const INVESTMENT_LEVELS: Record<number, {
   totalReturn: number; profit: number; category: string;
 }> = {
   1: { minAmount: 5, maxAmount: 10, totalCycles: 999999, rate: 10, label: 'Niveau 1 — Micro', requiredReferrals: 0, unlockFee: 0, totalReturn: 0, profit: 0, category: 'petit' },
-  2: { minAmount: 10.5, maxAmount: 20, totalCycles: 999999, rate: 10, label: 'Niveau 2 — Standard', requiredReferrals: 2, unlockFee: 5, totalReturn: 0, profit: 0, category: 'petit' },
-  3: { minAmount: 65, maxAmount: 250, totalCycles: 999999, rate: 10, label: 'Niveau 3 — Premium', requiredReferrals: 10, unlockFee: 5, totalReturn: 0, profit: 0, category: 'gros' },
-  4: { minAmount: 300, maxAmount: 1000, totalCycles: 999999, rate: 10, label: 'Niveau 4 — Elite', requiredReferrals: 15, unlockFee: 5, totalReturn: 0, profit: 0, category: 'gros' },
+  2: { minAmount: 10.5, maxAmount: 20, totalCycles: 999999, rate: 10, label: 'Niveau 2 — Standard', requiredReferrals: 2, unlockFee: 0, totalReturn: 0, profit: 0, category: 'petit' },
+  3: { minAmount: 65, maxAmount: 250, totalCycles: 999999, rate: 10, label: 'Niveau 3 — Premium', requiredReferrals: 10, unlockFee: 0, totalReturn: 0, profit: 0, category: 'gros' },
+  4: { minAmount: 300, maxAmount: 1000, totalCycles: 999999, rate: 10, label: 'Niveau 4 — Elite', requiredReferrals: 15, unlockFee: 0, totalReturn: 0, profit: 0, category: 'gros' },
 };
 
 export async function POST(request: Request) {

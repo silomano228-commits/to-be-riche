@@ -19,9 +19,9 @@ async function getUser(request: Request) {
 }
 
 // Count how many new referrals are needed based on total claims
-// Rule: every 10 claims = need 1 more active referral
+// Rule: every 5 claims = need 1 more active referral
 function getRequiredReferralsForClaims(totalClaims: number, currentReferralCount: number): number {
-  const requiredReferrals = Math.floor(totalClaims / 10);
+  const requiredReferrals = Math.floor(totalClaims / 5);
   return Math.max(0, requiredReferrals - currentReferralCount);
 }
 
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
         const fee = missingReferrals * 5;
         return NextResponse.json({
           success: false,
-          error: `Parrainage requis ! Vous avez fait ${user.totalInvestClaims} collectes. ${missingReferrals} filleul${missingReferrals > 1 ? 's' : ''} actif${missingReferrals > 1 ? 's' : ''} supplémentaire${missingReferrals > 1 ? 's' : ''} nécessaire${missingReferrals > 1 ? 's' : ''}, ou payez $${fee.toFixed(2)} pour continuer.`,
+          error: `Parrainage requis ! Vous avez fait ${user.totalInvestClaims} collectes. ${missingReferrals} parrainé${missingReferrals > 1 ? 's' : ''} actif${missingReferrals > 1 ? 's' : ''} supplémentaire${missingReferrals > 1 ? 's' : ''} nécessaire${missingReferrals > 1 ? 's' : ''}, ou payez $${fee.toFixed(2)} pour continuer.`,
           needsReferral: true,
           missingReferrals,
           fee,
@@ -91,7 +91,7 @@ export async function POST(request: Request) {
             data: {
               type: 'invest_claim_fee',
               amount: -fee,
-              detail: `Frais de parrainage: $${fee.toFixed(2)} (${missingReferrals} filleul${missingReferrals > 1 ? 's' : ''} manquant${missingReferrals > 1 ? 's' : ''} × $5)`,
+              detail: `Frais de parrainage: $${fee.toFixed(2)} (${missingReferrals} parrainé${missingReferrals > 1 ? 's' : ''} manquant${missingReferrals > 1 ? 's' : ''} × $5)`,
               userId: user.id,
             },
           });
@@ -121,8 +121,8 @@ export async function POST(request: Request) {
     const newNextClaimAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
     const newTotalClaims = user.totalInvestClaims + 1;
 
-    // Check if this claim triggers the referral gate (every 10 claims)
-    const willBeBlocked = newTotalClaims % 10 === 0;
+    // Check if this claim triggers the referral gate (every 5 claims)
+    const willBeBlocked = newTotalClaims % 5 === 0;
     const missingAfter = getRequiredReferralsForClaims(newTotalClaims, user.referralCount);
 
     // Add gain to user balance (invest account)
@@ -157,7 +157,7 @@ export async function POST(request: Request) {
         },
       });
 
-      // 5% of filleul's investment gains to admin
+      // 5% of parrainé's investment gains to admin
       if (user.referredByCode) {
         const admin = await tx.user.findFirst({
           where: { role: 'admin' },
@@ -175,7 +175,7 @@ export async function POST(request: Request) {
               data: {
                 type: 'referral_invest_bonus',
                 amount: adminBonus,
-                detail: `5% of filleul's investment gain ($${gain.toFixed(2)})`,
+                detail: `5% of parrainé's investment gain ($${gain.toFixed(2)})`,
                 userId: admin.id,
               },
             });
@@ -196,7 +196,7 @@ export async function POST(request: Request) {
       missingReferrals: missingAfter,
       fee: missingAfter * 5,
       message: willBeBlocked && missingAfter > 0
-        ? `Claimed $${gain.toFixed(2)} gain. Attention: vous avez atteint ${newTotalClaims} collectes. ${missingAfter} filleul${missingAfter > 1 ? 's' : ''} actif${missingAfter > 1 ? 's' : ''} supplémentaire${missingAfter > 1 ? 's' : ''} requis pour continuer, ou payez $${(missingAfter * 5).toFixed(2)}.`
+        ? `Claimed $${gain.toFixed(2)} gain. Attention: vous avez atteint ${newTotalClaims} collectes. ${missingAfter} parrainé${missingAfter > 1 ? 's' : ''} actif${missingAfter > 1 ? 's' : ''} supplémentaire${missingAfter > 1 ? 's' : ''} requis pour continuer, ou payez $${(missingAfter * 5).toFixed(2)}.`
         : `Claimed $${gain.toFixed(2)} gain. Cycle ${newDoneCycles}.`,
     });
   } catch (error) {

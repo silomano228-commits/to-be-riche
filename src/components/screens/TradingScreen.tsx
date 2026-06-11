@@ -24,8 +24,8 @@ function useLivePrices() {
       const start = m.base + (Math.random() - 0.5) * m.vol * 0.5;
       const hist: number[] = [];
       let p = start;
-      for (let i = 0; i < 60; i++) {
-        p += (Math.random() - 0.48) * m.vol * 0.02;
+      for (let i = 0; i < 80; i++) {
+        p += (Math.random() - 0.48) * m.vol * 0.03;
         p = Math.max(m.base - m.vol, Math.min(m.base + m.vol, p));
         hist.push(p);
       }
@@ -41,9 +41,9 @@ function useLivePrices() {
         MARKETS.forEach(m => {
           const cur = next[m.id];
           if (!cur) return;
-          const tick = (Math.random() - 0.48) * m.vol * 0.015;
+          const tick = (Math.random() - 0.48) * m.vol * 0.02;
           const newP = Math.max(m.base - m.vol, Math.min(m.base + m.vol, cur.current + tick));
-          const newHist = [...cur.history.slice(-59), newP];
+          const newHist = [...cur.history.slice(-79), newP];
           const first = newHist[0];
           const ch = ((newP - first) / first) * 100;
           next[m.id] = { current: newP, history: newHist, change: ch };
@@ -141,7 +141,7 @@ function MiniChart({ history, color, width = 80, height = 32 }: { history: numbe
 
 // ==================== FULL CHART COMPONENT ====================
 function FullChart({ history, color, assetId }: { history: number[]; color: string; assetId: string }) {
-  const w = 340, h = 180, pad = 8;
+  const w = 340, h = 280, pad = 8;
   const linePath = generateSVGPath(history, w, h, pad);
   const areaPath = generateAreaPath(history, w, h, pad);
   const min = Math.min(...history);
@@ -599,8 +599,8 @@ export default function TradingScreen() {
 
                   {/* Live mini chart */}
                   {tradeHist.length > 2 && (
-                    <div className="h-[50px] mb-2 rounded-lg bg-[rgba(0,0,0,0.02)] border border-[rgba(0,0,0,0.04)] overflow-hidden">
-                      <MiniChart history={tradeHist} color={lineColor} width={300} height={50} />
+                    <div className="h-[70px] mb-2 rounded-lg bg-[rgba(0,0,0,0.02)] border border-[rgba(0,0,0,0.04)] overflow-hidden">
+                      <MiniChart history={tradeHist} color={lineColor} width={340} height={70} />
                     </div>
                   )}
 
