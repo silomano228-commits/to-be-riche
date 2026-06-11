@@ -113,7 +113,7 @@ export default function GuideScreen() {
                     <ol className="space-y-1 text-[0.65rem] text-[rgba(0,0,0,0.65)] pl-4">
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Allez dans <strong className="text-[#1F2937]">Portefeuille → Déposer</strong></li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">TRX</strong></li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez le montant en $ (min 10 $)</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez le montant en $ (min 5 $)</li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>L&apos;adresse TRX de notre équipe s&apos;affiche — envoyez les TRX depuis votre Trust Wallet</li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez votre propre adresse TRX pour confirmer l&apos;envoi</li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Attendez la validation par notre équipe</li>
@@ -127,7 +127,7 @@ export default function GuideScreen() {
                     <ol className="space-y-1 text-[0.65rem] text-[rgba(0,0,0,0.65)] pl-4">
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Allez dans <strong className="text-[#1F2937]">Portefeuille → Déposer</strong></li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">Yas</strong></li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez le montant en FCFA (min 6 000 FCFA)</li>
+                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez le montant en FCFA (min 3 000 FCFA)</li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Le code USSD s&apos;affiche : <strong className="text-[#1F2937]">*145*1*{`{montant}`}*{`{numéro_admin}`}*2#</strong></li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Copiez ou lancez le code, puis envoyez l&apos;argent</li>
                       <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez votre numéro Yas (8 chiffres, commence par 90-93 ou 70-73)</li>
@@ -153,7 +153,7 @@ export default function GuideScreen() {
                     <div className="w-6 h-6 rounded-md bg-[rgba(20,184,166,0.12)] flex items-center justify-center shrink-0 mt-0.5"><i className="fas fa-chart-line text-[0.55rem] text-[#14B8A6]"></i></div>
                     <div>
                       <div className="text-[0.72rem] font-bold text-[#1F2937]">Compte d&apos;Investissement</div>
-                      <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">5 niveaux séquentiels (Micro à VIP), 10% à 20%/jour pendant 15 jours. Débloquez avec des filleuls !</div>
+                      <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">2 catégories : Petit (Micro 5-10$, Standard 10.5-20$) et Gros (Premium 65-250$, Elite 300-1000$). 10%/jour, gains illimités !</div>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
@@ -262,7 +262,7 @@ export default function GuideScreen() {
                     <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]"><strong className="text-[#1F2937]">Attention :</strong> 48h après le 1er dépôt + filleuls requis après 4 retraits</div>
                   </div>
                   <div className="bg-[rgba(239,68,68,0.1)] rounded-lg p-2 mt-1 border border-[rgba(239,68,68,0.1)]">
-                    <p className="text-[0.62rem] text-[#EF4444]"><i className="fas fa-info-circle mr-1"></i>Minimum de retrait : <strong>10$</strong>. Un seul retrait en attente à la fois.</p>
+                    <p className="text-[0.62rem] text-[#EF4444]"><i className="fas fa-info-circle mr-1"></i>Minimum de retrait : <strong>5$</strong>. Un seul retrait en attente à la fois.</p>
                   </div>
                 </div>
               </div>

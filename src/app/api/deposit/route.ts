@@ -10,8 +10,8 @@ export async function POST(request: Request) {
 
     const { amount } = await request.json();
     const amt = parseFloat(amount);
-    if (isNaN(amt) || amt < 10) {
-      return NextResponse.json({ success: false, error: 'Minimum 10 $' });
+    if (isNaN(amt) || amt < 5) {
+      return NextResponse.json({ success: false, error: 'Minimum 5 $' });
     }
 
     const user = await db.user.findUnique({ where: { id: token } });

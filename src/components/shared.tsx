@@ -6,11 +6,10 @@ import { useAppStore, formatMoney, esc, authFetch } from '@/lib/store';
 export const LOGO_URL = 'https://z-cdn-media.chatglm.cn/files/1153c12e-46c2-4ff4-9bfb-9ee1ea9ad677.png?auth_key=1875725907-dba9b296a2b347a582e281f8c13d5dd1-0-abc6e2dfe8db025886d8c5cccb41f197';
 
 export const INVEST_LEVELS = [
-  { level: 1, name: 'Micro', color: '#22C55E', bg: 'bg-[rgba(34,197,94,0.12)]', border: 'border-[rgba(34,197,94,0.15)]', min: 5, max: 10, cycles: 15, rate: 3.33, totalReturn: 150, profit: 50, icon: 'fa-seedling', requiredReferrals: 0, unlockFee: 0 },
-  { level: 2, name: 'Standard', color: '#3B82F6', bg: 'bg-[rgba(59,130,246,0.12)]', border: 'border-[rgba(59,130,246,0.15)]', min: 10.5, max: 25, cycles: 15, rate: 4.67, totalReturn: 170, profit: 70, icon: 'fa-chart-line', requiredReferrals: 2, unlockFee: 5 },
-  { level: 3, name: 'Premium', color: '#8B5CF6', bg: 'bg-[rgba(139,92,246,0.12)]', border: 'border-[rgba(139,92,246,0.15)]', min: 25.5, max: 60, cycles: 15, rate: 6.67, totalReturn: 200, profit: 100, icon: 'fa-crown', requiredReferrals: 5, unlockFee: 10 },
-  { level: 4, name: 'Elite', color: '#F59E0B', bg: 'bg-[rgba(245,158,11,0.12)]', border: 'border-[rgba(245,158,11,0.15)]', min: 60.5, max: 150, cycles: 15, rate: 8.67, totalReturn: 230, profit: 130, icon: 'fa-gem', requiredReferrals: 10, unlockFee: 12 },
-  { level: 5, name: 'VIP', color: '#EF4444', bg: 'bg-[rgba(239,68,68,0.12)]', border: 'border-[rgba(239,68,68,0.15)]', min: 150.5, max: 500, cycles: 15, rate: 13.33, totalReturn: 300, profit: 200, icon: 'fa-rocket', requiredReferrals: 20, unlockFee: 15 },
+  { level: 1, name: 'Micro',    color: '#22C55E', bg: 'bg-[rgba(34,197,94,0.12)]', border: 'border-[rgba(34,197,94,0.15)]', min: 5, max: 10, cycles: 999999, rate: 10, totalReturn: 0, profit: 0, icon: 'fa-seedling',   requiredReferrals: 0,  unlockFee: 0, category: 'petit' },
+  { level: 2, name: 'Standard', color: '#3B82F6', bg: 'bg-[rgba(59,130,246,0.12)]', border: 'border-[rgba(59,130,246,0.15)]', min: 10.5, max: 20, cycles: 999999, rate: 10, totalReturn: 0, profit: 0, icon: 'fa-chart-line', requiredReferrals: 2,  unlockFee: 5, category: 'petit' },
+  { level: 3, name: 'Premium',  color: '#8B5CF6', bg: 'bg-[rgba(139,92,246,0.12)]', border: 'border-[rgba(139,92,246,0.15)]', min: 65, max: 250, cycles: 999999, rate: 10, totalReturn: 0, profit: 0, icon: 'fa-crown',      requiredReferrals: 10, unlockFee: 5, category: 'gros' },
+  { level: 4, name: 'Elite',    color: '#F59E0B', bg: 'bg-[rgba(245,158,11,0.12)]', border: 'border-[rgba(245,158,11,0.15)]', min: 300, max: 1000, cycles: 999999, rate: 10, totalReturn: 0, profit: 0, icon: 'fa-gem',        requiredReferrals: 15, unlockFee: 5, category: 'gros' },
 ];
 
 export const ENTERPRISE_TYPES = [
@@ -23,9 +22,9 @@ export const ENTERPRISE_TYPES = [
 
 export const AI_TIPS = [
   "Le niveau Micro est libre d'accès. Commencez dès maintenant !",
-  "Débloquez le niveau Standard avec 2 filleuls ou un petit paiement.",
-  "Le niveau VIP offre 300% de rendement sur 15 jours — 200% de profit !",
-  "Volatilité détectée sur le marché. Prudence recommandée.",
+  "Petit investissement : 10% de gains quotidiens sur vos investissements !",
+  "Débloquez le niveau Standard avec 2 filleuls actifs ou un petit paiement.",
+  "Gros investissement : des rendements de 10%/jour à partir de 65 $ !",
   "Chaque niveau supérieur nécessite d'avoir investi au niveau précédent.",
   "Nouveau projet entreprise disponible. Rendement élevé possible.",
   "Le trading rapide peut être lucratif, mais restez prudent.",

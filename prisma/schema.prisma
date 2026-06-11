@@ -29,6 +29,8 @@ model User {
   totalLoss       Float         @default(0)
   unlockedLevel   Int           @default(1)
   requiredReferrals Int         @default(0)
+  totalInvestClaims Int         @default(0)
+  investClaimBlocked Boolean     @default(false)
   worldLinkSeen   Boolean       @default(false)
   transactions    Transaction[]
   investments     Investment[]

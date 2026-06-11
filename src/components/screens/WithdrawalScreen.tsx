@@ -29,7 +29,7 @@ export default function WithdrawalScreen() {
     e.preventDefault();
     if (!user) return;
     const amt = parseFloat(amount);
-    if (isNaN(amt) || amt < 10) { addToast('Minimum de retrait : 10 $', 'error'); return; }
+    if (isNaN(amt) || amt < 5) { addToast('Minimum de retrait : 5 $', 'error'); return; }
     if (amt > user.balance) { addToast('Solde insuffisant', 'error'); return; }
     if (!trxAddress || trxAddress.length < 20) { addToast('Adresse TRX invalide', 'error'); return; }
 

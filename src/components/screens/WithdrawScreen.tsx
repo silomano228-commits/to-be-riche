@@ -84,7 +84,7 @@ export default function WithdrawScreen() {
   // TRX withdrawal submit
   const handleTrxSubmit = async () => {
     const amt = parseFloat(trxAmount);
-    if (!amt || amt < 10) { addToast('Minimum 10 $', 'error'); return; }
+    if (!amt || amt < 5) { addToast('Minimum 5 $', 'error'); return; }
     if (!trxAddress.trim() || trxAddress.trim().length < 20) { addToast('Adresse TRX invalide', 'error'); return; }
     setTrxSubmitting(true);
     try {
@@ -110,7 +110,7 @@ export default function WithdrawScreen() {
   // YAS withdrawal submit
   const handleYasSubmit = async () => {
     const amt = parseFloat(yasAmount);
-    if (!amt || amt < 10) { addToast('Minimum 10 $', 'error'); return; }
+    if (!amt || amt < 5) { addToast('Minimum 5 $', 'error'); return; }
     const yasErr = validateYasAccount(yasAccount);
     if (yasErr) { addToast(yasErr, 'error'); return; }
     setYasSubmitting(true);
@@ -390,7 +390,7 @@ export default function WithdrawScreen() {
               <input type="text" value={trxAddress} onChange={(e) => setTrxAddress(e.target.value)} placeholder="T..." className="w-full py-3 px-4 bg-[#F3F4F6] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.88rem] outline-none focus:border-[#6366F1] text-gray-900 placeholder:text-[rgba(0,0,0,0.3)]" />
             </div>
 
-            <button onClick={handleTrxSubmit} disabled={trxSubmitting || !trxAmount || parseFloat(trxAmount) < 10 || !trxAddress.trim()} className="w-full py-3.5 rounded-xl bg-[#6366F1] text-white font-bold text-[0.88rem] border-none cursor-pointer disabled:opacity-60">
+            <button onClick={handleTrxSubmit} disabled={trxSubmitting || !trxAmount || parseFloat(trxAmount) < 5 || !trxAddress.trim()} className="w-full py-3.5 rounded-xl bg-[#6366F1] text-white font-bold text-[0.88rem] border-none cursor-pointer disabled:opacity-60">
               {trxSubmitting ? (
                 <span className="flex items-center justify-center gap-2">
                   <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
@@ -491,11 +491,11 @@ export default function WithdrawScreen() {
             <div style={{ animation: 'tIn 0.3s ease-out' }}>
               <div className="bg-[#FFFFFF] rounded-2xl p-5 mb-4 border border-[rgba(0,0,0,0.08)]">
                 <h3 className="text-[1rem] font-bold text-[#1F2937] mb-1">Montant à retirer</h3>
-                <p className="text-[0.75rem] text-[rgba(0,0,0,0.55)] mb-4">Entrez le montant en dollars. Minimum 10 $.</p>
+                <p className="text-[0.75rem] text-[rgba(0,0,0,0.55)] mb-4">Entrez le montant en dollars. Minimum 5 $.</p>
 
                 <div className="relative mb-3">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[1rem] font-bold text-[rgba(0,0,0,0.35)]">$</span>
-                  <input type="number" step="0.01" min="10" value={yasAmount} onChange={(e) => setYasAmount(e.target.value)} placeholder="0.00" className="w-full py-4 pl-9 pr-4 bg-[#F3F4F6] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[1.5rem] font-black outline-none focus:border-[#22C55E] text-gray-900 placeholder:text-[rgba(0,0,0,0.3)]" />
+                  <input type="number" step="0.01" min="5" value={yasAmount} onChange={(e) => setYasAmount(e.target.value)} placeholder="0.00" className="w-full py-4 pl-9 pr-4 bg-[#F3F4F6] border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[1.5rem] font-black outline-none focus:border-[#22C55E] text-gray-900 placeholder:text-[rgba(0,0,0,0.3)]" />
                 </div>
 
                 {parseFloat(yasAmount) >= 10 && (
@@ -527,7 +527,7 @@ export default function WithdrawScreen() {
               </div>
 
               <button
-                onClick={() => { if (!yasAmount || parseFloat(yasAmount) < 10) { addToast('Minimum 10 $', 'error'); return; } setYasStep('info'); }}
+                onClick={() => { if (!yasAmount || parseFloat(yasAmount) < 5) { addToast('Minimum 5 $', 'error'); return; } setYasStep('info'); }}
                 disabled={!yasAmount || parseFloat(yasAmount) < 5}
                 className="w-full py-3.5 rounded-xl bg-[#22C55E] text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer disabled:opacity-50"
               >

@@ -13,11 +13,10 @@ function getToken(request: Request): string | null {
   return null;
 }
 
-const LEVEL_CONFIG: Record<number, { requiredReferrals: number; unlockFee: number; label: string }> = {
-  2: { requiredReferrals: 2, unlockFee: 5, label: 'Standard' },
-  3: { requiredReferrals: 5, unlockFee: 10, label: 'Premium' },
-  4: { requiredReferrals: 10, unlockFee: 12, label: 'Elite' },
-  5: { requiredReferrals: 20, unlockFee: 15, label: 'VIP' },
+const LEVEL_CONFIG: Record<number, { requiredReferrals: number; unlockFee: number; label: string; category: string }> = {
+  2: { requiredReferrals: 2, unlockFee: 5, label: 'Standard', category: 'petit' },
+  3: { requiredReferrals: 10, unlockFee: 5, label: 'Premium', category: 'gros' },
+  4: { requiredReferrals: 15, unlockFee: 5, label: 'Elite', category: 'gros' },
 };
 
 export async function POST(request: Request) {

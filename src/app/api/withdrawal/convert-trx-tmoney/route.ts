@@ -28,8 +28,8 @@ export async function POST(request: Request) {
 
     // Validate amount
     const amt = parseFloat(amountUsd);
-    if (isNaN(amt) || amt < 10) {
-      return NextResponse.json({ success: false, error: 'Minimum de conversion : 10 $' });
+    if (isNaN(amt) || amt < 5) {
+      return NextResponse.json({ success: false, error: 'Minimum de conversion : 5 $' });
     }
 
     // Can only convert from main balance
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
 
     // Check if user already has a pending withdrawal (any type)
     const pendingW = await db.withdrawal.findFirst({
-      where: { userId: user.id, status: { in: ['pending', 'approved'] } },
+      where: { userId: user.id, status: 'pending' },
     });
     if (pendingW) {
       return NextResponse.json({ success: false, error: 'Vous avez déjà une demande de retrait/conversion en attente' });

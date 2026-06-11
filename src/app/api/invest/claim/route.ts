@@ -18,6 +18,13 @@ async function getUser(request: Request) {
   return db.user.findUnique({ where: { id: token } });
 }
 
+// Count how many new referrals are needed based on total claims
+// Rule: every 10 claims = need 1 more active referral
+function getRequiredReferralsForClaims(totalClaims: number, currentReferralCount: number): number {
+  const requiredReferrals = Math.floor(totalClaims / 10);
+  return Math.max(0, requiredReferrals - currentReferralCount);
+}
+
 export async function POST(request: Request) {
   try {
     const user = await getUser(request);
@@ -26,7 +33,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { investmentId } = body;
+    const { investmentId, payFee } = body;
 
     if (!investmentId) {
       return NextResponse.json({ success: false, error: 'Investment ID is required' }, { status: 400 });
@@ -44,6 +51,57 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Investment is not active' }, { status: 400 });
     }
 
+    // Check if user is blocked from claiming (needs more referrals)
+    if (user.investClaimBlocked && !payFee) {
+      const missingReferrals = getRequiredReferralsForClaims(user.totalInvestClaims, user.referralCount);
+      if (missingReferrals > 0) {
+        const fee = missingReferrals * 5;
+        return NextResponse.json({
+          success: false,
+          error: `Parrainage requis ! Vous avez fait ${user.totalInvestClaims} collectes. ${missingReferrals} filleul${missingReferrals > 1 ? 's' : ''} actif${missingReferrals > 1 ? 's' : ''} supplémentaire${missingReferrals > 1 ? 's' : ''} nécessaire${missingReferrals > 1 ? 's' : ''}, ou payez $${fee.toFixed(2)} pour continuer.`,
+          needsReferral: true,
+          missingReferrals,
+          fee,
+          referralCode: user.referralCode,
+        }, { status: 403 });
+      }
+    }
+
+    // If user chose to pay the fee instead of getting referrals
+    if (user.investClaimBlocked && payFee) {
+      const missingReferrals = getRequiredReferralsForClaims(user.totalInvestClaims, user.referralCount);
+      const fee = Math.round(missingReferrals * 5 * 100) / 100;
+      if (fee > 0) {
+        if (user.balance < fee) {
+          return NextResponse.json({
+            success: false,
+            error: `Solde insuffisant. Frais de $${fee.toFixed(2)} requis. Solde: $${user.balance.toFixed(2)}`,
+          }, { status: 400 });
+        }
+        // Deduct fee and unblock
+        await db.$transaction(async (tx) => {
+          await tx.user.update({
+            where: { id: user.id },
+            data: {
+              balance: { decrement: fee },
+              investClaimBlocked: false,
+            },
+          });
+          await tx.transaction.create({
+            data: {
+              type: 'invest_claim_fee',
+              amount: -fee,
+              detail: `Frais de parrainage: $${fee.toFixed(2)} (${missingReferrals} filleul${missingReferrals > 1 ? 's' : ''} manquant${missingReferrals > 1 ? 's' : ''} × $5)`,
+              userId: user.id,
+            },
+          });
+        });
+        // Refresh user after payment
+        user.balance -= fee;
+        user.investClaimBlocked = false;
+      }
+    }
+
     const now = new Date();
 
     // Check 24h cooldown
@@ -56,23 +114,19 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    // Calculate gain
+    // Calculate gain (10% of investment amount)
     const gain = Math.round(investment.amount * investment.rate / 100 * 100) / 100;
     const newDoneCycles = investment.doneCycles + 1;
     const newEarned = Math.round((investment.earned + gain) * 100) / 100;
     const newNextClaimAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const newTotalClaims = user.totalInvestClaims + 1;
 
-    let completed = false;
-    let finalGain = 0;
+    // Check if this claim triggers the referral gate (every 10 claims)
+    const willBeBlocked = newTotalClaims % 10 === 0;
+    const missingAfter = getRequiredReferralsForClaims(newTotalClaims, user.referralCount);
 
-    if (newDoneCycles >= investment.totalCycles) {
-      completed = true;
-      // Return the principal amount to balance on completion
-      finalGain = investment.amount;
-    }
-
-    // Add gain to user balance (principal account)
-    const totalBalanceAdd = Math.round((gain + finalGain) * 100) / 100;
+    // Add gain to user balance (invest account)
+    const totalBalanceAdd = gain; // No principal return since infinite cycles
 
     await db.$transaction(async (tx) => {
       await tx.investment.update({
@@ -81,9 +135,8 @@ export async function POST(request: Request) {
           doneCycles: newDoneCycles,
           earned: newEarned,
           lastClaimAt: now,
-          nextClaimAt: completed ? null : newNextClaimAt,
-          status: completed ? 'completed' : 'active',
-          finishesAt: completed ? now : investment.finishesAt,
+          nextClaimAt: newNextClaimAt,
+          status: 'active', // Always active (infinite)
         },
       });
       await tx.user.update({
@@ -91,15 +144,15 @@ export async function POST(request: Request) {
         data: {
           investBalance: { increment: totalBalanceAdd },
           totalProfit: { increment: gain },
+          totalInvestClaims: { increment: 1 },
+          investClaimBlocked: willBeBlocked && missingAfter > 0,
         },
       });
       await tx.transaction.create({
         data: {
-          type: completed ? 'invest_claim_final' : 'invest_claim',
+          type: 'invest_claim',
           amount: totalBalanceAdd,
-          detail: completed
-            ? `Investment claim (final): $${gain.toFixed(2)} gain + $${finalGain.toFixed(2)} principal returned — Cycle ${newDoneCycles}/${investment.totalCycles} COMPLETED`
-            : `Investment claim: $${gain.toFixed(2)} gain — Cycle ${newDoneCycles}/${investment.totalCycles}`,
+          detail: `Investment claim: $${gain.toFixed(2)} gain — Cycle ${newDoneCycles}`,
           userId: user.id,
         },
       });
@@ -134,14 +187,17 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       gain,
-      finalGain: completed ? finalGain : 0,
+      finalGain: 0,
       totalCredited: totalBalanceAdd,
       doneCycles: newDoneCycles,
       totalCycles: investment.totalCycles,
-      completed,
-      message: completed
-        ? `Investment completed! Earned $${newEarned.toFixed(2)} total. Principal $${finalGain.toFixed(2)} returned.`
-        : `Claimed $${gain.toFixed(2)} gain. Cycle ${newDoneCycles}/${investment.totalCycles}.`,
+      completed: false,
+      blocked: willBeBlocked && missingAfter > 0,
+      missingReferrals: missingAfter,
+      fee: missingAfter * 5,
+      message: willBeBlocked && missingAfter > 0
+        ? `Claimed $${gain.toFixed(2)} gain. Attention: vous avez atteint ${newTotalClaims} collectes. ${missingAfter} filleul${missingAfter > 1 ? 's' : ''} actif${missingAfter > 1 ? 's' : ''} supplémentaire${missingAfter > 1 ? 's' : ''} requis pour continuer, ou payez $${(missingAfter * 5).toFixed(2)}.`
+        : `Claimed $${gain.toFixed(2)} gain. Cycle ${newDoneCycles}.`,
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });

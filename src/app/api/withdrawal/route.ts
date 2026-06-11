@@ -40,8 +40,8 @@ export async function POST(request: Request) {
 
     // Validate amount
     const amt = parseFloat(amount);
-    if (isNaN(amt) || amt < 10) {
-      return NextResponse.json({ success: false, error: 'Minimum de retrait : 10 $' });
+    if (isNaN(amt) || amt < 5) {
+      return NextResponse.json({ success: false, error: 'Minimum de retrait : 5 $' });
     }
 
     // Can only withdraw from main balance (compte principal)
@@ -88,11 +88,12 @@ export async function POST(request: Request) {
     }
 
     // Check if user already has a pending withdrawal (any type)
+    // Only block if status is 'pending' — approved withdrawals are being processed by admin
     const pendingW = await db.withdrawal.findFirst({
-      where: { userId: user.id, status: { in: ['pending', 'approved'] } },
+      where: { userId: user.id, status: 'pending' },
     });
     if (pendingW) {
-      return NextResponse.json({ success: false, error: 'Vous avez déjà une demande de retrait en attente' });
+      return NextResponse.json({ success: false, error: 'Vous avez déjà une demande de retrait en attente de validation' });
     }
 
     // Create withdrawal request (no balance deduction — admin approves then executes)

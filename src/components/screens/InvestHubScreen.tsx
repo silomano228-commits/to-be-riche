@@ -51,12 +51,21 @@ export default function InvestHubScreen() {
     setCreating(false);
   };
 
-  const handleClaim = async (id: string) => {
+  const [claimPayFee, setClaimPayFee] = useState(false);
+
+  const handleClaim = async (id: string, payFee = false) => {
     try {
-      const res = await authFetch('/api/invest/claim', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ investmentId: id }) });
+      const res = await authFetch('/api/invest/claim', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ investmentId: id, payFee }) });
       const data = await res.json();
-      if (data.success) { addToast('Gain réclamé ! +' + formatMoney(data.gain), 'success'); loadInvestments(); refreshUser(); }
-      else { addToast(data.error, 'error'); }
+      if (data.success) {
+        addToast('Gain réclamé ! +' + formatMoney(data.gain), 'success');
+        if (data.blocked) addToast(data.message, 'info');
+        loadInvestments(); refreshUser();
+        setClaimPayFee(false);
+      } else if (data.needsReferral) {
+        setClaimPayFee(true);
+        addToast(data.error, 'error');
+      } else { addToast(data.error, 'error'); }
     } catch { addToast('Erreur', 'error'); }
   };
 
@@ -224,17 +233,21 @@ export default function InvestHubScreen() {
           </div>
         )}
 
-        {/* Investment Levels */}
-        <h3 className="text-[0.88rem] font-bold mb-2.5" style={{ color: '#1F2937' }}>Niveaux d&apos;investissement</h3>
-        <div className="space-y-2.5 mb-5">
-          {INVEST_LEVELS.map((lvl) => {
+        {/* Investment Levels by Category */}
+        {['petit', 'gros'].map(cat => {
+          const catLevels = INVEST_LEVELS.filter(l => l.category === cat);
+          if (catLevels.length === 0) return null;
+          return (
+            <div key={cat} className="mb-5">
+              <h3 className="text-[0.88rem] font-bold mb-2.5" style={{ color: '#1F2937' }}>
+                {cat === 'petit' ? '🌱 Petit Investissement' : '💎 Gros Investissement'}
+              </h3>
+              <div className="space-y-2.5">
+          {catLevels.map((lvl) => {
             const isUnlocked = lvl.level <= unlockedLevel;
             const hasPrevLevel = lvl.level === 1 || investedLevels.has(lvl.level - 1);
             const canInvest = isUnlocked && hasPrevLevel;
             const unlockInfo = getUnlockInfo(lvl.level);
-            const dailyGain = lvl.min * lvl.rate / 100;
-            const totalReturn = lvl.totalReturn || (lvl.rate * lvl.cycles);
-            const profitPct = lvl.profit || (lvl.rate * lvl.cycles);
 
             return (
               <div
@@ -256,7 +269,7 @@ export default function InvestHubScreen() {
                           Niv. {lvl.level} — {lvl.name}
                         </div>
                         <div className="text-[0.65rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>
-                          ${lvl.min} - ${lvl.max} · {lvl.rate}%/jour · {lvl.cycles} jours
+                          ${lvl.min} - ${lvl.max} · {lvl.rate}%/jour · Illimité
                         </div>
                       </div>
                     </div>
@@ -287,15 +300,15 @@ export default function InvestHubScreen() {
                   <div className="flex items-center gap-3 text-[0.62rem]" style={{ color: 'rgba(0,0,0,0.5)' }}>
                     <span className="flex items-center gap-1">
                       <i className="fas fa-coins text-[0.5rem]"></i>
-                      Rendement: {totalReturn}%
+                      Rendement: Illimité
                     </span>
                     <span className="flex items-center gap-1">
                       <i className="fas fa-chart-line text-[0.5rem]"></i>
-                      Profit: {profitPct}%
+                      Profit: Illimité
                     </span>
                     <span className="flex items-center gap-1">
-                      <i className="fas fa-clock text-[0.5rem]"></i>
-                      {lvl.cycles} jours
+                      <i className="fas fa-infinity text-[0.5rem]"></i>
+                      Durée illimitée
                     </span>
                     {lvl.requiredReferrals > 0 && (
                       <span className="flex items-center gap-1" style={{ color: isUnlocked ? '#22C55E' : 'rgba(0,0,0,0.5)' }}>
@@ -317,14 +330,17 @@ export default function InvestHubScreen() {
                   <div className="px-4 py-2 flex items-center gap-2" style={{ background: 'rgba(0,0,0,0.03)', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
                     <i className="fas fa-lock text-[0.55rem]" style={{ color: 'rgba(0,0,0,0.25)' }}></i>
                     <span className="text-[0.6rem]" style={{ color: 'rgba(0,0,0,0.4)' }}>
-                      {lvl.requiredReferrals} filleuls requis ou {lvl.unlockFee}$/filleul manquant
+                      {lvl.requiredReferrals} filleuls actifs requis ou {lvl.unlockFee}$/filleul manquant
                     </span>
                   </div>
                 )}
               </div>
             );
           })}
-        </div>
+              </div>
+            </div>
+          );
+        })}
 
         {/* Active Investments */}
         {activeInv.length > 0 && (
@@ -362,11 +378,18 @@ export default function InvestHubScreen() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-[0.65rem] font-medium" style={{ color: 'rgba(0,0,0,0.45)' }}>{inv.doneCycles}/{inv.totalCycles} jours</span>
+                    <span className="text-[0.65rem] font-medium" style={{ color: 'rgba(0,0,0,0.45)' }}>{inv.doneCycles} collectes · Illimité</span>
                     {canClaim ? (
-                      <button onClick={() => handleClaim(inv.id)} className="claim-btn-pulse py-2 px-4 rounded-xl text-[0.78rem] font-bold border-none cursor-pointer flex items-center gap-1.5 transition-all active:scale-[0.97]" style={{ background: '#22C55E', color: '#FFFFFF', boxShadow: '0 4px 16px rgba(34,197,94,0.3)' }}>
-                        <i className="fas fa-hand-holding-dollar text-[0.7rem]"></i>Réclamer
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {(user as any).investClaimBlocked && (
+                          <button onClick={() => handleClaim(inv.id, true)} className="py-2 px-3 rounded-xl text-[0.7rem] font-bold border-none cursor-pointer transition-all active:scale-[0.97]" style={{ background: '#F59E0B', color: '#FFFFFF', boxShadow: '0 2px 8px rgba(245,158,11,0.25)' }}>
+                            <i className="fas fa-coins text-[0.6rem] mr-1"></i>Payer
+                          </button>
+                        )}
+                        <button onClick={() => handleClaim(inv.id, false)} className="claim-btn-pulse py-2 px-4 rounded-xl text-[0.78rem] font-bold border-none cursor-pointer flex items-center gap-1.5 transition-all active:scale-[0.97]" style={{ background: '#22C55E', color: '#FFFFFF', boxShadow: '0 4px 16px rgba(34,197,94,0.3)' }}>
+                          <i className="fas fa-hand-holding-dollar text-[0.7rem]"></i>Réclamer
+                        </button>
+                      </div>
                     ) : (
                       <div className="flex items-center gap-1 py-1.5 px-3 rounded-lg" style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.08)' }}>
                         <i className="fas fa-clock text-[0.55rem]" style={{ color: 'rgba(0,0,0,0.35)' }}></i>
@@ -433,17 +456,17 @@ export default function InvestHubScreen() {
                 </div>
                 <div>
                   <h3 className="text-[1rem] font-bold" style={{ color: '#1F2937' }}>Niveau {lvl.level} — {lvl.name}</h3>
-                  <p className="text-[0.7rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>${lvl.min}-${lvl.max} · {lvl.rate}%/jour · {lvl.cycles} jours</p>
+                  <p className="text-[0.7rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>${lvl.min}-${lvl.max} · {lvl.rate}%/jour · Illimité</p>
                 </div>
               </div>
 
               {/* Return info */}
               <div className="rounded-lg p-3 mb-3" style={{ background: hexToRgba(lvl.color, 0.08), border: `1px solid ${hexToRgba(lvl.color, 0.1)}` }}>
                 <div className="text-[0.68rem] mb-1" style={{ color: '#22C55E' }}>
-                  <i className="fas fa-calculator mr-1"></i>Rendement total: <span className="font-bold">{totalReturn}%</span> · Profit: <span className="font-bold">{profitPct}%</span>
+                  <i className="fas fa-calculator mr-1"></i>Rendement: <span className="font-bold">Illimité</span> · Profit: <span className="font-bold">Illimité</span>
                 </div>
                 <div className="text-[0.62rem]" style={{ color: 'rgba(0,0,0,0.5)' }}>
-                  Gain/jour: {lvl.rate}% du dépôt · Durée: {lvl.cycles} jours · Capital retourné à la fin
+                  Gain/jour: {lvl.rate}% du dépôt · Durée illimitée · Collecte quotidienne
                 </div>
               </div>
 
@@ -454,10 +477,7 @@ export default function InvestHubScreen() {
                     Gain quotidien: +{formatMoney(parseFloat(createAmt) * lvl.rate / 100)}
                   </div>
                   <div className="text-[0.62rem]" style={{ color: 'rgba(0,0,0,0.5)' }}>
-                    Profit total après {lvl.cycles} jours: +{formatMoney(parseFloat(createAmt) * lvl.rate / 100 * lvl.cycles)} · Rendement {totalReturn}%
-                  </div>
-                  <div className="text-[0.6rem]" style={{ color: 'rgba(0,0,0,0.4)' }}>
-                    Capital de {formatMoney(parseFloat(createAmt))} retourné à la fin
+                    Gains illimités tant que l'investissement est actif
                   </div>
                 </div>
               )}
@@ -529,7 +549,7 @@ export default function InvestHubScreen() {
               <div className="rounded-lg p-2.5 mb-4" style={{ background: hexToRgba(lvl.color, 0.06), border: `1px solid ${hexToRgba(lvl.color, 0.1)}` }}>
                 <div className="text-[0.62rem]" style={{ color: 'rgba(0,0,0,0.5)' }}>
                   <i className="fas fa-info-circle mr-1"></i>
-                  Niveau {lvl.level}: ${lvl.min}-${lvl.max} · {lvl.rate}%/jour · Rendement {lvl.totalReturn || lvl.rate * lvl.cycles}% · Profit {lvl.profit || lvl.rate * lvl.cycles}% sur {lvl.cycles} jours
+                  Niveau {lvl.level}: ${lvl.min}-${lvl.max} · {lvl.rate}%/jour · Gains illimités · Collecte quotidienne
                 </div>
               </div>
 
