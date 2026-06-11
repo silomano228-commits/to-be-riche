@@ -18,6 +18,7 @@ export default function NotificationBell({ dark = false }: { dark?: boolean }) {
   const [notifications, setNotifications] = useState<Notif[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
+  const [selectedNotif, setSelectedNotif] = useState<Notif | null>(null);
 
   // Poll for unread count every 15 seconds
   useEffect(() => {
@@ -79,10 +80,7 @@ export default function NotificationBell({ dark = false }: { dark?: boolean }) {
         setUnreadCount(prev => Math.max(0, prev - 1));
       } catch { /* */ }
     }
-    if (notif.link) {
-      setPage(notif.link);
-      setOpen(false);
-    }
+    setSelectedNotif(notif);
   };
 
   const getIcon = (type: string) => {
@@ -125,7 +123,7 @@ export default function NotificationBell({ dark = false }: { dark?: boolean }) {
       </button>
 
       {/* Dropdown */}
-      {open && (
+      {open && !selectedNotif && (
         <>
           {/* Backdrop */}
           <div className="fixed inset-0 z-[4999]" onClick={() => setOpen(false)} />
@@ -177,6 +175,66 @@ export default function NotificationBell({ dark = false }: { dark?: boolean }) {
                     )}
                   </button>
                 ))
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Full notification detail modal */}
+      {selectedNotif && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-[5999]" onClick={() => setSelectedNotif(null)} />
+          <div
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-[380px] bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.2)] z-[6000] overflow-hidden"
+            style={{ animation: 'modalIn 0.25s ease-out' }}
+          >
+            {/* Modal header */}
+            <div className="flex items-center gap-3 p-4 border-b border-[rgba(0,0,0,0.06)]">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: `${getColor(selectedNotif.type)}20` }}
+              >
+                <i className={`fas ${getIcon(selectedNotif.type)} text-[0.9rem]`} style={{ color: getColor(selectedNotif.type) }}></i>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[0.85rem] font-bold text-[#1F2937]">{selectedNotif.title}</div>
+                <div className="text-[0.62rem] text-[rgba(0,0,0,0.35)]">
+                  {new Date(selectedNotif.createdAt).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedNotif(null)}
+                className="w-8 h-8 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.05)] border-none cursor-pointer text-[rgba(0,0,0,0.4)] text-[0.7rem] shrink-0 hover:bg-[rgba(0,0,0,0.1)] transition-colors"
+              >
+                <i className="fas fa-times" />
+              </button>
+            </div>
+
+            {/* Modal body - full message */}
+            <div className="p-4 max-h-[50vh] overflow-y-auto">
+              <p className="text-[0.8rem] text-[rgba(0,0,0,0.7)] leading-relaxed whitespace-pre-wrap">{selectedNotif.message}</p>
+            </div>
+
+            {/* Modal footer */}
+            <div className="p-3 border-t border-[rgba(0,0,0,0.06)] flex gap-2">
+              <button
+                onClick={() => setSelectedNotif(null)}
+                className="flex-1 py-2.5 rounded-xl text-[0.78rem] font-semibold bg-[rgba(0,0,0,0.05)] text-[rgba(0,0,0,0.6)] border-none cursor-pointer hover:bg-[rgba(0,0,0,0.1)] transition-colors"
+              >
+                Fermer
+              </button>
+              {selectedNotif.link && (
+                <button
+                  onClick={() => {
+                    setPage(selectedNotif.link!);
+                    setSelectedNotif(null);
+                    setOpen(false);
+                  }}
+                  className="flex-1 py-2.5 rounded-xl text-[0.78rem] font-semibold bg-[#22C55E] text-white border-none cursor-pointer hover:bg-[#16A34A] transition-colors"
+                >
+                  Voir
+                </button>
               )}
             </div>
           </div>
