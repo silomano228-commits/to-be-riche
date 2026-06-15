@@ -281,7 +281,7 @@ export default function ProfileScreen() {
             <div className="mt-3 rounded-lg p-2.5 flex items-center gap-2" style={{ background: 'rgba(0,0,0,0.03)' }}>
               <i className="fas fa-info-circle text-[0.6rem]" style={{ color: nextInvestLevel.color }}></i>
               <span className="text-[0.62rem]" style={{ color: 'rgba(0,0,0,0.5)' }}>
-                Encore <strong>{nextInvestLevel.requiredReferrals - (user.referralCount || 0)}</strong> filleul{nextInvestLevel.requiredReferrals - (user.referralCount || 0) > 1 ? 's' : ''} ou frais de {nextInvestLevel.unlockFee}$ pour débloquer {nextInvestLevel.name}
+                Encore <strong>{nextInvestLevel.requiredReferrals - (user.referralCount || 0)}</strong> parrainé{nextInvestLevel.requiredReferrals - (user.referralCount || 0) > 1 ? 's' : ''} ou frais de {nextInvestLevel.unlockFee}$ pour débloquer {nextInvestLevel.name}
               </span>
             </div>
           )}
@@ -426,7 +426,7 @@ export default function ProfileScreen() {
               </div>
               {needsMore > 0 ? (
                 <p className="text-[0.65rem]" style={{ color: 'rgba(34,197,94,0.7)' }}>
-                  <i className="fas fa-info-circle mr-1"></i>Encore <strong>{needsMore}</strong> filleul{needsMore > 1 ? 's' : ''} requis pour le retrait
+                  <i className="fas fa-info-circle mr-1"></i>Encore <strong>{needsMore}</strong> parrainé{needsMore > 1 ? 's' : ''} requis pour le retrait
                 </p>
               ) : (
                 <p className="text-[0.65rem]" style={{ color: '#22C55E' }}>
@@ -439,7 +439,7 @@ export default function ProfileScreen() {
           {/* Referral stats row */}
           <div className="grid grid-cols-2 gap-2 mb-3">
             <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.08)' }}>
-              <div className="text-[0.6rem]" style={{ color: 'rgba(0,0,0,0.35)' }}>Filleuls actifs</div>
+              <div className="text-[0.6rem]" style={{ color: 'rgba(0,0,0,0.35)' }}>Parrainés actifs</div>
               <div className="text-[1rem] font-black" style={{ color: '#F59E0B' }}>{user.referralCount || 0}</div>
             </div>
             <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.08)' }}>
@@ -459,7 +459,7 @@ export default function ProfileScreen() {
               border: '1px solid rgba(245,158,11,0.15)',
             }}
           >
-            <i className="fas fa-list mr-1"></i>Voir mes filleuls
+            <i className="fas fa-list mr-1"></i>Voir mes parrainés
           </button>
         </div>
 
@@ -509,9 +509,9 @@ export default function ProfileScreen() {
               border: '1px solid rgba(0,0,0,0.08)',
             }}
           >
-            <h4 className="text-[0.82rem] font-bold mb-2" style={{ color: '#1F2937' }}>Mes filleuls ({referrals.length})</h4>
+            <h4 className="text-[0.82rem] font-bold mb-2" style={{ color: '#1F2937' }}>Mes parrainés ({referrals.length})</h4>
             {referrals.length === 0 ? (
-              <p className="text-[0.75rem]" style={{ color: 'rgba(0,0,0,0.35)' }}>Aucun filleul pour le moment.</p>
+              <p className="text-[0.75rem]" style={{ color: 'rgba(0,0,0,0.35)' }}>Aucun parrainé pour le moment.</p>
             ) : referrals.map((r, i) => (
               <div
                 key={i}

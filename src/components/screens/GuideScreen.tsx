@@ -153,7 +153,7 @@ export default function GuideScreen() {
                     <div className="w-6 h-6 rounded-md bg-[rgba(20,184,166,0.12)] flex items-center justify-center shrink-0 mt-0.5"><i className="fas fa-chart-line text-[0.55rem] text-[#14B8A6]"></i></div>
                     <div>
                       <div className="text-[0.72rem] font-bold text-[#1F2937]">Compte d&apos;Investissement</div>
-                      <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">2 catégories : Petit (Micro 5-10$, Standard 10.5-20$) et Gros (Premium 65-250$, Elite 300-1000$). 10%/jour, gains illimités !</div>
+                      <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">2 catégories : Petit (Micro 5-10$, Standard 10.5-20$) et Gros (Premium 65-250$, Elite 300-1000$). 10%/jour, durées de 15 à 50 jours !</div>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">

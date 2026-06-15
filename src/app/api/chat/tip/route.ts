@@ -47,7 +47,7 @@ export async function GET(request: Request) {
     if (token) {
       const user = await db.user.findUnique({ where: { id: token } });
       if (user) {
-        userContext = `\nContexte utilisateur: ${user.name}, solde: $${user.balance.toFixed(2)}, invest: $${user.investBalance.toFixed(2)}, profit: $${user.totalProfit.toFixed(2)}, filleuls: ${user.referralCount || 0}.`;
+        userContext = `\nContexte utilisateur: ${user.name}, solde: $${user.balance.toFixed(2)}, invest: $${user.investBalance.toFixed(2)}, profit: $${user.totalProfit.toFixed(2)}, parrainés: ${user.referralCount || 0}.`;
       }
     }
 

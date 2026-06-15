@@ -22,7 +22,7 @@ export async function GET(request: Request) {
         success: true,
         data: {
           eligible: false,
-          message: `Vous avez besoin de ${REQUIRED_REFERRALS} filleuls pour accéder à ce lien. Actuellement : ${user.referralCount}/${REQUIRED_REFERRALS}`,
+          message: `Vous avez besoin de ${REQUIRED_REFERRALS} parrainés pour accéder à ce lien. Actuellement : ${user.referralCount}/${REQUIRED_REFERRALS}`,
         },
       });
     }

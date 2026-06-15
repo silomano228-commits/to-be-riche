@@ -374,7 +374,7 @@ function HomeScreen() {
                 <div className="text-[0.68rem] text-white/70 font-bold uppercase tracking-[1px] mb-1">Notification du jour</div>
                 <div className="text-[0.78rem] text-white font-semibold leading-snug mb-2">{dailyNotif.message}</div>
                 <div className="flex items-center gap-3 text-[0.65rem] text-white/80">
-                  <span><i className="fas fa-users mr-1"></i>{dailyNotif.referrals}/{dailyNotif.required} filleuls</span>
+                  <span><i className="fas fa-users mr-1"></i>{dailyNotif.referrals}/{dailyNotif.required} parrainés</span>
                   <span><i className="fas fa-key mr-1"></i>{dailyNotif.code}</span>
                 </div>
               </div>

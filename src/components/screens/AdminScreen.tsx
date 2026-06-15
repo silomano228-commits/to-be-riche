@@ -1343,11 +1343,11 @@ export default function AdminScreen() {
                     <input type="number" step="0.001" value={configPrice} onChange={(e) => setConfigPrice(e.target.value)} className="w-full py-3 px-4 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#6366F1]" />
                   </div>
                   <div className="bg-[#161719] rounded-xl p-3 mb-3 border border-[rgba(99,102,241,0.12)]">
-                    <div className="text-[0.72rem] font-bold text-[#818CF8] mb-2"><i className="fas fa-globe mr-1"></i>Lien World (10+ filleuls)</div>
+                    <div className="text-[0.72rem] font-bold text-[#818CF8] mb-2"><i className="fas fa-globe mr-1"></i>Lien World (10+ parrainés)</div>
                     <div className="mb-2">
                       <label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(255,255,255,0.45)]">URL du lien World</label>
                       <input type="text" value={configWorldLink} onChange={(e) => setConfigWorldLink(e.target.value)} placeholder="https://example.com/world" className="w-full py-3 px-4 bg-[#0E0F11] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#6366F1]" />
-                      <p className="text-[0.6rem] text-[rgba(255,255,255,0.3)] mt-1">Ce lien sera visible uniquement pour les utilisateurs ayant 10 filleuls ou plus.</p>
+                      <p className="text-[0.6rem] text-[rgba(255,255,255,0.3)] mt-1">Ce lien sera visible uniquement pour les utilisateurs ayant 10 parrainés ou plus.</p>
                     </div>
                   </div>
                   <div className="bg-[#161719] rounded-xl p-3 mb-3 border border-[rgba(99,102,241,0.12)]">

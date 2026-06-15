@@ -86,7 +86,7 @@ export const INVEST_GUIDE: GuideSection = {
   steps: [
     {
       title: '1. Choisir un niveau',
-      description: '5 niveaux séquentiels : Micro (5-10$, 3.33%/jour, 150% rendement, libre), Standard (10.5-25$, 4.67%/jour, 170% rendement, 2 filleuls), Premium (25.5-60$, 6.67%/jour, 200% rendement, 5 filleuls), Elite (60.5-150$, 8.67%/jour, 230% rendement, 10 filleuls) et VIP (150.5-500$, 13.33%/jour, 300% rendement, 20 filleuls). Vous devez investir au niveau précédent avant d\'accéder au suivant.',
+      description: '5 niveaux séquentiels : Micro (5-10$, 3.33%/jour, 150% rendement, libre), Standard (10.5-25$, 4.67%/jour, 170% rendement, 2 parrainés), Premium (25.5-60$, 6.67%/jour, 200% rendement, 5 parrainés), Elite (60.5-150$, 8.67%/jour, 230% rendement, 10 parrainés) et VIP (150.5-500$, 13.33%/jour, 300% rendement, 20 parrainés). Vous devez investir au niveau précédent avant d\'accéder au suivant.',
       icon: 'fa-layer-group',
       color: '#22C55E',
     },
@@ -117,7 +117,7 @@ export const INVEST_GUIDE: GuideSection = {
   ],
   tips: [
     'Plus le niveau est élevé, plus le taux de rendement est important.',
-    'Vous devez débloquer chaque niveau en ayant investi au niveau précédent + remplir les conditions de filleuls (ou payer).',
+    'Vous devez débloquer chaque niveau en ayant investi au niveau précédent + remplir les conditions de parrainés (ou payer).',
     'Réclamez vos gains chaque jour pour maximiser vos profits.',
     'Vous pouvez avoir plusieurs investissements actifs en même temps.',
     'Le gain potentiel maximum = Montant × Taux × Nombre de cycles.',
@@ -126,7 +126,7 @@ export const INVEST_GUIDE: GuideSection = {
   warnings: [
     'Vous ne pouvez pas annuler un investissement en cours.',
     'Assurez-vous d\'avoir les fonds nécessaires avant de créer un investissement.',
-    'Les niveaux supérieurs nécessitent des filleuls actifs ou un paiement de débloquage.',
+    'Les niveaux supérieurs nécessitent des parrainés actifs ou un paiement de débloquage.',
   ],
 };
 
@@ -245,7 +245,7 @@ export const WITHDRAW_GUIDE: GuideSection = {
   steps: [
     {
       title: '1. Conditions préalables',
-      description: 'Avant de pouvoir retirer, vous devez : avoir effectué au moins un dépôt approuvé, attendre 48h après votre premier dépôt, et avoir suffisamment de filleuls selon la formule.',
+      description: 'Avant de pouvoir retirer, vous devez : avoir effectué au moins un dépôt approuvé, attendre 48h après votre premier dépôt, et avoir suffisamment de parrainés selon la formule.',
       icon: 'fa-shield-alt',
       color: '#EF4444',
     },
@@ -289,8 +289,8 @@ export const WITHDRAW_GUIDE: GuideSection = {
   ],
   warnings: [
     'Délai de 48h obligatoire après le premier dépôt.',
-    'Filleuls requis : 0 pour les 4 premiers retraits, puis 1 filleul par tranche de 4 retraits supplémentaires.',
-    'Sans filleuls suffisants, vos retraits seront bloqués.',
+    'Parrainés requis : 0 pour les 4 premiers retraits, puis 1 parrainé par tranche de 4 retraits supplémentaires.',
+    'Sans parrainés suffisants, vos retraits seront bloqués.',
     'Assurez-vous que l\'adresse TRX est correcte. Les transactions crypto sont irréversibles.',
   ],
 };
@@ -317,25 +317,25 @@ export const REFERRAL_GUIDE: GuideSection = {
     },
     {
       title: '3. Bonus de premier dépôt (20%)',
-      description: 'Quand votre filleul effectue son premier dépôt (TRX ou YAS), vous recevez automatiquement un bonus de 20% du montant sur votre Compte Principal. Ce bonus ne déduit rien du compte de votre filleul.',
+      description: 'Quand votre parrainé effectue son premier dépôt (TRX ou YAS), vous recevez automatiquement un bonus de 20% du montant sur votre Compte Principal. Ce bonus ne déduit rien du compte de votre parrainé.',
       icon: 'fa-gift',
       color: '#00C853',
     },
     {
       title: '4. Bonus sur gains d\'investissement (5%)',
-      description: 'Chaque fois que votre filleul réclame ses gains d\'investissement, vous recevez 5% de ces gains. Ce bonus est crédité sur le compte de l\'administrateur.',
+      description: 'Chaque fois que votre parrainé réclame ses gains d\'investissement, vous recevez 5% de ces gains. Ce bonus est crédité sur le compte de l\'administrateur.',
       icon: 'fa-chart-line',
       color: '#22C55E',
     },
     {
-      title: '5. Suivre vos filleuls',
-      description: 'Dans votre profil, consultez la liste de vos filleuls et leur statut (actif/inactif). Un filleul est "actif" s\'il a effectué au moins un dépôt.',
+      title: '5. Suivre vos parrainés',
+      description: 'Dans votre profil, consultez la liste de vos parrainés et leur statut (actif/inactif). Un parrainé est "actif" s\'il a effectué au moins un dépôt.',
       icon: 'fa-list',
       color: '#3B82F6',
     },
     {
       title: '6. Condition de retrait',
-      description: 'Après vos 4 premiers retraits, vous devez avoir au moins 1 filleul. Puis 1 filleul supplémentaire chaque 4 retraits.',
+      description: 'Après vos 4 premiers retraits, vous devez avoir au moins 1 parrainé. Puis 1 parrainé supplémentaire chaque 4 retraits.',
       icon: 'fa-exclamation-circle',
       color: '#EF4444',
     },
@@ -343,13 +343,13 @@ export const REFERRAL_GUIDE: GuideSection = {
   tips: [
     'Partagez votre code sur les réseaux sociaux pour atteindre plus de personnes.',
     'Le bonus de 20% sur le premier dépôt est automatique — pas besoin de le réclamer.',
-    'Plus vous avez de filleuls actifs, plus vous gagnez de bonus et plus vous pouvez retirer.',
-    'Un filleul "actif" est quelqu\'un qui a effectué au moins un dépôt approuvé.',
+    'Plus vous avez de parrainés actifs, plus vous gagnez de bonus et plus vous pouvez retirer.',
+    'Un parrainé "actif" est quelqu\'un qui a effectué au moins un dépôt approuvé.',
   ],
   warnings: [
-    'Sans filleuls suffisants, vos retraits seront bloqués.',
-    'Formule : Filleuls requis = floor(retraits effectués / 4).',
-    'Exemple : Retraits 1-4 = 0 filleul, 5-8 = 1 filleul, 9-12 = 2 filleuls.',
+    'Sans parrainés suffisants, vos retraits seront bloqués.',
+    'Formule : Parrainés requis = floor(retraits effectués / 4).',
+    'Exemple : Retraits 1-4 = 0 parrainé, 5-8 = 1 parrainé, 9-12 = 2 parrainés.',
   ],
 };
 

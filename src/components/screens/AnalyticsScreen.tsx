@@ -218,7 +218,7 @@ export default function AnalyticsScreen() {
                   'trade_result': 'Résultat trade',
                   'enterprise_create': 'Entreprise',
                   'enterprise_claim': 'Gain entreprise',
-                  'referral_invest_bonus': 'Bonus filleul',
+                  'referral_invest_bonus': 'Bonus parrainé',
                   'transfer_in': 'Transfert',
                   'transfer_out': 'Transfert',
                 };

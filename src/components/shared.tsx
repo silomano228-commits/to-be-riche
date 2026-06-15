@@ -6,10 +6,10 @@ import { useAppStore, formatMoney, esc, authFetch } from '@/lib/store';
 export const LOGO_URL = 'https://z-cdn-media.chatglm.cn/files/1153c12e-46c2-4ff4-9bfb-9ee1ea9ad677.png?auth_key=1875725907-dba9b296a2b347a582e281f8c13d5dd1-0-abc6e2dfe8db025886d8c5cccb41f197';
 
 export const INVEST_LEVELS = [
-  { level: 1, name: 'Micro',    color: '#22C55E', bg: 'bg-[rgba(34,197,94,0.12)]', border: 'border-[rgba(34,197,94,0.15)]', min: 5, max: 10, cycles: 999999, rate: 10, totalReturn: 0, profit: 0, icon: 'fa-seedling',   requiredReferrals: 0,  unlockFee: 0, category: 'petit' },
-  { level: 2, name: 'Standard', color: '#3B82F6', bg: 'bg-[rgba(59,130,246,0.12)]', border: 'border-[rgba(59,130,246,0.15)]', min: 10.5, max: 20, cycles: 999999, rate: 10, totalReturn: 0, profit: 0, icon: 'fa-chart-line', requiredReferrals: 2,  unlockFee: 0, category: 'petit' },
-  { level: 3, name: 'Premium',  color: '#8B5CF6', bg: 'bg-[rgba(139,92,246,0.12)]', border: 'border-[rgba(139,92,246,0.15)]', min: 65, max: 250, cycles: 999999, rate: 10, totalReturn: 0, profit: 0, icon: 'fa-crown',      requiredReferrals: 10, unlockFee: 0, category: 'gros' },
-  { level: 4, name: 'Elite',    color: '#F59E0B', bg: 'bg-[rgba(245,158,11,0.12)]', border: 'border-[rgba(245,158,11,0.15)]', min: 300, max: 1000, cycles: 999999, rate: 10, totalReturn: 0, profit: 0, icon: 'fa-gem',        requiredReferrals: 15, unlockFee: 0, category: 'gros' },
+  { level: 1, name: 'Micro',    color: '#22C55E', bg: 'bg-[rgba(34,197,94,0.12)]', border: 'border-[rgba(34,197,94,0.15)]', min: 5, max: 10, cycles: 15, rate: 10, totalReturn: 150, profit: 50, icon: 'fa-seedling',   requiredReferrals: 0,  unlockFee: 0, category: 'petit' },
+  { level: 2, name: 'Standard', color: '#3B82F6', bg: 'bg-[rgba(59,130,246,0.12)]', border: 'border-[rgba(59,130,246,0.15)]', min: 10.5, max: 20, cycles: 25, rate: 10, totalReturn: 250, profit: 150, icon: 'fa-chart-line', requiredReferrals: 2,  unlockFee: 0, category: 'petit' },
+  { level: 3, name: 'Premium',  color: '#8B5CF6', bg: 'bg-[rgba(139,92,246,0.12)]', border: 'border-[rgba(139,92,246,0.15)]', min: 65, max: 250, cycles: 35, rate: 10, totalReturn: 350, profit: 250, icon: 'fa-crown',      requiredReferrals: 10, unlockFee: 0, category: 'gros' },
+  { level: 4, name: 'Elite',    color: '#F59E0B', bg: 'bg-[rgba(245,158,11,0.12)]', border: 'border-[rgba(245,158,11,0.15)]', min: 300, max: 1000, cycles: 50, rate: 10, totalReturn: 500, profit: 400, icon: 'fa-gem',        requiredReferrals: 15, unlockFee: 0, category: 'gros' },
 ];
 
 export const ENTERPRISE_TYPES = [

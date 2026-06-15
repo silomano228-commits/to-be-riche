@@ -68,11 +68,11 @@ export async function POST(request: Request) {
         where: { referralCode: referredByCode },
         data: { referralCount: { increment: 1 } },
       });
-      // Notify referrer about new filleul
+      // Notify referrer about new parrainé
       await notifyUser({
         userId: referrer.id,
         type: 'referral_new',
-        title: 'Nouveau filleul !',
+        title: 'Nouveau parrainé !',
         message: `${name} s'est inscrit avec votre code de parrainage.`,
         link: 'profile',
       });

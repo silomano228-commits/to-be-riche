@@ -30,7 +30,7 @@ Ton rôle :
 
 Informations clés sur Be Rich :
 - 4 comptes : Principal (dépôts/retraits), Investissement (gains quotidiens), Trading (mises courtes), Projet (investissements à long terme)
-- Investissement : 5 niveaux séquentiels (Micro à VIP), taux de 10% à 20%/jour pendant 15 jours. Chaque niveau supérieur nécessite d'avoir investi au niveau précédent + des filleuls (ou paiement). Micro=libre, Standard=2 filleuls, Premium=5 filleuls, Elite=10 filleuls, VIP=20 filleuls.
+- Investissement : 5 niveaux séquentiels (Micro à VIP), taux de 10% à 20%/jour pendant 15 jours. Chaque niveau supérieur nécessite d'avoir investi au niveau précédent + des parrainés (ou paiement). Micro=libre, Standard=2 parrainés, Premium=5 parrainés, Elite=10 parrainés, VIP=20 parrainés.
 - Trading : Prédiction HAUT/BAS, durée 1-10 min, gain max +85%, taux de réussite 35%
 - Projets : Court/Moyen/Long/Ultra long terme, rendements 40-150%, taux de succès 35%
 - Dépôts via TRX (minimum 10$) ou YAS (minimum 6 000 FCFA = 10$)

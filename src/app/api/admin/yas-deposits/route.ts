@@ -105,7 +105,7 @@ export async function POST(request: Request) {
         },
       });
 
-      // 20% referral bonus on filleul's first deposit
+      // 20% referral bonus on parrainé's first deposit
       if (isFirstDeposit && depositUser?.referredByCode) {
         const referrer = await tx.user.findUnique({
           where: { referralCode: depositUser.referredByCode },
@@ -123,7 +123,7 @@ export async function POST(request: Request) {
             data: {
               type: 'referral_bonus',
               amount: bonusAmount,
-              detail: `Referral bonus: 20% of filleul's first Yas deposit ($${deposit.amountUsd.toFixed(2)})`,
+              detail: `Referral bonus: 20% of parrainé's first Yas deposit ($${deposit.amountUsd.toFixed(2)})`,
               userId: referrer.id,
             },
           });

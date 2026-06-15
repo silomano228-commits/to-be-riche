@@ -121,12 +121,15 @@ export async function POST(request: Request) {
     const newNextClaimAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
     const newTotalClaims = user.totalInvestClaims + 1;
 
+    // Check if investment is completed after this claim
+    const isCompleted = newDoneCycles >= investment.totalCycles;
+
     // Check if this claim triggers the referral gate (every 5 claims)
     const willBeBlocked = newTotalClaims % 5 === 0;
     const missingAfter = getRequiredReferralsForClaims(newTotalClaims, user.referralCount);
 
-    // Add gain to user balance (invest account)
-    const totalBalanceAdd = gain; // No principal return since infinite cycles
+    // On last cycle, also return the principal
+    const totalBalanceAdd = isCompleted ? gain + investment.amount : gain;
 
     await db.$transaction(async (tx) => {
       await tx.investment.update({
@@ -135,8 +138,9 @@ export async function POST(request: Request) {
           doneCycles: newDoneCycles,
           earned: newEarned,
           lastClaimAt: now,
-          nextClaimAt: newNextClaimAt,
-          status: 'active', // Always active (infinite)
+          nextClaimAt: isCompleted ? null : newNextClaimAt,
+          status: isCompleted ? 'completed' : 'active',
+          finishesAt: isCompleted ? now : investment.finishesAt,
         },
       });
       await tx.user.update({
@@ -145,14 +149,16 @@ export async function POST(request: Request) {
           investBalance: { increment: totalBalanceAdd },
           totalProfit: { increment: gain },
           totalInvestClaims: { increment: 1 },
-          investClaimBlocked: willBeBlocked && missingAfter > 0,
+          investClaimBlocked: !isCompleted && willBeBlocked && missingAfter > 0,
         },
       });
       await tx.transaction.create({
         data: {
-          type: 'invest_claim',
+          type: isCompleted ? 'invest_completed' : 'invest_claim',
           amount: totalBalanceAdd,
-          detail: `Investment claim: $${gain.toFixed(2)} gain — Cycle ${newDoneCycles}`,
+          detail: isCompleted
+            ? `Investissement terminé: +$${gain.toFixed(2)} gain + $${investment.amount.toFixed(2)} capital — Cycle ${newDoneCycles}/${investment.totalCycles}`
+            : `Investment claim: $${gain.toFixed(2)} gain — Cycle ${newDoneCycles}/${investment.totalCycles}`,
           userId: user.id,
         },
       });
@@ -187,17 +193,19 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       gain,
-      finalGain: 0,
+      finalGain: isCompleted ? investment.amount : 0,
       totalCredited: totalBalanceAdd,
       doneCycles: newDoneCycles,
       totalCycles: investment.totalCycles,
-      completed: false,
-      blocked: willBeBlocked && missingAfter > 0,
+      completed: isCompleted,
+      blocked: !isCompleted && willBeBlocked && missingAfter > 0,
       missingReferrals: missingAfter,
       fee: missingAfter * 5,
-      message: willBeBlocked && missingAfter > 0
-        ? `Claimed $${gain.toFixed(2)} gain. Attention: vous avez atteint ${newTotalClaims} collectes. ${missingAfter} parrainé${missingAfter > 1 ? 's' : ''} actif${missingAfter > 1 ? 's' : ''} supplémentaire${missingAfter > 1 ? 's' : ''} requis pour continuer, ou payez $${(missingAfter * 5).toFixed(2)}.`
-        : `Claimed $${gain.toFixed(2)} gain. Cycle ${newDoneCycles}.`,
+      message: isCompleted
+        ? `Investissement terminé ! +$${gain.toFixed(2)} gain + $${investment.amount.toFixed(2)} capital remboursé. Total gagné: $${newEarned.toFixed(2)}`
+        : willBeBlocked && missingAfter > 0
+          ? `Claimed $${gain.toFixed(2)} gain. Attention: vous avez atteint ${newTotalClaims} collectes. ${missingAfter} parrainé${missingAfter > 1 ? 's' : ''} actif${missingAfter > 1 ? 's' : ''} supplémentaire${missingAfter > 1 ? 's' : ''} requis pour continuer, ou payez $${(missingAfter * 5).toFixed(2)}.`
+          : `Claimed $${gain.toFixed(2)} gain. Cycle ${newDoneCycles}/${investment.totalCycles}.`,
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
