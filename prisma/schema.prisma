@@ -44,6 +44,8 @@ model User {
   yasDeposits     YasDeposit[]
   userNotifications UserNotification[]
   tradingPositions  TradingPosition[]
+  videoWatches     VideoWatch[]
+  gameSpins        GameSpin[]
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
@@ -298,4 +300,35 @@ model TradingPosition {
   @@index([userId])
   @@index([status])
   @@index([userId, status])
+}
+
+model VideoWatch {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoId   String   // YouTube video ID
+  title     String
+  reward    Float    // Reward amount in USD
+  watchedAt DateTime @default(now())
+  watchDate String   // Date string YYYY-MM-DD for daily limit tracking
+
+  @@index([userId])
+  @@index([watchDate])
+  @@index([userId, watchDate])
+}
+
+model GameSpin {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  betAmount Float    // Amount bet in USD
+  winAmount Float    @default(0) // Amount won (0 if lost)
+  result    String   // win, loss
+  segmentIdx Int     // Which segment the wheel landed on
+  spinDate  String   // Date string YYYY-MM-DD for daily limit tracking
+  spunAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([spinDate])
+  @@index([userId, spinDate])
 }

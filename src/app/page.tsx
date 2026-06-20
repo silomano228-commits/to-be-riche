@@ -32,7 +32,8 @@ class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError:
 
 // Lazy load heavy screen components
 const InvestHubScreen = dynamic(() => import('@/components/screens/InvestHubScreen'), { ssr: false });
-const TradingArenaScreen = dynamic(() => import('@/components/screens/TradingArenaScreen'), { ssr: false });
+const SpinGameScreen = dynamic(() => import('@/components/screens/SpinGameScreen'), { ssr: false });
+const VideoPlatformScreen = dynamic(() => import('@/components/screens/VideoPlatformScreen'), { ssr: false });
 const EnterpriseScreen = dynamic(() => import('@/components/screens/EnterpriseScreen'), { ssr: false });
 const ProfileScreen = dynamic(() => import('@/components/screens/ProfileScreen'), { ssr: false });
 const AnalyticsScreen = dynamic(() => import('@/components/screens/AnalyticsScreen'), { ssr: false });
@@ -102,7 +103,7 @@ function AuthScreen() {
       const res = await fetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }), headers: { 'Content-Type': 'application/json' } });
       const data = await res.json();
       if (data.success) {
-        setUser(data.user); addToast('Bienvenue, ' + data.user.name, 'success'); setPage('home');
+        setUser(data.user); addToast('Bienvenue, ' + data.user.name, 'success'); setPage('videos');
       } else {
         addToast(data.error, 'error');
       }
@@ -119,7 +120,7 @@ function AuthScreen() {
       if (data.success && data.user) {
         setUser(data.user);
         addToast('Email vérifié ! Bienvenue, ' + data.user.name, 'success');
-        setPage('home');
+        setPage('videos');
       } else {
         addToast(data.error || 'Code invalide', 'error');
       }
@@ -173,7 +174,7 @@ function AuthScreen() {
           addToast('Code de vérification envoyé à ' + email, 'success');
         }
       } else if (data.success) {
-        setUser(data.user); addToast('Compte créé !', 'success'); setPage('home');
+        setUser(data.user); addToast('Compte créé !', 'success'); setPage('videos');
       } else {
         addToast(data.error, 'error');
       }
@@ -439,7 +440,7 @@ function HomeScreen() {
           {[
             { icon: 'fa-wallet', label: 'Wallet', page: 'wallet', color: '#22C55E', bg: 'rgba(34,197,94,0.12)', borderColor: 'border-[#22C55E]' },
             { icon: 'fa-chart-line', label: 'Investir', page: 'invest', color: '#3B82F6', bg: 'rgba(59,130,246,0.12)', borderColor: 'border-[#3B82F6]' },
-            { icon: 'fa-bolt', label: 'Trader', page: 'trading', color: '#F87171', bg: 'rgba(248,113,113,0.12)', borderColor: 'border-[#F87171]' },
+            { icon: 'fa-dice', label: 'Jeu', page: 'game', color: '#F87171', bg: 'rgba(248,113,113,0.12)', borderColor: 'border-[#F87171]' },
             { icon: 'fa-building', label: 'Projets', page: 'enterprise', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)', borderColor: 'border-[#8B5CF6]' },
           ].map((a, i) => (
             <button key={i} onClick={() => setPage(a.page)} className={`flex-1 glass-card rounded-xl py-2.5 px-1 text-center cursor-pointer transition-all active:scale-95 hover:shadow-md hover:scale-[1.04] border-b-2 ${a.borderColor}`}>
@@ -639,7 +640,7 @@ function WalletScreen() {
 
 // ==================== FINANCE SCREEN ====================
 function FinanceScreen() {
-  const [subTab, setSubTab] = useState<'invest' | 'trading' | 'projects'>('invest');
+  const [subTab, setSubTab] = useState<'invest' | 'game' | 'projects'>('invest');
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -647,12 +648,12 @@ function FinanceScreen() {
       <div className="flex gap-2 px-[18px] py-2.5 bg-white/80 backdrop-blur-2xl border-b border-[rgba(0,0,0,0.04)]">
         {[
           { id: 'invest', label: 'Invest', icon: 'fa-chart-line' },
-          { id: 'trading', label: 'Trading', icon: 'fa-bolt' },
+          { id: 'game', label: 'Jeu', icon: 'fa-dice' },
           { id: 'projects', label: 'Projets', icon: 'fa-building' },
         ].map(t => (
           <button
             key={t.id}
-            onClick={() => setSubTab(t.id as 'invest' | 'trading' | 'projects')}
+            onClick={() => setSubTab(t.id as 'invest' | 'game' | 'projects')}
             className={`flex-1 py-2 rounded-xl text-[0.75rem] font-semibold border-none cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
               subTab === t.id
                 ? 'bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white shadow-md'
@@ -667,7 +668,7 @@ function FinanceScreen() {
       {/* Content */}
       <div className="flex-1 flex flex-col overflow-hidden min-h-0">
         {subTab === 'invest' && <InvestHubScreen />}
-        {subTab === 'trading' && <TradingArenaScreen />}
+        {subTab === 'game' && <SpinGameScreen />}
         {subTab === 'projects' && <EnterpriseScreen />}
       </div>
     </div>
@@ -678,14 +679,14 @@ function FinanceScreen() {
 function BottomNav() {
   const { currentPage, setPage } = useAppStore();
   const tabs = [
-    { id: 'home', icon: 'fa-home', label: 'Accueil' },
+    { id: 'videos', icon: 'fa-video', label: 'Vidéos' },
+    { id: 'home', icon: 'fa-coins', label: 'Make Money' },
     { id: 'finance', icon: 'fa-chart-line', label: 'Finance' },
     { id: 'guide', icon: 'fa-compass', label: 'Guide' },
-    { id: 'chat', icon: 'fa-headset', label: 'Support' },
     { id: 'profile', icon: 'fa-user', label: 'Profil' },
   ];
   const isActive = (tabId: string) => {
-    if (tabId === 'finance') return ['finance', 'invest', 'trading', 'enterprise'].includes(currentPage);
+    if (tabId === 'finance') return ['finance', 'invest', 'game', 'enterprise'].includes(currentPage);
     if (tabId === 'guide') return currentPage === 'guide';
     return currentPage === tabId;
   };
@@ -724,7 +725,7 @@ export default function BeRichApp() {
       try {
         const res = await authFetch('/api/auth/session');
         const data = await res.json();
-        if (data.success && data.user) { setUser(data.user); setPage('home'); }
+        if (data.success && data.user) { setUser(data.user); setPage('videos'); }
         else { setPage('auth'); }
       } catch { setPage('auth'); }
       setInitialized(true);
@@ -762,11 +763,12 @@ export default function BeRichApp() {
         {showSplash && <SplashScreen onDone={handleSplashDone} />}
         <div className="h-full flex flex-col min-h-0">
           {!user && <AuthScreen />}
+          {user && currentPage === 'videos' && <VideoPlatformScreen />}
           {user && currentPage === 'home' && <HomeScreen />}
           {user && currentPage === 'wallet' && <WalletScreen />}
           {user && currentPage === 'finance' && <FinanceScreen />}
           {user && currentPage === 'invest' && <InvestHubScreen />}
-          {user && currentPage === 'trading' && <TradingArenaScreen />}
+          {user && currentPage === 'game' && <SpinGameScreen />}
           {user && currentPage === 'enterprise' && <EnterpriseScreen />}
           {user && currentPage === 'profile' && <ProfileScreen />}
           {user && currentPage === 'analytics' && <AnalyticsScreen />}
@@ -776,7 +778,7 @@ export default function BeRichApp() {
           {user && currentPage === 'deposit' && <DepositScreen />}
           {user && currentPage === 'guide' && <GuideScreen />}
           {showNav && <BottomNav />}
-          {user && currentPage === 'home' && <FloatingGift />}
+          {user && (currentPage === 'home' || currentPage === 'videos') && <FloatingGift />}
           <InstallPrompt />
         </div>
         <ToastContainer />
