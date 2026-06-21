@@ -18,17 +18,19 @@ async function getUser(request: Request) {
   return db.user.findUnique({ where: { id: token } });
 }
 
-// Investment levels. Daily collection days are UNLIMITED at all levels
+// Investment levels — 3 levels, all at 5%/day, unlimited collection days
 // (totalCycles = 0 means unlimited — the user can collect every day forever).
 // Deposits are made DIRECTLY via YAS or TRX at every level (no investBalance).
+// Levels 2 and 3 unlock via referrals only (12 / 25). There is NO sequential
+// previous-level requirement, and a user may create MULTIPLE active investments
+// at the same level (as many as they want).
 const INVESTMENT_LEVELS: Record<number, {
   minAmount: number; maxAmount: number; rate: number;
   label: string; requiredReferrals: number; category: string;
 }> = {
-  1: { minAmount: 5, maxAmount: 10, rate: 10, label: 'Niveau 1 — Micro', requiredReferrals: 0, category: 'petit' },
-  2: { minAmount: 10.5, maxAmount: 20, rate: 10, label: 'Niveau 2 — Standard', requiredReferrals: 2, category: 'petit' },
-  3: { minAmount: 65, maxAmount: 250, rate: 10, label: 'Niveau 3 — Premium', requiredReferrals: 10, category: 'gros' },
-  4: { minAmount: 300, maxAmount: 1000, rate: 10, label: 'Niveau 4 — Elite', requiredReferrals: 15, category: 'gros' },
+  1: { minAmount: 5, maxAmount: 15, rate: 5, label: 'Niveau 1 — Débutant', requiredReferrals: 0, category: 'petit' },
+  2: { minAmount: 65, maxAmount: 250, rate: 5, label: 'Niveau 2 — Business', requiredReferrals: 12, category: 'gros' },
+  3: { minAmount: 500, maxAmount: 3000, rate: 5, label: 'Niveau 3 — Elite', requiredReferrals: 25, category: 'gros' },
 };
 
 export async function POST(request: Request) {
@@ -41,8 +43,8 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { level, amount: requestedAmount, paymentMethod, userAddress } = body;
 
-    if (!level || ![1, 2, 3, 4].includes(level)) {
-      return NextResponse.json({ success: false, error: 'Niveau invalide. Doit être entre 1 et 4.' }, { status: 400 });
+    if (!level || ![1, 2, 3].includes(level)) {
+      return NextResponse.json({ success: false, error: 'Niveau invalide. Doit être entre 1 et 3.' }, { status: 400 });
     }
 
     const config = INVESTMENT_LEVELS[level];
@@ -78,19 +80,9 @@ export async function POST(request: Request) {
       }, { status: 403 });
     }
 
-    // Sequential requirement: must have invested in previous level (for level > 1)
-    if (level > 1) {
-      const prevLevelInvestment = await db.investment.findFirst({
-        where: { userId: user.id, level: level - 1 },
-      });
-      if (!prevLevelInvestment) {
-        return NextResponse.json({
-          success: false,
-          error: `Vous devez d'abord investir au Niveau ${level - 1} avant d'accéder au Niveau ${level}.`,
-          needPreviousLevel: true,
-        }, { status: 403 });
-      }
-    }
+    // NOTE: There is NO sequential previous-level requirement and NO limit on
+    // the number of active investments a user can hold at the same level.
+    // Users may invest as many times as they want at any unlocked level.
 
     const siteConfig = await db.siteConfig.findUnique({ where: { id: 'main' } });
     const trxPrice = siteConfig?.trxUsdPrice || 0.12;

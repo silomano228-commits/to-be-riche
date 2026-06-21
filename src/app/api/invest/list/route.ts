@@ -68,6 +68,14 @@ export async function GET(request: Request) {
     const totalEarned = investments.reduce((sum, i) => sum + i.earned, 0);
     const totalInvested = investments.reduce((sum, i) => sum + i.amount, 0);
 
+    // 3-level investment system (Débutant $5-15 / Business $65-250 / Elite $500-3000).
+    // All levels pay 5%/day with unlimited daily collections.
+    const LEVELS = [
+      { level: 1, min: 5, max: 15, rate: 5, requiredReferrals: 0, label: 'Niveau 1 — Débutant' },
+      { level: 2, min: 65, max: 250, rate: 5, requiredReferrals: 12, label: 'Niveau 2 — Business' },
+      { level: 3, min: 500, max: 3000, rate: 5, requiredReferrals: 25, label: 'Niveau 3 — Elite' },
+    ];
+
     return NextResponse.json({
       success: true,
       investments: investmentsWithCountdown,
@@ -77,6 +85,10 @@ export async function GET(request: Request) {
         completed: completedInvestments.length,
         totalEarned: Math.round(totalEarned * 100) / 100,
         totalInvested: Math.round(totalInvested * 100) / 100,
+        unlockedLevel: user.unlockedLevel,
+        referralCount: user.referralCount,
+        levelCount: 3,
+        levels: LEVELS,
       },
     });
   } catch (error) {

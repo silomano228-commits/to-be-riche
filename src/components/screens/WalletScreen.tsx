@@ -49,10 +49,10 @@ export default function WalletScreen() {
   };
 
   if (!user) return null;
-  const investBalance = user.investBalance || 0;
+  const videoBalance = user.videoBalance || 0;
   const totalProfit = user.totalProfit || 0;
-  const totalPotentialGain = user.totalPotentialGain || 0;
-  const projects = user.projects || [];
+  const totalPotentialGain = (user as any).totalPotentialGain || 0;
+  const projects = (user as any).projects || [];
   const canWithdraw = user.canWithdraw;
   const hoursUntilWithdrawal = user.hoursUntilWithdrawal || 0;
 
@@ -133,8 +133,8 @@ export default function WalletScreen() {
         <div className="grid grid-cols-3 gap-2 mb-5">
           {[
             { icon: 'fa-chart-line', color: 'bg-[#DCFCE7] text-[#166534]', val: formatMoney(totalProfit), label: 'Gains' },
-            { icon: 'fa-hand-holding-usd', color: 'bg-[#DBEAFE] text-[#1E40AF]', val: formatMoney(investBalance), label: 'Investi' },
-            { icon: 'fa-percentage', color: 'bg-[#FEF3C7] text-[#92400E]', val: '3-13%', label: 'Rendement' },
+            { icon: 'fa-video', color: 'bg-[#CCFBF1] text-[#0F766E]', val: formatMoney(videoBalance), label: 'Vidéo' },
+            { icon: 'fa-percentage', color: 'bg-[#FEF3C7] text-[#92400E]', val: '5%/j', label: 'Rendement' },
           ].map((s, i) => (
             <div key={i} className="bg-white rounded-xl p-3.5 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)] border border-[rgba(0,0,0,0.03)]">
               <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center mx-auto mb-1.5 text-[0.85rem] ${s.color}`}><i className={`fas ${s.icon}`}></i></div>

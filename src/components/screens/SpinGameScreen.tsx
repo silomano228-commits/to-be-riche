@@ -38,6 +38,16 @@ function generateFakeWinner(): FakeWinner {
   };
 }
 
+interface PendingSpinResult {
+  segmentIdx: number;
+  isWin: boolean;
+  winAmount: number;
+  spinsRemaining?: number;
+}
+
+const LONG_TRANSITION = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+const SHORT_TRANSITION = 'transform 0.8s ease-out';
+
 export default function SpinGameScreen() {
   const { user, addToast } = useAppStore();
   const [segments, setSegments] = useState<Segment[]>([]);
@@ -52,10 +62,14 @@ export default function SpinGameScreen() {
   const [winners, setWinners] = useState(() =>
     Array.from({ length: 4 }, () => generateFakeWinner()),
   );
+  const [stopRequested, setStopRequested] = useState(false);
+  const [transitionStyle, setTransitionStyle] = useState<string>(LONG_TRANSITION);
 
   const spinsRemainingRef = useRef(spinsRemaining);
   const spinningRef = useRef(spinning);
   const triggerSpinRef = useRef<() => void>(() => {});
+  const pendingResultRef = useRef<PendingSpinResult | null>(null);
+  const spinTimeoutRef = useRef<number | null>(null);
 
   const loadStatus = useCallback(async () => {
     try {
@@ -99,6 +113,46 @@ export default function SpinGameScreen() {
     return () => clearInterval(interval);
   }, []);
 
+  const processResult = useCallback(async () => {
+    const data = pendingResultRef.current;
+    if (!data) return;
+    spinTimeoutRef.current = null;
+
+    const newRemaining = data.spinsRemaining ?? Math.max(0, spinsRemainingRef.current - 1);
+    setSpinsRemaining(newRemaining);
+    setSpinsUsed((prev) => prev + 1);
+
+    if (data.isWin) {
+      setTotalWonToday((prev) => prev + (data.winAmount || 0));
+      setCongratsData({
+        show: true,
+        type: 'win',
+        amount: data.winAmount,
+        message: `Vous avez gagné $${data.winAmount.toFixed(2)} à la roue !`,
+        onClose: () => setCongratsData({ show: false, type: 'win' }),
+      });
+    } else {
+      setCongratsData({
+        show: true,
+        type: 'loss',
+        message: 'Vous n\'avez pas gagné cette fois-ci.',
+        showRetry: newRemaining > 0,
+        onClose: () => setCongratsData({ show: false, type: 'loss' }),
+        onRetry: () => {
+          setCongratsData({ show: false, type: 'loss' });
+          setTimeout(() => triggerSpinRef.current(), 200);
+        },
+      });
+    }
+
+    pendingResultRef.current = null;
+    await globalRefreshUser();
+    await loadStatus();
+    setSpinning(false);
+    setStopRequested(false);
+    setTransitionStyle(LONG_TRANSITION);
+  }, [loadStatus]);
+
   const triggerSpin = useCallback(async () => {
     if (spinningRef.current) return;
     if (spinsRemainingRef.current <= 0) {
@@ -107,6 +161,8 @@ export default function SpinGameScreen() {
     }
 
     setSpinning(true);
+    setStopRequested(false);
+    setTransitionStyle(LONG_TRANSITION);
 
     try {
       const res = await authFetch('/api/game/spin', {
@@ -117,48 +173,28 @@ export default function SpinGameScreen() {
       const data = await res.json();
 
       if (data.success) {
+        // Backend has ALREADY decided the outcome. Store it for later
+        // (used by both the 4.5s auto-finish and the manual STOP button).
+        pendingResultRef.current = {
+          segmentIdx: data.segmentIdx,
+          isWin: data.isWin,
+          winAmount: data.winAmount,
+          spinsRemaining: data.spinsRemaining,
+        };
+
         const segCount = segments.length || 20;
         const segmentAngle = 360 / segCount;
         const targetSegment = data.segmentIdx;
         const currentMod = ((rotation % 360) + 360) % 360;
         const targetMod = ((360 - targetSegment * segmentAngle - segmentAngle / 2) % 360 + 360) % 360;
-        let additionalNeeded = (targetMod - currentMod + 360) % 360;
+        const additionalNeeded = (targetMod - currentMod + 360) % 360;
         const randomOffset = (Math.random() - 0.5) * segmentAngle * 0.6;
         const finalRotation = rotation + 5 * 360 + additionalNeeded + randomOffset;
 
         setRotation(finalRotation);
 
-        setTimeout(async () => {
-          const newRemaining = data.spinsRemaining ?? Math.max(0, spinsRemainingRef.current - 1);
-          setSpinsRemaining(newRemaining);
-          setSpinsUsed((prev) => prev + 1);
-
-          if (data.isWin) {
-            setTotalWonToday((prev) => prev + (data.winAmount || 0));
-            setCongratsData({
-              show: true,
-              type: 'win',
-              amount: data.winAmount,
-              message: `Vous avez gagné $${data.winAmount.toFixed(2)} à la roue !`,
-              onClose: () => setCongratsData({ show: false, type: 'win' }),
-            });
-          } else {
-            setCongratsData({
-              show: true,
-              type: 'loss',
-              message: 'Vous n\'avez pas gagné cette fois-ci.',
-              showRetry: newRemaining > 0,
-              onClose: () => setCongratsData({ show: false, type: 'loss' }),
-              onRetry: () => {
-                setCongratsData({ show: false, type: 'loss' });
-                setTimeout(() => triggerSpinRef.current(), 200);
-              },
-            });
-          }
-
-          await globalRefreshUser();
-          await loadStatus();
-          setSpinning(false);
+        spinTimeoutRef.current = window.setTimeout(() => {
+          processResult();
         }, 4500);
       } else {
         if (data.dailyLimitReached) {
@@ -173,7 +209,44 @@ export default function SpinGameScreen() {
       addToast('Erreur de connexion', 'error');
       setSpinning(false);
     }
-  }, [rotation, segments.length, addToast, loadStatus]);
+  }, [rotation, segments.length, addToast, processResult]);
+
+  // Manual STOP: redirect the wheel to land exactly on the backend-chosen
+  // segment using a short 0.8s ease-out transition, then process the result.
+  const handleStopWheel = useCallback(() => {
+    if (!pendingResultRef.current) return;
+    if (spinTimeoutRef.current !== null) {
+      clearTimeout(spinTimeoutRef.current);
+      spinTimeoutRef.current = null;
+    }
+    setStopRequested(true);
+
+    const segCount = segments.length || 20;
+    const segmentAngle = 360 / segCount;
+    const targetSegment = pendingResultRef.current.segmentIdx;
+    const targetMod = ((360 - targetSegment * segmentAngle - segmentAngle / 2) % 360 + 360) % 360;
+    const currentMod = ((rotation % 360) + 360) % 360;
+    let delta = (targetMod - currentMod + 360) % 360;
+    if (delta < 45) delta += 360; // ensure at least a visible final sweep
+    const newRotation = rotation + delta;
+
+    setTransitionStyle(SHORT_TRANSITION);
+    setRotation(newRotation);
+
+    spinTimeoutRef.current = window.setTimeout(() => {
+      processResult();
+    }, 850);
+  }, [rotation, segments.length, processResult]);
+
+  // Cleanup any pending spin timeout on unmount.
+  useEffect(() => {
+    return () => {
+      if (spinTimeoutRef.current !== null) {
+        clearTimeout(spinTimeoutRef.current);
+        spinTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     spinsRemainingRef.current = spinsRemaining;
@@ -222,7 +295,7 @@ export default function SpinGameScreen() {
 
         {/* Wheel */}
         <div className="flex justify-center px-4 py-4 relative">
-          <div className="relative w-[280px] h-[280px]">
+          <div className="relative w-[300px] max-w-[calc(100vw-2.5rem)] aspect-square">
             {/* Pointer */}
             <div className="absolute top-[-8px] left-1/2 -translate-x-1/2 z-20" style={{ width: 0, height: 0, borderLeft: '12px solid transparent', borderRight: '12px solid transparent', borderTop: '20px solid #F59E0B', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}></div>
 
@@ -230,7 +303,7 @@ export default function SpinGameScreen() {
             <div
               className="w-full h-full rounded-full relative"
               style={{
-                transition: 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)',
+                transition: transitionStyle,
                 transform: `rotate(${rotation}deg)`,
                 boxShadow: '0 0 40px rgba(245,158,11,0.3), 0 0 0 8px rgba(245,158,11,0.15)',
               }}
@@ -249,23 +322,33 @@ export default function SpinGameScreen() {
                   const y2 = cy + r * Math.sin(endRad);
                   const largeArc = sliceAngle > 180 ? 1 : 0;
                   const path = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+                  // SVG-frame angle of the spoke that bisects this segment.
                   const labelAngle = angle + sliceAngle / 2 - 90;
                   const labelRad = labelAngle * Math.PI / 180;
-                  const labelR = 62;
+                  const labelR = 60;
                   const lx = cx + labelR * Math.cos(labelRad);
                   const ly = cy + labelR * Math.sin(labelRad);
+                  // Radial text: align the text baseline with the spoke.
+                  // Flip 180° on the lower half so the text is never upside-down.
+                  const normalizedAngle = ((labelAngle % 360) + 360) % 360;
+                  const textRotation = (normalizedAngle > 90 && normalizedAngle < 270)
+                    ? labelAngle + 180
+                    : labelAngle;
                   return (
                     <g key={i}>
                       <path d={path} fill={seg.color} stroke="#FFFFFF" strokeWidth="1" opacity={seg.isWin ? 0.95 : 0.7} />
                       <text
                         x={lx} y={ly}
                         fill="#FFFFFF"
-                        fontSize="8"
+                        stroke="#0F172A"
+                        strokeWidth="0.35"
+                        paintOrder="stroke"
+                        fontSize="9"
                         fontWeight="bold"
                         textAnchor="middle"
                         dominantBaseline="middle"
-                        transform={`rotate(${labelAngle + 90} ${lx} ${ly})`}
-                        style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
+                        transform={`rotate(${textRotation} ${lx} ${ly})`}
+                        style={{ textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}
                       >
                         {seg.label}
                       </text>
@@ -282,8 +365,8 @@ export default function SpinGameScreen() {
           </div>
         </div>
 
-        {/* Spin button */}
-        <div className="px-4 mb-3">
+        {/* Spin button + manual STOP button */}
+        <div className="px-4 mb-3 space-y-2">
           {spinsRemaining > 0 ? (
             <button
               onClick={() => triggerSpin()}
@@ -303,6 +386,24 @@ export default function SpinGameScreen() {
               <div className="text-[0.8rem] font-bold text-white">Tous vos tours sont utilisés !</div>
               <div className="text-[0.65rem] text-white/50 mt-0.5">Revenez demain pour 10 nouveaux tours</div>
             </div>
+          )}
+
+          {/* Manual STOP button — only visible while the wheel is spinning
+              and the user hasn't already requested a stop. */}
+          {spinning && !stopRequested && (
+            <button
+              onClick={handleStopWheel}
+              className="w-full py-3 rounded-2xl font-black text-[0.92rem] border-none cursor-pointer transition-all active:scale-[0.97] flex items-center justify-center gap-2"
+              style={{
+                background: 'linear-gradient(135deg, #EF4444, #B91C1C)',
+                color: '#FFFFFF',
+                boxShadow: '0 6px 18px rgba(239,68,68,0.5)',
+                border: '2px solid rgba(255,255,255,0.25)',
+                animation: 'pulse 1.4s ease-in-out infinite',
+              }}
+            >
+              <i className="fas fa-hand-paper"></i>ARRÊTER LA ROUE
+            </button>
           )}
         </div>
 
@@ -375,7 +476,7 @@ export default function SpinGameScreen() {
                   • 10 tours gratuits par jour<br/>
                   • La roue se réinitialise à minuit<br/>
                   • Récompenses: $0.10 à $1.00<br/>
-                  • Les gains vont sur votre solde Jeu
+                  • Les gains vont sur votre solde principal
                 </div>
               </div>
             </div>

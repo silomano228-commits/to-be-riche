@@ -3,6 +3,12 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
+// DEPRECATED: The video section is now withdrawal-only (no deposit needed to
+// start watching — the account is autonomous). The 3-day cycle rule (deposit
+// at investment Level 1 + referrals) is enforced via /api/invest/create and
+// the videoDepositRequired flag, NOT via this route. This endpoint is kept
+// only for backward compatibility and is no longer called from the frontend.
+
 function getToken(request: Request): string | null {
   const authHeader = request.headers.get('x-auth-token');
   if (authHeader) return authHeader;

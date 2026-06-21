@@ -4,16 +4,19 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-type BalanceField = 'balance' | 'investBalance' | 'tradeBalance' | 'projectBalance';
+// Admin-editable balance fields. The investBalance concept was removed —
+// admins now manage: balance (Solde principal), videoBalance (Vidéo),
+// tradeBalance (Trading), projectBalance (Projet).
+type BalanceField = 'balance' | 'videoBalance' | 'tradeBalance' | 'projectBalance';
 
 const BALANCE_LABELS: Record<BalanceField, string> = {
   balance: 'Solde principal',
-  investBalance: 'Investissement',
+  videoBalance: 'Vidéo',
   tradeBalance: 'Trading',
   projectBalance: 'Projet',
 };
 
-const VALID_FIELDS: BalanceField[] = ['balance', 'investBalance', 'tradeBalance', 'projectBalance'];
+const VALID_FIELDS: BalanceField[] = ['balance', 'videoBalance', 'tradeBalance', 'projectBalance'];
 
 export async function POST(request: Request) {
   try {
@@ -72,8 +75,6 @@ export async function POST(request: Request) {
         where: { id: userId },
         data: {
           [balanceField]: amount,
-          // Auto-set hasInvested if investBalance > 0
-          ...(balanceField === 'investBalance' ? { hasInvested: amount > 0 } : {}),
         },
       }),
       db.transaction.create({
@@ -91,7 +92,7 @@ export async function POST(request: Request) {
       where: { id: userId },
       select: {
         balance: true,
-        investBalance: true,
+        videoBalance: true,
         tradeBalance: true,
         projectBalance: true,
       },

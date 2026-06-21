@@ -222,12 +222,9 @@ export default function InvestHubScreen() {
   const referralCount = (user as any).referralCount || 0;
   const activeInv = investments.filter(i => i.status === 'active');
   const completedInv = investments.filter(i => i.status === 'completed');
-  const investedLevels = new Set(investments.map(i => i.level));
 
-  // Has the user invested in the previous level? (required to unlock/invest higher)
-  const hasPrevLevel = (level: number) => level === 1 || investedLevels.has(level - 1);
-
-  // Referral info per locked level
+  // Unlock is referral-based ONLY — no previous-level investment requirement.
+  // Users may hold multiple active investments at the same unlocked level (unlimited count).
   const getUnlockInfo = (level: number) => {
     const lvl = INVEST_LEVELS[level - 1];
     if (!lvl) return null;
@@ -314,7 +311,7 @@ export default function InvestHubScreen() {
           <div>
             <div className="text-[0.78rem] font-bold" style={{ color: '#0F766E' }}>Collecte quotidienne illimitée</div>
             <div className="text-[0.7rem] mt-0.5" style={{ color: 'rgba(15,118,110,0.85)' }}>
-              Tous les niveaux rapportent 10%/jour. Le dépôt se fait directement par YAS ou TRX.
+              Tous les niveaux rapportent 5%/jour. Le dépôt se fait directement par YAS ou TRX.
             </div>
           </div>
         </div>
@@ -343,8 +340,7 @@ export default function InvestHubScreen() {
         <div className="space-y-3 mb-5">
           {INVEST_LEVELS.map((lvl) => {
             const isUnlocked = lvl.level <= unlockedLevel;
-            const prevOk = hasPrevLevel(lvl.level);
-            const canInvest = isUnlocked && prevOk;
+            const canInvest = isUnlocked; // unlock is referral-based only — no previous-level requirement
             const info = getUnlockInfo(lvl.level);
 
             return (
@@ -416,7 +412,7 @@ export default function InvestHubScreen() {
                     >
                       <i className="fas fa-hand-holding-dollar text-[0.7rem]"></i>Investir
                     </button>
-                  ) : !isUnlocked ? (
+                  ) : (
                     <button
                       onClick={() => setUnlockLevel(lvl.level)}
                       className="w-full py-2.5 rounded-xl text-[0.78rem] font-semibold border-none cursor-pointer transition-all active:scale-[0.98] flex items-center justify-center gap-2"
@@ -427,13 +423,6 @@ export default function InvestHubScreen() {
                         <span className="opacity-80 text-[0.7rem]">· {referralCount}/{info.required}</span>
                       )}
                     </button>
-                  ) : (
-                    <div
-                      className="w-full py-2.5 rounded-xl text-[0.72rem] font-semibold text-center flex items-center justify-center gap-1.5"
-                      style={{ background: 'rgba(0,0,0,0.04)', color: 'rgba(0,0,0,0.45)' }}
-                    >
-                      <i className="fas fa-arrow-up text-[0.6rem]"></i>Investissez d'abord au Niv. {lvl.level - 1}
-                    </div>
                   )}
                 </div>
               </div>

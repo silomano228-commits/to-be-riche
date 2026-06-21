@@ -51,6 +51,18 @@ export async function POST(request: Request) {
         sentCount++;
       }
 
+      // Persist the broadcast so the admin can review past sends later.
+      // (BroadcastMessage is only created for target === 'all'.)
+      await db.broadcastMessage.create({
+        data: {
+          title,
+          message,
+          target: 'all',
+          type: notifType,
+          userId: null,
+        },
+      });
+
       return NextResponse.json({
         success: true,
         message: `Notification envoyée à ${sentCount} utilisateur(s)`,
@@ -69,6 +81,17 @@ export async function POST(request: Request) {
         title,
         message,
         link: notifLink || undefined,
+      });
+
+      // Persist the individual broadcast record as well.
+      await db.broadcastMessage.create({
+        data: {
+          title,
+          message,
+          target: 'individual',
+          type: notifType,
+          userId,
+        },
       });
 
       return NextResponse.json({

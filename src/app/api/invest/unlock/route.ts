@@ -14,9 +14,11 @@ function getToken(request: Request): string | null {
 }
 
 const LEVEL_CONFIG: Record<number, { requiredReferrals: number; unlockFee: number; label: string; category: string }> = {
-  2: { requiredReferrals: 2, unlockFee: 0, label: 'Standard', category: 'petit' },
-  3: { requiredReferrals: 10, unlockFee: 0, label: 'Premium', category: 'gros' },
-  4: { requiredReferrals: 15, unlockFee: 0, label: 'Elite', category: 'gros' },
+  // Level 1 is always unlocked by default (unlockedLevel starts at 1).
+  // Level 2 requires 12 referrals. Level 3 requires 25 referrals.
+  // No payment option — unlock is referral-based only.
+  2: { requiredReferrals: 12, unlockFee: 0, label: 'Business', category: 'gros' },
+  3: { requiredReferrals: 25, unlockFee: 0, label: 'Elite', category: 'gros' },
 };
 
 export async function POST(request: Request) {
@@ -29,12 +31,17 @@ export async function POST(request: Request) {
 
     const { level } = await request.json();
     if (!level || !LEVEL_CONFIG[level]) {
-      return NextResponse.json({ success: false, error: 'Niveau invalide' });
+      return NextResponse.json({ success: false, error: 'Niveau invalide. Niveaux débloquables: 2 (12 parrainés) ou 3 (25 parrainés).' });
     }
 
     const config = LEVEL_CONFIG[level];
 
-    // Must unlock levels sequentially (can't skip)
+    // Already unlocked?
+    if (level <= user.unlockedLevel) {
+      return NextResponse.json({ success: false, error: `Le Niveau ${level} est déjà débloqué.` });
+    }
+
+    // Must unlock levels sequentially (can't skip — i.e. need level 2 before 3)
     if (level > user.unlockedLevel + 1) {
       return NextResponse.json({
         success: false,
@@ -42,36 +49,21 @@ export async function POST(request: Request) {
       });
     }
 
-    // Already unlocked?
-    if (level <= user.unlockedLevel) {
-      return NextResponse.json({ success: false, error: `Le Niveau ${level} est déjà débloqué.` });
-    }
-
-    // Must have invested in previous level
-    const prevLevelInvestment = await db.investment.findFirst({
-      where: { userId: user.id, level: level - 1 },
-    });
-    if (!prevLevelInvestment) {
-      return NextResponse.json({
-        success: false,
-        error: `Vous devez d'abord investir au Niveau ${level - 1} avant de débloquer le Niveau ${level}.`,
-        needPreviousLevel: true,
-      });
-    }
-
-    // Check if user has enough referrals — ONLY referral unlock, no payment option
+    // NOTE: No previous-level investment requirement. Unlocking is based on
+    // referrals only. The user must have enough referrals to unlock the level.
     if (user.referralCount >= config.requiredReferrals) {
-      // Free unlock via referrals
+      // Set unlockedLevel to the max of current and the requested level
+      const newUnlockedLevel = Math.max(user.unlockedLevel, level);
       await db.user.update({
         where: { id: user.id },
-        data: { unlockedLevel: level },
+        data: { unlockedLevel: newUnlockedLevel },
       });
 
       await db.transaction.create({
         data: {
           type: 'level_unlock',
           amount: 0,
-          detail: `Niveau ${level} (${config.label}) débloqué grâce à ${user.referralCount} parrainés`,
+          detail: `Niveau ${level} (${config.label}) débloqué grâce à ${user.referralCount} parrainé(s)`,
           userId: user.id,
         },
       });
@@ -86,8 +78,9 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         success: true,
-        message: `Niveau ${level} (${config.label}) débloqué ! Vos ${user.referralCount} parrainés vous donnent accès gratuitement.`,
+        message: `Niveau ${level} (${config.label}) débloqué ! Vos ${user.referralCount} parrainé(s) vous donnent accès gratuitement.`,
         unlockedBy: 'referrals',
+        unlockedLevel: newUnlockedLevel,
       });
     }
 
@@ -98,6 +91,7 @@ export async function POST(request: Request) {
       error: `Parrainés insuffisants. Vous avez ${user.referralCount} parrainé${user.referralCount > 1 ? 's' : ''} mais il vous en faut ${config.requiredReferrals}. Il vous manque ${missingReferrals} parrainé${missingReferrals > 1 ? 's' : ''}.`,
       missingReferrals,
       requiredReferrals: config.requiredReferrals,
+      currentReferrals: user.referralCount,
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });

@@ -548,10 +548,17 @@ function WalletScreen() {
 
   if (!user) return null;
 
+  // Vidéo account is funded only by watching videos (no deposit/transfer),
+  // so it's a display-only card. Trading and Project are transferable.
   const accounts = [
-    { key: 'trade', label: 'Compte de Trading', balance: user.tradeBalance, icon: 'fa-bolt', iconColor: '#F59E0B', iconBg: 'bg-[rgba(245,158,11,0.12)]', borderColor: '#F59E0B' },
-    { key: 'project', label: 'Compte de Projet', balance: user.projectBalance, icon: 'fa-building', iconColor: '#8B5CF6', iconBg: 'bg-[rgba(139,92,246,0.12)]', borderColor: '#8B5CF6' },
+    { key: 'video', label: 'Compte Vidéo', balance: user.videoBalance || 0, icon: 'fa-video', iconColor: '#14B8A6', iconBg: 'bg-[rgba(20,184,166,0.12)]', borderColor: '#14B8A6', transferable: false },
+    { key: 'trade', label: 'Compte de Trading', balance: user.tradeBalance, icon: 'fa-bolt', iconColor: '#F59E0B', iconBg: 'bg-[rgba(245,158,11,0.12)]', borderColor: '#F59E0B', transferable: true },
+    { key: 'project', label: 'Compte de Projet', balance: user.projectBalance, icon: 'fa-building', iconColor: '#8B5CF6', iconBg: 'bg-[rgba(139,92,246,0.12)]', borderColor: '#8B5CF6', transferable: true },
   ] as const;
+
+  // Label helper for the transfer modal — kept inline since the modal is small.
+  const accountLabel = (k: string) =>
+    k === 'principal' ? 'Principal' : k === 'trade' ? 'Trading' : k === 'project' ? 'Projets' : k === 'video' ? 'Vidéo' : k;
 
   return (
     <>
@@ -583,14 +590,21 @@ function WalletScreen() {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2.5">
                 <div className={`w-10 h-10 icon-box ${acc.iconBg}`}><i className={`fas ${acc.icon} text-[0.9rem]`} style={{ color: acc.iconColor }}></i></div>
-                <div className="text-[0.7rem] text-[rgba(0,0,0,0.35)] font-semibold uppercase tracking-[1.5px]">{acc.label}</div>
+                <div>
+                  <div className="text-[0.7rem] text-[rgba(0,0,0,0.5)] font-semibold uppercase tracking-[1.5px]">{acc.label}</div>
+                  {acc.key === 'video' && <div className="text-[0.55rem] text-[#14B8A6] font-semibold mt-0.5">Alimenté par les vidéos regardées</div>}
+                </div>
               </div>
               <div className="text-[1.3rem] font-black text-[#1F2937]">{formatMoney(acc.balance)}</div>
             </div>
-            <div className="flex gap-2">
-              <button onClick={() => setTransferTarget({ from: 'principal', to: acc.key, label: `Verser vers ${acc.label}`, fee: true, fromColor: '#22C55E', toColor: acc.iconColor, fromIcon: 'fa-wallet', toIcon: acc.icon })} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(34,197,94,0.12)] text-[#22C55E] hover:bg-[rgba(34,197,94,0.18)] transition-colors"><i className="fas fa-arrow-right text-[0.65rem]"></i> Verser</button>
-              <button onClick={() => setTransferTarget({ from: acc.key, to: 'principal', label: `Retirer vers Principal`, fee: false, fromColor: acc.iconColor, toColor: '#22C55E', fromIcon: acc.icon, toIcon: 'fa-wallet' })} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(0,0,0,0.04)] text-[rgba(0,0,0,0.7)]"><i className="fas fa-arrow-left text-[0.65rem]"></i> Retirer</button>
-            </div>
+            {acc.transferable ? (
+              <div className="flex gap-2">
+                <button onClick={() => setTransferTarget({ from: 'principal', to: acc.key, label: `Verser vers ${acc.label}`, fee: true, fromColor: '#22C55E', toColor: acc.iconColor, fromIcon: 'fa-wallet', toIcon: acc.icon })} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(34,197,94,0.12)] text-[#22C55E] hover:bg-[rgba(34,197,94,0.18)] transition-colors"><i className="fas fa-arrow-right text-[0.65rem]"></i> Verser</button>
+                <button onClick={() => setTransferTarget({ from: acc.key, to: 'principal', label: `Retirer vers Principal`, fee: false, fromColor: acc.iconColor, toColor: '#22C55E', fromIcon: acc.icon, toIcon: 'fa-wallet' })} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(0,0,0,0.04)] text-[rgba(0,0,0,0.7)]"><i className="fas fa-arrow-left text-[0.65rem]"></i> Retirer</button>
+              </div>
+            ) : (
+              <button onClick={() => setPage('videos')} className="w-full py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(20,184,166,0.10)] text-[#0F766E] hover:bg-[rgba(20,184,166,0.16)] transition-colors"><i className="fas fa-play text-[0.65rem]"></i> Regarder des vidéos</button>
+            )}
           </div>
         ))}
 
@@ -605,12 +619,12 @@ function WalletScreen() {
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1.5 bg-[rgba(0,0,0,0.04)] rounded-lg px-2.5 py-1.5">
                     <div className="w-5 h-5 rounded-md flex items-center justify-center bg-[rgba(34,197,94,0.12)]"><i className={`fas ${transferTarget.fromIcon} text-[0.5rem] text-[#22C55E]`}></i></div>
-                    <span className="text-[0.65rem] font-medium text-[rgba(0,0,0,0.55)]">{transferTarget.from === 'principal' ? 'Principal' : transferTarget.from === 'invest' ? 'Invest.' : transferTarget.from === 'trade' ? 'Trading' : 'Projets'}</span>
+                    <span className="text-[0.65rem] font-medium text-[rgba(0,0,0,0.55)]">{accountLabel(transferTarget.from)}</span>
                   </div>
                   <i className="fas fa-arrow-right text-[0.6rem] text-[rgba(0,0,0,0.35)]"></i>
                   <div className="flex items-center gap-1.5 bg-[rgba(0,0,0,0.04)] rounded-lg px-2.5 py-1.5">
                     <div className="w-5 h-5 rounded-md flex items-center justify-center bg-[rgba(34,197,94,0.12)]"><i className={`fas ${transferTarget.toIcon} text-[0.5rem] text-[#22C55E]`}></i></div>
-                    <span className="text-[0.65rem] font-medium text-[rgba(0,0,0,0.55)]">{transferTarget.to === 'principal' ? 'Principal' : transferTarget.to === 'invest' ? 'Invest.' : transferTarget.to === 'trade' ? 'Trading' : 'Projets'}</span>
+                    <span className="text-[0.65rem] font-medium text-[rgba(0,0,0,0.55)]">{accountLabel(transferTarget.to)}</span>
                   </div>
                 </div>
               </div>
@@ -630,19 +644,37 @@ function WalletScreen() {
           </div>
         )}
 
-        {/* Stats — Gradient backgrounds */}
-        <div className="grid grid-cols-2 gap-2.5 mb-4">
-          <div className="bg-gradient-to-br from-[rgba(74,222,128,0.08)] to-[rgba(74,222,128,0.02)] border border-[rgba(74,222,128,0.1)] rounded-xl p-3.5 text-center">
-            <div className="w-10 h-10 icon-box mx-auto mb-1.5 bg-[rgba(74,222,128,0.12)] border border-[rgba(74,222,128,0.15)]"><i className="fas fa-chart-line text-[0.85rem] text-[#4ADE80]"></i></div>
-            <div className="font-extrabold text-[0.9rem] text-[#4ADE80]">{formatMoney(user.totalProfit)}</div>
-            <div className="text-[0.58rem] text-[rgba(0,0,0,0.35)] uppercase tracking-[0.5px] font-semibold mt-0.5">Gains</div>
-          </div>
-          <div className="bg-gradient-to-br from-[rgba(248,113,113,0.08)] to-[rgba(248,113,113,0.02)] border border-[rgba(248,113,113,0.1)] rounded-xl p-3.5 text-center">
-            <div className="w-10 h-10 icon-box mx-auto mb-1.5 bg-[rgba(248,113,113,0.12)] border border-[rgba(248,113,113,0.15)]"><i className="fas fa-arrow-down text-[0.85rem] text-[#F87171]"></i></div>
-            <div className="font-extrabold text-[0.9rem] text-[#F87171]">{formatMoney(user.totalLoss)}</div>
-            <div className="text-[0.58rem] text-[rgba(0,0,0,0.35)] uppercase tracking-[0.5px] font-semibold mt-0.5">Pertes</div>
-          </div>
+        {/* Stats — Vertical readable list (replaces previous cramped 2-col grid) */}
+        <div className="glass-card rounded-2xl p-1.5 mb-4">
+          {[
+            { icon: 'fa-chart-line', color: '#22C55E', bg: 'bg-[rgba(34,197,94,0.10)]', label: 'Gains totaux', value: formatMoney(user.totalProfit || 0), sub: 'Cumul des gains' },
+            { icon: 'fa-arrow-trend-down', color: '#F87171', bg: 'bg-[rgba(248,113,113,0.10)]', label: 'Pertes totales', value: formatMoney(user.totalLoss || 0), sub: 'Cumul des pertes' },
+            { icon: 'fa-video', color: '#14B8A6', bg: 'bg-[rgba(20,184,166,0.10)]', label: 'Solde vidéo', value: formatMoney(user.videoBalance || 0), sub: 'Compte vidéo autonome' },
+            { icon: 'fa-bolt', color: '#F59E0B', bg: 'bg-[rgba(245,158,11,0.10)]', label: 'Solde trading', value: formatMoney(user.tradeBalance || 0), sub: 'Compte de trading' },
+            { icon: 'fa-building', color: '#8B5CF6', bg: 'bg-[rgba(139,92,246,0.10)]', label: 'Solde projet', value: formatMoney(user.projectBalance || 0), sub: 'Compte de projet' },
+          ].map((s, i, arr) => (
+            <div key={s.label} className={`flex items-center gap-3 px-3 py-3 ${i < arr.length - 1 ? 'border-b border-[rgba(0,0,0,0.05)]' : ''}`}>
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${s.bg}`}>
+                <i className={`fas ${s.icon} text-[0.85rem]`} style={{ color: s.color }}></i>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[0.8rem] font-semibold text-[#1F2937]">{s.label}</div>
+                <div className="text-[0.62rem] text-[rgba(0,0,0,0.4)]">{s.sub}</div>
+              </div>
+              <div className="text-[0.95rem] font-bold tracking-[-0.3px]" style={{ color: s.color }}>{s.value}</div>
+            </div>
+          ))}
         </div>
+
+        {/* Recent transactions shortcut */}
+        <button onClick={() => setPage('home')} className="w-full glass-card rounded-2xl p-3.5 mb-4 flex items-center gap-3 cursor-pointer transition-all active:scale-[0.98]">
+          <div className="w-9 h-9 icon-box bg-[rgba(34,197,94,0.12)] shrink-0"><i className="fas fa-clock-rotate-left text-[#22C55E] text-[0.85rem]"></i></div>
+          <div className="flex-1 text-left">
+            <div className="text-[0.82rem] font-bold text-[#1F2937]">Activité récente</div>
+            <div className="text-[0.62rem] text-[rgba(0,0,0,0.45)]">Voir vos dernières transactions sur l&apos;accueil</div>
+          </div>
+          <i className="fas fa-chevron-right text-[rgba(0,0,0,0.35)] text-[0.7rem]"></i>
+        </button>
       </div>
     </>
   );

@@ -29,12 +29,12 @@ interface SectionDef {
 
 const SECTIONS: SectionDef[] = [
   { id: 'videos',   label: 'Plateforme Vidéo',           icon: 'fa-video',         color: '#14B8A6', summary: "Les entreprises vous paient pour regarder leurs vidéos" },
-  { id: 'invest',   label: 'Make Money — Investissement', icon: 'fa-chart-line',    color: '#059669', summary: '4 niveaux · 10% par jour · collecte illimitée' },
-  { id: 'game',     label: 'Jeu — Roue de la Fortune',   icon: 'fa-dice',          color: '#F59E0B', summary: '10 tours/jour · récompenses $0.10 à $1.00' },
+  { id: 'invest',   label: 'Make Money — Investissement', icon: 'fa-chart-line',    color: '#059669', summary: '3 niveaux · 5% par jour · collecte illimitée' },
+  { id: 'game',     label: 'Jeu — Roue de la Fortune',   icon: 'fa-dice',          color: '#F59E0B', summary: '10 tours/jour · $0.10 à $1.00 · bouton ARRÊTER' },
   { id: 'account',  label: 'Compte Principal',           icon: 'fa-wallet',        color: '#22C55E', summary: 'Solde pour le jeu et les petites collectes' },
-  { id: 'payments', label: 'Méthodes de Paiement',       icon: 'fa-credit-card',   color: '#EF4444', summary: 'YAS & TRX · min $5 · 6 heures' },
-  { id: 'referral', label: 'Parrainage',                 icon: 'fa-gift',          color: '#EC4899', summary: 'BR-XXXXX · partage natif · débloque les niveaux' },
-  { id: 'ads',      label: 'Publicités',                 icon: 'fa-bullhorn',      color: '#F97316', summary: "Affiches fermables au changement d'onglet" },
+  { id: 'payments', label: 'Méthodes de Paiement',       icon: 'fa-credit-card',   color: '#EF4444', summary: 'YAS & TRX · min $5 / $1 · 6 heures' },
+  { id: 'referral', label: 'Parrainage',                 icon: 'fa-gift',          color: '#EC4899', summary: 'BR-XXXXX · 12 (Niv.2) · 25 (Niv.3) · 3 jours vidéo' },
+  { id: 'ads',      label: 'Publicités',                 icon: 'fa-bullhorn',      color: '#F97316', summary: '46 entreprises · 6 layouts visuels · fermables' },
   { id: 'nav',      label: 'Navigation',                 icon: 'fa-compass',       color: '#64748B', summary: '4 onglets : Vidéos · Make Money · Guide · Profil' },
 ];
 
@@ -68,7 +68,8 @@ export default function GuideScreen() {
                 <h1 className="text-[1.2rem] font-black text-white leading-tight">Guide Be Rich</h1>
                 <p className="text-[0.72rem] text-white/85 mt-1 leading-relaxed">
                   Plateforme de communication pour les grandes entreprises. Les sociétés
-                  chinoises, japonaises et indiennes vous paient pour regarder leurs vidéos
+                  chinoises, japonaises et indiennes — et désormais aussi coréennes,
+                  américaines et européennes — vous paient pour regarder leurs vidéos
                   promotionnelles.
                 </p>
               </div>
@@ -219,41 +220,58 @@ function VideosContent() {
     <>
       <SubHead title="Le concept" color={teal} />
       <Row icon="fa-handshake" color={teal} title="Gagnant-gagnant">
-        Be Rich met en relation les grandes entreprises (chinoises, japonaises, indiennes) et
-        vous. Elles vous paient pour regarder leurs vidéos promotionnelles courtes. Elles
-        gagnent en visibilité, vous gagnez de l'argent.
+        Be Rich met en relation les grandes entreprises (chinoises, japonaises, indiennes,
+        et désormais aussi coréennes, américaines et européennes) et vous. Elles vous paient
+        pour regarder leurs vidéos promotionnelles courtes. Elles gagnent en visibilité, vous
+        gagnez de l'argent.
       </Row>
       <Row icon="fa-coins" color="#22C55E" title="Récompense">
         $0.15 à $0.30 par vidéo regardée, crédités sur votre{' '}
-        <strong>compte Vidéo</strong> (autonome).
+        <strong>compte Vidéo</strong>.
       </Row>
 
       <SubHead title="Comment regarder" color={teal} />
-      <Row icon="fa-calendar-day" color={teal} title="5 vidéos par jour">
-        Chaque jour, <strong>5 nouvelles vidéos</strong> d'entreprises différentes sont
-        disponibles. Les vidéos changent tous les jours.
+      <Row icon="fa-th-large" color={teal} title="5 vidéos visibles à la fois">
+        La page affiche <strong>5 vidéos en même temps</strong> (grille 2 colonnes). Chaque
+        jour, <strong>5 nouvelles vidéos</strong> d'entreprises différentes sont disponibles —
+        elles changent tous les jours.
       </Row>
-      <Row icon="fa-ban" color="#EF4444" title="Lecteur sans défilement">
-        Impossible de sauter ou de chercher dans la vidéo. Vous devez regarder au moins{' '}
-        <strong>50% de la vidéo</strong> pour recevoir la récompense.
+      <Row icon="fa-chart-simple" color="#22C55E" title="Image de progression des gains">
+        Une <strong>barre de progression verte</strong> affiche vos gains du jour et{' '}
+        <strong>augmente normalement</strong> à chaque vidéo regardée, jusqu'à l'objectif
+        quotidien.
       </Row>
       <Row icon="fa-door-open" color="#F59E0B" title="Quitter à tout moment">
-        Un bouton <strong>Quitter</strong> est toujours visible. Vous pouvez quitter la vidéo
-        quand vous voulez (mais sans récompense si les 50% ne sont pas atteints).
+        Un bouton <strong>X rouge</strong> reste toujours visible, ainsi qu'un bouton{' '}
+        <strong>Quitter la vidéo</strong>. Vous pouvez quitter la vidéo quand vous le souhaitez.
       </Row>
 
       <SubHead title="Le compte Vidéo" color={teal} />
-      <Row icon="fa-wallet" color={teal} title="Compte autonome">
-        Le volet vidéo a son <strong>propre solde</strong> (solde vidéo), séparé du compte Make
-        Money. <strong>Aucun dépôt requis</strong> pour commencer à regarder.
+      <Row icon="fa-wallet" color={teal} title="Alimenté UNIQUEMENT par les vidéos">
+        Le compte Vidéo a son <strong>propre solde</strong>. <strong>Aucun dépôt</strong>{' '}
+        n'est possible sur ce compte : il est alimenté <strong>uniquement</strong> par les
+        récompenses de visionnage.
       </Row>
-      <Row icon="fa-calendar-xmark" color="#F59E0B" title="Règle des 3 jours">
-        Après <strong>3 jours</strong> de visionnage, un dépôt sur le compte vidéo devient{' '}
-        <strong>obligatoire</strong> pour continuer à regarder.
+      <Row icon="fa-arrow-up" color="#EF4444" title="Retrait minimum $1">
+        Vous pouvez retirer vos gains vidéo par <strong>YAS</strong> ou <strong>TRX</strong> à
+        partir de <strong>$1</strong> (converti en dollars). Fonds disponibles dans les{' '}
+        <strong>6 heures</strong>.
       </Row>
-      <Row icon="fa-arrow-right-arrow-left" color="#EF4444" title="Dépôt / Retrait vidéo">
-        Via <strong>YAS</strong> ou <strong>TRX</strong>, minimum <strong>$5</strong>. Fonds
-        disponibles dans les <strong>6 heures</strong>.
+      <Row icon="fa-circle-exclamation" color="#F59E0B" title="Messages d'erreur clairs">
+        Si un retrait est impossible (solde insuffisant, action requise, etc.), un{' '}
+        <strong>message clair</strong> vous indique exactement quoi faire.
+      </Row>
+
+      <SubHead title="Règle des 3 jours (retraits vidéo)" color={teal} />
+      <Row icon="fa-calendar-xmark" color="#F59E0B" title="Pour continuer à retirer">
+        Après <strong>3 jours</strong> de visionnage, pour continuer à faire des{' '}
+        <strong>retraits</strong>, vous devez : (1) avoir un <strong>investissement actif au
+        Niveau 1</strong>, ET (2) avoir invité au moins <strong>1 parrainé</strong>. Le
+        visionnage reste autorisé pendant ce temps.
+      </Row>
+      <Row icon="fa-arrow-trend-up" color="#EC4899" title="Le nombre augmente à chaque cycle">
+        À chaque <strong>cycle de 3 jours</strong>, le nombre de parrainés requis augmente :
+        cycle 1 = 1, cycle 2 = 2, cycle 3 = 3, etc.
       </Row>
 
       <Callout icon="fa-user-shield" color={teal}>
@@ -270,16 +288,17 @@ function InvestContent() {
   return (
     <>
       <SubHead title="Le principe" color={green} />
-      <Row icon="fa-chart-line" color={green} title="4 niveaux d'investissement">
+      <Row icon="fa-chart-line" color={green} title="3 niveaux d'investissement">
         Choisissez un niveau, investissez un montant dans sa plage, et gagnez{' '}
-        <strong>10% par jour</strong> sur votre mise.
+        <strong>5% par jour</strong> sur votre mise — à <strong>tous les niveaux</strong>.
       </Row>
-      <Row icon="fa-infinity" color="#22C55E" title="Collecte illimitée">
-        À <strong>tous les niveaux</strong>, vous pouvez collecter vos gains{' '}
-        <strong>tous les jours, pour toujours</strong>. Aucune limite de cycles.
+      <Row icon="fa-infinity" color="#22C55E" title="Tout est illimité">
+        <strong>Collecte quotidienne illimitée</strong> (jamais de fin) ET{' '}
+        <strong>nombre d'investissements illimité</strong> — vous pouvez créer autant
+        d'investissements que vous voulez à chaque niveau débloqué.
       </Row>
 
-      <SubHead title="Les 4 niveaux" color={green} />
+      <SubHead title="Les 3 niveaux" color={green} />
       <div className="mt-2 space-y-2">
         {INVEST_LEVELS.map((lvl) => (
           <div key={lvl.level} className="rounded-xl p-3 border" style={{ borderColor: `${lvl.color}33`, background: `${lvl.color}0A` }}>
@@ -299,8 +318,8 @@ function InvestContent() {
             <div className="text-[0.66rem] text-[#4B5563] flex items-center gap-1.5">
               <i className="fas fa-user-group text-[0.6rem]" style={{ color: lvl.color }} />
               {lvl.requiredReferrals === 0
-                ? <span>Aucun parrainage requis — accès libre</span>
-                : <span>Déblocage : <strong>{lvl.requiredReferrals} parrainés inscrits</strong> + avoir investi au niveau précédent</span>}
+                ? <span><strong>Accès libre</strong> — aucun parrainage requis</span>
+                : <span>Déblocage : <strong>{lvl.requiredReferrals} parrainés inscrits</strong></span>}
             </div>
           </div>
         ))}
@@ -309,32 +328,30 @@ function InvestContent() {
       <SubHead title="Déposer" color={green} />
       <Row icon="fa-arrow-down" color="#22C55E" title="Dépôt direct par YAS ou TRX">
         À <strong>tous les niveaux</strong>, le dépôt se fait <strong>directement</strong> par
-        YAS ou TRX. Il n'y a pas de solde d'investissement à recharger au préalable. Fonds
-        disponibles dans les <strong>6 heures</strong>.
+        YAS ou TRX. <strong>Il n'y a plus de solde d'investissement</strong> à recharger au
+        préalable. Fonds disponibles dans les <strong>6 heures</strong>.
       </Row>
 
       <SubHead title="Collecter vos gains" color={green} />
-      <Row icon="fa-arrow-up" color="#EF4444" title="Option 1 — YAS ou TRX">
+      <Row icon="fa-arrow-up" color="#EF4444" title="Option 1 — Retrait par YAS ou TRX">
         Si votre gain est <strong>≥ $5</strong>, vous pouvez le retirer directement par YAS ou
         TRX. Fonds disponibles dans les <strong>6 heures</strong>.
       </Row>
       <Row icon="fa-wallet" color="#22C55E" title="Option 2 — Compte principal">
-        Si votre gain est <strong>&lt; $5</strong>, il est <strong>obligatoirement</strong>{' '}
-        versé sur votre compte principal. Pas de minimum.
-      </Row>
-      <Row icon="fa-trophy" color="#F59E0B" title="Félicitations à chaque collecte">
-        Un popup de félicitation apparaît à chaque collecte réussie (fermable en cliquant sur OK).
+        Versement sur le compte principal, <strong>sans minimum</strong>. Si le gain est{' '}
+        <strong>&lt; $5</strong>, seul ce versement est disponible.
       </Row>
 
-      <SubHead title="Débloquer le niveau supérieur" color={green} />
-      <Row icon="fa-user-group" color="#EC4899" title="Parrainage + niveau précédent">
-        Pour débloquer le niveau supérieur, il faut avoir <strong>parrainé</strong> des
-        personnes inscrites <strong>ET</strong> avoir investi au niveau précédent.
+      <SubHead title="Débloquer les niveaux supérieurs" color={green} />
+      <Row icon="fa-user-group" color="#EC4899" title="Parrainage uniquement">
+        Le déblocage est <strong>gratuit</strong> et repose <strong>uniquement sur le
+        parrainage</strong> (plus besoin d'investir au niveau précédent) : Niveau 2 ={' '}
+        <strong>12 parrainés</strong>, Niveau 3 = <strong>25 parrainés</strong>.
       </Row>
       <Callout icon="fa-circle-info" color={green}>
-        Micro est libre d'accès. Standard nécessite <strong>2 parrainés</strong>, Premium{' '}
-        <strong>10 parrainés</strong>, Elite <strong>15 parrainés</strong>. Le déblocage est{' '}
-        <strong>gratuit</strong> (aucune frais).
+        Le Niveau 1 (Débutant) est en <strong>accès libre</strong>. Les niveaux 2 et 3 se
+        débloquent via le parrainage. Le solde d'investissement a été{' '}
+        <strong>supprimé</strong> — tout se fait par dépôt direct YAS / TRX.
       </Callout>
     </>
   );
@@ -361,6 +378,17 @@ function GameContent() {
         <StatRow label="Détermination" value="aléatoire, non divulgué" valueColor="#6B7280" />
       </div>
 
+      <SubHead title="La roue" color={amber} />
+      <Row icon="fa-text-height" color="#22C55E" title="Texte lisible (radial)">
+        Les récompenses sur la roue sont écrites <strong>radialement</strong> (du centre vers
+        l'extérieur), avec un contour sombre pour une <strong>parfaite lisibilité</strong> sur
+        toutes les couleurs.
+      </Row>
+      <Row icon="fa-hand-paper" color="#EF4444" title="Bouton ARRÊTER">
+        Vous pouvez <strong>arrêter la roue vous-même</strong> à tout moment avec le bouton{' '}
+        <strong>ARRÊTER LA ROUE</strong> — la roue s'arrête proprement sur le segment défini.
+      </Row>
+
       <SubHead title="Où vont les gains" color={amber} />
       <Row icon="fa-wallet" color="#22C55E" title="Compte principal">
         <strong>Toutes les opérations du jeu</strong> se font sur le{' '}
@@ -370,7 +398,7 @@ function GameContent() {
 
       <SubHead title="Popups" color={amber} />
       <Row icon="fa-trophy" color="#22C55E" title="À chaque gain">
-        Un popup de <strong>félicitation</strong> apparaît avec le montant gagné.
+        Un popup de <strong>félicitations</strong> (avec confettis) apparaît avec le montant gagné.
       </Row>
       <Row icon="fa-redo" color="#EF4444" title="À chaque perte">
         Un message de <strong>retry</strong> s'affiche avec un conseil motivant pour réessayer
@@ -395,8 +423,8 @@ function AccountContent() {
         Toutes les récompenses de la Roue de la Fortune sont créditées sur le compte principal.
       </Row>
       <Row icon="fa-chart-line" color="#059669" title="Petites collectes d'investissement">
-        Si un gain d'investissement est <strong>&lt; $5</strong>, il est obligatoirement versé
-        sur le compte principal.
+        Les collectes d'investissement <strong>&lt; $5</strong> sont versées sur le compte
+        principal (sans minimum).
       </Row>
 
       <SubHead title="Dépôt & retrait" color={green} />
@@ -409,7 +437,7 @@ function AccountContent() {
 
       <Callout icon="fa-circle-info" color={green}>
         Le compte principal est séparé du <strong>compte Vidéo</strong>, qui a son propre solde
-        et ses propres dépôts/retraits.
+        et ses propres retraits (minimum $1).
       </Callout>
     </>
   );
@@ -438,14 +466,18 @@ function PaymentsContent() {
       </div>
 
       <SubHead title="Règles communes" color={red} />
-      <Row icon="fa-layer-group" color={red} title="Tous les comptes">
+      <Row icon="fa-layer-group" color={red} title="Tous les comptes & niveaux">
         YAS et TRX sont disponibles à <strong>tous les niveaux</strong> et pour{' '}
         <strong>tous les comptes</strong> (Vidéo, Investissement, Compte principal).
       </Row>
-      <Row icon="fa-money-bill" color="#22C55E" title="Minimum $5">
-        Le minimum de dépôt et de retrait est de <strong>$5</strong> partout, pour toutes les
-        méthodes.
-      </Row>
+
+      <SubHead title="Montants minimums" color={red} />
+      <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-1 mt-2">
+        <StatRow label="Compte principal — dépôt / retrait" value="$5" valueColor="#22C55E" />
+        <StatRow label="Compte Vidéo — retrait" value="$1" valueColor="#14B8A6" />
+        <StatRow label="Collecte investissement par YAS / TRX" value="$5 de gain" valueColor="#059669" />
+      </div>
+
       <Row icon="fa-clock" color="#F59E0B" title="Disponibilité 6 heures">
         Dès qu'un dépôt ou retrait est lancé, les fonds sont disponibles dans les{' '}
         <strong>6 heures</strong>. Un message de confirmation vous informe à chaque étape.
@@ -486,8 +518,14 @@ function ReferralContent() {
       <SubHead title="Pourquoi parrainer ?" color={pink} />
       <Row icon="fa-unlock" color="#F59E0B" title="Débloquer les niveaux d'investissement">
         Le parrainage est <strong>obligatoire</strong> pour débloquer les niveaux supérieurs :
-        Standard <strong>2</strong>, Premium <strong>10</strong>, Elite <strong>15</strong>{' '}
-        parrainés inscrits.
+        <strong>12 parrainés</strong> pour le Niveau 2 (Business), <strong>25 parrainés</strong>{' '}
+        pour le Niveau 3 (Elite).
+      </Row>
+      <Row icon="fa-calendar-xmark" color="#14B8A6" title="Règle des 3 jours (retraits vidéo)">
+        Après 3 jours de visionnage, pour continuer à <strong>retirer</strong> vos gains vidéo,
+        vous devez avoir un investissement actif au Niveau 1 <strong>ET</strong> au moins 1
+        parrainé. Le nombre de parrainés requis <strong>augmente à chaque cycle</strong> de 3
+        jours (cycle 1 = 1, cycle 2 = 2, etc.).
       </Row>
 
       <Callout icon="fa-circle-info" color={pink}>
@@ -510,6 +548,16 @@ function AdsContent() {
       <Row icon="fa-xmark" color="#22C55E" title="Fermables">
         Chaque publicité est <strong>fermable</strong> avec un petit{' '}
         <strong>X</strong> en haut de l'affiche. Aucune obligation de regarder.
+      </Row>
+
+      <SubHead title="Une grande variété" color={orange} />
+      <Row icon="fa-building" color="#F59E0B" title="46 entreprises">
+        Pas moins de <strong>46 entreprises</strong> différentes apparaissent dans les
+        publicités — plus jamais "toutes se ressemblent".
+      </Row>
+      <Row icon="fa-shapes" color="#14B8A6" title="6 layouts visuels distincts">
+        Les publicités utilisent <strong>6 modèles visuels différents</strong> (hero, split,
+        banner, card, quote, stats) pour une grande variété visuelle.
       </Row>
 
       <Callout icon="fa-handshake" color={orange}>

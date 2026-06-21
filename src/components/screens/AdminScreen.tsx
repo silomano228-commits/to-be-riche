@@ -97,15 +97,26 @@ export default function AdminScreen() {
 
   // Fund transfer state (Users tab)
   const [transferUserId, setTransferUserId] = useState<string | null>(null);
-  const [transferAccount, setTransferAccount] = useState<'investBalance' | 'tradeBalance' | 'projectBalance'>('investBalance');
+  const [transferAccount, setTransferAccount] = useState<'tradeBalance' | 'projectBalance'>('tradeBalance');
   const [transferAmount, setTransferAmount] = useState('');
   const [transferSending, setTransferSending] = useState(false);
 
-  // Edit balance state (Users tab)
+  // Edit balance state (Users tab) — full 4-field draft editor.
+  // The admin edits balance / videoBalance / tradeBalance / projectBalance
+  // simultaneously; on save we POST one update-balance call per changed field.
+  type BalanceDraft = {
+    balance: string;
+    videoBalance: string;
+    tradeBalance: string;
+    projectBalance: string;
+  };
   const [editBalanceUserId, setEditBalanceUserId] = useState<string | null>(null);
-  const [editBalanceField, setEditBalanceField] = useState<'balance' | 'investBalance' | 'tradeBalance' | 'projectBalance'>('balance');
-  const [editBalanceAmount, setEditBalanceAmount] = useState('');
+  const [editBalanceDraft, setEditBalanceDraft] = useState<BalanceDraft | null>(null);
   const [editBalanceSending, setEditBalanceSending] = useState(false);
+
+  // Broadcasts history state (Notif tab)
+  const [broadcasts, setBroadcasts] = useState<any[]>([]);
+  const [broadcastsLoading, setBroadcastsLoading] = useState(false);
 
   // Delete user state (Users tab)
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
@@ -185,6 +196,16 @@ export default function AdminScreen() {
       const d = await r.json();
       if (d.success) setConversations(d.conversations || []);
     } catch { /* */ }
+  }, []);
+
+  const loadBroadcasts = useCallback(async () => {
+    setBroadcastsLoading(true);
+    try {
+      const r = await authFetch('/api/admin/broadcasts');
+      const d = await r.json();
+      if (d.success) setBroadcasts(d.broadcasts || []);
+    } catch { /* */ }
+    setBroadcastsLoading(false);
   }, []);
 
   // Connect to Socket.io for real-time messaging
@@ -458,30 +479,65 @@ export default function AdminScreen() {
   };
 
   const handleEditBalance = async (targetUserId: string) => {
-    const amt = parseFloat(editBalanceAmount);
-    if (isNaN(amt) || amt < 0) { addToast('Montant invalide', 'error'); return; }
-    if (editBalanceSending) return;
-    setEditBalanceSending(true);
-    try {
-      const res = await authFetch('/api/admin/update-balance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: targetUserId, field: editBalanceField, amount: amt }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        const fieldLabels: Record<string, string> = { balance: 'Solde', investBalance: 'Invest', tradeBalance: 'Trading', projectBalance: 'Projet' };
-        addToast(`${fieldLabels[editBalanceField]} mis à jour : $${amt.toFixed(2)}`, 'success');
-        setEditBalanceAmount('');
-        setEditBalanceUserId(null);
-        loadData();
-      } else {
-        addToast(data.error || 'Erreur', 'error');
+    if (editBalanceSending || !editBalanceDraft) return;
+    const fieldLabels: Record<string, string> = {
+      balance: 'Solde principal',
+      videoBalance: 'Vidéo',
+      tradeBalance: 'Trading',
+      projectBalance: 'Projet',
+    };
+    // Detect changed fields and validate every input (must parse to >=0 numbers).
+    type FieldKey = keyof BalanceDraft;
+    const changes: { field: FieldKey; amount: number }[] = [];
+    for (const k of Object.keys(editBalanceDraft) as FieldKey[]) {
+      const raw = editBalanceDraft[k];
+      const parsed = parseFloat(raw);
+      if (isNaN(parsed) || parsed < 0) {
+        addToast(`${fieldLabels[k]} : montant invalide`, 'error');
+        return;
       }
-    } catch {
-      addToast('Erreur réseau', 'error');
+      // Compare against the user's current value (from adminData). We treat
+      // any numeric difference as a change so trailing zeros don't cause
+      // spurious no-op API calls.
+      const current = Number((adminData?.users || []).find((u: any) => u.id === targetUserId)?.[k] ?? 0);
+      if (Math.abs(parsed - current) > 0.0001) {
+        changes.push({ field: k, amount: parsed });
+      }
+    }
+    if (changes.length === 0) {
+      addToast('Aucune modification', 'info');
+      setEditBalanceUserId(null);
+      setEditBalanceDraft(null);
+      return;
+    }
+    setEditBalanceSending(true);
+    let failures = 0;
+    for (const c of changes) {
+      try {
+        const res = await authFetch('/api/admin/update-balance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: targetUserId, field: c.field, amount: c.amount }),
+        });
+        const data = await res.json();
+        if (!data.success) {
+          failures++;
+          addToast(`${fieldLabels[c.field]} : ${data.error || 'Erreur'}`, 'error');
+        }
+      } catch {
+        failures++;
+        addToast(`${fieldLabels[c.field]} : erreur réseau`, 'error');
+      }
+    }
+    if (failures === 0) {
+      addToast(`${changes.length} solde(s) mis à jour`, 'success');
+    } else if (failures < changes.length) {
+      addToast(`${changes.length - failures}/${changes.length} mis à jour`, 'info');
     }
     setEditBalanceSending(false);
+    setEditBalanceUserId(null);
+    setEditBalanceDraft(null);
+    loadData();
   };
 
   const handleDeleteUser = async (userId: string) => {
@@ -650,13 +706,13 @@ export default function AdminScreen() {
     loadConversations();
   };
 
-  useEffect(() => { const t = setTimeout(() => { loadData(); loadDeposits(); loadYasDeposits(); loadWithdrawals(); loadConfig(); loadAdminVideos(); }, 0); return () => clearTimeout(t); }, [loadData, loadDeposits, loadYasDeposits, loadWithdrawals, loadConfig, loadAdminVideos]);
+  useEffect(() => { const t = setTimeout(() => { loadData(); loadDeposits(); loadYasDeposits(); loadWithdrawals(); loadConfig(); loadAdminVideos(); loadBroadcasts(); }, 0); return () => clearTimeout(t); }, [loadData, loadDeposits, loadYasDeposits, loadWithdrawals, loadConfig, loadAdminVideos, loadBroadcasts]);
 
   if (!user || user.role !== 'admin') return null;
   const stats = adminData?.stats || {};
   const usersList = adminData?.users || [];
 
-  const refreshAll = () => { loadData(); loadDeposits(); loadYasDeposits(); loadWithdrawals(); loadConfig(); loadAdminVideos(); };
+  const refreshAll = () => { loadData(); loadDeposits(); loadYasDeposits(); loadWithdrawals(); loadConfig(); loadAdminVideos(); loadBroadcasts(); };
 
   // Total unread messages
   const totalUnread = conversations.reduce((sum, c) => sum + c.unread_count, 0);
@@ -728,7 +784,7 @@ export default function AdminScreen() {
                   <div className="grid grid-cols-2 gap-2 mb-4">
                     {[
                       { label: 'Utilisateurs', value: stats.total_users || 0, color: '#818CF8' },
-                      { label: 'Total investi', value: formatMoney(stats.total_balance || 0), color: '#4ADE80' },
+                      { label: 'Total solde', value: formatMoney(stats.total_balance || 0), color: '#4ADE80' },
                     ].map((s, i) => (
                       <div key={i} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 text-center">
                         <div className="text-[0.9rem] font-bold" style={{ color: s.color }}>{s.value}</div>
@@ -736,63 +792,94 @@ export default function AdminScreen() {
                       </div>
                     ))}
                   </div>
-                  {usersList.map((u: any) => (
+                  {usersList.map((u: any) => {
+                    const levelLabel = u.unlockedLevel >= 3 ? 'Niv. 3 — Elite' : u.unlockedLevel === 2 ? 'Niv. 2 — Business' : 'Niv. 1 — Débutant';
+                    const levelColor = u.unlockedLevel >= 3 ? '#F59E0B' : u.unlockedLevel === 2 ? '#14B8A6' : '#22C55E';
+                    const created = u.createdAt ? new Date(u.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+                    return (
                     <div key={u.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 mb-2">
-                      <div className="flex items-center justify-between">
+                      {/* Header: name + email + actions */}
+                      <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <div className="text-[0.78rem] font-bold text-[#EDEDEF]">
-                            {esc(u.name)}{' '}
+                          <div className="text-[0.82rem] font-bold text-[#EDEDEF] flex items-center flex-wrap gap-1.5">
+                            {esc(u.name)}
                             {u.role === 'admin' && (
-                              <span className="text-[0.6rem] bg-[rgba(99,102,241,0.12)] text-[#6366F1] px-1.5 py-0.5 rounded-full ml-1">Admin</span>
+                              <span className="text-[0.55rem] bg-[rgba(99,102,241,0.12)] text-[#6366F1] px-1.5 py-0.5 rounded-full">Admin</span>
                             )}
+                            <span className="text-[0.55rem] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: `${levelColor}1A`, color: levelColor }}>
+                              <i className="fas fa-medal text-[0.45rem] mr-0.5"></i>{levelLabel}
+                            </span>
                           </div>
-                          <div className="text-[0.65rem] text-[rgba(255,255,255,0.25)]">{esc(u.email)}</div>
+                          <div className="text-[0.66rem] text-[rgba(255,255,255,0.4)] truncate">{esc(u.email)}</div>
+                          <div className="text-[0.55rem] text-[rgba(255,255,255,0.3)] mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            <span title="Code de parrainage"><i className="fas fa-key text-[0.45rem] mr-0.5 text-[#818CF8]"></i><span className="font-mono">{esc(u.referralCode || '—')}</span></span>
+                            <span><i className="fas fa-users text-[0.45rem] mr-0.5 text-[#818CF8]"></i>{u.referralCount || 0} parrainé{(u.referralCount || 0) > 1 ? 's' : ''}</span>
+                            <span><i className="fas fa-calendar text-[0.45rem] mr-0.5 text-[#818CF8]"></i>{created}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className="text-right">
-                            <div className="text-[0.75rem] font-bold text-[#EDEDEF]">{formatMoney(u.balance)}</div>
-                            <div className="text-[0.55rem] text-[#4ADE80]">Invest: {formatMoney(u.investBalance || 0)} | Trade: {formatMoney(u.tradeBalance || 0)} | Projet: {formatMoney(u.projectBalance || 0)}</div>
-                            <div className="text-[0.5rem] text-[#818CF8] mt-0.5">
-                              <i className="fas fa-users text-[0.4rem] mr-0.5"></i>Parrainages: {u.referralCount || 0}
-                              <span className="mx-1">·</span>
-                              <i className="fas fa-chart-line text-[0.4rem] mr-0.5"></i>Gain total: {formatMoney(u.investGains?.totalEarned || 0)}
-                              <span className="mx-1">·</span>
-                              <i className="fas fa-clock text-[0.4rem] mr-0.5"></i>/jour: {formatMoney(u.investGains?.dailyGain || 0)}
+                        {u.role !== 'admin' && (
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              onClick={() => {
+                                if (editBalanceUserId === u.id) {
+                                  setEditBalanceUserId(null); setEditBalanceDraft(null);
+                                } else {
+                                  setEditBalanceUserId(u.id);
+                                  setEditBalanceDraft({
+                                    balance: String(u.balance ?? 0),
+                                    videoBalance: String(u.videoBalance ?? 0),
+                                    tradeBalance: String(u.tradeBalance ?? 0),
+                                    projectBalance: String(u.projectBalance ?? 0),
+                                  });
+                                }
+                                setTransferUserId(null);
+                                setMessageUserId(null);
+                              }}
+                              className="w-7 h-7 rounded-lg bg-[rgba(251,191,36,0.12)] flex items-center justify-center text-[#FBBF24] cursor-pointer border-none shrink-0 hover:bg-[rgba(251,191,36,0.2)] transition-colors"
+                              title="Modifier les soldes"
+                            >
+                              <i className="fas fa-pen text-[0.55rem]"></i>
+                            </button>
+                            <button
+                              onClick={() => { setTransferUserId(transferUserId === u.id ? null : u.id); setMessageUserId(null); setEditBalanceUserId(null); setEditBalanceDraft(null); }}
+                              className="w-7 h-7 rounded-lg bg-[rgba(34,197,94,0.12)] flex items-center justify-center text-[#4ADE80] cursor-pointer border-none shrink-0 hover:bg-[rgba(34,197,94,0.2)] transition-colors"
+                              title="Transférer vers Principal"
+                            >
+                              <i className="fas fa-exchange-alt text-[0.55rem]"></i>
+                            </button>
+                            <button
+                              onClick={() => { setMessageUserId(messageUserId === u.id ? null : u.id); setTransferUserId(null); setEditBalanceUserId(null); setEditBalanceDraft(null); }}
+                              className="w-7 h-7 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center text-[#6366F1] cursor-pointer border-none shrink-0 hover:bg-[rgba(99,102,241,0.2)] transition-colors"
+                              title="Envoyer un message"
+                            >
+                              <i className="fas fa-comment text-[0.6rem]"></i>
+                            </button>
+                            <button
+                              onClick={() => { setDeleteUserId(u.id); setDeleteUserName(u.name); }}
+                              className="w-7 h-7 rounded-lg bg-[rgba(248,113,113,0.12)] flex items-center justify-center text-[#F87171] cursor-pointer border-none shrink-0 hover:bg-[rgba(248,113,113,0.2)] transition-colors"
+                              title="Supprimer cet utilisateur"
+                            >
+                              <i className="fas fa-trash text-[0.55rem]"></i>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      {/* Balances grid — 4 accounts in a clean 2x2 layout */}
+                      <div className="grid grid-cols-2 gap-1.5 mt-2.5">
+                        {([
+                          { label: 'Solde principal', val: u.balance ?? 0, color: '#22C55E', icon: 'fa-wallet' },
+                          { label: 'Vidéo', val: u.videoBalance ?? 0, color: '#14B8A6', icon: 'fa-video' },
+                          { label: 'Trading', val: u.tradeBalance ?? 0, color: '#F59E0B', icon: 'fa-bolt' },
+                          { label: 'Projet', val: u.projectBalance ?? 0, color: '#8B5CF6', icon: 'fa-building' },
+                        ]).map((b) => (
+                          <div key={b.label} className="bg-[#161719] rounded-lg p-2 border-l-[3px]" style={{ borderLeftColor: b.color }}>
+                            <div className="flex items-center gap-1 mb-0.5">
+                              <i className={`fas ${b.icon} text-[0.5rem]`} style={{ color: b.color }}></i>
+                              <span className="text-[0.5rem] text-[rgba(255,255,255,0.4)] uppercase tracking-[0.3px] font-semibold">{b.label}</span>
                             </div>
+                            <div className="text-[0.78rem] font-bold text-[#EDEDEF]">{formatMoney(b.val)}</div>
                           </div>
-                          {u.role !== 'admin' && (
-                            <>
-                              <button
-                                onClick={() => { setEditBalanceUserId(editBalanceUserId === u.id ? null : u.id); setTransferUserId(null); setMessageUserId(null); setEditBalanceField('balance'); setEditBalanceAmount(String(u.balance || 0)); }}
-                                className="w-7 h-7 rounded-lg bg-[rgba(251,191,36,0.12)] flex items-center justify-center text-[#FBBF24] cursor-pointer border-none shrink-0 hover:bg-[rgba(251,191,36,0.2)] transition-colors"
-                                title="Modifier le solde"
-                              >
-                                <i className="fas fa-pen text-[0.55rem]"></i>
-                              </button>
-                              <button
-                                onClick={() => { setTransferUserId(transferUserId === u.id ? null : u.id); setMessageUserId(null); setEditBalanceUserId(null); }}
-                                className="w-7 h-7 rounded-lg bg-[rgba(34,197,94,0.12)] flex items-center justify-center text-[#4ADE80] cursor-pointer border-none shrink-0 hover:bg-[rgba(34,197,94,0.2)] transition-colors"
-                                title="Transférer vers Principal"
-                              >
-                                <i className="fas fa-exchange-alt text-[0.55rem]"></i>
-                              </button>
-                              <button
-                                onClick={() => { setMessageUserId(messageUserId === u.id ? null : u.id); setTransferUserId(null); setEditBalanceUserId(null); }}
-                                className="w-7 h-7 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center text-[#6366F1] cursor-pointer border-none shrink-0 hover:bg-[rgba(99,102,241,0.2)] transition-colors"
-                                title="Envoyer un message"
-                              >
-                                <i className="fas fa-comment text-[0.6rem]"></i>
-                              </button>
-                              <button
-                                onClick={() => { setDeleteUserId(u.id); setDeleteUserName(u.name); }}
-                                className="w-7 h-7 rounded-lg bg-[rgba(248,113,113,0.12)] flex items-center justify-center text-[#F87171] cursor-pointer border-none shrink-0 hover:bg-[rgba(248,113,113,0.2)] transition-colors"
-                                title="Supprimer cet utilisateur"
-                              >
-                                <i className="fas fa-trash text-[0.55rem]"></i>
-                              </button>
-                            </>
-                          )}
-                        </div>
+                        ))}
                       </div>
                       {/* Inline fund transfer */}
                       {transferUserId === u.id && (
@@ -800,8 +887,7 @@ export default function AdminScreen() {
                           <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)] mb-2 font-semibold">Transférer vers le solde principal</div>
                           <div className="flex gap-2 mb-2">
                             {([
-                              { key: 'investBalance' as const, label: 'Invest', bal: u.investBalance || 0, color: '#3B82F6' },
-                              { key: 'tradeBalance' as const, label: 'Trade', bal: u.tradeBalance || 0, color: '#F59E0B' },
+                              { key: 'tradeBalance' as const, label: 'Trading', bal: u.tradeBalance || 0, color: '#F59E0B' },
                               { key: 'projectBalance' as const, label: 'Projet', bal: u.projectBalance || 0, color: '#8B5CF6' },
                             ]).map(acc => (
                               <button key={acc.key} onClick={() => setTransferAccount(acc.key)}
@@ -873,59 +959,62 @@ export default function AdminScreen() {
                           </div>
                         </div>
                       )}
-                      {/* Inline edit balance */}
-                      {editBalanceUserId === u.id && (
+                      {/* Inline edit balance — 4-field draft editor */}
+                      {editBalanceUserId === u.id && editBalanceDraft && (
                         <div className="mt-2.5 pt-2.5 border-t border-[rgba(255,255,255,0.06)]">
                           <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)] mb-2 font-semibold flex items-center gap-1">
                             <i className="fas fa-pen text-[0.5rem] text-[#FBBF24]"></i>
-                            Modifier le solde
+                            Modifier les soldes — modifiez chaque champ puis enregistrez
                           </div>
-                          <div className="flex gap-1.5 mb-2">
+                          <div className="grid grid-cols-2 gap-2 mb-3">
                             {([
-                              { key: 'balance' as const, label: 'Solde', bal: u.balance || 0, color: '#22C55E' },
-                              { key: 'investBalance' as const, label: 'Invest', bal: u.investBalance || 0, color: '#3B82F6' },
-                              { key: 'tradeBalance' as const, label: 'Trade', bal: u.tradeBalance || 0, color: '#F59E0B' },
-                              { key: 'projectBalance' as const, label: 'Projet', bal: u.projectBalance || 0, color: '#8B5CF6' },
+                              { key: 'balance' as const, label: 'Solde principal', color: '#22C55E', icon: 'fa-wallet' },
+                              { key: 'videoBalance' as const, label: 'Vidéo', color: '#14B8A6', icon: 'fa-video' },
+                              { key: 'tradeBalance' as const, label: 'Trading', color: '#F59E0B', icon: 'fa-bolt' },
+                              { key: 'projectBalance' as const, label: 'Projet', color: '#8B5CF6', icon: 'fa-building' },
                             ]).map(acc => (
-                              <button key={acc.key} onClick={() => { setEditBalanceField(acc.key); setEditBalanceAmount(String(acc.bal)); }}
-                                className={`flex-1 py-1.5 rounded-lg text-[0.55rem] font-semibold border-none cursor-pointer transition-all ${
-                                  editBalanceField === acc.key ? 'text-white' : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)]'
-                                }`}
-                                style={editBalanceField === acc.key ? { backgroundColor: acc.color } : {}}
-                              >
-                                {acc.label}<br/><span className="text-[0.48rem] opacity-80">{formatMoney(acc.bal)}</span>
-                              </button>
+                              <div key={acc.key} className="bg-[#161719] rounded-lg p-2 border-l-[3px]" style={{ borderLeftColor: acc.color }}>
+                                <div className="flex items-center gap-1 mb-1">
+                                  <i className={`fas ${acc.icon} text-[0.5rem]`} style={{ color: acc.color }}></i>
+                                  <span className="text-[0.55rem] text-[rgba(255,255,255,0.55)] font-semibold uppercase tracking-[0.3px]">{acc.label}</span>
+                                </div>
+                                <input
+                                  type="number" step="0.01" min="0"
+                                  value={editBalanceDraft[acc.key]}
+                                  onChange={(e) => setEditBalanceDraft(prev => prev ? { ...prev, [acc.key]: e.target.value } : prev)}
+                                  placeholder="0.00"
+                                  className="w-full py-1.5 px-2 bg-[#0E0F11] border-[1px] border-[rgba(255,255,255,0.06)] rounded-md text-[0.78rem] text-white outline-none focus:border-[#FBBF24]"
+                                />
+                              </div>
                             ))}
                           </div>
                           <div className="flex gap-2">
-                            <input
-                              type="number" step="0.01" min="0" value={editBalanceAmount}
-                              onChange={(e) => setEditBalanceAmount(e.target.value)}
-                              placeholder="Nouveau montant $"
-                              className="flex-1 py-2 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.75rem] text-white outline-none focus:border-[#FBBF24]"
-                            />
                             <button
                               onClick={() => handleEditBalance(u.id)}
-                              disabled={editBalanceSending || editBalanceAmount === '' || isNaN(parseFloat(editBalanceAmount))}
-                              className="px-3 py-2 rounded-lg bg-[#FBBF24] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer flex items-center justify-center gap-1 disabled:opacity-50"
+                              disabled={editBalanceSending}
+                              className="flex-1 py-2.5 rounded-lg bg-[#FBBF24] text-[#050506] text-[0.78rem] font-bold border-none cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
                             >
                               {editBalanceSending ? (
-                                <div className="w-3.5 h-3.5 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
+                                <>
+                                  <div className="w-3.5 h-3.5 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
+                                  Enregistrement...
+                                </>
                               ) : (
-                                <i className="fas fa-check text-[0.6rem]"></i>
+                                <><i className="fas fa-check text-[0.65rem]"></i> Enregistrer les modifications</>
                               )}
                             </button>
                             <button
-                              onClick={() => { setEditBalanceUserId(null); setEditBalanceAmount(''); }}
-                              className="px-2 py-2 rounded-lg bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] text-[0.72rem] border-none cursor-pointer"
+                              onClick={() => { setEditBalanceUserId(null); setEditBalanceDraft(null); }}
+                              className="px-3 py-2.5 rounded-lg bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] text-[0.72rem] border-none cursor-pointer"
                             >
-                              <i className="fas fa-times text-[0.6rem]"></i>
+                              <i className="fas fa-times text-[0.65rem]"></i>
                             </button>
                           </div>
                         </div>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </>
               )}
 
@@ -1451,6 +1540,67 @@ export default function AdminScreen() {
                           : 'Envoyer à l\'utilisateur'
                       }
                     </button>
+                  </div>
+
+                  {/* Broadcast history */}
+                  <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 mt-2">
+                    <div className="flex items-center justify-between mb-2.5">
+                      <div className="text-[0.72rem] font-bold text-[#EDEDEF] flex items-center gap-1.5">
+                        <i className="fas fa-history text-[#6366F1] text-[0.65rem]"></i>
+                        Historique des diffusions
+                      </div>
+                      <button
+                        onClick={loadBroadcasts}
+                        disabled={broadcastsLoading}
+                        className="text-[0.62rem] text-[rgba(255,255,255,0.45)] hover:text-[#6366F1] cursor-pointer bg-transparent border-none flex items-center gap-1 disabled:opacity-50"
+                      >
+                        <i className={`fas fa-sync-alt text-[0.55rem] ${broadcastsLoading ? 'fa-spin' : ''}`}></i>
+                        Actualiser
+                      </button>
+                    </div>
+                    {broadcastsLoading && broadcasts.length === 0 ? (
+                      <div className="flex justify-center py-4">
+                        <div className="w-6 h-6 border-2 border-[rgba(255,255,255,0.1)] border-t-[#6366F1] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
+                      </div>
+                    ) : broadcasts.length === 0 ? (
+                      <div className="text-center py-4">
+                        <i className="fas fa-inbox text-[rgba(255,255,255,0.15)] text-[1.1rem] mb-1.5"></i>
+                        <p className="text-[0.7rem] text-[rgba(255,255,255,0.25)]">Aucune diffusion envoyée pour le moment</p>
+                      </div>
+                    ) : (
+                      <div className="max-h-80 overflow-y-auto pr-0.5 space-y-2 [scrollbar-width:thin]">
+                        {broadcasts.map((b: any) => {
+                          const isAll = b.target === 'all';
+                          const targetName = isAll
+                            ? 'Tous les utilisateurs'
+                            : (usersList.find((u: any) => u.id === b.userId)?.name || 'Utilisateur');
+                          const typeBadge: Record<string, { bg: string; color: string; label: string }> = {
+                            admin_broadcast: { bg: 'rgba(99,102,241,0.12)', color: '#818CF8', label: 'Diffusion' },
+                            admin_individual: { bg: 'rgba(34,197,94,0.12)', color: '#4ADE80', label: 'Individuel' },
+                            info: { bg: 'rgba(99,102,241,0.12)', color: '#818CF8', label: 'Info' },
+                            promo: { bg: 'rgba(245,158,11,0.12)', color: '#FBBF24', label: 'Promo' },
+                            alert: { bg: 'rgba(248,113,113,0.12)', color: '#F87171', label: 'Alerte' },
+                            maintenance: { bg: 'rgba(148,163,184,0.12)', color: '#94A3B8', label: 'Maintenance' },
+                          };
+                          const tb = typeBadge[b.type] || typeBadge.info;
+                          const date = b.createdAt ? new Date(b.createdAt).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+                          return (
+                            <div key={b.id} className="bg-[#161719] rounded-lg p-2.5 border border-[rgba(255,255,255,0.04)]">
+                              <div className="flex items-start justify-between gap-2 mb-1">
+                                <div className="text-[0.74rem] font-bold text-[#EDEDEF] flex-1 min-w-0">{esc(b.title || 'Sans titre')}</div>
+                                <span className="shrink-0 text-[0.5rem] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: tb.bg, color: tb.color }}>{tb.label}</span>
+                              </div>
+                              <p className="text-[0.66rem] text-[rgba(255,255,255,0.55)] leading-relaxed mb-1.5 line-clamp-2">{esc(b.message || '')}</p>
+                              <div className="flex items-center gap-2 text-[0.55rem] text-[rgba(255,255,255,0.3)]">
+                                <span className="flex items-center gap-0.5"><i className={`fas ${isAll ? 'fa-users' : 'fa-user'} text-[0.45rem]`}></i>{targetName}</span>
+                                <span>·</span>
+                                <span className="flex items-center gap-0.5"><i className="fas fa-clock text-[0.45rem]"></i>{date}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </>
               )}

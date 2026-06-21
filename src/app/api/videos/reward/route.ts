@@ -62,14 +62,12 @@ export async function POST(request: Request) {
 
     const today = new Date().toISOString().slice(0, 10);
 
-    // 3-day rule: after 3 days of watching, a deposit is mandatory
-    if (user.videoDepositRequired) {
-      return NextResponse.json({
-        success: false,
-        depositRequired: true,
-        error: 'Vous devez effectuer un dépôt sur votre compte vidéo pour continuer à regarder des vidéos.',
-      }, { status: 400 });
-    }
+    // NOTE: The 3-day cycle rule is computed and persisted in
+    // /api/videos/list. The videoDepositRequired flag now BLOCKS
+    // WITHDRAWALS (see /api/videos/withdraw) — it does NOT block watching.
+    // Users may keep watching videos every day; they just can't withdraw the
+    // video balance until they clear the current cycle (Level 1 investment +
+    // required referrals).
 
     const watchedTodayCount = await db.videoWatch.count({
       where: { userId: user.id, watchDate: today },
@@ -98,16 +96,6 @@ export async function POST(request: Request) {
     const reward = videoData.reward;
     const now = new Date();
 
-    // Calculate days watching for 3-day rule
-    let daysWatching = 0;
-    if (user.videoFirstWatchAt) {
-      const diffMs = now.getTime() - new Date(user.videoFirstWatchAt).getTime();
-      daysWatching = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
-    }
-
-    // After 3 days of watching, require a deposit before continuing
-    const shouldRequireDeposit = daysWatching >= 3;
-
     await db.$transaction(async (tx) => {
       await tx.videoWatch.create({
         data: {
@@ -125,11 +113,9 @@ export async function POST(request: Request) {
         videoLastWatchAt: now,
         videoWatchedDate: today,
       };
+      // Set first-watch timestamp only once.
       if (!user.videoFirstWatchAt) {
         updateData.videoFirstWatchAt = now;
-      }
-      if (shouldRequireDeposit && !user.videoDepositRequired) {
-        updateData.videoDepositRequired = true;
       }
       await tx.user.update({
         where: { id: user.id },
@@ -154,7 +140,6 @@ export async function POST(request: Request) {
       newVideoBalance: user.videoBalance + reward,
       watchedCount: newWatchedCount,
       remaining: newRemaining,
-      depositRequired: shouldRequireDeposit,
       message: `Récompense de $${reward.toFixed(2)} créditée sur votre compte vidéo ! ${newRemaining} vidéo(s) restante(s) aujourd'hui.`,
     });
   } catch (error) {

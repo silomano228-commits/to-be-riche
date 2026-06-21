@@ -41,6 +41,10 @@ model User {
   videoFirstWatchAt      DateTime?
   videoLastWatchAt       DateTime?
   videoWatchedVideoIds   String    @default("[]")
+  // 3-day cycle tracking: every 3 days of watching, user must deposit at
+  // investment Level 1 AND invite (cycleNumber) referrals to continue withdrawing.
+  videoCycleNumber       Int       @default(0)   // last cycle the user cleared
+  videoCycleClearedAt    DateTime?               // when the current cycle was cleared
   // Casino wheel game state
   gameSpinsUsed          Int       @default(0)
   gameSpinsDate          String?
@@ -365,4 +369,19 @@ model AdminVideoLink {
   updatedAt   DateTime @updatedAt
 
   @@index([active])
+}
+
+// Admin broadcast messages sent to all users (or a specific user).
+// Persisted so the admin can review past broadcasts.
+model BroadcastMessage {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  target    String   @default("all") // all | individual
+  userId    String?  // only set when target = individual
+  type      String   @default("info") // info | promo | alert | maintenance
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([target])
 }

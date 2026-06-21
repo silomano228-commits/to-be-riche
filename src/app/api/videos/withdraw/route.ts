@@ -18,7 +18,8 @@ async function getUser(request: Request) {
   return db.user.findUnique({ where: { id: token } });
 }
 
-const MIN_WITHDRAWAL_USD = 5;
+// Minimum video withdrawal is $1 (converted from $1 USD reference).
+const MIN_WITHDRAWAL_USD = 1;
 
 export async function POST(request: Request) {
   try {
@@ -27,28 +28,52 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Non authentifié' }, { status: 401 });
     }
 
+    // 3-day cycle rule: if a new cycle has begun (every 3 days of watching) and
+    // the user hasn't cleared it yet, withdrawals are BLOCKED. They must clear
+    // the cycle by depositing at investment Level 1 + inviting the required
+    // number of referrals (cycle N needs N referrals).
+    if (user.videoDepositRequired) {
+      let daysWatching = 0;
+      if (user.videoFirstWatchAt) {
+        const diffMs = Date.now() - new Date(user.videoFirstWatchAt).getTime();
+        daysWatching = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
+        if (daysWatching < 1) daysWatching = 1;
+      }
+      const currentCycle = Math.max(0, Math.floor((daysWatching - 1) / 3));
+      const requiredReferrals = currentCycle;
+
+      return NextResponse.json({
+        success: false,
+        depositRequired: true,
+        currentCycle,
+        requiredReferrals,
+        hasLevel1Investment: false,
+        error: `Action requise: après 3 jours de vidéos, vous devez déposer au Niveau 1 d'investissement et inviter ${requiredReferrals} parrainé(s) pour continuer les retraits.`,
+      }, { status: 400 });
+    }
+
     const body = await request.json();
     const { amount, method, userAddress } = body;
 
-    if (!amount || typeof amount !== 'number' || amount < MIN_WITHDRAWAL_USD) {
+    if (amount == null || typeof amount !== 'number' || isNaN(amount) || amount < MIN_WITHDRAWAL_USD) {
       return NextResponse.json({
         success: false,
-        error: `Le retrait minimum est de $${MIN_WITHDRAWAL_USD}.`,
+        error: 'Le retrait minimum est de $1.',
       }, { status: 400 });
     }
 
     if (!['yas', 'trx'].includes(method)) {
-      return NextResponse.json({ success: false, error: 'Méthode de paiement invalide' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Méthode invalide. Choisissez YAS ou TRX.' }, { status: 400 });
     }
 
-    if (!userAddress) {
-      return NextResponse.json({ success: false, error: 'Adresse requise' }, { status: 400 });
+    if (!userAddress || !String(userAddress).trim()) {
+      return NextResponse.json({ success: false, error: 'Adresse de retrait requise.' }, { status: 400 });
     }
 
     if (user.videoBalance < amount) {
       return NextResponse.json({
         success: false,
-        error: `Solde vidéo insuffisant. Solde: $${user.videoBalance.toFixed(2)}`,
+        error: `Solde vidéo insuffisant. Votre solde: $${user.videoBalance.toFixed(2)}. Minimum de retrait: $${MIN_WITHDRAWAL_USD}.`,
       }, { status: 400 });
     }
 
@@ -68,8 +93,8 @@ export async function POST(request: Request) {
           amount,
           amountCfa,
           type,
-          trxAddress: method === 'trx' ? userAddress : null,
-          yasAccount: method === 'yas' ? userAddress : null,
+          trxAddress: method === 'trx' ? userAddress.trim() : null,
+          yasAccount: method === 'yas' ? userAddress.trim() : null,
           status: 'pending',
         },
       });
