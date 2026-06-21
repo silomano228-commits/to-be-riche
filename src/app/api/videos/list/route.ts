@@ -29,14 +29,13 @@ export async function GET(request: Request) {
     const today = new Date().toISOString().slice(0, 10);
     const dailyVideos = getDailyVideos();
 
-    // Get videos already watched today by this user
     const watched = await db.videoWatch.findMany({
       where: { userId: user.id, watchDate: today },
       select: { videoId: true, reward: true, watchedAt: true },
     });
 
-    const watchedMap = new Map(watched.map(w => [w.videoId, w]));
-    const videosWithStatus = dailyVideos.map(v => ({
+    const watchedMap = new Map(watched.map((w) => [w.videoId, w]));
+    const videosWithStatus = dailyVideos.map((v) => ({
       ...v,
       watched: watchedMap.has(v.id),
       watchedAt: watchedMap.get(v.id)?.watchedAt || null,
@@ -46,6 +45,13 @@ export async function GET(request: Request) {
     const remaining = Math.max(0, DAILY_VIDEO_LIMIT - watchedCount);
     const totalEarnedToday = watched.reduce((sum, w) => sum + w.reward, 0);
 
+    // Calculate days watching (for 3-day rule)
+    let daysWatching = 0;
+    if (user.videoFirstWatchAt) {
+      const diffMs = Date.now() - new Date(user.videoFirstWatchAt).getTime();
+      daysWatching = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
+    }
+
     return NextResponse.json({
       success: true,
       videos: videosWithStatus,
@@ -53,6 +59,9 @@ export async function GET(request: Request) {
       remaining,
       dailyLimit: DAILY_VIDEO_LIMIT,
       totalEarnedToday,
+      videoBalance: user.videoBalance,
+      videoDepositRequired: user.videoDepositRequired,
+      daysWatching,
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });

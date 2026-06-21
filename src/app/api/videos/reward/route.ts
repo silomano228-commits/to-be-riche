@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'ID vidéo requis' }, { status: 400 });
     }
 
-    // Must have watched at least 50% of the video
+    // Must have watched at least 50% of the video (no seeking/scrolling allowed)
     if (typeof watchedPercent !== 'number' || watchedPercent < 50) {
       return NextResponse.json({
         success: false,
@@ -43,7 +43,15 @@ export async function POST(request: Request) {
 
     const today = new Date().toISOString().slice(0, 10);
 
-    // Check daily limit
+    // 3-day rule: after 3 days of watching, a deposit is mandatory
+    if (user.videoDepositRequired) {
+      return NextResponse.json({
+        success: false,
+        depositRequired: true,
+        error: 'Vous devez effectuer un dépôt sur votre compte vidéo pour continuer à regarder des vidéos.',
+      }, { status: 400 });
+    }
+
     const watchedTodayCount = await db.videoWatch.count({
       where: { userId: user.id, watchDate: today },
     });
@@ -55,14 +63,12 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    // Verify this video is in today's list
     const dailyVideos = getDailyVideos();
-    const videoData = dailyVideos.find(v => v.id === videoId);
+    const videoData = dailyVideos.find((v) => v.id === videoId);
     if (!videoData) {
       return NextResponse.json({ success: false, error: 'Vidéo non disponible aujourd\'hui' }, { status: 400 });
     }
 
-    // Check if already watched
     const existing = await db.videoWatch.findFirst({
       where: { userId: user.id, videoId, watchDate: today },
     });
@@ -71,6 +77,17 @@ export async function POST(request: Request) {
     }
 
     const reward = videoData.reward;
+    const now = new Date();
+
+    // Calculate days watching for 3-day rule
+    let daysWatching = 0;
+    if (user.videoFirstWatchAt) {
+      const diffMs = now.getTime() - new Date(user.videoFirstWatchAt).getTime();
+      daysWatching = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
+    }
+
+    // After 3 days of watching, require a deposit before continuing
+    const shouldRequireDeposit = daysWatching >= 3;
 
     await db.$transaction(async (tx) => {
       await tx.videoWatch.create({
@@ -82,15 +99,28 @@ export async function POST(request: Request) {
           watchDate: today,
         },
       });
+      const updateData: Record<string, unknown> = {
+        videoBalance: { increment: reward },
+        videoTotalEarned: { increment: reward },
+        videoWatchedCount: { increment: 1 },
+        videoLastWatchAt: now,
+        videoWatchedDate: today,
+      };
+      if (!user.videoFirstWatchAt) {
+        updateData.videoFirstWatchAt = now;
+      }
+      if (shouldRequireDeposit && !user.videoDepositRequired) {
+        updateData.videoDepositRequired = true;
+      }
       await tx.user.update({
         where: { id: user.id },
-        data: { balance: { increment: reward } },
+        data: updateData,
       });
       await tx.transaction.create({
         data: {
           type: 'video_reward',
           amount: reward,
-          detail: `Récompense vidéo: ${videoData.title}`,
+          detail: `Récompense vidéo: ${videoData.title} (${videoData.sponsor})`,
           userId: user.id,
         },
       });
@@ -102,10 +132,11 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       reward,
-      newBalance: user.balance + reward,
+      newVideoBalance: user.videoBalance + reward,
       watchedCount: newWatchedCount,
       remaining: newRemaining,
-      message: `Récompense de $${reward.toFixed(2)} créditée ! ${newRemaining} vidéo(s) restante(s) aujourd'hui.`,
+      depositRequired: shouldRequireDeposit,
+      message: `Récompense de $${reward.toFixed(2)} créditée sur votre compte vidéo ! ${newRemaining} vidéo(s) restante(s) aujourd'hui.`,
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });

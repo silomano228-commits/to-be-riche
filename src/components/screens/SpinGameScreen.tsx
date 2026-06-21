@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAppStore, formatMoney, authFetch, refreshUser as globalRefreshUser } from '@/lib/store';
 import { Header } from '@/components/shared';
+import { CongratulationsModal, type CongratulationsData } from '@/components/CongratulationsModal';
 
 interface Segment {
   label: string;
@@ -18,17 +19,43 @@ interface SpinHistory {
   spunAt: string;
 }
 
+interface FakeWinner {
+  name: string;
+  amount: number;
+  flag: string;
+}
+
+const DAILY_LIMIT = 10;
+
+const FAKE_NAMES = ['Aminata', 'Kwame', 'Fatou', 'Mamadou', 'Awa', 'Ibrahim', 'Rokia', 'Seydou', 'Kadiatou', 'Ousmane', 'Bintou', 'Lassina'];
+const FLAGS = ['🇨🇮', '🇲🇱', '🇧🇫', '🇸🇳', '🇬🇳', '🇳🇪', '🇹🇬', '🇧🇯'];
+
+function generateFakeWinner(): FakeWinner {
+  return {
+    name: FAKE_NAMES[Math.floor(Math.random() * FAKE_NAMES.length)],
+    amount: 0.10 + Math.random() * 0.90,
+    flag: FLAGS[Math.floor(Math.random() * FLAGS.length)],
+  };
+}
+
 export default function SpinGameScreen() {
   const { user, addToast } = useAppStore();
   const [segments, setSegments] = useState<Segment[]>([]);
   const [loading, setLoading] = useState(true);
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
-  const [freeSpinsRemaining, setFreeSpinsRemaining] = useState(3);
-  const [paidSpinCost, setPaidSpinCost] = useState(0.50);
+  const [spinsRemaining, setSpinsRemaining] = useState(DAILY_LIMIT);
+  const [spinsUsed, setSpinsUsed] = useState(0);
   const [totalWonToday, setTotalWonToday] = useState(0);
   const [history, setHistory] = useState<SpinHistory[]>([]);
-  const [lastResult, setLastResult] = useState<{ isWin: boolean; winAmount: number; label: string } | null>(null);
+  const [congratsData, setCongratsData] = useState<CongratulationsData>({ show: false, type: 'win' });
+  const [winners, setWinners] = useState(() =>
+    Array.from({ length: 4 }, () => generateFakeWinner()),
+  );
+
+  const spinsRemainingRef = useRef(spinsRemaining);
+  const spinningRef = useRef(spinning);
+  const triggerSpinRef = useRef<() => void>(() => {});
 
   const loadStatus = useCallback(async () => {
     try {
@@ -36,54 +63,97 @@ export default function SpinGameScreen() {
       const data = await res.json();
       if (data.success) {
         setSegments(data.segments || []);
-        setFreeSpinsRemaining(data.freeSpinsRemaining || 0);
-        setPaidSpinCost(data.paidSpinCost || 0.50);
+        setSpinsRemaining(data.spinsRemaining ?? DAILY_LIMIT);
+        setSpinsUsed(data.spinsUsed ?? 0);
         setTotalWonToday(data.totalWonToday || 0);
         setHistory(data.todaySpins || []);
       }
-    } catch { /* */ }
+    } catch { /* ignore */ }
     setLoading(false);
   }, []);
 
-  useEffect(() => { loadStatus(); }, [loadStatus]);
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const res = await authFetch('/api/game/status');
+        const data = await res.json();
+        if (cancelled || !data.success) return;
+        setSegments(data.segments || []);
+        setSpinsRemaining(data.spinsRemaining ?? DAILY_LIMIT);
+        setSpinsUsed(data.spinsUsed ?? 0);
+        setTotalWonToday(data.totalWonToday || 0);
+        setHistory(data.todaySpins || []);
+      } catch { /* ignore */ }
+      if (!cancelled) setLoading(false);
+    };
+    run();
+    return () => { cancelled = true; };
+  }, []);
 
-  const handleSpin = async (useFreeSpin: boolean) => {
-    if (spinning) return;
+  // Fake winners ticker
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setWinners((prev) => [generateFakeWinner(), ...prev.slice(0, 3)]);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, []);
+
+  const triggerSpin = useCallback(async () => {
+    if (spinningRef.current) return;
+    if (spinsRemainingRef.current <= 0) {
+      addToast('Plus de tours disponibles. Revenez demain !', 'info');
+      return;
+    }
+
     setSpinning(true);
-    setLastResult(null);
 
     try {
       const res = await authFetch('/api/game/spin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ useFreeSpin }),
+        body: JSON.stringify({}),
       });
       const data = await res.json();
 
       if (data.success) {
-        // Calculate target rotation
-        const segmentAngle = 360 / segments.length;
+        const segCount = segments.length || 20;
+        const segmentAngle = 360 / segCount;
         const targetSegment = data.segmentIdx;
-        const targetAngle = 360 * 5 + (360 - targetSegment * segmentAngle - segmentAngle / 2); // 5 full spins + segment
-        // Add random offset within segment
-        const randomOffset = (Math.random() - 0.5) * (segmentAngle * 0.6);
-        const finalRotation = rotation + targetAngle + randomOffset;
+        const currentMod = ((rotation % 360) + 360) % 360;
+        const targetMod = ((360 - targetSegment * segmentAngle - segmentAngle / 2) % 360 + 360) % 360;
+        let additionalNeeded = (targetMod - currentMod + 360) % 360;
+        const randomOffset = (Math.random() - 0.5) * segmentAngle * 0.6;
+        const finalRotation = rotation + 5 * 360 + additionalNeeded + randomOffset;
 
-        // Normalize: keep accumulating but reset when too large
         setRotation(finalRotation);
 
-        // Wait for spin animation to complete
         setTimeout(async () => {
-          setLastResult({
-            isWin: data.isWin,
-            winAmount: data.winAmount,
-            label: data.segment.label,
-          });
+          const newRemaining = data.spinsRemaining ?? Math.max(0, spinsRemainingRef.current - 1);
+          setSpinsRemaining(newRemaining);
+          setSpinsUsed((prev) => prev + 1);
 
           if (data.isWin) {
-            addToast(`🎉 Gagné ! +$${data.winAmount.toFixed(2)}`, 'success');
+            setTotalWonToday((prev) => prev + (data.winAmount || 0));
+            setCongratsData({
+              show: true,
+              type: 'win',
+              amount: data.winAmount,
+              message: `Vous avez gagné $${data.winAmount.toFixed(2)} à la roue !`,
+              onClose: () => setCongratsData({ show: false, type: 'win' }),
+            });
           } else {
-            addToast('Perdu ! Essayez encore.', 'info');
+            setCongratsData({
+              show: true,
+              type: 'loss',
+              message: 'Vous n\'avez pas gagné cette fois-ci.',
+              showRetry: newRemaining > 0,
+              onClose: () => setCongratsData({ show: false, type: 'loss' }),
+              onRetry: () => {
+                setCongratsData({ show: false, type: 'loss' });
+                setTimeout(() => triggerSpinRef.current(), 200);
+              },
+            });
           }
 
           await globalRefreshUser();
@@ -91,21 +161,32 @@ export default function SpinGameScreen() {
           setSpinning(false);
         }, 4500);
       } else {
-        addToast(data.error || 'Erreur', 'error');
+        if (data.dailyLimitReached) {
+          setSpinsRemaining(0);
+          addToast(data.error || 'Limite quotidienne atteinte. Revenez demain !', 'info');
+        } else {
+          addToast(data.error || 'Erreur lors du tour', 'error');
+        }
         setSpinning(false);
       }
     } catch {
       addToast('Erreur de connexion', 'error');
       setSpinning(false);
     }
-  };
+  }, [rotation, segments.length, addToast, loadStatus]);
+
+  useEffect(() => {
+    spinsRemainingRef.current = spinsRemaining;
+    spinningRef.current = spinning;
+    triggerSpinRef.current = triggerSpin;
+  }, [spinsRemaining, spinning, triggerSpin]);
 
   if (loading) {
     return (
       <>
         <Header title="Roue" />
-        <div className="flex-1 flex items-center justify-center" style={{ background: 'linear-gradient(180deg, #F0FDF4 0%, #ECFDF5 100%)' }}>
-          <div className="w-8 h-8 border-[2.5px] border-[rgba(0,0,0,0.08)] border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }}></div>
+        <div className="flex-1 flex items-center justify-center" style={{ background: 'linear-gradient(180deg, #1E1B4B 0%, #312E81 100%)' }}>
+          <div className="w-8 h-8 border-[2.5px] border-white/20 border-t-[#F59E0B] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }}></div>
         </div>
       </>
     );
@@ -114,11 +195,29 @@ export default function SpinGameScreen() {
   return (
     <>
       <Header title="Roue de la Fortune" />
-      <div className="flex-1 overflow-y-auto" style={{ background: 'linear-gradient(180deg, #1E1B4B 0%, #312E81 50%, #1E1B4B 100%)' }}>
+      <div className="flex-1 overflow-y-auto pb-6" style={{ background: 'linear-gradient(180deg, #1E1B4B 0%, #312E81 50%, #1E1B4B 100%)' }}>
         {/* Hero */}
         <div className="px-4 pt-4 pb-2 text-center">
-          <h2 className="text-[1.2rem] font-black text-white mb-0.5">🎡 Roue de la Fortune</h2>
-          <p className="text-[0.7rem] text-white/60">Tournez et gagnez des récompenses !</p>
+          <h2 className="text-[1.3rem] font-black text-white mb-0.5">🎡 Roue de la Fortune</h2>
+          <p className="text-[0.72rem] text-white/60">Tournez et gagnez des récompenses !</p>
+        </div>
+
+        {/* Winners ticker */}
+        <div className="px-4 mb-3">
+          <div className="rounded-xl p-2 overflow-hidden" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(245,158,11,0.2)' }}>
+            <div className="text-[0.55rem] uppercase tracking-wide font-bold text-[#F59E0B] mb-1">
+              <i className="fas fa-fire mr-1"></i>Gagnants récents
+            </div>
+            <div className="flex gap-3 overflow-hidden">
+              {winners.map((w, i) => (
+                <div key={i} className="flex items-center gap-1.5 whitespace-nowrap" style={{ opacity: 1 - i * 0.2 }}>
+                  <span className="text-[0.6rem]">{w.flag}</span>
+                  <span className="text-[0.65rem] font-semibold text-white/80">{w.name}</span>
+                  <span className="text-[0.65rem] font-bold text-[#22C55E]">+${w.amount.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Wheel */}
@@ -161,7 +260,7 @@ export default function SpinGameScreen() {
                       <text
                         x={lx} y={ly}
                         fill="#FFFFFF"
-                        fontSize="9"
+                        fontSize="8"
                         fontWeight="bold"
                         textAnchor="middle"
                         dominantBaseline="middle"
@@ -183,71 +282,66 @@ export default function SpinGameScreen() {
           </div>
         </div>
 
-        {/* Last result */}
-        {lastResult && (
-          <div className="px-4 mb-3 text-center" style={{ animation: 'modalIn 0.4s ease-out' }}>
-            <div className="inline-block px-5 py-2 rounded-full" style={{ background: lastResult.isWin ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.15)', border: `1px solid ${lastResult.isWin ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.3)'}` }}>
-              <span className="text-[0.85rem] font-bold" style={{ color: lastResult.isWin ? '#22C55E' : '#F87171' }}>
-                {lastResult.isWin ? `🎉 Gagné ${lastResult.label} !` : '😢 Perdu !'}
-              </span>
+        {/* Spin button */}
+        <div className="px-4 mb-3">
+          {spinsRemaining > 0 ? (
+            <button
+              onClick={() => triggerSpin()}
+              disabled={spinning}
+              className="w-full py-4 rounded-2xl font-black text-[1rem] border-none cursor-pointer disabled:opacity-50 transition-all active:scale-[0.97] flex items-center justify-center gap-2"
+              style={{ background: 'linear-gradient(135deg, #F59E0B, #EF4444)', color: '#FFFFFF', boxShadow: '0 6px 20px rgba(245,158,11,0.5)' }}
+            >
+              {spinning ? (
+                <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }}></div>Rotation...</>
+              ) : (
+                <><i className="fas fa-play"></i>Tourner la roue</>
+              )}
+            </button>
+          ) : (
+            <div className="rounded-2xl p-4 text-center" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <i className="fas fa-clock text-[#F59E0B] text-[1.2rem] mb-1"></i>
+              <div className="text-[0.8rem] font-bold text-white">Tous vos tours sont utilisés !</div>
+              <div className="text-[0.65rem] text-white/50 mt-0.5">Revenez demain pour 10 nouveaux tours</div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Stats */}
         <div className="px-4 mb-4">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <div className="text-[0.55rem] uppercase tracking-wide font-semibold text-white/50">Tours gratuits</div>
-              <div className="text-[1rem] font-black text-[#22C55E]">{freeSpinsRemaining}/3</div>
+              <div className="text-[0.5rem] uppercase tracking-wide font-semibold text-white/50">Tours restants</div>
+              <div className="text-[1.1rem] font-black text-[#22C55E]">{spinsRemaining}/{DAILY_LIMIT}</div>
             </div>
             <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <div className="text-[0.55rem] uppercase tracking-wide font-semibold text-white/50">Gagné aujourd'hui</div>
-              <div className="text-[1rem] font-black text-[#F59E0B]">${totalWonToday.toFixed(2)}</div>
+              <div className="text-[0.5rem] uppercase tracking-wide font-semibold text-white/50">Gagné aujourd'hui</div>
+              <div className="text-[1.1rem] font-black text-[#F59E0B]">${totalWonToday.toFixed(2)}</div>
+            </div>
+            <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div className="text-[0.5rem] uppercase tracking-wide font-semibold text-white/50">Solde</div>
+              <div className="text-[1.1rem] font-black text-white">{formatMoney(user?.balance || 0)}</div>
             </div>
           </div>
         </div>
 
-        {/* Spin buttons */}
-        <div className="px-4 mb-4 space-y-2">
-          {freeSpinsRemaining > 0 ? (
-            <button
-              onClick={() => handleSpin(true)}
-              disabled={spinning}
-              className="w-full py-3.5 rounded-xl font-bold text-[0.88rem] border-none cursor-pointer disabled:opacity-50 transition-all active:scale-[0.97]"
-              style={{ background: 'linear-gradient(135deg, #22C55E, #14B8A6)', color: '#FFFFFF', boxShadow: '0 4px 16px rgba(34,197,94,0.4)' }}
-            >
-              {spinning ? 'Rotation en cours...' : `🎁 Tour gratuit (${freeSpinsRemaining} restant)`}
-            </button>
-          ) : (
-            <div className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <span className="text-[0.7rem] text-white/50">Tous vos tours gratuits sont utilisés</span>
-            </div>
-          )}
-
-          <button
-            onClick={() => handleSpin(false)}
-            disabled={spinning}
-            className="w-full py-3.5 rounded-xl font-bold text-[0.88rem] border-none cursor-pointer disabled:opacity-50 transition-all active:scale-[0.97]"
-            style={{ background: 'linear-gradient(135deg, #F59E0B, #EF4444)', color: '#FFFFFF', boxShadow: '0 4px 16px rgba(245,158,11,0.3)' }}
-          >
-            {spinning ? 'Rotation en cours...' : `💎 Tour payant ($${paidSpinCost.toFixed(2)})`}
-          </button>
-        </div>
-
-        {/* Balance */}
+        {/* Promo banner */}
         <div className="px-4 mb-4">
-          <div className="rounded-xl p-3 flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <span className="text-[0.72rem] font-semibold text-white/70">Votre solde</span>
-            <span className="text-[0.95rem] font-black text-white">{formatMoney(user?.balance || 0)}</span>
+          <div className="rounded-2xl p-3 flex items-center gap-3" style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(239,68,68,0.15))', border: '1px solid rgba(245,158,11,0.3)' }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #F59E0B, #EF4444)' }}>
+              <i className="fas fa-gift text-white text-[1rem]"></i>
+            </div>
+            <div className="flex-1">
+              <div className="text-[0.75rem] font-bold text-white">Plus de tours = plus de gains !</div>
+              <div className="text-[0.6rem] text-white/60">La persistance paie toujours. Continuez à tourner !</div>
+            </div>
           </div>
         </div>
 
         {/* History */}
         {history.length > 0 && (
-          <div className="px-4 pb-4">
+          <div className="px-4 mb-4">
             <h3 className="text-[0.82rem] font-bold text-white mb-2">
-              <i className="fas fa-history mr-1"></i>Historique du jour
+              <i className="fas fa-history mr-1"></i>Historique du jour ({history.length})
             </h3>
             <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
               {history.map((h, i) => (
@@ -278,17 +372,18 @@ export default function SpinGameScreen() {
               <div>
                 <div className="text-[0.72rem] font-bold mb-0.5 text-white">Règles du jeu</div>
                 <div className="text-[0.65rem] leading-relaxed text-white/60">
-                  • 3 tours gratuits par jour<br/>
-                  • Tours supplémentaires: ${paidSpinCost.toFixed(2)} chacun<br/>
-                  • Taux de gain: ~35%<br/>
+                  • 10 tours gratuits par jour<br/>
+                  • La roue se réinitialise à minuit<br/>
                   • Récompenses: $0.10 à $1.00<br/>
-                  • Les gains vont sur votre solde principal
+                  • Les gains vont sur votre solde Jeu
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      <CongratulationsModal data={congratsData} />
     </>
   );
 }

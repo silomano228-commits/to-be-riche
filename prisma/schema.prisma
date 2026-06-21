@@ -32,6 +32,20 @@ model User {
   totalInvestClaims Int         @default(0)
   investClaimBlocked Boolean     @default(false)
   worldLinkSeen   Boolean       @default(false)
+  // Video platform autonomous account
+  videoBalance           Float     @default(0)
+  videoWatchedCount      Int       @default(0)
+  videoWatchedDate       String?
+  videoTotalEarned       Float     @default(0)
+  videoDepositRequired   Boolean   @default(false)
+  videoFirstWatchAt      DateTime?
+  videoLastWatchAt       DateTime?
+  videoWatchedVideoIds   String    @default("[]")
+  // Casino wheel game state
+  gameSpinsUsed          Int       @default(0)
+  gameSpinsDate          String?
+  gameTotalWon           Float     @default(0)
+  gameLastSpinAt         DateTime?
   transactions    Transaction[]
   investments     Investment[]
   trades          Trade[]

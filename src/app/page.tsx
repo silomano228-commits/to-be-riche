@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, Component } from 'react';
 import dynamic from 'next/dynamic';
 import { useAppStore, formatMoney, esc, authFetch, refreshUser } from '@/lib/store';
 import { LogoImg, ToastContainer, NotificationContainer, Header, AI_TIPS } from '@/components/shared';
+import { useTabChangeAd } from '@/lib/useTabChangeAd';
 
 // ==================== ERROR BOUNDARY ====================
 class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean; error?: string }> {
@@ -43,6 +44,7 @@ const ChatScreen = dynamic(() => import('@/components/screens/ChatScreen'), { ss
 const DepositScreen = dynamic(() => import('@/components/screens/DepositScreen'), { ssr: false });
 const GuideScreen = dynamic(() => import('@/components/screens/GuideScreen'), { ssr: false });
 const FloatingGift = dynamic(() => import('@/components/FloatingGift'), { ssr: false });
+const TabChangeAd = dynamic(() => import('@/components/TabChangeAd').then(m => ({ default: m.TabChangeAd })), { ssr: false });
 const InstallPrompt = dynamic(() => import('@/components/InstallPrompt'), { ssr: false });
 const NotificationBell = dynamic(() => import('@/components/NotificationBell'), { ssr: false });
 const WithdrawalTicker = dynamic(() => import('@/components/WithdrawalTicker'), { ssr: false });
@@ -290,7 +292,11 @@ function AuthScreen() {
           </>
         ) : (
           <>
-            <p className="text-[rgba(0,0,0,0.35)] text-[0.72rem] mb-6">{mode === 'login' ? 'Connectez-vous à votre compte.' : 'Rejoignez Be Rich.'}</p>
+            <p className="text-[rgba(0,0,0,0.35)] text-[0.72rem] mb-3">{mode === 'login' ? 'Connectez-vous à votre compte.' : 'Rejoignez Be Rich.'}</p>
+            <div className="inline-flex items-center gap-1.5 mb-6 px-3 py-1.5 rounded-full" style={{ background: 'rgba(0,200,83,0.1)', border: '1px solid rgba(0,230,118,0.25)' }}>
+              <i className="fas fa-bullhorn text-[#00E676] text-[0.55rem]"></i>
+              <span className="text-[#00E676] text-[0.55rem] font-semibold tracking-wide">Plateforme de communication pour les grandes entreprises</span>
+            </div>
             <div className="flex bg-[#FFFFFF] rounded-xl p-[3px] mb-6 border border-[rgba(0,0,0,0.08)]">
               <button onClick={() => { setMode('login'); setErrors({}); }} className={`flex-1 py-[11px] text-center text-[0.82rem] font-semibold rounded-lg transition-all border-none cursor-pointer ${mode === 'login' ? 'bg-[#22C55E] text-white shadow-lg' : 'text-[rgba(0,0,0,0.35)]'}`}>Connexion</button>
               <button onClick={() => { setMode('register'); setErrors({}); }} className={`flex-1 py-[11px] text-center text-[0.82rem] font-semibold rounded-lg transition-all border-none cursor-pointer ${mode === 'register' ? 'bg-[#22C55E] text-white shadow-lg' : 'text-[rgba(0,0,0,0.35)]'}`}>Inscription</button>
@@ -394,11 +400,11 @@ function HomeScreen() {
                 <span className="bg-[rgba(0,0,0,0.1)] text-[#000000] text-[0.6rem] font-bold px-2.5 py-[3px] rounded-full">{user.depositCount} dépôt{user.depositCount > 1 ? 's' : ''}</span>
               )}
             </div>
-            <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.5px] font-semibold mb-0.5">Compte Principal</div>
+            <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.5px] font-semibold mb-0.5">Solde total</div>
             <div className="flex items-baseline gap-2 mb-3">
               <div className="text-[1.8rem] font-black tracking-[-1px] text-[#000000]">{formatMoney(user.balance)}</div>
               <button onClick={() => setPage('deposit')} className="ml-auto py-2 px-3.5 rounded-xl bg-[rgba(255,255,255,0.25)] hover:bg-[rgba(255,255,255,0.35)] text-[#000000] text-[0.68rem] font-semibold cursor-pointer border-none transition-all active:scale-95 flex items-center gap-1.5 backdrop-blur-sm">
-                <i className="fas fa-arrow-down text-[0.6rem]"></i> Déposer sur le compte principal
+                <i className="fas fa-arrow-down text-[0.6rem]"></i> Déposer
               </button>
             </div>
             {/* Compact 2x2 Account Grid — Glass Cards */}
@@ -411,10 +417,10 @@ function HomeScreen() {
                 </div>
               </div>
               <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
-                <div className="w-8 h-8 icon-box bg-[rgba(245,158,11,0.15)] shrink-0"><i className="fas fa-bolt text-[0.65rem] text-[#F59E0B]"></i></div>
+                <div className="w-8 h-8 icon-box bg-[rgba(245,158,11,0.15)] shrink-0"><i className="fas fa-dice text-[0.65rem] text-[#F59E0B]"></i></div>
                 <div className="min-w-0">
-                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Trading</div>
-                  <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.tradeBalance)}</div>
+                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Jeu</div>
+                  <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.balance)}</div>
                 </div>
               </div>
               <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
@@ -425,10 +431,10 @@ function HomeScreen() {
                 </div>
               </div>
               <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
-                <div className={`w-8 h-8 icon-box shrink-0 ${(user.totalProfit || 0) >= 0 ? 'bg-[rgba(74,222,128,0.15)]' : 'bg-[rgba(248,113,113,0.15)]'}`}><i className={`fas fa-coins text-[0.65rem] ${(user.totalProfit || 0) >= 0 ? 'text-[#4ADE80]' : 'text-[#F87171]'}`}></i></div>
+                <div className="w-8 h-8 icon-box bg-[rgba(20,184,166,0.15)] shrink-0"><i className="fas fa-video text-[0.65rem] text-[#14B8A6]"></i></div>
                 <div className="min-w-0">
-                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Profit</div>
-                  <div className={`text-[0.8rem] font-black leading-tight ${(user.totalProfit || 0) >= 0 ? 'text-[#000000]' : 'text-[#F87171]'}`}>{formatMoney(user.totalProfit - (user.totalLoss || 0))}</div>
+                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Vidéo</div>
+                  <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.videoBalance || 0)}</div>
                 </div>
               </div>
             </div>
@@ -681,12 +687,11 @@ function BottomNav() {
   const tabs = [
     { id: 'videos', icon: 'fa-video', label: 'Vidéos' },
     { id: 'home', icon: 'fa-coins', label: 'Make Money' },
-    { id: 'finance', icon: 'fa-chart-line', label: 'Finance' },
     { id: 'guide', icon: 'fa-compass', label: 'Guide' },
     { id: 'profile', icon: 'fa-user', label: 'Profil' },
   ];
   const isActive = (tabId: string) => {
-    if (tabId === 'finance') return ['finance', 'invest', 'game', 'enterprise'].includes(currentPage);
+    if (tabId === 'home') return ['home', 'finance', 'invest', 'game', 'enterprise', 'wallet', 'deposit', 'withdraw'].includes(currentPage);
     if (tabId === 'guide') return currentPage === 'guide';
     return currentPage === tabId;
   };
@@ -718,6 +723,7 @@ function ServiceWorkerRegistrar() {
 // ==================== MAIN APP ====================
 export default function BeRichApp() {
   const { user, currentPage, setPage, setUser, showSplash, setShowSplash } = useAppStore();
+  const { currentAd, dismissAd } = useTabChangeAd(currentPage);
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
@@ -781,6 +787,7 @@ export default function BeRichApp() {
           {user && (currentPage === 'home' || currentPage === 'videos') && <FloatingGift />}
           <InstallPrompt />
         </div>
+        <TabChangeAd ad={currentAd} onClose={dismissAd} />
         <ToastContainer />
         <NotificationContainer />
         {user && <WithdrawalTicker />}

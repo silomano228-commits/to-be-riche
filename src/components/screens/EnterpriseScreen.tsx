@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAppStore, formatMoney, esc, authFetch, refreshUser as globalRefreshUser, type AppUser } from '@/lib/store';
 import { Header, LogoImg, Modal, INVEST_LEVELS, ENTERPRISE_TYPES, ENTERPRISE_NAMES } from '@/components/shared';
+import { CongratulationsModal, type CongratulationsData } from '@/components/CongratulationsModal';
 
 // Countdown component: shows days, hours, minutes, seconds
 function CountdownTimer({ finishesAt }: { finishesAt: string }) {
@@ -39,6 +40,7 @@ export default function EnterpriseScreen() {
   const [enterprises, setEnterprises] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState<string | null>(null);
+  const [congrats, setCongrats] = useState<CongratulationsData>({ show: false, type: 'collect' });
   const [createAmt, setCreateAmt] = useState('');
   const [creating, setCreating] = useState(false);
 
@@ -75,7 +77,18 @@ export default function EnterpriseScreen() {
     try {
       const res = await authFetch('/api/enterprise/claim', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enterpriseId: id }) });
       const data = await res.json();
-      if (data.success) { addToast(`Projet réclamé ! +${formatMoney(data.totalReturn)}`, 'success'); loadEnterprises(); refreshUser(); }
+      if (data.success) {
+        addToast(`Projet réclamé ! +${formatMoney(data.totalReturn)}`, 'success');
+        setCongrats({
+          show: true,
+          type: 'collect',
+          amount: data.totalReturn,
+          title: 'Projet réclamé !',
+          message: `Félicitations ! Vous avez réclamé $${Number(data.totalReturn).toFixed(2)} sur votre projet.`,
+          onClose: () => setCongrats(c => ({ ...c, show: false })),
+        });
+        loadEnterprises(); refreshUser();
+      }
       else { addToast(data.error, 'error'); }
     } catch { addToast('Erreur', 'error'); }
   };
@@ -234,6 +247,7 @@ export default function EnterpriseScreen() {
           </div>
         </div>
       )}
+      <CongratulationsModal data={congrats} />
     </>
   );
 }

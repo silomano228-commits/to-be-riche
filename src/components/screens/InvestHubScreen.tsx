@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAppStore, formatMoney, esc, authFetch, refreshUser as globalRefreshUser, type AppUser } from '@/lib/store';
 import { Header, LogoImg, Modal, INVEST_LEVELS, ENTERPRISE_TYPES, ENTERPRISE_NAMES } from '@/components/shared';
+import { CongratulationsModal, type CongratulationsData } from '@/components/CongratulationsModal';
 
 const hexToRgba = (hex: string, alpha: number) => {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -52,6 +53,7 @@ export default function InvestHubScreen() {
   };
 
   const [claimPayFee, setClaimPayFee] = useState(false);
+  const [congrats, setCongrats] = useState<CongratulationsData>({ show: false, type: 'collect' });
 
   const handleClaim = async (id: string, payFee = false) => {
     try {
@@ -59,6 +61,14 @@ export default function InvestHubScreen() {
       const data = await res.json();
       if (data.success) {
         addToast('Gain réclamé ! +' + formatMoney(data.gain), 'success');
+        setCongrats({
+          show: true,
+          type: 'collect',
+          amount: data.gain,
+          title: 'Collecte réussie !',
+          message: `Vous avez réclamé $${Number(data.gain).toFixed(2)} sur votre investissement. Continuez ainsi !`,
+          onClose: () => setCongrats(c => ({ ...c, show: false })),
+        });
         if (data.blocked) addToast(data.message, 'info');
         loadInvestments(); refreshUser();
         setClaimPayFee(false);
@@ -564,6 +574,7 @@ export default function InvestHubScreen() {
           </div>
         );
       })()}
+      <CongratulationsModal data={congrats} />
     </>
   );
 }

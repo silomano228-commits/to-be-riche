@@ -35,6 +35,12 @@ export interface AppUser {
   activeEnterprisesCount?: number;
   claimableInvestments?: number;
   unlockedLevel?: number;
+  videoBalance?: number;
+  videoWatchedCount?: number;
+  videoDepositRequired?: boolean;
+  gameSpinsUsed?: number;
+  gameSpinsDate?: string;
+  gameTotalWon?: number;
 }
 
 export interface Toast {

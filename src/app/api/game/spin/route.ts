@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
-import { WHEEL_SEGMENTS } from '../status/route';
+import { WHEEL_SEGMENTS, DAILY_SPINS } from '../status/route';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,30 +19,33 @@ async function getUser(request: Request) {
   return db.user.findUnique({ where: { id: token } });
 }
 
-const DAILY_FREE_SPINS = 3;
-const PAID_SPIN_COST = 0.50;
+// Win rate: 30-60% overall, but usually under 45%.
+// Strategy: bias toward lower end. Each spin: base 38% chance to win,
+// but if the user has won a lot today, reduce the chance; if they've lost
+// a lot, slightly increase it. This keeps the overall rate in 30-60% range.
+function shouldWin(spinsUsedToday: number, winsSoFar: number): boolean {
+  // Base win probability biased low (target ~40% overall, usually <45%)
+  let baseProbability = 0.40;
+  // If user already won many times, lower the probability (toward 30%)
+  if (winsSoFar >= 4) baseProbability = 0.30;
+  else if (winsSoFar >= 3) baseProbability = 0.35;
+  // If user is on a losing streak (many spins, few wins), boost toward 60%
+  if (spinsUsedToday >= 6 && winsSoFar <= 1) baseProbability = 0.55;
+  else if (spinsUsedToday >= 8 && winsSoFar <= 2) baseProbability = 0.60;
+  return Math.random() < baseProbability;
+}
 
-// 35% win rate: weighted random selection
-// Winning segments indices: 0, 2, 4, 6, 8, 10, 12, 14 (8 out of 16 = 50%)
-// To get ~35% win rate, we use a two-step process:
-// 1. First decide if it's a win (35% chance) or loss (65% chance)
-// 2. If win, pick a random winning segment. If loss, pick a random losing segment.
-function pickSegment(): { segmentIdx: number; isWin: boolean } {
-  const isWin = Math.random() < 0.35;
-
+function pickSegment(isWin: boolean): number {
   if (isWin) {
     const winningIndices = WHEEL_SEGMENTS
-      .map((s, i) => s.isWin ? i : -1)
-      .filter(i => i >= 0);
-    const idx = winningIndices[Math.floor(Math.random() * winningIndices.length)];
-    return { segmentIdx: idx, isWin: true };
-  } else {
-    const losingIndices = WHEEL_SEGMENTS
-      .map((s, i) => !s.isWin ? i : -1)
-      .filter(i => i >= 0);
-    const idx = losingIndices[Math.floor(Math.random() * losingIndices.length)];
-    return { segmentIdx: idx, isWin: false };
+      .map((s, i) => (s.isWin ? i : -1))
+      .filter((i) => i >= 0);
+    return winningIndices[Math.floor(Math.random() * winningIndices.length)];
   }
+  const losingIndices = WHEEL_SEGMENTS
+    .map((s, i) => (!s.isWin ? i : -1))
+    .filter((i) => i >= 0);
+  return losingIndices[Math.floor(Math.random() * losingIndices.length)];
 }
 
 export async function POST(request: Request) {
@@ -52,55 +55,41 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Non authentifié' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { useFreeSpin } = body;
     const today = new Date().toISOString().slice(0, 10);
 
-    // Check daily free spins used
-    const todaySpinsCount = await db.gameSpin.count({
-      where: { userId: user.id, spinDate: today },
-    });
-
-    const hasFreeSpin = todaySpinsCount < DAILY_FREE_SPINS;
-    const isFree = useFreeSpin && hasFreeSpin;
-
-    // If no free spin, user must pay
-    if (!isFree) {
-      if (user.balance < PAID_SPIN_COST) {
-        return NextResponse.json({
-          success: false,
-          error: `Solde insuffisant. Un tour payant coûte $${PAID_SPIN_COST.toFixed(2)}. Votre solde: $${user.balance.toFixed(2)}`,
-        }, { status: 400 });
-      }
+    // Reset if date changed
+    let spinsUsed = user.gameSpinsUsed;
+    let totalWon = user.gameTotalWon;
+    if (user.gameSpinsDate !== today) {
+      spinsUsed = 0;
+      totalWon = 0;
     }
 
-    const { segmentIdx, isWin } = pickSegment();
+    // Daily limit: 10 free spins, resets next day
+    if (spinsUsed >= DAILY_SPINS) {
+      return NextResponse.json({
+        success: false,
+        dailyLimitReached: true,
+        error: 'Limite quotidienne atteinte (10 tours). Revenez demain !',
+      }, { status: 400 });
+    }
+
+    // Count wins today from gameSpins
+    const todaySpins = await db.gameSpin.findMany({
+      where: { userId: user.id, spinDate: today },
+    });
+    const winsSoFar = todaySpins.filter((s) => s.result === 'win').length;
+
+    const isWin = shouldWin(spinsUsed, winsSoFar);
+    const segmentIdx = pickSegment(isWin);
     const segment = WHEEL_SEGMENTS[segmentIdx];
     const winAmount = segment.reward;
-    const betAmount = isFree ? 0 : PAID_SPIN_COST;
 
     await db.$transaction(async (tx) => {
-      // Deduct bet if paid spin
-      if (!isFree) {
-        await tx.user.update({
-          where: { id: user.id },
-          data: { balance: { decrement: PAID_SPIN_COST } },
-        });
-        await tx.transaction.create({
-          data: {
-            type: 'game_spin_bet',
-            amount: -PAID_SPIN_COST,
-            detail: `Tour de roue payant`,
-            userId: user.id,
-          },
-        });
-      }
-
-      // Record the spin
       await tx.gameSpin.create({
         data: {
           userId: user.id,
-          betAmount,
+          betAmount: 0,
           winAmount,
           result: isWin ? 'win' : 'loss',
           segmentIdx,
@@ -108,25 +97,39 @@ export async function POST(request: Request) {
         },
       });
 
-      // Credit winnings if won
       if (isWin && winAmount > 0) {
         await tx.user.update({
           where: { id: user.id },
-          data: { balance: { increment: winAmount } },
+          data: {
+            balance: { increment: winAmount },
+            gameTotalWon: { increment: winAmount },
+          },
         });
         await tx.transaction.create({
           data: {
-            type: 'game_spin_win',
+            type: 'game_win',
             amount: winAmount,
             detail: `Gain roue de la fortune: ${segment.label}`,
             userId: user.id,
           },
         });
+      } else {
+        await tx.user.update({
+          where: { id: user.id },
+          data: {
+            gameSpinsUsed: { increment: 1 },
+            gameSpinsDate: today,
+            gameLastSpinAt: new Date(),
+          },
+        });
       }
     });
 
-    const newSpinsCount = todaySpinsCount + 1;
-    const freeSpinsRemaining = Math.max(0, DAILY_FREE_SPINS - newSpinsCount);
+    // Re-fetch user for accurate balance
+    const updatedUser = await db.user.findUnique({ where: { id: user.id } });
+
+    const newSpinsUsed = spinsUsed + 1;
+    const spinsRemaining = Math.max(0, DAILY_SPINS - newSpinsUsed);
 
     return NextResponse.json({
       success: true,
@@ -134,13 +137,12 @@ export async function POST(request: Request) {
       segment: { label: segment.label, reward: segment.reward, color: segment.color, isWin },
       isWin,
       winAmount,
-      betAmount,
-      isFreeSpin: isFree,
-      newBalance: user.balance - (isFree ? 0 : PAID_SPIN_COST) + winAmount,
-      freeSpinsRemaining,
+      spinsUsed: newSpinsUsed,
+      spinsRemaining,
+      newBalance: updatedUser?.balance ?? user.balance,
       message: isWin
-        ? `🎉 Gagné ! $${winAmount.toFixed(2)} crédités !`
-        : `Perdu ! Essayez encore.`,
+        ? `Félicitations ! Vous avez gagné $${winAmount.toFixed(2)} à la roue !`
+        : 'Vous n\'avez pas gagné cette fois-ci. Réessayez !',
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });

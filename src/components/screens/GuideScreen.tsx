@@ -1,517 +1,313 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useAppStore, formatMoney, esc, authFetch, type AppUser } from '@/lib/store';
+import { useState } from 'react';
+import { useAppStore, esc } from '@/lib/store';
 import { Header, LogoImg, INVEST_LEVELS, ENTERPRISE_TYPES } from '@/components/shared';
 
-// ==================== SIMPLIFIED MARKET DATA ====================
-const MARKET_MOODS = [
-  { label: 'Humeur du marché', emoji: '😊', value: 'Optimiste' },
-  { label: 'Volatilité', emoji: '🌊', value: 'Modérée' },
-  { label: 'Tendance', emoji: '📈', value: 'Hausse' },
-  { label: 'Moment favorable', emoji: '👍', value: 'Oui' },
-];
+type Section = 'overview' | 'videos' | 'game' | 'invest' | 'projects' | 'payments' | 'referral';
 
-const TRADING_ASSETS = [
-  { id: 'brx', name: 'BRX Token', price: 1.247, change: +3.2, conseil: 'favorable' as const, tip: 'La tendance semble favorable pour une position haussière' },
-  { id: 'nova', name: 'NovaTech Coin', price: 8.891, change: -1.8, conseil: 'attentif' as const, tip: 'Le marché hésite, restez prudent avant de vous positionner' },
-  { id: 'gold', name: 'GoldFund ETF', price: 24.56, change: +0.9, conseil: 'attentif' as const, tip: 'Mouvement modéré, observez avant d\'agir' },
-  { id: 'energy', name: 'EnergyPlus Index', price: 5.123, change: +2.1, conseil: 'favorable' as const, tip: 'La tendance semble favorable pour une position haussière' },
-];
-
-const PROJECT_SECTORS = [
-  { name: 'Technologie', trend: 'Expansion', confidence: 82, hot: true },
-  { name: 'Énergie Verte', trend: 'Croissance', confidence: 75, hot: true },
-  { name: 'Immobilier', trend: 'Stable', confidence: 68, hot: false },
-  { name: 'Finance', trend: 'Volatil', confidence: 60, hot: false },
-  { name: 'Agroalimentaire', trend: 'Croissance', confidence: 71, hot: false },
-  { name: 'Santé & BioTech', trend: 'Expansion', confidence: 77, hot: true },
-];
-
-const PROJECT_TIERS = [
-  { name: 'Court terme', days: 5, minRet: 150, maxRet: 150, icon: 'fa-bolt' },
-  { name: 'Moyen terme', days: 10, minRet: 200, maxRet: 200, icon: 'fa-building' },
-  { name: 'Long terme', days: 20, minRet: 300, maxRet: 300, icon: 'fa-industry' },
-  { name: 'Ultra long', days: 30, minRet: 400, maxRet: 400, icon: 'fa-rocket' },
-];
-
-const TRADING_TIPS = [
-  { title: 'Observez avant d\'agir', text: 'Prenez le temps d\'observer la tendance du marché avant de vous positionner. Un bon trade est un trade réfléchi.', icon: 'fa-eye' },
-  { title: 'Choisissez le bon moment', text: 'Les trades courts réagissent vite aux changements. Les trades plus longs laissent le temps à la tendance de se confirmer.', icon: 'fa-clock' },
-  { title: 'Protégez votre capital', text: 'Ne misez jamais plus de la moitié de votre solde sur un seul trade. Mieux vaut plusieurs petites positions qu\'une seule grosse.', icon: 'fa-shield-alt' },
-  { title: 'Apprenez de chaque trade', text: 'Chaque trade, gagnant ou perdant, vous apprend quelque chose. Observez les patterns et adaptez votre stratégie.', icon: 'fa-graduation-cap' },
-];
-
-const INVEST_TIPS = [
-  { title: 'Commencez petit', text: 'Testez d\'abord avec un projet court terme pour comprendre le fonctionnement.', icon: 'fa-seedling' },
-  { title: 'Montez en puissance', text: 'Plus la durée est longue, plus le rendement est élevé. Adaptez selon vos objectifs.', icon: 'fa-arrow-up' },
-  { title: 'Diversifiez', text: 'Répartissez vos investissements entre plusieurs projets pour lisser les rendements.', icon: 'fa-layer-group' },
+const SECTIONS: { id: Section; label: string; icon: string; color: string }[] = [
+  { id: 'overview', label: 'Vue d\'ensemble', icon: 'fa-home', color: '#22C55E' },
+  { id: 'videos', label: 'Vidéos', icon: 'fa-video', color: '#14B8A6' },
+  { id: 'game', label: 'Jeu', icon: 'fa-dice', color: '#F59E0B' },
+  { id: 'invest', label: 'Investissement', icon: 'fa-chart-line', color: '#3B82F6' },
+  { id: 'projects', label: 'Projets', icon: 'fa-building', color: '#8B5CF6' },
+  { id: 'payments', label: 'Dépôts/Retraits', icon: 'fa-wallet', color: '#EF4444' },
+  { id: 'referral', label: 'Parrainage', icon: 'fa-gift', color: '#EC4899' },
 ];
 
 export default function GuideScreen() {
   const { user } = useAppStore();
-  const [section, setSection] = useState<'guide' | 'trading' | 'projects'>('guide');
-  const [marketPulse, setMarketPulse] = useState(0);
-
-  useEffect(() => {
-    const t = setInterval(() => setMarketPulse(p => p + 1), 8000);
-    return () => clearInterval(t);
-  }, []);
+  const [section, setSection] = useState<Section>('overview');
 
   if (!user) return null;
 
   return (
     <>
-      <Header title="Guide & Analyses" icon="fa-compass" iconColor="#14B8A6" leftElement={
-        <button onClick={() => useAppStore.getState().setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] cursor-pointer border-none mr-1">
-          <i className="fas fa-arrow-left text-[0.8rem]"></i>
-        </button>
-      } />
+      <Header title="Guide" />
+      <div className="flex-1 overflow-y-auto bg-gradient-to-b from-[#F8F9FA] to-[#F1F5F9]">
+        {/* Hero */}
+        <div className="px-4 pt-4 pb-3">
+          <div className="rounded-2xl p-4 text-center" style={{ background: 'linear-gradient(135deg, #22C55E, #14B8A6)' }}>
+            <LogoImg className="w-12 h-12 mx-auto mb-2 rounded-xl" />
+            <h1 className="text-[1.1rem] font-black text-white mb-0.5">Guide Be Rich</h1>
+            <p className="text-[0.7rem] text-white/80">Plateforme de communication pour les grandes entreprises</p>
+          </div>
+        </div>
 
-      {/* Section tabs */}
-      <div className="flex gap-2 px-[18px] py-2.5 bg-[#F8F9FA] border-b border-[rgba(0,0,0,0.08)]">
-        {[
-          { id: 'guide' as const, label: 'Guide', icon: 'fa-book-open' },
-          { id: 'trading' as const, label: 'Trading', icon: 'fa-bolt' },
-          { id: 'projects' as const, label: 'Projets', icon: 'fa-building' },
-        ].map(t => (
-          <button key={t.id} onClick={() => setSection(t.id)}
-            className={`flex-1 py-2 rounded-xl text-[0.72rem] font-semibold border-none cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
-              section === t.id
-                ? 'bg-[rgba(20,184,166,0.15)] text-[#14B8A6]'
-                : 'bg-[rgba(0,0,0,0.05)] text-[rgba(0,0,0,0.55)]'
-            }`}
-          >
-            <i className={`fas ${t.icon} text-[0.6rem]`}></i>{t.label}
-          </button>
-        ))}
-      </div>
+        {/* Section selector */}
+        <div className="px-4 mb-4">
+          <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
+            {SECTIONS.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setSection(s.id)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl font-semibold text-[0.7rem] whitespace-nowrap cursor-pointer transition-all active:scale-95 ${section === s.id ? 'text-white shadow-lg' : 'bg-white text-[#6B7280]'}`}
+                style={section === s.id ? { background: s.color } : { border: '1px solid #E5E7EB' }}
+              >
+                <i className={`fas ${s.icon} text-[0.65rem]`}></i>
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-      <div className="flex-1 w-full overflow-y-auto min-h-0 bg-[#F8F9FA]">
-        <div className="px-[18px] py-4">
-
-          {/* ============ GUIDE SECTION ============ */}
-          {section === 'guide' && (
-            <>
-              {/* Step 1: Dépôt - Green for basics */}
-              <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4 mb-3">
-                <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-[rgba(34,197,94,0.12)] flex items-center justify-center shrink-0 border border-[rgba(34,197,94,0.15)]">
-                    <span className="text-[0.85rem] font-black text-[#22C55E]">1</span>
-                  </div>
-                  <div>
-                    <div className="text-[0.85rem] font-bold text-[#1F2937]">Faire un dépôt</div>
-                    <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">Approvisionnez votre compte</div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="bg-[rgba(0,0,0,0.04)] rounded-xl p-2.5 border border-[rgba(0,0,0,0.05)]">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <i className="fab fa-gg-circle text-[#22C55E] text-[0.7rem]"></i>
-                      <span className="text-[0.72rem] font-bold text-[#1F2937]">Méthode TRX (Dollars)</span>
-                    </div>
-                    <ol className="space-y-1 text-[0.65rem] text-[rgba(0,0,0,0.65)] pl-4">
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Allez dans <strong className="text-[#1F2937]">Portefeuille → Déposer</strong></li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">TRX</strong></li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez le montant en $ (min 5 $)</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>L&apos;adresse TRX de notre équipe s&apos;affiche — envoyez les TRX depuis votre Trust Wallet</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez votre propre adresse TRX pour confirmer l&apos;envoi</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Attendez la validation par notre équipe</li>
-                    </ol>
-                  </div>
-                  <div className="bg-[rgba(0,0,0,0.04)] rounded-xl p-2.5 border border-[rgba(0,0,0,0.05)]">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <i className="fas fa-exchange-alt text-[#22C55E] text-[0.7rem]"></i>
-                      <span className="text-[0.72rem] font-bold text-[#1F2937]">Méthode Yas — FCFA</span>
-                    </div>
-                    <ol className="space-y-1 text-[0.65rem] text-[rgba(0,0,0,0.65)] pl-4">
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Allez dans <strong className="text-[#1F2937]">Portefeuille → Déposer</strong></li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">Yas</strong></li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez le montant en FCFA (min 3 000 FCFA)</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Le code USSD s&apos;affiche : <strong className="text-[#1F2937]">*145*1*{`{montant}`}*{`{numéro_admin}`}*2#</strong></li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Copiez ou lancez le code, puis envoyez l&apos;argent</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Entrez votre numéro Yas (8 chiffres, commence par 90-93 ou 70-73)</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#22C55E] font-bold">•</span>Attendez la validation par notre équipe</li>
-                    </ol>
-                  </div>
-                </div>
-              </div>
-
-              {/* Step 2: Verser - Teal for accounts */}
-              <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4 mb-3">
-                <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-[rgba(20,184,166,0.12)] flex items-center justify-center shrink-0 border border-[rgba(20,184,166,0.15)]">
-                    <span className="text-[0.85rem] font-black text-[#14B8A6]">2</span>
-                  </div>
-                  <div>
-                    <div className="text-[0.85rem] font-bold text-[#1F2937]">Verser dans les comptes</div>
-                    <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">Répartissez vos fonds selon vos objectifs</div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2">
-                    <div className="w-6 h-6 rounded-md bg-[rgba(20,184,166,0.12)] flex items-center justify-center shrink-0 mt-0.5"><i className="fas fa-chart-line text-[0.55rem] text-[#14B8A6]"></i></div>
-                    <div>
-                      <div className="text-[0.72rem] font-bold text-[#1F2937]">Compte d&apos;Investissement</div>
-                      <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">2 catégories : Petit (Micro 5-10$, Standard 10.5-20$) et Gros (Premium 65-250$, Elite 300-1000$). 10%/jour, durées de 15 à 50 jours !</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="w-6 h-6 rounded-md bg-[rgba(20,184,166,0.12)] flex items-center justify-center shrink-0 mt-0.5"><i className="fas fa-bolt text-[0.55rem] text-[#14B8A6]"></i></div>
-                    <div>
-                      <div className="text-[0.72rem] font-bold text-[#1F2937]">Compte de Trading</div>
-                      <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">Pariez sur la hausse ou la baisse des actifs. Durée de 1 à 10 min. Consultez les analyses avant de trader !</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="w-6 h-6 rounded-md bg-[rgba(20,184,166,0.12)] flex items-center justify-center shrink-0 mt-0.5"><i className="fas fa-building text-[0.55rem] text-[#14B8A6]"></i></div>
-                    <div>
-                      <div className="text-[0.72rem] font-bold text-[#1F2937]">Compte de Projet</div>
-                      <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">Investissez dans des entreprises virtuelles. Rendement de +150% à +400% selon la durée. Pas de risque de crash !</div>
-                    </div>
-                  </div>
-                  <div className="bg-[rgba(20,184,166,0.1)] rounded-lg p-2 mt-1 border border-[rgba(20,184,166,0.1)]">
-                    <p className="text-[0.62rem] text-[#14B8A6]"><i className="fas fa-info-circle mr-1"></i>Allez dans <strong>Portefeuille</strong> puis cliquez sur <strong>Verser</strong> sur le compte de votre choix.</p>
-                    <p className="text-[0.62rem] text-[#14B8A6] mt-1"><i className="fas fa-arrow-right mr-1"></i>Transfert du Principal vers un sous-compte : <strong>frais de 2%</strong></p>
-                    <p className="text-[0.62rem] text-[#14B8A6] mt-0.5"><i className="fas fa-arrow-left mr-1"></i>Transfert d&apos;un sous-compte vers le Principal : <strong>sans frais</strong></p>
-                    <p className="text-[0.62rem] text-[#14B8A6] mt-0.5"><i className="fas fa-coins mr-1"></i>Montant minimum : <strong>2 $</strong></p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Step 3: Gagner - Amber for rewards */}
-              <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4 mb-3">
-                <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-[rgba(245,158,11,0.12)] flex items-center justify-center shrink-0 border border-[rgba(245,158,11,0.15)]">
-                    <span className="text-[0.85rem] font-black text-[#F59E0B]">3</span>
-                  </div>
-                  <div>
-                    <div className="text-[0.85rem] font-bold text-[#1F2937]">Gagner et réclamer</div>
-                    <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">Collectez vos gains régulièrement</div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2">
-                    <i className="fas fa-hand-holding-usd text-[#F59E0B] text-[0.65rem] mt-1"></i>
-                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]"><strong className="text-[#1F2937]">Investissements :</strong> Cliquez sur &quot;Réclamer&quot; dans Finance → Invest pour collecter vos gains quotidiens.</div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <i className="fas fa-chart-line text-[#F59E0B] text-[0.65rem] mt-1"></i>
-                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]"><strong className="text-[#1F2937]">Trading :</strong> Les gains sont automatiquement crédités après la fin du trade.</div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <i className="fas fa-building text-[#F59E0B] text-[0.65rem] mt-1"></i>
-                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]"><strong className="text-[#1F2937]">Projets :</strong> Cliquez sur &quot;Réclamer&quot; quand l&apos;entreprise a terminé sa durée.</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Step 4: Retirer - Red for risks/withdrawal */}
-              <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4 mb-3">
-                <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-[rgba(239,68,68,0.12)] flex items-center justify-center shrink-0 border border-[rgba(239,68,68,0.15)]">
-                    <span className="text-[0.85rem] font-black text-[#EF4444]">4</span>
-                  </div>
-                  <div>
-                    <div className="text-[0.85rem] font-bold text-[#1F2937]">Retirer vos gains</div>
-                    <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">Transformez vos gains en TRX ou Yas</div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="bg-[rgba(0,0,0,0.04)] rounded-xl p-2.5 border border-[rgba(0,0,0,0.05)]">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <i className="fab fa-gg-circle text-[#EF4444] text-[0.7rem]"></i>
-                      <span className="text-[0.72rem] font-bold text-[#1F2937]">Retrait en TRX</span>
-                    </div>
-                    <ol className="space-y-1 text-[0.65rem] text-[rgba(0,0,0,0.65)] pl-4">
-                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>Allez dans <strong className="text-[#1F2937]">Portefeuille → Retirer</strong></li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">TRX</strong></li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>Entrez le montant et votre adresse TRX</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>La demande est traitée par notre équipe</li>
-                    </ol>
-                  </div>
-                  <div className="bg-[rgba(0,0,0,0.04)] rounded-xl p-2.5 border border-[rgba(0,0,0,0.05)]">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <i className="fas fa-mobile-alt text-[#EF4444] text-[0.7rem]"></i>
-                      <span className="text-[0.72rem] font-bold text-[#1F2937]">Retrait via Yas</span>
-                    </div>
-                    <ol className="space-y-1 text-[0.65rem] text-[rgba(0,0,0,0.65)] pl-4">
-                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>Allez dans <strong className="text-[#1F2937]">Portefeuille → Retirer</strong></li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">Yas</strong></li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>Entrez le montant et votre numéro Yas</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>La demande est traitée par notre équipe</li>
-                    </ol>
-                  </div>
-                  <div className="bg-[rgba(0,0,0,0.04)] rounded-xl p-2.5 border border-[rgba(0,0,0,0.05)]">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <i className="fas fa-exchange-alt text-[#EF4444] text-[0.7rem]"></i>
-                      <span className="text-[0.72rem] font-bold text-[#1F2937]">Conversion TRX → Yas</span>
-                    </div>
-                    <ol className="space-y-1 text-[0.65rem] text-[rgba(0,0,0,0.65)] pl-4">
-                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>Choisissez <strong className="text-[#1F2937]">Convertir TRX → Yas</strong></li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>Entrez le montant, votre adresse TRX et votre numéro Yas</li>
-                      <li className="flex items-start gap-1.5"><span className="text-[#EF4444] font-bold">•</span>Envoyez vos TRX à l&apos;admin, recevez les FCFA sur Yas</li>
-                    </ol>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <i className="fas fa-arrow-up text-[#EF4444] text-[0.65rem] mt-1"></i>
-                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Transférez d&apos;abord vos gains depuis les sous-comptes vers le <strong className="text-[#1F2937]">Compte Principal</strong> (sans frais)</div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <i className="fas fa-clock text-[#EF4444] text-[0.65rem] mt-1"></i>
-                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]"><strong className="text-[#1F2937]">Attention :</strong> 48h après le 1er dépôt + parrainés requis après 4 retraits</div>
-                  </div>
-                  <div className="bg-[rgba(239,68,68,0.1)] rounded-lg p-2 mt-1 border border-[rgba(239,68,68,0.1)]">
-                    <p className="text-[0.62rem] text-[#EF4444]"><i className="fas fa-info-circle mr-1"></i>Minimum de retrait : <strong>5$</strong>. Un seul retrait en attente à la fois.</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Step 5: Parrainer - Purple for social/advanced */}
-              <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4 mb-3">
-                <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-[rgba(139,92,246,0.12)] flex items-center justify-center shrink-0 border border-[rgba(139,92,246,0.15)]">
-                    <span className="text-[0.85rem] font-black text-[#8B5CF6]">5</span>
-                  </div>
-                  <div>
-                    <div className="text-[0.85rem] font-bold text-[#1F2937]">Parrainer et gagner</div>
-                    <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">Invitez vos amis pour débloquer les retraits</div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2">
-                    <i className="fas fa-users text-[#8B5CF6] text-[0.65rem] mt-1"></i>
-                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Partagez votre <strong className="text-[#1F2937]">code de parrainage</strong> (visible dans Profil) avec vos amis</div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <i className="fas fa-gift text-[#8B5CF6] text-[0.65rem] mt-1"></i>
-                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Recevez <strong className="text-[#1F2937]">20% du premier dépôt</strong> de votre parrainé sur votre Compte Principal (sans déduction de son compte)</div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <i className="fas fa-chart-line text-[#8B5CF6] text-[0.65rem] mt-1"></i>
-                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Recevez aussi <strong className="text-[#1F2937]">5% des gains d&apos;investissement</strong> de vos parrainés à chaque réclamation</div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <i className="fas fa-lock-open text-[#8B5CF6] text-[0.65rem] mt-1"></i>
-                    <div className="text-[0.65rem] text-[rgba(0,0,0,0.65)]">Parrainés requis : <strong className="text-[#1F2937]">1 parrainé par tranche de 4 retraits</strong>. Les 4 premiers retraits sont libres.</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Chat IA tip - Dark card with subtle gold border */}
-              <div className="bg-[#FFFFFF] border border-[rgba(20,184,166,0.2)] rounded-2xl p-3 mb-3 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-[rgba(20,184,166,0.12)] flex items-center justify-center shrink-0 border border-[rgba(20,184,166,0.15)]"><i className="fas fa-robot text-[#14B8A6] text-[0.85rem]"></i></div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[0.6rem] text-[rgba(20,184,166,0.7)] font-bold uppercase tracking-[1px] mb-0.5">Besoin d&apos;aide ?</div>
-                  <div className="text-[0.7rem] leading-relaxed text-[rgba(0,0,0,0.3)]">Utilisez le <strong className="text-[#1F2937]">Chat IA</strong> pour poser vos questions. Notre équipe de support peut également vous répondre directement.</div>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* ============ TRADING SECTION (SIMPLIFIED) ============ */}
-          {section === 'trading' && (
-            <>
-              {/* Market Pulse Header - Calm dark card */}
-              <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4 mb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-2 h-2 rounded-full bg-[#14B8A6]" style={{ animation: 'pulse 2s ease-in-out infinite' }} />
-                  <span className="text-[0.65rem] text-[rgba(0,0,0,0.5)] uppercase tracking-[1px] font-bold">Marché en direct</span>
-                </div>
-                <div className="text-[1.1rem] font-black text-[#1F2937] mb-1">Tableau de Bord Trading</div>
-                <div className="text-[0.65rem] text-[rgba(0,0,0,0.45)]">Indicateurs simples pour vos décisions</div>
-              </div>
-
-              {/* Market Mood - Simple emoji cards */}
-              {/* Trading section - Blue accent for trading */}
-              <h3 className="text-[0.85rem] font-bold text-[#1F2937] mb-2.5 flex items-center gap-2">
-                <i className="fas fa-heart text-[#14B8A6] text-[0.75rem]"></i>
-                Humeur du Marché
-              </h3>
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                {MARKET_MOODS.map((mood, i) => (
-                  <div key={i} className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-xl p-3">
-                    <div className="text-[0.58rem] text-[rgba(0,0,0,0.5)] font-medium mb-1.5 leading-tight">{mood.label}</div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[1.1rem]">{mood.emoji}</span>
-                      <span className="text-[0.85rem] font-bold text-[#1F2937]">{mood.value}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Asset Cards - Simplified */}
-              <h3 className="text-[0.85rem] font-bold text-[#1F2937] mb-2.5 flex items-center gap-2">
-                <i className="fas fa-chart-area text-[#14B8A6] text-[0.75rem]"></i>
-                Actifs
-              </h3>
-              <div className="space-y-2.5 mb-4">
-                {TRADING_ASSETS.map((asset) => {
-                  const isUp = asset.change >= 0;
-                  const conseilConfig = {
-                    favorable: { emoji: '🟢', label: 'Moment favorable', color: '#4ADE80' },
-                    attentif: { emoji: '🟡', label: 'Restez attentif', color: '#14B8A6' },
-                    eviter: { emoji: '🔴', label: 'Évitez pour l\'instant', color: '#F87171' },
-                  }[asset.conseil];
-                  return (
-                    <div key={asset.id} className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-xl p-3.5">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-[rgba(20,184,166,0.1)]">
-                            <i className={`fas fa-${isUp ? 'trending-up' : 'trending-down'} text-[0.75rem] text-[#14B8A6]`}></i>
-                          </div>
-                          <div>
-                            <div className="text-[0.8rem] font-bold text-[#1F2937]">{asset.name}</div>
-                          </div>
-                        </div>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[0.6rem] font-bold bg-[rgba(0,0,0,0.05)] border border-[rgba(0,0,0,0.08)]" style={{ color: conseilConfig.color }}>
-                          {conseilConfig.emoji} {conseilConfig.label}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="text-[0.95rem] font-black text-[#1F2937]">${asset.price.toFixed(3)}</span>
-                        <span className={`text-[0.65rem] font-bold ${isUp ? 'text-[#4ADE80]' : 'text-[#F87171]'}`}>
-                          {isUp ? '+' : ''}{asset.change}%
-                        </span>
-                      </div>
-                      <p className="text-[0.62rem] text-[rgba(0,0,0,0.5)] leading-relaxed">{asset.tip}</p>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Strategy Tips - Dark cards with gold left border */}
-              <h3 className="text-[0.85rem] font-bold text-[#1F2937] mb-2.5 flex items-center gap-2">
-                <i className="fas fa-lightbulb text-[#14B8A6] text-[0.75rem]"></i>
-                Conseils Stratégiques
-              </h3>
-              <div className="space-y-2 mb-4">
-                {TRADING_TIPS.map((tip, i) => (
-                  <div key={i} className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] border-l-[3px] border-l-[#14B8A6] rounded-xl p-3">
-                    <div className="flex items-start gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-[rgba(20,184,166,0.12)] flex items-center justify-center shrink-0">
-                        <i className={`fas ${tip.icon} text-[#14B8A6] text-[0.6rem]`}></i>
-                      </div>
-                      <div>
-                        <div className="text-[0.72rem] font-bold text-[#1F2937]">{tip.title}</div>
-                        <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">{tip.text}</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Gentle Disclaimer */}
-              <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-xl p-3 mb-3">
-                <div className="flex items-start gap-2">
-                  <i className="fas fa-info-circle text-[rgba(0,0,0,0.35)] text-[0.7rem] mt-0.5"></i>
-                  <div className="text-[0.62rem] text-[rgba(0,0,0,0.45)]">Ces indications sont fournies à titre informatif. Chaque trade comporte des risques. Investissez toujours de manière responsable.</div>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* ============ PROJECTS SECTION (SIMPLIFIED) ============ */}
-          {section === 'projects' && (
-            <>
-              {/* Header - Clean dark card */}
-              <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4 mb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-2 h-2 rounded-full bg-[#14B8A6]" style={{ animation: 'pulse 2s ease-in-out infinite' }} />
-                  <span className="text-[0.65rem] text-[rgba(0,0,0,0.5)] uppercase tracking-[1px] font-bold">Projets</span>
-                </div>
-                <div className="text-[1.1rem] font-black text-[#1F2937] mb-1">Analyse des Projets</div>
-                <div className="text-[0.65rem] text-[rgba(0,0,0,0.45)]">Découvrez les opportunités d&apos;investissement</div>
-              </div>
-
-              {/* Sector Overview - Simple cards with confidence bar */}
-              <h3 className="text-[0.85rem] font-bold text-[#1F2937] mb-2.5 flex items-center gap-2">
-                <i className="fas fa-industry text-[#14B8A6] text-[0.75rem]"></i>
-                Secteurs
-              </h3>
-              <div className="space-y-2 mb-4">
-                {PROJECT_SECTORS.map((sector, i) => (
-                  <div key={i} className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-xl p-3.5">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        {sector.hot && <div className="w-2 h-2 rounded-full bg-[#14B8A6]"></div>}
-                        <div>
-                          <div className="text-[0.8rem] font-bold text-[#1F2937]">{sector.name}</div>
-                          <div className="text-[0.58rem] text-[rgba(0,0,0,0.5)]">Tendance : <span className="text-[rgba(0,0,0,0.3)]">{sector.trend}</span></div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-[0.78rem] font-bold text-[#14B8A6]">{sector.confidence}%</div>
-                        <div className="text-[0.5rem] text-[rgba(0,0,0,0.4)]">Confiance</div>
-                      </div>
-                    </div>
-                    <div className="w-full h-1.5 bg-[rgba(0,0,0,0.06)] rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all duration-700 bg-[#14B8A6]" style={{ width: `${sector.confidence}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Project Types - Clean cards, always wins presentation */}
-              <h3 className="text-[0.85rem] font-bold text-[#1F2937] mb-2.5 flex items-center gap-2">
-                <i className="fas fa-layer-group text-[#14B8A6] text-[0.75rem]"></i>
-                Types de Projets
-              </h3>
-              <div className="space-y-2 mb-4">
-                {PROJECT_TIERS.map((tier, i) => (
-                  <div key={i} className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-xl p-3.5">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-[rgba(20,184,166,0.12)]">
-                          <i className={`fas ${tier.icon} text-[0.75rem] text-[#14B8A6]`}></i>
-                        </div>
-                        <div>
-                          <div className="text-[0.8rem] font-bold text-[#1F2937]">{tier.name}</div>
-                          <div className="text-[0.6rem] text-[rgba(0,0,0,0.5)]">{tier.days} jours</div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-[0.82rem] font-bold text-[#14B8A6]">+{tier.minRet}-{tier.maxRet}%</div>
-                        <div className="text-[0.5rem] text-[rgba(0,0,0,0.4)]">Rendement garanti</div>
-                      </div>
-                    </div>
-                    <div className="text-[0.58rem] text-[rgba(0,0,0,0.45)] mt-1">Rendement garanti à l&apos;échéance</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Investment Philosophy - Dark cards with gold accent */}
-              <h3 className="text-[0.85rem] font-bold text-[#1F2937] mb-2.5 flex items-center gap-2">
-                <i className="fas fa-graduation-cap text-[#14B8A6] text-[0.75rem]"></i>
-                Conseils d&apos;Investissement
-              </h3>
-              <div className="space-y-2 mb-4">
-                {INVEST_TIPS.map((tip, i) => (
-                  <div key={i} className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] border-l-[3px] border-l-[#14B8A6] rounded-xl p-3">
-                    <div className="flex items-start gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-[rgba(20,184,166,0.12)] flex items-center justify-center shrink-0">
-                        <i className={`fas ${tip.icon} text-[#14B8A6] text-[0.6rem]`}></i>
-                      </div>
-                      <div>
-                        <div className="text-[0.72rem] font-bold text-[#1F2937]">{tip.title}</div>
-                        <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)]">{tip.text}</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Disclaimer - subtle dark card */}
-              <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-xl p-3 mb-3">
-                <div className="flex items-start gap-2">
-                  <i className="fas fa-info-circle text-[rgba(0,0,0,0.35)] text-[0.7rem] mt-0.5"></i>
-                  <div className="text-[0.62rem] text-[rgba(0,0,0,0.45)]">Les analyses sectorielles sont des indicateurs de tendance. Investissez de manière responsable.</div>
-                </div>
-              </div>
-            </>
-          )}
+        <div className="px-4 pb-6">
+          {section === 'overview' && <OverviewSection />}
+          {section === 'videos' && <VideosSection />}
+          {section === 'game' && <GameSection />}
+          {section === 'invest' && <InvestSection />}
+          {section === 'projects' && <ProjectsSection />}
+          {section === 'payments' && <PaymentsSection />}
+          {section === 'referral' && <ReferralSection />}
         </div>
       </div>
+    </>
+  );
+}
+
+function Card({ icon, color, title, children }: { icon: string; color: string; title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl bg-white p-4 mb-3" style={{ border: '1px solid #E5E7EB' }}>
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${color}20` }}>
+          <i className={`fas ${icon} text-[0.8rem]`} style={{ color }}></i>
+        </div>
+        <h3 className="text-[0.85rem] font-black text-[#1F2937]">{title}</h3>
+      </div>
+      <div className="text-[0.72rem] text-[#4B5563] leading-relaxed">{children}</div>
+    </div>
+  );
+}
+
+function OverviewSection() {
+  return (
+    <>
+      <div className="rounded-2xl p-4 mb-3" style={{ background: 'linear-gradient(135deg, #ECFDF5, #F0FDFA)', border: '1px solid #A7F3D0' }}>
+        <div className="flex items-start gap-3">
+          <i className="fas fa-bullhorn text-[#0F766E] text-[1.2rem] mt-0.5"></i>
+          <div>
+            <h3 className="text-[0.9rem] font-black text-[#0F766E] mb-1">Bienvenue sur Be Rich !</h3>
+            <p className="text-[0.72rem] text-[#115E59] leading-relaxed">
+              Be Rich est une plateforme de communication pour les grandes entreprises. Les sociétés chinoises, japonaises et indiennes vous paient pour regarder leurs vidéos promotionnelles. Vous gagnez de l'argent, elles gagnent en visibilité !
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <Card icon="fa-video" color="#14B8A6" title="🎬 Plateforme Vidéo">
+        Regardez 5 vidéos d'entreprises par jour et gagnez des récompenses. <strong>Compte vidéo autonome</strong> avec dépôts/retraits séparés. Aucun dépôt requis pour commencer, mais après 3 jours, un dépôt devient obligatoire.
+      </Card>
+
+      <Card icon="fa-dice" color="#F59E0B" title="🎡 Jeu de la Roue">
+        10 tours gratuits par jour. Gagnez de $0.10 à $1.00 par tour. Réinitialisation à minuit. Félicitations à chaque gain, encouragement à chaque perte.
+      </Card>
+
+      <Card icon="fa-chart-line" color="#3B82F6" title="📈 Investissement">
+        4 niveaux d'investissement avec rendements quotidiens. <strong>Collecte journalière illimitée</strong>. Déblocage des niveaux via parrainage (inviter + inscription).
+      </Card>
+
+      <Card icon="fa-building" color="#8B5CF6" title="🏢 Projets">
+        Investissez dans des projets (Starter, Growth, Premium) avec rendements de +100% à +200%. Collecte journalière illimitée.
+      </Card>
+
+      <Card icon="fa-wallet" color="#EF4444" title="💳 Paiements">
+        Dépôts et retraits via <strong>YAS</strong> et <strong>TRX</strong> sur tous les comptes. Minimum $5. Les fonds sont disponibles dans les <strong>6 heures</strong>.
+      </Card>
+    </>
+  );
+}
+
+function VideosSection() {
+  return (
+    <>
+      <Card icon="fa-play-circle" color="#14B8A6" title="Comment ça marche">
+        Les grandes entreprises (Huawei, Toyota, Tata, Sony, Xiaomi...) vous paient pour regarder leurs vidéos promotionnelles courtes (3-7 min). C'est un échange gagnant-gagnant : elles obtiennent de la visibilité, vous gagnez de l'argent.
+      </Card>
+
+      <Card icon="fa-calendar-day" color="#14B8A6" title="5 vidéos par jour">
+        Chaque jour, 5 nouvelles vidéos d'entreprises différentes sont disponibles. Les vidéos changent tous les jours. Regardez-en autant que vous voulez (max 5/jour) pour cumuler des récompenses.
+      </Card>
+
+      <Card icon="fa-lock" color="#EF4444" title="Pas de défilement autorisé">
+        Vous devez regarder au moins <strong>50% de la vidéo</strong> pour recevoir la récompense. Le défilement et la recherche (seeking) sont <strong>désactivés</strong>, même sur ordinateur. Vous ne pouvez pas tricher !
+      </Card>
+
+      <Card icon="fa-wallet" color="#14B8A6" title="Compte vidéo autonome">
+        Les récompenses vidéo vont sur votre <strong>compte Vidéo</strong> (séparé des autres comptes). Vous pouvez déposer et retirer depuis ce compte, avec les mêmes méthodes (YAS/TRX, min $5).
+      </Card>
+
+      <Card icon="fa-exclamation-triangle" color="#F59E0B" title="Règle des 3 jours">
+        Après <strong>3 jours</strong> de visionnage, vous devez effectuer un dépôt sur votre compte vidéo (min $5) pour continuer à regarder des vidéos. C'est pour garantir l'engagement des utilisateurs.
+      </Card>
+
+      <Card icon="fa-share-nodes" color="#EC4899" title="Partager">
+        Cliquez sur "Invitez vos amis" pour partager Be Rich via WhatsApp, TikTok, Instagram, Facebook, Telegram et plus. Gagnez des bonus de parrainage !
+      </Card>
+    </>
+  );
+}
+
+function GameSection() {
+  return (
+    <>
+      <Card icon="fa-dice" color="#F59E0B" title="Roue de la Fortune">
+        Tournez la roue et tentez de gagner des récompenses en argent ! La roue contient 20 segments avec des récompenses de $0.10 à $1.00.
+      </Card>
+
+      <Card icon="fa-clock" color="#22C55E" title="10 tours par jour">
+        Vous disposez de <strong>10 tours gratuits</strong> chaque jour. La roue se réinitialise à minuit. Pas de tours payants — tout est gratuit !
+      </Card>
+
+      <Card icon="fa-trophy" color="#22C55E" title="Félicitations à chaque gain">
+        Quand vous gagnez, une belle popup de félicitations apparaît avec des confettis et le montant gagné. Cliquez sur OK pour fermer et continuer à jouer.
+      </Card>
+
+      <Card icon="fa-redo" color="#EF4444" title="Encouragement en cas de perte">
+        Si vous perdez, un message d'encouragement apparaît avec un petit conseil motivant. Vous pouvez réessayer immédiatement si vous avez des tours restants.
+      </Card>
+
+      <Card icon="fa-fire" color="#EF4444" title="Gagnants récents">
+        Un ticker en haut affiche les gagnants récents pour vous motiver. Continuez à tourner — la persistance paie toujours !
+      </Card>
+
+      <Card icon="fa-coins" color="#F59E0B" title="Où vont les gains">
+        Les gains du jeu sont crédités sur votre <strong>solde Jeu</strong> (compte principal). Vous pouvez les retirer via YAS ou TRX (min $5).
+      </Card>
+    </>
+  );
+}
+
+function InvestSection() {
+  return (
+    <>
+      <Card icon="fa-chart-line" color="#3B82F6" title="Investissement">
+        Créez des investissements à différents niveaux. Chaque niveau offre un rendement quotidien. Réclamez vos gains chaque jour !
+      </Card>
+
+      <Card icon="fa-infinity" color="#22C55E" title="Collecte journalière illimitée">
+        Les durées de collecte journalière sont <strong>illimitées</strong>. Vous pouvez réclamer vos gains tous les jours, sans fin, tant que l'investissement est actif.
+      </Card>
+
+      <Card icon="fa-user-friends" color="#EC4899" title="Déblocage par parrainage">
+        Pour débloquer le niveau suivant, vous devez <strong>inviter une personne</strong> et cette personne doit <strong>s'inscrire</strong> avec votre code de parrainage. Le parrainage est la clé de la progression !
+      </Card>
+
+      <Card icon="fa-trophy" color="#22C55E" title="Félicitations à chaque collecte">
+        Chaque fois que vous réclamez un gain d'investissement, une popup de félicitations apparaît avec le montant collecté. Cliquez sur OK pour fermer.
+      </Card>
+
+      <div className="rounded-2xl bg-white p-4 mb-3" style={{ border: '1px solid #E5E7EB' }}>
+        <h3 className="text-[0.85rem] font-black text-[#1F2937] mb-3 flex items-center gap-2">
+          <i className="fas fa-layer-group text-[#3B82F6]"></i>Niveaux d'investissement
+        </h3>
+        <div className="space-y-2">
+          {INVEST_LEVELS.map((lvl, i) => (
+            <div key={i} className="flex items-center justify-between p-2 rounded-lg" style={{ background: '#F9FAFB' }}>
+              <div>
+                <div className="text-[0.72rem] font-bold text-[#1F2937]">{lvl.name}</div>
+                <div className="text-[0.6rem] text-[#6B7280]">${lvl.min} - ${lvl.max}</div>
+              </div>
+              <div className="text-[0.7rem] font-bold text-[#22C55E]">+{lvl.rate}% / jour</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function ProjectsSection() {
+  return (
+    <>
+      <Card icon="fa-building" color="#8B5CF6" title="Projets d'entreprise">
+        Investissez dans des projets d'entreprises de différents secteurs. Rendements de +100% à +200% selon la durée.
+      </Card>
+
+      <Card icon="fa-infinity" color="#22C55E" title="Collecte journalière illimitée">
+        Comme pour l'investissement, la collecte journalière sur les projets est <strong>illimitée</strong>.
+      </Card>
+
+      <Card icon="fa-trophy" color="#22C55E" title="Félicitations à chaque collecte">
+        Chaque collecte de projet déclenche une popup de félicitations avec le montant réclamé.
+      </Card>
+
+      <div className="rounded-2xl bg-white p-4 mb-3" style={{ border: '1px solid #E5E7EB' }}>
+        <h3 className="text-[0.85rem] font-black text-[#1F2937] mb-3 flex items-center gap-2">
+          <i className="fas fa-layer-group text-[#8B5CF6]"></i>Types de projets
+        </h3>
+        <div className="space-y-2">
+          {ENTERPRISE_TYPES.map((t, i) => (
+            <div key={i} className="flex items-center justify-between p-2 rounded-lg" style={{ background: '#F9FAFB' }}>
+              <div>
+                <div className="text-[0.72rem] font-bold text-[#1F2937]">{t.name}</div>
+                <div className="text-[0.6rem] text-[#6B7280]">${t.minAmount} min · {t.durationDays} jours</div>
+              </div>
+              <div className="text-[0.7rem] font-bold text-[#8B5CF6]">+{t.minReturn}%</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function PaymentsSection() {
+  return (
+    <>
+      <Card icon="fa-wallet" color="#EF4444" title="4 comptes autonomes">
+        Be Rich utilise 4 comptes séparés : <strong>Jeu</strong> (solde principal), <strong>Investissement</strong>, <strong>Projets</strong>, et <strong>Vidéo</strong>. Chaque compte a son propre solde et ses propres dépôts/retraits.
+      </Card>
+
+      <Card icon="fa-money-bill" color="#22C55E" title="Minimum $5">
+        Le minimum de dépôt et de retrait est de <strong>$5</strong> sur tous les comptes, pour toutes les méthodes.
+      </Card>
+
+      <Card icon="fa-arrow-down" color="#3B82F6" title="Dépôts YAS et TRX">
+        Deux méthodes disponibles sur tous les comptes :
+        <ul className="mt-1.5 space-y-1">
+          <li><strong>TRX</strong> : Payez en TRX (cryptomonnaie) via Trust Wallet</li>
+          <li><strong>YAS</strong> : Payez en FCFA via compte Yas (mobile money)</li>
+        </ul>
+      </Card>
+
+      <Card icon="fa-arrow-up" color="#EF4444" title="Retraits YAS et TRX">
+        Mêmes méthodes pour les retraits. Recevez vos gains en TRX sur votre wallet ou en FCFA sur votre compte Yas.
+      </Card>
+
+      <Card icon="fa-clock" color="#F59E0B" title="Disponibilité des fonds">
+        Dès qu'un dépôt ou retrait est lancé, les fonds sont disponibles dans les <strong>6 heures</strong>. Un message de confirmation vous informe à chaque étape.
+      </Card>
+
+      <Card icon="fa-ban" color="#6B7280" title="Pas de compte principal unique">
+        Il n'y a plus de "compte principal" unique. Chaque compte (Jeu, Investissement, Projets, Vidéo) est autonome avec ses propres dépôts et retraits.
+      </Card>
+    </>
+  );
+}
+
+function ReferralSection() {
+  return (
+    <>
+      <Card icon="fa-gift" color="#EC4899" title="Code de parrainage">
+        Votre code de parrainage (format <strong>BR-XXXXX</strong>) est visible dans votre Profil. Partagez-le avec vos amis !
+      </Card>
+
+      <Card icon="fa-share-nodes" color="#EC4899" title="Partage facile">
+        Cliquez sur "Partager" pour ouvrir le partage natif de votre téléphone (WhatsApp, TikTok, Instagram, Facebook, Telegram, Messenger). Le lien inclut automatiquement votre code.
+      </Card>
+
+      <Card icon="fa-user-plus" color="#22C55E" title="Bonus de bienvenue">
+        Recevez <strong>20% du premier dépôt</strong> de chaque parrainé qui s'inscrit avec votre code. Le bonus est crédité sur le compte correspondant, sans déduction pour le parrainé.
+      </Card>
+
+      <Card icon="fa-percentage" color="#3B82F6" title="Bonus sur gains">
+        Recevez aussi <strong>5% des gains d'investissement</strong> de vos parrainés à chaque réclamation. Un revenu passif tant qu'ils investissent !
+      </Card>
+
+      <Card icon="fa-unlock" color="#F59E0B" title="Déblocage des niveaux">
+        Pour débloquer les niveaux d'investissement supérieurs, vous devez avoir au moins <strong>1 parrainé inscrit</strong>. Le parrainage est obligatoire pour progresser.
+      </Card>
     </>
   );
 }
