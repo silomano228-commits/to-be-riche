@@ -52,11 +52,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'ID vidéo requis' }, { status: 400 });
     }
 
-    // Must have watched at least 50% of the video (no seeking/scrolling allowed)
-    if (typeof watchedPercent !== 'number' || watchedPercent < 50) {
+    // Must have watched at least 30% of the video (lowered for longer videos)
+    if (typeof watchedPercent !== 'number' || watchedPercent < 30) {
       return NextResponse.json({
         success: false,
-        error: `Vous devez regarder au moins 50% de la vidéo pour recevoir la récompense. Regardé: ${watchedPercent || 0}%`,
+        error: `Vous devez regarder au moins 30% de la vidéo pour recevoir la récompense. Regardé: ${watchedPercent || 0}%`,
       }, { status: 400 });
     }
 

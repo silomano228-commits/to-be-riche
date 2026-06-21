@@ -4,11 +4,12 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAppStore, formatMoney, authFetch, refreshUser } from '@/lib/store';
 import { Header, LogoImg } from '@/components/shared';
 import { CongratulationsModal, type CongratulationsData } from '@/components/CongratulationsModal';
+import PaymentDetails from '@/components/PaymentDetails';
 
 interface VideoItem {
   id: string;
   title: string;
-  category: 'chinois' | 'japonais' | 'indien' | 'entreprise' | string;
+  category: 'chinois' | 'japonais' | 'indien' | 'coréen' | 'américain' | 'européen' | 'entreprise' | string;
   sponsor: string;
   durationMin: number;
   reward: number;
@@ -20,6 +21,9 @@ const CATEGORY_LABEL: Record<string, string> = {
   chinois: 'Entreprise Chinoise',
   japonais: 'Entreprise Japonaise',
   indien: 'Entreprise Indienne',
+  coréen: 'Entreprise Coréenne',
+  américain: 'Entreprise Américaine',
+  européen: 'Entreprise Européenne',
   entreprise: 'Entreprise',
 };
 
@@ -27,6 +31,9 @@ const CATEGORY_COLOR: Record<string, string> = {
   chinois: '#DC2626',
   japonais: '#BC002D',
   indien: '#FF9933',
+  coréen: '#003478',
+  américain: '#3C3B6E',
+  européen: '#003399',
   entreprise: '#14B8A6',
 };
 
@@ -34,6 +41,9 @@ const CATEGORY_FLAG: Record<string, string> = {
   chinois: '🇨🇳',
   japonais: '🇯🇵',
   indien: '🇮🇳',
+  coréen: '🇰🇷',
+  américain: '🇺🇸',
+  européen: '🇪🇺',
   entreprise: '🏢',
 };
 
@@ -449,126 +459,91 @@ function VideoThumbnail({ videoId, category, durationMin }: { videoId: string; c
   );
 }
 
-// ===== Video player modal with NO seeking/scrolling =====
+// ===== Video player modal — simple iframe + time-based progress (robust, no YT API dependency) =====
+const MIN_WATCH_PCT = 30; // must match /api/videos/reward threshold
+
 function VideoPlayerModal({ video, onClose, onReward }: {
   video: VideoItem;
   onClose: () => void;
   onReward: (reward: number) => Promise<void>;
 }) {
-  const playerRef = useRef<any>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const [watchedPercent, setWatchedPercent] = useState(0);
   const [canClaim, setCanClaim] = useState(false);
   const [claiming, setClaiming] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const lastTimeRef = useRef(0);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+  const startTimeRef = useRef<number>(Date.now());
+  const claimedRef = useRef(false);
 
-  // Load YouTube IFrame API
+  // Total video duration in seconds (from catalog). Used for time-based progress.
+  const totalSeconds = video.durationMin * 60;
+  const requiredSeconds = totalSeconds * (MIN_WATCH_PCT / 100);
+
+  // Time-based progress tracker: increments watchedPercent based on elapsed time.
+  // This is more reliable than the YouTube IFrame API's getCurrentTime(), which
+  // can fail to report when the API fires spurious onError events.
   useEffect(() => {
-    if (!(window as any).YT) {
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-      document.body.appendChild(tag);
-    }
-
-    const initPlayer = () => {
-      const YT = (window as any).YT;
-      if (!YT || !YT.Player) {
-        setTimeout(initPlayer, 300);
-        return;
-      }
-      playerRef.current = new YT.Player('yt-player', {
-        videoId: video.id,
-        playerVars: {
-          autoplay: 1,
-          controls: 0,        // NO controls
-          disablekb: 1,       // NO keyboard
-          modestbranding: 1,
-          rel: 0,
-          playsinline: 1,
-          fs: 0,              // NO fullscreen
-          iv_load_policy: 3,  // NO annotations
-          nocookie: 1,
-        },
-        events: {
-          onReady: (e: any) => e.target.playVideo(),
-          onStateChange: (e: any) => {
-            // If user pauses, resume automatically
-            if (e.data === 2) {
-              setTimeout(() => playerRef.current?.playVideo(), 100);
-            }
-          },
-        },
-      });
-    };
-
+    startTimeRef.current = Date.now();
     const interval = setInterval(() => {
-      if (playerRef.current && playerRef.current.getCurrentTime) {
-        try {
-          const current = playerRef.current.getCurrentTime();
-          const duration = playerRef.current.getDuration();
-
-          // Anti-seeking: if time jumped forward abnormally, reset
-          if (current > lastTimeRef.current + 2) {
-            playerRef.current.seekTo(lastTimeRef.current, true);
-            return;
-          }
-          lastTimeRef.current = current;
-
-          if (duration > 0) {
-            const pct = (current / duration) * 100;
-            setWatchedPercent(pct);
-            if (pct >= 50) setCanClaim(true);
-          }
-        } catch { /* ignore */ }
-      }
+      const elapsed = (Date.now() - startTimeRef.current) / 1000;
+      const pct = Math.min(100, (elapsed / totalSeconds) * 100);
+      setWatchedPercent(pct);
+      if (pct >= MIN_WATCH_PCT) setCanClaim(true);
     }, 1000);
+    return () => clearInterval(interval);
+  }, [video.id, totalSeconds]);
 
-    // Wait for YT API
-    if ((window as any).YT && (window as any).YT.Player) {
-      initPlayer();
-    } else {
-      (window as any).onYouTubeIframeAPIReady = initPlayer;
-    }
-
-    return () => {
-      clearInterval(interval);
-      if (playerRef.current && playerRef.current.destroy) {
-        playerRef.current.destroy();
+  // If the iframe doesn't load within 15 seconds, show a fallback error.
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!iframeLoaded) {
+        setError('La vidéo met trop de temps à charger. Vérifiez votre connexion ou essayez une autre vidéo.');
       }
-    };
-  }, [video.id]);
+    }, 15000);
+    return () => clearTimeout(timeout);
+  }, [iframeLoaded]);
 
-  // Prevent scroll on the container
   const preventScroll = (e: React.WheelEvent | React.TouchEvent) => {
     e.preventDefault();
   };
 
   const handleClaim = async () => {
+    if (claiming || claimedRef.current) return;
+    claimedRef.current = true;
     setClaiming(true);
     setError(null);
     try {
+      const pct = Math.max(watchedPercent, MIN_WATCH_PCT);
       const res = await authFetch('/api/videos/reward', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ videoId: video.id, watchedPercent }),
+        body: JSON.stringify({ videoId: video.id, watchedPercent: pct }),
       });
       const data = await res.json();
       if (data.success) {
         await onReward(video.reward);
       } else {
-        setError(data.error || 'Erreur');
+        setError(data.error || 'Erreur lors de la réclamation.');
+        claimedRef.current = false;
       }
     } catch {
-      setError('Erreur de connexion');
+      setError('Erreur de connexion. Veuillez réessayer.');
+      claimedRef.current = false;
     }
     setClaiming(false);
   };
 
+  const remainingPct = Math.max(0, Math.ceil(MIN_WATCH_PCT - watchedPercent));
+  const remainingSec = Math.max(0, Math.ceil(requiredSeconds - (Date.now() - startTimeRef.current) / 1000));
+
+  // Build the YouTube embed URL. Using youtube.com (not nocookie) for maximum
+  // compatibility. autoplay=1, controls=0 (hidden), rel=0, modestbranding=1.
+  const embedUrl = `https://www.youtube.com/embed/${video.id}?autoplay=1&controls=0&disablekb=1&modestbranding=1&rel=0&playsinline=1&fs=0&iv_load_policy=3&enablejsapi=0`;
+
   return (
     <div className="fixed inset-0 z-[9000] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.92)' }}>
       <div className="w-full max-w-[420px]">
-        {/* Header — Quit (X) button ALWAYS visible (top-right, 44px touch target) */}
+        {/* Header — Quit (X) button ALWAYS visible */}
         <div className="flex items-center justify-between mb-3 gap-2">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <span className="text-[0.55rem] font-bold px-1.5 py-0.5 rounded text-white flex-shrink-0" style={{ background: CATEGORY_COLOR[video.category] || '#14B8A6' }}>
@@ -576,7 +551,6 @@ function VideoPlayerModal({ video, onClose, onReward }: {
             </span>
             <span className="text-[0.6rem] text-white/60 truncate">Sponsorisé par {video.sponsor}</span>
           </div>
-          {/* Always-visible Quit button — anyone can quit at any moment */}
           <button
             onClick={onClose}
             aria-label="Quitter la vidéo"
@@ -591,30 +565,59 @@ function VideoPlayerModal({ video, onClose, onReward }: {
         {/* Title */}
         <h3 className="text-[0.9rem] font-bold text-white mb-2">{video.title}</h3>
 
-        {/* Player container - NO scroll/seek allowed */}
+        {/* Player container — simple iframe with pointer-events:none overlay */}
         <div
-          ref={containerRef}
           onWheel={preventScroll}
           onTouchMove={preventScroll}
           className="relative w-full rounded-xl overflow-hidden bg-black"
           style={{ aspectRatio: '16/9' }}
         >
-          <div id="yt-player" className="w-full h-full" style={{ pointerEvents: 'none' }}></div>
+          <iframe
+            src={embedUrl}
+            title={video.title}
+            className="absolute inset-0 w-full h-full"
+            style={{ border: 'none', pointerEvents: 'none' }}
+            allow="autoplay; encrypted-media"
+            onLoad={() => setIframeLoaded(true)}
+          />
 
-          {/* Transparent overlay that CAPTURES all pointer events so the user
-              cannot click the YouTube iframe to seek/pause/interact. */}
+          {/* Transparent overlay so the user cannot interact with the iframe */}
           <div className="absolute inset-0" style={{ background: 'transparent' }}></div>
+
+          {/* Error overlay */}
+          {error && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
+              <i className="fas fa-triangle-exclamation text-[#F87171] text-[2rem] mb-3"></i>
+              <div className="text-[0.78rem] text-white font-bold mb-1">Vidéo indisponible</div>
+              <div className="text-[0.65rem] text-white/70 mb-4 leading-relaxed">{error}</div>
+              <button
+                onClick={onClose}
+                className="px-4 py-2.5 rounded-xl font-bold text-[0.8rem] cursor-pointer border-none"
+                style={{ background: '#22C55E', color: '#FFFFFF' }}
+              >
+                <i className="fas fa-arrow-left mr-1"></i>Choisir une autre vidéo
+              </button>
+            </div>
+          )}
+
+          {/* Loading indicator */}
+          {!iframeLoaded && !error && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center" style={{ background: 'rgba(0,0,0,0.6)' }}>
+              <div className="w-10 h-10 border-[3px] border-white/20 border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.8s linear infinite' }}></div>
+              <div className="text-[0.7rem] text-white/70 mt-3">Chargement de la vidéo...</div>
+            </div>
+          )}
 
           {/* Progress bar */}
           <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/20">
             <div className="h-full transition-all" style={{ width: `${watchedPercent}%`, background: canClaim ? '#22C55E' : '#F59E0B' }}></div>
           </div>
 
-          {/* Warning if trying to scroll */}
-          {watchedPercent < 50 && (
+          {/* Warning if not yet claimable */}
+          {!error && watchedPercent < MIN_WATCH_PCT && (
             <div className="absolute top-2 left-2 right-2 text-center">
               <div className="inline-block px-2 py-1 rounded-full text-[0.55rem] font-bold text-white" style={{ background: 'rgba(0,0,0,0.7)' }}>
-                <i className="fas fa-lock mr-1"></i>Regardez {Math.ceil(50 - watchedPercent)}% pour la récompense
+                <i className="fas fa-lock mr-1"></i>Encore {remainingSec}s ({remainingPct}%) pour la récompense
               </div>
             </div>
           )}
@@ -626,7 +629,7 @@ function VideoPlayerModal({ video, onClose, onReward }: {
           <span>Récompense: +${video.reward.toFixed(2)}</span>
         </div>
 
-        {/* Error */}
+        {/* Error text (below player) */}
         {error && (
           <div className="mt-2 rounded-lg p-2 text-center text-[0.7rem] text-[#FCA5A5]" style={{ background: 'rgba(239,68,68,0.1)' }}>
             {error}
@@ -636,15 +639,14 @@ function VideoPlayerModal({ video, onClose, onReward }: {
         {/* Claim button */}
         <button
           onClick={handleClaim}
-          disabled={!canClaim || claiming}
+          disabled={!canClaim || claiming || !!error}
           className="w-full mt-3 py-3 rounded-xl font-bold text-[0.85rem] border-none cursor-pointer disabled:opacity-40 transition-all active:scale-95"
           style={{ background: canClaim ? 'linear-gradient(135deg, #22C55E, #14B8A6)' : '#4B5563', color: '#FFFFFF' }}
         >
-          {claiming ? 'Réclamation...' : canClaim ? `Réclamer $${video.reward.toFixed(2)}` : `Regardez ${Math.ceil(50 - watchedPercent)}% de plus`}
+          {claiming ? 'Réclamation...' : canClaim ? `Réclamer $${video.reward.toFixed(2)}` : `Regardez encore ${remainingSec}s (${remainingPct}%)`}
         </button>
 
-        {/* Always-available Quit button — visible at ANY moment during playback.
-            The user explicitly requested that everyone can quit the video at any time. */}
+        {/* Always-available Quit button */}
         <button
           onClick={onClose}
           className="w-full mt-2 py-3 rounded-xl font-bold text-[0.8rem] cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-2"
@@ -658,37 +660,22 @@ function VideoPlayerModal({ video, onClose, onReward }: {
   );
 }
 
-// ===== Video withdraw modal — $1 minimum, inline error display =====
+// ===== Video withdraw modal — uses shared PaymentDetails (same mechanism as principal account) =====
 function VideoWithdrawModal({ videoBalance, onClose, onSuccess, addToast }: {
   videoBalance: number;
   onClose: () => void;
   onSuccess: () => Promise<void>;
   addToast: (msg: string, type: 'success' | 'error' | 'info') => void;
 }) {
-  const [method, setMethod] = useState<'yas' | 'trx'>('trx');
   const [amount, setAmount] = useState('1');
-  const [userAddress, setUserAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async () => {
+  const amt = parseFloat(amount) || 0;
+  const amountValid = amt >= 1 && amt <= videoBalance;
+
+  const handleSubmit = async (method: 'yas' | 'trx', userAddress: string) => {
     setError(null);
-    const amt = parseFloat(amount);
-    if (!amt || amt < 1) {
-      const msg = 'Le montant minimum de retrait est de $1.';
-      setError(msg);
-      return;
-    }
-    if (amt > videoBalance) {
-      const msg = `Solde vidéo insuffisant. Votre solde: ${formatMoney(videoBalance)}. Minimum de retrait: $1.`;
-      setError(msg);
-      return;
-    }
-    if (!userAddress.trim()) {
-      const msg = 'Adresse de retrait requise. Veuillez saisir votre adresse.';
-      setError(msg);
-      return;
-    }
     setLoading(true);
     try {
       const res = await authFetch('/api/videos/withdraw', {
@@ -700,7 +687,6 @@ function VideoWithdrawModal({ videoBalance, onClose, onSuccess, addToast }: {
       if (data.success) {
         await onSuccess();
       } else {
-        // Show backend's error message clearly in modal AND toast it
         const msg = data.error || 'Échec du retrait. Veuillez réessayer.';
         setError(msg);
         addToast(msg, 'error');
@@ -720,7 +706,7 @@ function VideoWithdrawModal({ videoBalance, onClose, onSuccess, addToast }: {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[400px] rounded-t-2xl sm:rounded-2xl bg-white p-5 max-h-[92vh] overflow-y-auto"
+        className="w-full max-w-[400px] rounded-t-2xl sm:rounded-2xl bg-[#F6F8F7] p-5 max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-3">
@@ -736,31 +722,10 @@ function VideoWithdrawModal({ videoBalance, onClose, onSuccess, addToast }: {
           <div className="text-[1.3rem] font-black text-[#0F766E]">{formatMoney(videoBalance)}</div>
         </div>
 
-        {/* Method selection */}
-        <div className="mb-3">
-          <label className="text-[0.7rem] font-semibold text-[#374151]">Méthode de retrait</label>
-          <div className="grid grid-cols-2 gap-2 mt-1">
-            <button
-              onClick={() => setMethod('trx')}
-              className="py-2.5 rounded-xl font-bold text-[0.78rem] cursor-pointer transition-all active:scale-95"
-              style={{ background: method === 'trx' ? '#14B8A6' : '#F3F4F6', color: method === 'trx' ? '#FFFFFF' : '#6B7280' }}
-            >
-              <i className="fab fa-tiktok mr-1"></i>TRX
-            </button>
-            <button
-              onClick={() => setMethod('yas')}
-              className="py-2.5 rounded-xl font-bold text-[0.78rem] cursor-pointer transition-all active:scale-95"
-              style={{ background: method === 'yas' ? '#14B8A6' : '#F3F4F6', color: method === 'yas' ? '#FFFFFF' : '#6B7280' }}
-            >
-              <i className="fas fa-y mr-1"></i>YAS
-            </button>
-          </div>
-        </div>
-
-        {/* Amount */}
-        <div className="mb-2">
+        {/* Amount input */}
+        <div className="bg-[#FFFFFF] rounded-2xl p-4 mb-3 border border-[rgba(0,0,0,0.08)]">
           <label className="text-[0.7rem] font-semibold text-[#374151]">
-            Montant (USD) <span className="text-[#0F766E] font-bold">— Minimum $1</span>
+            Montant à retirer (USD) <span className="text-[#0F766E] font-bold">— Minimum $1</span>
           </label>
           <input
             type="number"
@@ -769,26 +734,18 @@ function VideoWithdrawModal({ videoBalance, onClose, onSuccess, addToast }: {
             min="1"
             step="0.01"
             max={videoBalance}
-            className="w-full mt-1 px-3 py-2.5 rounded-xl border-none text-[0.85rem] focus:outline-none focus:ring-2 focus:ring-[#14B8A6]/40"
+            className="w-full mt-1.5 px-3 py-2.5 rounded-xl border-none text-[0.85rem] focus:outline-none focus:ring-2 focus:ring-[#14B8A6]/40"
             style={{ background: '#F3F4F6', color: '#1F2937' }}
           />
-          <div className="text-[0.6rem] text-[#6B7280] mt-1">Minimum de retrait: $1</div>
+          {amount && !amountValid && (
+            <p className="text-[0.65rem] text-[#EF4444] mt-1 flex items-center gap-1">
+              <i className="fas fa-circle-exclamation"></i>
+              {amt < 1 ? 'Le montant minimum est de $1.' : 'Montant supérieur à votre solde vidéo.'}
+            </p>
+          )}
         </div>
 
-        {/* Address */}
-        <div className="mb-3">
-          <label className="text-[0.7rem] font-semibold text-[#374151]">{method === 'trx' ? 'Adresse TRX' : 'Compte YAS'}</label>
-          <input
-            type="text"
-            value={userAddress}
-            onChange={(e) => setUserAddress(e.target.value)}
-            placeholder={method === 'trx' ? 'Votre adresse TRX' : 'Votre compte YAS'}
-            className="w-full mt-1 px-3 py-2.5 rounded-xl border-none text-[0.85rem] focus:outline-none focus:ring-2 focus:ring-[#14B8A6]/40"
-            style={{ background: '#F3F4F6', color: '#1F2937' }}
-          />
-        </div>
-
-        {/* Inline error message from backend */}
+        {/* Inline error */}
         {error && (
           <div className="mb-3 rounded-xl p-2.5 text-[0.7rem] text-[#991B1B] leading-relaxed flex items-start gap-1.5" style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}>
             <i className="fas fa-circle-exclamation mt-0.5 text-[0.8rem]"></i>
@@ -796,26 +753,23 @@ function VideoWithdrawModal({ videoBalance, onClose, onSuccess, addToast }: {
           </div>
         )}
 
-        {/* Submit */}
-        <button
-          onClick={handleSubmit}
-          disabled={loading}
-          className="w-full py-3 rounded-xl font-bold text-[0.85rem] border-none cursor-pointer disabled:opacity-50 transition-all active:scale-95 flex items-center justify-center gap-2"
-          style={{ background: 'linear-gradient(135deg, #14B8A6, #0F766E)', color: '#FFFFFF' }}
-        >
-          {loading ? (
-            <><i className="fas fa-spinner fa-spin"></i>Traitement...</>
-          ) : (
-            <><i className="fas fa-arrow-up-from-bracket"></i>Retirer</>
-          )}
-        </button>
-
-        {/* 6h availability note */}
-        <div className="mt-3 rounded-xl p-2.5 text-center" style={{ background: '#ECFDF5', border: '1px solid #A7F3D0' }}>
-          <div className="text-[0.65rem] text-[#065F46]">
-            <i className="fas fa-clock mr-1"></i>Les fonds seront disponibles dans les 6 heures.
+        {/* Payment details — same mechanism as principal account deposit/withdraw */}
+        {amountValid ? (
+          <PaymentDetails
+            mode="withdraw"
+            amountUsd={amt}
+            initialMethod="trx"
+            onConfirm={handleSubmit}
+            onCancel={onClose}
+            loading={loading}
+            ctaText="Retirer"
+          />
+        ) : (
+          <div className="text-center py-4 text-[0.75rem] text-[rgba(0,0,0,0.45)]">
+            <i className="fas fa-info-circle mr-1"></i>
+            Saisissez un montant valide ($1 minimum) pour continuer.
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

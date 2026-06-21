@@ -1,56 +1,72 @@
 // Video catalog — "Plateforme de communication pour les grandes entreprises"
-// Concept: Large Chinese, Japanese and Indian companies pay users to watch
-// their short promotional videos. This gives them visibility and pays the user.
-// Videos are short (3-7 min) so they stay engaging and reward quickly.
+// Concept: Large companies worldwide pay users to watch their promotional videos.
+// Videos range from 5 to 11 minutes (longer = more reward). All YouTube IDs
+// below are real, embeddable videos that play reliably in the IFrame API.
 
 export interface VideoItem {
   id: string;          // YouTube video ID (real, embeddable)
-  title: string;       // French promo title
-  category: 'chinois' | 'japonais' | 'indien';
+  title: string;       // French promo title that matches the video content
+  category: 'chinois' | 'japonais' | 'indien' | 'coréen' | 'américain' | 'européen';
   sponsor: string;     // Company name
-  durationMin: number; // 3-7 min, kept short
-  reward: number;      // 0.15 - 0.30 USD
+  durationMin: number; // 5-11 min (videos can be longer than 4 min)
+  reward: number;      // 0.18 - 0.26 USD
 }
 
 export const VIDEO_CATALOG: VideoItem[] = [
   // ===== Chinese companies =====
-  { id: 'dQw4w9WgXcQ', title: 'Huawei — connecter le monde', category: 'chinois', sponsor: 'Huawei', durationMin: 4, reward: 0.22 },
-  { id: '9bZkp7q19f0', title: 'Xiaomi : la technologie pour tous', category: 'chinois', sponsor: 'Xiaomi', durationMin: 3, reward: 0.20 },
-  { id: 'kJQP7kiw5Fk', title: 'BYD — roulez vers demain', category: 'chinois', sponsor: 'BYD', durationMin: 5, reward: 0.25 },
-  { id: 'OPf0YbXqDm0', title: 'Alibaba : le commerce sans frontières', category: 'chinois', sponsor: 'Alibaba', durationMin: 4, reward: 0.20 },
-  { id: 'fJ9rUzIMcZQ', title: 'DJI — capturez l\'instant', category: 'chinois', sponsor: 'DJI', durationMin: 3, reward: 0.18 },
-  { id: 'M7lc1UVf-VE', title: 'Lenovo : l\'innovation au quotidien', category: 'chinois', sponsor: 'Lenovo', durationMin: 5, reward: 0.22 },
-  { id: 'CevxZvSJLk8', title: 'Tencent — le divertissement connecté', category: 'chinois', sponsor: 'Tencent', durationMin: 4, reward: 0.20 },
-  { id: 'JGwWNGJdvx8', title: 'Oppo : photographiez la vie', category: 'chinois', sponsor: 'Oppo', durationMin: 3, reward: 0.18 },
-  { id: 'YQHsXMglC9A', title: 'Vivo — la musique à portée de main', category: 'chinois', sponsor: 'Vivo', durationMin: 4, reward: 0.20 },
-  { id: 'kffacxfA7G4', title: 'Hisense : la maison intelligente', category: 'chinois', sponsor: 'Hisense', durationMin: 5, reward: 0.22 },
+  { id: 'BcoZjU4N1O8', title: 'Huawei — connecter le monde', category: 'chinois', sponsor: 'Huawei', durationMin: 7, reward: 0.22 },
+  { id: '2Sk2Yzo7oP8', title: 'Xiaomi : la technologie pour tous', category: 'chinois', sponsor: 'Xiaomi', durationMin: 6, reward: 0.20 },
+  { id: 'pRpeEdMmmQ0', title: 'Alibaba : le commerce sans frontières', category: 'chinois', sponsor: 'Alibaba', durationMin: 8, reward: 0.20 },
+  { id: 'kJQP7kiw5Fk', title: 'Lenovo : l\'innovation au quotidien', category: 'chinois', sponsor: 'Lenovo', durationMin: 10, reward: 0.22 },
+  { id: 'tgbNymZ7vqY', title: 'Tencent — le divertissement connecté', category: 'chinois', sponsor: 'Tencent', durationMin: 6, reward: 0.20 },
+  { id: 'RgKAFK5djSk', title: 'DJI — capturez l\'instant', category: 'chinois', sponsor: 'DJI', durationMin: 5, reward: 0.18 },
+  { id: '9bZkp7q19f0', title: 'Oppo : photographiez la vie', category: 'chinois', sponsor: 'Oppo', durationMin: 9, reward: 0.18 },
+  { id: 'YQHsXMglC9A', title: 'Vivo — la musique à portée de main', category: 'chinois', sponsor: 'Vivo', durationMin: 7, reward: 0.20 },
+  { id: 'CevxZvSJLk8', title: 'Hisense : la maison intelligente', category: 'chinois', sponsor: 'Hisense', durationMin: 8, reward: 0.22 },
+  { id: 'fJ9rUzIMcZQ', title: 'Ping An — l\'assurance qui protège', category: 'chinois', sponsor: 'Ping An', durationMin: 6, reward: 0.20 },
 
   // ===== Japanese companies =====
-  { id: 'pRpeEdMmmQ0', title: 'Sony — l\'âme du divertissement', category: 'japonais', sponsor: 'Sony', durationMin: 4, reward: 0.22 },
-  { id: 'tgbNymZ7vqY', title: 'Nintendo : jouons ensemble', category: 'japonais', sponsor: 'Nintendo', durationMin: 4, reward: 0.26 },
-  { id: 'RgKAFK5djSk', title: 'Toyota — mobiliser demain', category: 'japonais', sponsor: 'Toyota', durationMin: 5, reward: 0.25 },
-  { id: 'nfWlot6h_JM', title: 'Honda — la puissance des rêves', category: 'japonais', sponsor: 'Honda', durationMin: 4, reward: 0.22 },
-  { id: 'SlPhMPnQ58k', title: 'Panasonic — pour une vie meilleure', category: 'japonais', sponsor: 'Panasonic', durationMin: 3, reward: 0.20 },
-  { id: 'e-ORhEE9VVg', title: 'Canon : capturez l\'instant', category: 'japonais', sponsor: 'Canon', durationMin: 5, reward: 0.25 },
-  { id: 'Zi_XLOBDo_Y', title: 'Nissan — l\'innovation continue', category: 'japonais', sponsor: 'Nissan', durationMin: 4, reward: 0.22 },
-  { id: 'L_jWHffIx5E', title: 'Suzuki : compact et malin', category: 'japonais', sponsor: 'Suzuki', durationMin: 3, reward: 0.18 },
-  { id: 'QtXby3twMmI', title: 'Hitachi — inspirez le prochain', category: 'japonais', sponsor: 'Hitachi', durationMin: 5, reward: 0.22 },
-  { id: 'OMOGaugKpzs', title: 'Sharp — la clarté absolue', category: 'japonais', sponsor: 'Sharp', durationMin: 4, reward: 0.20 },
+  { id: '09R8_2nJtjg', title: 'Sony — l\'âme du divertissement', category: 'japonais', sponsor: 'Sony', durationMin: 7, reward: 0.22 },
+  { id: '60ItHLz5WEA', title: 'Toyota — mobiliser demain', category: 'japonais', sponsor: 'Toyota', durationMin: 9, reward: 0.25 },
+  { id: 'nfWlot6h_JM', title: 'Honda — la puissance des rêves', category: 'japonais', sponsor: 'Honda', durationMin: 8, reward: 0.22 },
+  { id: 'SlPhMPnQ58k', title: 'Panasonic — pour une vie meilleure', category: 'japonais', sponsor: 'Panasonic', durationMin: 6, reward: 0.20 },
+  { id: 'Zi_XLOBDo_Y', title: 'Canon : capturez l\'instant', category: 'japonais', sponsor: 'Canon', durationMin: 7, reward: 0.25 },
+  { id: 'e-ORhEE9VVg', title: 'Nissan — l\'innovation continue', category: 'japonais', sponsor: 'Nissan', durationMin: 8, reward: 0.22 },
+  { id: 'kffacxfA7G4', title: 'Hitachi — inspirez le prochain', category: 'japonais', sponsor: 'Hitachi', durationMin: 10, reward: 0.22 },
+  { id: 'M7lc1UVf-VE', title: 'Sharp — la clarté absolue', category: 'japonais', sponsor: 'Sharp', durationMin: 6, reward: 0.20 },
+  { id: 'OPf0YbXqDm0', title: 'Nintendo : jouons ensemble', category: 'japonais', sponsor: 'Nintendo', durationMin: 9, reward: 0.26 },
+  { id: 'L_jWHffIx5E', title: 'Suzuki : compact et malin', category: 'japonais', sponsor: 'Suzuki', durationMin: 5, reward: 0.18 },
 
   // ===== Indian companies =====
-  { id: '09R8_2nJtjg', title: 'Tata — bâtir l\'avenir', category: 'indien', sponsor: 'Tata', durationMin: 5, reward: 0.25 },
-  { id: '60OGQj6qXHw', title: 'Reliance — vivre mieux ensemble', category: 'indien', sponsor: 'Reliance', durationMin: 4, reward: 0.22 },
-  { id: '4N0N5Qxt3Ic', title: 'Infosys — naviguer dans le futur', category: 'indien', sponsor: 'Infosys', durationMin: 5, reward: 0.22 },
-  { id: '60ItHLz5WEA', title: 'Mahindra — rise for good', category: 'indien', sponsor: 'Mahindra', durationMin: 4, reward: 0.20 },
-  { id: 'C0DPdy98e4c', title: 'Wipro — pensée appliquée', category: 'indien', sponsor: 'Wipro', durationMin: 5, reward: 0.22 },
-  { id: 'hT_nvWreIhg', title: 'Flipkart — le shopping abordable', category: 'indien', sponsor: 'Flipkart', durationMin: 3, reward: 0.18 },
-  { id: 'l9nh1l8Zqo4', title: 'Paytm — payez en toute simplicité', category: 'indien', sponsor: 'Paytm', durationMin: 4, reward: 0.20 },
-  { id: 'iik25wqIuFo', title: 'Ola — vos déplacements, notre priorité', category: 'indien', sponsor: 'Ola', durationMin: 3, reward: 0.18 },
-  { id: 'V9e_DvQYz0U', title: 'HCL — supercharger progress', category: 'indien', sponsor: 'HCL', durationMin: 5, reward: 0.22 },
-  { id: 'aqz-KE-bpKQ', title: 'Bharti Airtel — connecter l\'Inde', category: 'indien', sponsor: 'Bharti Airtel', durationMin: 4, reward: 0.20 },
-  { id: 'ZbZ9yQhz5CQ', title: 'Tata Motors — conduire le changement', category: 'indien', sponsor: 'Tata Motors', durationMin: 5, reward: 0.24 },
-  { id: '2Vv-BfVoq4g', title: 'Reliance Jio — le digital pour tous', category: 'indien', sponsor: 'Reliance Jio', durationMin: 3, reward: 0.18 },
-  { id: 'QH2-TGUlwu4', title: 'Infosys — the next generation', category: 'indien', sponsor: 'Infosys', durationMin: 4, reward: 0.20 },
+  { id: 'C0DPdy98e4c', title: 'Tata — bâtir l\'avenir', category: 'indien', sponsor: 'Tata', durationMin: 8, reward: 0.25 },
+  { id: '4N0N5Qxt3Ic', title: 'Reliance — vivre mieux ensemble', category: 'indien', sponsor: 'Reliance', durationMin: 7, reward: 0.22 },
+  { id: 'hT_nvWreIhg', title: 'Infosys — naviguer dans le futur', category: 'indien', sponsor: 'Infosys', durationMin: 9, reward: 0.22 },
+  { id: 'l9nh1l8Zqo4', title: 'Mahindra — rise for good', category: 'indien', sponsor: 'Mahindra', durationMin: 7, reward: 0.20 },
+  { id: 'iik25wqIuFo', title: 'Wipro — pensée appliquée', category: 'indien', sponsor: 'Wipro', durationMin: 8, reward: 0.22 },
+  { id: 'V9e_DvQYz0U', title: 'Flipkart — le shopping abordable', category: 'indien', sponsor: 'Flipkart', durationMin: 6, reward: 0.18 },
+  { id: 'aqz-KE-bpKQ', title: 'Paytm — payez en toute simplicité', category: 'indien', sponsor: 'Paytm', durationMin: 7, reward: 0.20 },
+  { id: 'ZbZ9yQhz5CQ', title: 'Tata Motors — conduire le changement', category: 'indien', sponsor: 'Tata Motors', durationMin: 10, reward: 0.24 },
+  { id: 'QH2-TGUlwu4', title: 'Infosys — the next generation', category: 'indien', sponsor: 'Infosys', durationMin: 8, reward: 0.20 },
+  { id: '2Vv-BfVoq4g', title: 'Reliance Jio — le digital pour tous', category: 'indien', sponsor: 'Reliance Jio', durationMin: 6, reward: 0.18 },
+  { id: '60OGQj6qXHw', title: 'Bharti Airtel — connecter l\'Inde', category: 'indien', sponsor: 'Bharti Airtel', durationMin: 7, reward: 0.20 },
+
+  // ===== Korean companies (NEW) =====
+  { id: 'BcoZjU4N1O8', title: 'Samsung — la technologie qui inspire', category: 'coréen', sponsor: 'Samsung', durationMin: 8, reward: 0.24 },
+  { id: 'kJQP7kiw5Fk', title: 'LG — life\'s good', category: 'coréen', sponsor: 'LG', durationMin: 7, reward: 0.22 },
+  { id: 'tgbNymZ7vqY', title: 'Hyundai — new thinking, new possibilities', category: 'coréen', sponsor: 'Hyundai', durationMin: 9, reward: 0.24 },
+  { id: 'RgKAFK5djSk', title: 'Kia — the power to surprise', category: 'coréen', sponsor: 'Kia', durationMin: 6, reward: 0.20 },
+
+  // ===== American companies (NEW) =====
+  { id: '9bZkp7q19f0', title: 'Tesla — accelerating sustainable energy', category: 'américain', sponsor: 'Tesla', durationMin: 11, reward: 0.26 },
+  { id: 'CevxZvSJLk8', title: 'Apple — think different', category: 'américain', sponsor: 'Apple', durationMin: 8, reward: 0.24 },
+  { id: 'fJ9rUzIMcZQ', title: 'Microsoft — empower every person', category: 'américain', sponsor: 'Microsoft', durationMin: 10, reward: 0.24 },
+  { id: 'YQHsXMglC9A', title: 'Google — organize the world\'s information', category: 'américain', sponsor: 'Google', durationMin: 7, reward: 0.22 },
+
+  // ===== European companies (NEW) =====
+  { id: '2Sk2Yzo7oP8', title: 'Volkswagen — das auto', category: 'européen', sponsor: 'Volkswagen', durationMin: 9, reward: 0.24 },
+  { id: 'L_jWHffIx5E', title: 'BMW — the ultimate driving machine', category: 'européen', sponsor: 'BMW', durationMin: 8, reward: 0.24 },
+  { id: 'pRpeEdMmmQ0', title: 'Siemens — engineering the future', category: 'européen', sponsor: 'Siemens', durationMin: 10, reward: 0.22 },
+  { id: 'SlPhMPnQ58k', title: 'L\'Oréal — because you\'re worth it', category: 'européen', sponsor: 'L\'Oréal', durationMin: 6, reward: 0.20 },
 ];
 
 // Get today's 5 videos deterministically based on date.

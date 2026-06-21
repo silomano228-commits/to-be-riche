@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAppStore, formatMoney, authFetch, refreshUser as globalRefreshUser } from '@/lib/store';
 import { Header, INVEST_LEVELS } from '@/components/shared';
 import { CongratulationsModal, type CongratulationsData } from '@/components/CongratulationsModal';
+import PaymentDetails from '@/components/PaymentDetails';
 
 // ---------- helpers ----------
 const hexToRgba = (hex: string, alpha: number) => {
@@ -34,8 +35,6 @@ export default function InvestHubScreen() {
   // Create-investment modal state
   const [showCreate, setShowCreate] = useState<number | null>(null);
   const [createAmt, setCreateAmt] = useState('');
-  const [createPayment, setCreatePayment] = useState<PaymentMethod>('yas');
-  const [createAddress, setCreateAddress] = useState('');
   const [creating, setCreating] = useState(false);
 
   // Unlock modal state
@@ -45,8 +44,6 @@ export default function InvestHubScreen() {
   // Claim payout modal state
   const [claimTarget, setClaimTarget] = useState<{ id: string; level: number; amount: number; rate: number; gain: number } | null>(null);
   const [payoutChoice, setPayoutChoice] = useState<PayoutMethod>('main');
-  const [claimPaymentType, setClaimPaymentType] = useState<PaymentMethod>('yas');
-  const [claimAddress, setClaimAddress] = useState('');
   const [claiming, setClaiming] = useState(false);
 
   // Congratulations modal
@@ -81,11 +78,9 @@ export default function InvestHubScreen() {
   const openCreate = (level: number) => {
     setShowCreate(level);
     setCreateAmt('');
-    setCreatePayment('yas');
-    setCreateAddress('');
   };
 
-  const handleCreate = async () => {
+  const handleCreate = async (method: PaymentMethod, userAddress: string) => {
     if (showCreate == null) return;
     const level = showCreate;
     const lvl = INVEST_LEVELS[level - 1];
@@ -93,10 +88,6 @@ export default function InvestHubScreen() {
     const amt = parseFloat(createAmt);
     if (!amt || amt < lvl.min || amt > lvl.max) {
       addToast(`Montant: $${lvl.min} - $${lvl.max}`, 'error');
-      return;
-    }
-    if (!createAddress.trim()) {
-      addToast('Adresse requise', 'error');
       return;
     }
     setCreating(true);
@@ -107,8 +98,8 @@ export default function InvestHubScreen() {
         body: JSON.stringify({
           level,
           amount: amt,
-          paymentMethod: createPayment,
-          userAddress: createAddress.trim(),
+          paymentMethod: method,
+          userAddress: userAddress.trim(),
         }),
       });
       const data = await res.json();
@@ -121,7 +112,7 @@ export default function InvestHubScreen() {
           type: 'generic',
           title: 'Investissement créé !',
           amount: amt,
-          message: data.message || `Votre investissement Niveau ${level} (${lvl.name}) de ${formatMoney(amt)} est actif. Paiement ${createPayment.toUpperCase()} en cours — fonds disponibles dans les 6 heures. Collecte quotidienne illimitée !`,
+          message: data.message || `Votre investissement Niveau ${level} (${lvl.name}) de ${formatMoney(amt)} est actif. Paiement ${method.toUpperCase()} en cours — fonds disponibles dans les 6 heures. Collecte quotidienne illimitée !`,
           onClose: () => setCongrats(c => ({ ...c, show: false })),
         });
       } else {
@@ -162,39 +153,20 @@ export default function InvestHubScreen() {
     const lvl = INVEST_LEVELS[inv.level - 1];
     const gain = Math.round(inv.amount * inv.rate / 100 * 100) / 100;
     setClaimTarget({ id: inv.id, level: inv.level, amount: inv.amount, rate: inv.rate, gain });
-    setPayoutChoice(gain >= 5 ? 'main' : 'main'); // default to main; YAS/TRX only enabled if gain >= 5
-    setClaimPaymentType('yas');
-    setClaimAddress('');
+    setPayoutChoice('main'); // default to main; YAS/TRX only enabled if gain >= 5
   };
 
-  const handleClaim = async () => {
+  const handleClaimMain = async () => {
     if (!claimTarget) return;
-    const method: PayoutMethod = payoutChoice;
-    if (method === 'yas_trx') {
-      if (claimTarget.gain < 5) {
-        addToast('Gain insuffisant pour YAS/TRX (min $5)', 'error');
-        return;
-      }
-      if (!claimAddress.trim()) {
-        addToast('Adresse de retrait requise', 'error');
-        return;
-      }
-    }
     setClaiming(true);
     try {
       const res = await authFetch('/api/invest/claim', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          investmentId: claimTarget.id,
-          payoutMethod: method,
-          userAddress: method === 'yas_trx' ? claimAddress.trim() : undefined,
-          paymentType: method === 'yas_trx' ? claimPaymentType : undefined,
-        }),
+        body: JSON.stringify({ investmentId: claimTarget.id, payoutMethod: 'main' }),
       });
       const data = await res.json();
       if (data.success) {
-        const target = claimTarget;
         setClaimTarget(null);
         loadInvestments();
         refreshUser();
@@ -203,10 +175,49 @@ export default function InvestHubScreen() {
           type: 'collect',
           amount: data.gain,
           title: 'Collecte réussie !',
-          message: data.message || `Vous avez réclamé ${formatMoney(data.gain)} ${method === 'main' ? 'versé sur votre compte principal.' : '— retrait demandé, fonds dans les 6h.'}`,
+          message: data.message || `Vous avez réclamé ${formatMoney(data.gain)} versé sur votre compte principal.`,
           onClose: () => setCongrats(c => ({ ...c, show: false })),
         });
-        void target;
+      } else {
+        addToast(data.error || 'Erreur', 'error');
+      }
+    } catch {
+      addToast('Erreur réseau', 'error');
+    }
+    setClaiming(false);
+  };
+
+  const handleClaimYasTrx = async (method: PaymentMethod, userAddress: string) => {
+    if (!claimTarget) return;
+    if (claimTarget.gain < 5) {
+      addToast('Gain insuffisant pour YAS/TRX (min $5)', 'error');
+      return;
+    }
+    setClaiming(true);
+    try {
+      const res = await authFetch('/api/invest/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          investmentId: claimTarget.id,
+          payoutMethod: 'yas_trx',
+          userAddress: userAddress.trim(),
+          paymentType: method,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setClaimTarget(null);
+        loadInvestments();
+        refreshUser();
+        setCongrats({
+          show: true,
+          type: 'collect',
+          amount: data.gain,
+          title: 'Collecte réussie !',
+          message: data.message || `Vous avez réclamé ${formatMoney(data.gain)} — retrait demandé, fonds dans les 6h.`,
+          onClose: () => setCongrats(c => ({ ...c, show: false })),
+        });
       } else {
         addToast(data.error || 'Erreur', 'error');
       }
@@ -632,68 +643,23 @@ export default function InvestHubScreen() {
                 </div>
               )}
 
-              {/* Payment method selector */}
-              <label className="text-[0.7rem] font-semibold mb-1.5 block" style={{ color: '#374151' }}>Méthode de paiement</label>
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                {(['yas', 'trx'] as PaymentMethod[]).map((m) => {
-                  const active = createPayment === m;
-                  const color = m === 'yas' ? '#14B8A6' : '#EF4444';
-                  return (
-                    <button
-                      key={m}
-                      onClick={() => setCreatePayment(m)}
-                      className="pm-card rounded-xl p-3 border-2 cursor-pointer flex flex-col items-center gap-1"
-                      style={{
-                        background: active ? hexToRgba(color, 0.08) : '#FFFFFF',
-                        borderColor: active ? color : 'rgba(0,0,0,0.08)',
-                      }}
-                    >
-                      <i className={`fas ${m === 'yas' ? 'fa-money-bill-wave' : 'fa-coins'} text-[1rem]`} style={{ color: active ? color : 'rgba(0,0,0,0.4)' }}></i>
-                      <span className="text-[0.78rem] font-bold" style={{ color: active ? color : 'rgba(0,0,0,0.55)' }}>{m.toUpperCase()}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Address input */}
-              <label className="text-[0.7rem] font-semibold mb-1.5 block" style={{ color: '#374151' }}>
-                {createPayment === 'trx' ? 'Adresse portefeuille TRX' : 'Numéro de compte YAS'}
-              </label>
-              <input
-                type="text"
-                value={createAddress}
-                onChange={(e) => setCreateAddress(e.target.value)}
-                placeholder={createPayment === 'trx' ? 'T...' : 'Numéro YAS'}
-                className="w-full py-3 px-4 rounded-xl text-[0.85rem] outline-none mb-2"
-                style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid rgba(0,0,0,0.08)', color: '#1F2937' }}
-              />
-
-              {/* 6h note */}
-              <div className="rounded-xl p-2.5 mb-3 flex items-start gap-2" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.18)' }}>
-                <i className="fas fa-clock text-[0.7rem] mt-0.5" style={{ color: '#F59E0B' }}></i>
-                <span className="text-[0.66rem]" style={{ color: 'rgba(180,83,9,0.95)' }}>
-                  Le dépôt se fait directement par {createPayment.toUpperCase()}. Les fonds seront disponibles dans les 6 heures.
-                </span>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowCreate(null)}
-                  className="flex-1 py-3 rounded-xl font-semibold text-[0.82rem] cursor-pointer"
-                  style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.08)', color: 'rgba(0,0,0,0.55)' }}
-                >
-                  Annuler
-                </button>
-                <button
-                  onClick={handleCreate}
-                  disabled={creating || !validAmt || !createAddress.trim()}
-                  className="flex-1 py-3 rounded-xl font-bold text-[0.82rem] border-none cursor-pointer disabled:opacity-50 transition-all active:scale-[0.98]"
-                  style={{ background: lvl.color, color: '#FFFFFF', boxShadow: `0 4px 16px ${hexToRgba(lvl.color, 0.28)}` }}
-                >
-                  {creating ? <i className="fas fa-spinner fa-spin"></i> : 'Confirmer'}
-                </button>
-              </div>
+              {/* Payment details — same mechanism as principal account deposit */}
+              {validAmt ? (
+                <PaymentDetails
+                  mode="deposit"
+                  amountUsd={amtNum}
+                  initialMethod="yas"
+                  onConfirm={handleCreate}
+                  onCancel={() => setShowCreate(null)}
+                  loading={creating}
+                  ctaText="Confirmer le dépôt"
+                />
+              ) : (
+                <div className="text-center py-4 text-[0.75rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>
+                  <i className="fas fa-info-circle mr-1"></i>
+                  Saisissez un montant valide (${lvl.min}-${lvl.max}) pour continuer.
+                </div>
+              )}
             </div>
           </div>
         );
@@ -806,8 +772,6 @@ export default function InvestHubScreen() {
         const lvl = INVEST_LEVELS[claimTarget.level - 1];
         if (!lvl) return null;
         const canWithdraw = claimTarget.gain >= 5;
-        const method = claimPaymentType;
-        const color = method === 'yas' ? '#14B8A6' : '#EF4444';
 
         return (
           <div
@@ -899,81 +863,62 @@ export default function InvestHubScreen() {
                 </button>
               </div>
 
-              {/* YAS/TRX sub-selector + address (only if option B selected) */}
-              {payoutChoice === 'yas_trx' && canWithdraw && (
-                <div className="rounded-xl p-3 mb-3" style={{ background: 'rgba(20,184,166,0.04)', border: '1px solid rgba(20,184,166,0.12)', animation: 'slideUp 0.2s ease-out' }}>
-                  <label className="text-[0.68rem] font-semibold mb-1.5 block" style={{ color: '#374151' }}>Méthode de retrait</label>
-                  <div className="grid grid-cols-2 gap-2 mb-3">
-                    {(['yas', 'trx'] as PaymentMethod[]).map((m) => {
-                      const active = claimPaymentType === m;
-                      const c = m === 'yas' ? '#14B8A6' : '#EF4444';
-                      return (
-                        <button
-                          key={m}
-                          onClick={() => setClaimPaymentType(m)}
-                          className="pm-card rounded-xl p-2.5 border-2 cursor-pointer flex items-center justify-center gap-1.5"
-                          style={{
-                            background: active ? hexToRgba(c, 0.08) : '#FFFFFF',
-                            borderColor: active ? c : 'rgba(0,0,0,0.08)',
-                          }}
-                        >
-                          <i className={`fas ${m === 'yas' ? 'fa-money-bill-wave' : 'fa-coins'} text-[0.7rem]`} style={{ color: active ? c : 'rgba(0,0,0,0.4)' }}></i>
-                          <span className="text-[0.72rem] font-bold" style={{ color: active ? c : 'rgba(0,0,0,0.55)' }}>{m.toUpperCase()}</span>
-                        </button>
-                      );
-                    })}
+              {/* Conditional content based on payout choice */}
+              {payoutChoice === 'main' ? (
+                <>
+                  {!canWithdraw && (
+                    <div className="rounded-xl p-2.5 mb-3 flex items-start gap-2" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.18)' }}>
+                      <i className="fas fa-circle-info text-[0.7rem] mt-0.5" style={{ color: '#F59E0B' }}></i>
+                      <span className="text-[0.65rem]" style={{ color: 'rgba(180,83,9,0.95)' }}>
+                        Le retrait direct par YAS/TRX nécessite un gain minimum de $5. Votre gain actuel est de ${claimTarget.gain.toFixed(2)}. Vous pouvez le verser sur votre compte principal sans minimum.
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setClaimTarget(null)}
+                      className="flex-1 py-3 rounded-xl font-semibold text-[0.82rem] cursor-pointer"
+                      style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.08)', color: 'rgba(0,0,0,0.55)' }}
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      onClick={handleClaimMain}
+                      disabled={claiming}
+                      className="flex-[2] py-3 rounded-xl font-bold text-[0.82rem] border-none cursor-pointer disabled:opacity-50 transition-all active:scale-[0.98]"
+                      style={{ background: 'linear-gradient(135deg, #22C55E, #16A34A)', color: '#FFFFFF', boxShadow: '0 4px 16px rgba(34,197,94,0.3)' }}
+                    >
+                      {claiming ? <i className="fas fa-spinner fa-spin"></i> : `Collecter +$${claimTarget.gain.toFixed(2)}`}
+                    </button>
                   </div>
-
-                  <label className="text-[0.68rem] font-semibold mb-1.5 block" style={{ color: '#374151' }}>
-                    {method === 'trx' ? 'Adresse portefeuille TRX' : 'Numéro de compte YAS'}
-                  </label>
-                  <input
-                    type="text"
-                    value={claimAddress}
-                    onChange={(e) => setClaimAddress(e.target.value)}
-                    placeholder={method === 'trx' ? 'T...' : 'Numéro YAS'}
-                    className="w-full py-2.5 px-3 rounded-xl text-[0.8rem] outline-none"
-                    style={{ background: 'rgba(0,0,0,0.04)', border: `1.5px solid ${hexToRgba(color, 0.25)}`, color: '#1F2937' }}
-                  />
-                  <div className="text-[0.6rem] mt-1.5 flex items-start gap-1" style={{ color: 'rgba(245,158,11,0.95)' }}>
-                    <i className="fas fa-clock mt-0.5"></i>
-                    <span>Les fonds seront disponibles dans les 6 heures après confirmation.</span>
+                </>
+              ) : canWithdraw ? (
+                <PaymentDetails
+                  mode="withdraw"
+                  amountUsd={claimTarget.gain}
+                  initialMethod="yas"
+                  onConfirm={handleClaimYasTrx}
+                  onCancel={() => setClaimTarget(null)}
+                  loading={claiming}
+                  ctaText={`Collecter +$${claimTarget.gain.toFixed(2)}`}
+                />
+              ) : (
+                <>
+                  <div className="rounded-xl p-2.5 mb-3 flex items-start gap-2" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.18)' }}>
+                    <i className="fas fa-circle-exclamation text-[0.7rem] mt-0.5" style={{ color: '#EF4444' }}></i>
+                    <span className="text-[0.65rem]" style={{ color: 'rgba(127,29,29,0.95)' }}>
+                      Le retrait direct par YAS/TRX nécessite un gain minimum de $5. Votre gain actuel est de ${claimTarget.gain.toFixed(2)}. Choisissez « Verser sur le compte principal ».
+                    </span>
                   </div>
-                </div>
+                  <button
+                    onClick={() => setPayoutChoice('main')}
+                    className="w-full py-3 rounded-xl font-bold text-[0.82rem] border-none cursor-pointer transition-all active:scale-[0.98]"
+                    style={{ background: lvl.color, color: '#FFFFFF' }}
+                  >
+                    <i className="fas fa-arrow-left mr-1"></i>Retour au compte principal
+                  </button>
+                </>
               )}
-
-              {/* Note when gain too small */}
-              {payoutChoice === 'main' && !canWithdraw && (
-                <div className="rounded-xl p-2.5 mb-3 flex items-start gap-2" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.18)' }}>
-                  <i className="fas fa-circle-info text-[0.7rem] mt-0.5" style={{ color: '#F59E0B' }}></i>
-                  <span className="text-[0.65rem]" style={{ color: 'rgba(180,83,9,0.95)' }}>
-                    Le retrait direct par YAS/TRX nécessite un gain minimum de $5. Votre gain actuel est de ${claimTarget.gain.toFixed(2)}. Vous pouvez le verser sur votre compte principal sans minimum.
-                  </span>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setClaimTarget(null)}
-                  className="flex-1 py-3 rounded-xl font-semibold text-[0.82rem] cursor-pointer"
-                  style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.08)', color: 'rgba(0,0,0,0.55)' }}
-                >
-                  Annuler
-                </button>
-                <button
-                  onClick={handleClaim}
-                  disabled={claiming || (payoutChoice === 'yas_trx' && !claimAddress.trim())}
-                  className="flex-1 py-3 rounded-xl font-bold text-[0.82rem] border-none cursor-pointer disabled:opacity-50 transition-all active:scale-[0.98]"
-                  style={{
-                    background: payoutChoice === 'main' ? 'linear-gradient(135deg, #22C55E, #16A34A)' : 'linear-gradient(135deg, #14B8A6, #0F766E)',
-                    color: '#FFFFFF',
-                    boxShadow: `0 4px 16px ${payoutChoice === 'main' ? 'rgba(34,197,94,0.3)' : 'rgba(20,184,166,0.3)'}`,
-                  }}
-                >
-                  {claiming ? <i className="fas fa-spinner fa-spin"></i> : `Collecter +$${claimTarget.gain.toFixed(2)}`}
-                </button>
-              </div>
             </div>
           </div>
         );

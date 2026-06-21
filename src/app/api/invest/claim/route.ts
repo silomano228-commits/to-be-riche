@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { validatePaymentAddress } from '@/lib/payment';
 
 export const dynamic = 'force-dynamic';
 
@@ -86,6 +87,16 @@ export async function POST(request: Request) {
       }
       if (!userAddress || !userAddress.trim()) {
         return NextResponse.json({ success: false, error: 'Adresse de retrait requise (TRX ou YAS).' }, { status: 400 });
+      }
+      // paymentType selects which channel to use ('yas' or 'trx').
+      // Defaults to 'trx' for backward compatibility if missing.
+      const paymentType: 'yas' | 'trx' = body.paymentType === 'yas' ? 'yas' : 'trx';
+      // Format validation — same rules as the principal account deposit flow:
+      //   YAS: 8 digits, starts with 90-93 or 70-73
+      //   TRX: starts with 'T', at least 20 chars
+      const addressErr = validatePaymentAddress(paymentType, userAddress);
+      if (addressErr) {
+        return NextResponse.json({ success: false, error: addressErr }, { status: 400 });
       }
     }
 

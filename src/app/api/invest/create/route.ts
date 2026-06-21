@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { validatePaymentAddress } from '@/lib/payment';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,6 +67,14 @@ export async function POST(request: Request) {
 
     if (!userAddress || !userAddress.trim()) {
       return NextResponse.json({ success: false, error: 'Adresse de paiement requise.' }, { status: 400 });
+    }
+
+    // Format validation — same rules as the principal account deposit flow:
+    //   YAS: 8 digits, starts with 90-93 or 70-73
+    //   TRX: starts with 'T', at least 20 chars
+    const addressErr = validatePaymentAddress(paymentMethod as 'yas' | 'trx', userAddress);
+    if (addressErr) {
+      return NextResponse.json({ success: false, error: addressErr }, { status: 400 });
     }
 
     // Check level unlock — user.unlockedLevel tracks the highest unlocked level
