@@ -179,6 +179,7 @@ model PendingDeposit {
   trxPrice    Float
   userAddress String
   txHash      String?
+  destination String   @default("balance") // balance | video | invest_level_X
   status      String   @default("pending")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -345,4 +346,23 @@ model GameSpin {
   @@index([userId])
   @@index([spinDate])
   @@index([userId, spinDate])
+}
+
+// Admin-managed video links.
+// The administrator can add any YouTube video link they want users to watch.
+// Admin links take priority over the default daily catalog when active.
+// totalCycles = 0 means unlimited collection days (no finite cycle cap).
+model AdminVideoLink {
+  id          String   @id @default(cuid())
+  youtubeId   String   // YouTube video ID (real, embeddable)
+  title       String   // Title that conforms to the video content
+  sponsor     String   // Company / sponsor name
+  category    String   @default("entreprise") // chinois | japonais | indien | entreprise
+  durationMin Int      @default(5)
+  reward      Float    @default(0.20) // 0.15 - 0.30 USD
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([active])
 }

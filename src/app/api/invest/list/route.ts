@@ -44,16 +44,22 @@ export async function GET(request: Request) {
         }
       }
 
-      const remainingCycles = Math.max(0, inv.totalCycles - inv.doneCycles);
-      const potentialEarning = Math.round(inv.amount * inv.rate / 100 * remainingCycles * 100) / 100;
+      // totalCycles = 0 means UNLIMITED collection days
+      const unlimited = inv.totalCycles === 0;
+      const remainingCycles = unlimited ? -1 : Math.max(0, inv.totalCycles - inv.doneCycles);
+      const potentialEarning = unlimited
+        ? Infinity
+        : Math.round(inv.amount * inv.rate / 100 * remainingCycles * 100) / 100;
+      const progressPercent = unlimited ? 0 : Math.round((inv.doneCycles / inv.totalCycles) * 100);
 
       return {
         ...inv,
         canClaim,
         nextClaimInMs: nextClaimIn,
+        unlimited,
         remainingCycles,
         potentialEarning,
-        progressPercent: Math.round((inv.doneCycles / inv.totalCycles) * 100),
+        progressPercent,
       };
     });
 

@@ -45,7 +45,7 @@ interface Conversation {
 
 export default function AdminScreen() {
   const { user, addToast } = useAppStore();
-  const [tab, setTab] = useState<'users' | 'deposits' | 'yas' | 'withdrawals' | 'messages' | 'notif' | 'config'>('users');
+  const [tab, setTab] = useState<'users' | 'deposits' | 'yas' | 'withdrawals' | 'messages' | 'notif' | 'videos' | 'config'>('users');
   const [adminData, setAdminData] = useState<any>(null);
   const [pendingDeposits, setPendingDeposits] = useState<any[]>([]);
   const [depositStats, setDepositStats] = useState<any>({});
@@ -63,6 +63,32 @@ export default function AdminScreen() {
   const [yasNote, setYasNote] = useState<Record<string, string>>({});
   const [savingYas, setSavingYas] = useState(false);
   const [savingConfig, setSavingConfig] = useState(false);
+
+  // Admin video links state (Videos tab)
+  type AdminVideoLink = {
+    id: string;
+    youtubeId: string;
+    title: string;
+    sponsor: string;
+    category: string;
+    durationMin: number;
+    reward: number;
+    active: boolean;
+    createdAt: string;
+  };
+  const [adminVideos, setAdminVideos] = useState<AdminVideoLink[]>([]);
+  const [videosLoading, setVideosLoading] = useState(false);
+  const [videoUrlOrId, setVideoUrlOrId] = useState('');
+  const [videoTitle, setVideoTitle] = useState('');
+  const [videoSponsor, setVideoSponsor] = useState('');
+  const [videoCategory, setVideoCategory] = useState<'chinois' | 'japonais' | 'indien' | 'entreprise'>('entreprise');
+  const [videoDuration, setVideoDuration] = useState('5');
+  const [videoReward, setVideoReward] = useState('0.20');
+  const [addingVideo, setAddingVideo] = useState(false);
+  const [togglingVideoId, setTogglingVideoId] = useState<string | null>(null);
+  const [deleteVideoId, setDeleteVideoId] = useState<string | null>(null);
+  const [deleteVideoTitle, setDeleteVideoTitle] = useState('');
+  const [deletingVideo, setDeletingVideo] = useState(false);
 
   // Quick message state (Users tab)
   const [messageUserId, setMessageUserId] = useState<string | null>(null);
@@ -141,6 +167,16 @@ export default function AdminScreen() {
 
   const loadConfig = useCallback(async () => {
     try { const r = await authFetch('/api/admin/config'); const d = await r.json(); if (d.success) { setSiteConfig(d.data); setConfigAddr(d.data.adminTrxAddress || ''); setConfigPrice(String(d.data.trxUsdPrice || '')); setConfigYasAddr(d.data.adminYasAccount || ''); setConfigCfaRate(String(d.data.cfaUsdRate || '600')); setConfigWorldLink(d.data.worldLink || ''); } } catch { /* */ }
+  }, []);
+
+  const loadAdminVideos = useCallback(async () => {
+    setVideosLoading(true);
+    try {
+      const r = await authFetch('/api/admin/videos');
+      const d = await r.json();
+      if (d.success) setAdminVideos(d.data || []);
+    } catch { /* */ }
+    setVideosLoading(false);
   }, []);
 
   const loadConversations = useCallback(async () => {
@@ -472,6 +508,92 @@ export default function AdminScreen() {
     setDeletingUser(false);
   };
 
+  const handleAddVideo = async () => {
+    if (!videoUrlOrId.trim() || !videoTitle.trim() || !videoSponsor.trim()) {
+      addToast('Lien/ID, titre et entreprise sont requis', 'error');
+      return;
+    }
+    if (addingVideo) return;
+    setAddingVideo(true);
+    try {
+      const res = await authFetch('/api/admin/videos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          youtubeIdOrUrl: videoUrlOrId.trim(),
+          title: videoTitle.trim(),
+          sponsor: videoSponsor.trim(),
+          category: videoCategory,
+          durationMin: Number(videoDuration) || 5,
+          reward: Number(videoReward) || 0,
+          active: true,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        addToast(data.message || 'Vidéo ajoutée', 'success');
+        setVideoUrlOrId('');
+        setVideoTitle('');
+        setVideoSponsor('');
+        setVideoCategory('entreprise');
+        setVideoDuration('5');
+        setVideoReward('0.20');
+        loadAdminVideos();
+      } else {
+        addToast(data.error || data.message || 'Erreur', 'error');
+      }
+    } catch {
+      addToast('Erreur réseau', 'error');
+    }
+    setAddingVideo(false);
+  };
+
+  const handleToggleVideoActive = async (v: AdminVideoLink) => {
+    if (togglingVideoId) return;
+    setTogglingVideoId(v.id);
+    // Optimistic UI update
+    setAdminVideos(prev => prev.map(x => x.id === v.id ? { ...x, active: !x.active } : x));
+    try {
+      const res = await authFetch(`/api/admin/videos/${v.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: !v.active }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        addToast(v.active ? 'Vidéo désactivée' : 'Vidéo activée', 'info');
+      } else {
+        // Roll back
+        setAdminVideos(prev => prev.map(x => x.id === v.id ? { ...x, active: v.active } : x));
+        addToast(data.error || 'Erreur', 'error');
+      }
+    } catch {
+      setAdminVideos(prev => prev.map(x => x.id === v.id ? { ...x, active: v.active } : x));
+      addToast('Erreur réseau', 'error');
+    }
+    setTogglingVideoId(null);
+  };
+
+  const handleDeleteVideo = async () => {
+    if (!deleteVideoId || deletingVideo) return;
+    setDeletingVideo(true);
+    try {
+      const res = await authFetch(`/api/admin/videos/${deleteVideoId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        addToast(data.message || 'Vidéo supprimée', 'success');
+        setDeleteVideoId(null);
+        setDeleteVideoTitle('');
+        loadAdminVideos();
+      } else {
+        addToast(data.error || 'Erreur', 'error');
+      }
+    } catch {
+      addToast('Erreur réseau', 'error');
+    }
+    setDeletingVideo(false);
+  };
+
   const handleSendNotification = async () => {
     if (!notifTitle.trim() || !notifMessage.trim()) {
       addToast('Titre et message requis', 'error');
@@ -528,13 +650,13 @@ export default function AdminScreen() {
     loadConversations();
   };
 
-  useEffect(() => { const t = setTimeout(() => { loadData(); loadDeposits(); loadYasDeposits(); loadWithdrawals(); loadConfig(); }, 0); return () => clearTimeout(t); }, [loadData, loadDeposits, loadYasDeposits, loadWithdrawals, loadConfig]);
+  useEffect(() => { const t = setTimeout(() => { loadData(); loadDeposits(); loadYasDeposits(); loadWithdrawals(); loadConfig(); loadAdminVideos(); }, 0); return () => clearTimeout(t); }, [loadData, loadDeposits, loadYasDeposits, loadWithdrawals, loadConfig, loadAdminVideos]);
 
   if (!user || user.role !== 'admin') return null;
   const stats = adminData?.stats || {};
   const usersList = adminData?.users || [];
 
-  const refreshAll = () => { loadData(); loadDeposits(); loadYasDeposits(); loadWithdrawals(); loadConfig(); };
+  const refreshAll = () => { loadData(); loadDeposits(); loadYasDeposits(); loadWithdrawals(); loadConfig(); loadAdminVideos(); };
 
   // Total unread messages
   const totalUnread = conversations.reduce((sum, c) => sum + c.unread_count, 0);
@@ -568,15 +690,16 @@ export default function AdminScreen() {
       <div className="flex-1 w-full overflow-y-auto min-h-0">
         {/* Tabs */}
         <div className="flex bg-[#0E0F11] border-b border-[rgba(255,255,255,0.06)] px-1 overflow-x-auto">
-          {[
-            { k: 'users', l: 'Users' },
-            { k: 'deposits', l: 'Dépôts TRX' },
-            { k: 'yas', l: 'Yas 🇹🇬' },
-            { k: 'withdrawals', l: 'Retraits' },
-            { k: 'messages', l: `Messages${totalUnread > 0 ? ` (${totalUnread})` : ''}` },
-            { k: 'notif', l: 'Notifs' },
-            { k: 'config', l: 'Config' },
-          ].map(t => (
+          {([
+            { k: 'users', l: 'Users', icon: '' },
+            { k: 'deposits', l: 'Dépôts TRX', icon: '' },
+            { k: 'yas', l: 'Yas 🇹🇬', icon: '' },
+            { k: 'withdrawals', l: 'Retraits', icon: '' },
+            { k: 'messages', l: `Messages${totalUnread > 0 ? ` (${totalUnread})` : ''}`, icon: '' },
+            { k: 'notif', l: 'Notifs', icon: '' },
+            { k: 'videos', l: 'Vidéos', icon: 'fas fa-video' },
+            { k: 'config', l: 'Config', icon: '' },
+          ] as { k: string; l: string; icon: string }[]).map(t => (
             <button
               key={t.k}
               onClick={() => setTab(t.k as any)}
@@ -586,6 +709,7 @@ export default function AdminScreen() {
                   : 'text-[rgba(255,255,255,0.45)]'
               }`}
             >
+              {t.icon && <i className={`${t.icon} mr-1 text-[0.6rem]`}></i>}
               {t.l}
             </button>
           ))}
@@ -1367,6 +1491,242 @@ export default function AdminScreen() {
                   </button>
                 </div>
               )}
+
+              {/* Videos Tab */}
+              {tab === 'videos' && (
+                <>
+                  {/* Header card */}
+                  <div className="bg-[#0E0F11] border border-[rgba(99,102,241,0.15)] rounded-2xl p-3 mb-4 flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center shrink-0">
+                      <i className="fas fa-video text-[#6366F1] text-[0.9rem]"></i>
+                    </div>
+                    <div>
+                      <div className="text-[#EDEDEF] text-[0.85rem] font-bold">Liens vidéo</div>
+                      <div className="text-[rgba(255,255,255,0.45)] text-[0.65rem]">Ajoutez des vidéos YouTube visibles par tous les utilisateurs</div>
+                    </div>
+                  </div>
+
+                  {/* Add video form */}
+                  <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 mb-4">
+                    <div className="text-[0.72rem] font-bold text-[#EDEDEF] mb-2.5 flex items-center gap-1.5">
+                      <i className="fas fa-plus-circle text-[#6366F1] text-[0.7rem]"></i> Ajouter une vidéo
+                    </div>
+
+                    <div className="mb-2.5">
+                      <label className="block mb-1 text-[0.65rem] font-semibold text-[rgba(255,255,255,0.45)]">Lien YouTube ou ID vidéo</label>
+                      <input
+                        type="text"
+                        value={videoUrlOrId}
+                        onChange={(e) => setVideoUrlOrId(e.target.value)}
+                        placeholder="Collez un lien YouTube ou un ID vidéo"
+                        className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.78rem] text-white outline-none focus:border-[#6366F1]"
+                      />
+                    </div>
+
+                    <div className="mb-2.5">
+                      <label className="block mb-1 text-[0.65rem] font-semibold text-[rgba(255,255,255,0.45)]">Titre <span className="text-[#F87171]">*</span></label>
+                      <input
+                        type="text"
+                        value={videoTitle}
+                        onChange={(e) => setVideoTitle(e.target.value)}
+                        placeholder="Titre conforme à la vidéo"
+                        maxLength={150}
+                        className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.78rem] text-white outline-none focus:border-[#6366F1]"
+                      />
+                    </div>
+
+                    <div className="mb-2.5">
+                      <label className="block mb-1 text-[0.65rem] font-semibold text-[rgba(255,255,255,0.45)]">Entreprise / Sponsor <span className="text-[#F87171]">*</span></label>
+                      <input
+                        type="text"
+                        value={videoSponsor}
+                        onChange={(e) => setVideoSponsor(e.target.value)}
+                        placeholder="Nom de l'entreprise"
+                        maxLength={100}
+                        className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.78rem] text-white outline-none focus:border-[#6366F1]"
+                      />
+                    </div>
+
+                    <div className="mb-2.5">
+                      <label className="block mb-1 text-[0.65rem] font-semibold text-[rgba(255,255,255,0.45)]">Catégorie</label>
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {([
+                          { v: 'chinois', l: 'Chinois' },
+                          { v: 'japonais', l: 'Japonais' },
+                          { v: 'indien', l: 'Indien' },
+                          { v: 'entreprise', l: 'Entreprise' },
+                        ] as const).map(c => (
+                          <button
+                            key={c.v}
+                            onClick={() => setVideoCategory(c.v)}
+                            className={`py-2 rounded-lg text-[0.6rem] font-semibold border-none cursor-pointer transition-all ${
+                              videoCategory === c.v
+                                ? 'bg-[#6366F1] text-white'
+                                : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)]'
+                            }`}
+                          >
+                            {c.l}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      <div>
+                        <label className="block mb-1 text-[0.65rem] font-semibold text-[rgba(255,255,255,0.45)]">Durée (min)</label>
+                        <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={videoDuration}
+                          onChange={(e) => setVideoDuration(e.target.value)}
+                          className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.78rem] text-white outline-none focus:border-[#6366F1]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block mb-1 text-[0.65rem] font-semibold text-[rgba(255,255,255,0.45)]">Récompense (USD)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={videoReward}
+                          onChange={(e) => setVideoReward(e.target.value)}
+                          className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.78rem] text-white outline-none focus:border-[#6366F1]"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handleAddVideo}
+                      disabled={addingVideo || !videoUrlOrId.trim() || !videoTitle.trim() || !videoSponsor.trim()}
+                      className="w-full py-3 rounded-xl bg-[#6366F1] text-[#050506] text-[0.85rem] font-bold border-none cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 transition-all active:scale-[0.98]"
+                    >
+                      {addingVideo ? (
+                        <div className="w-4 h-4 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
+                      ) : (
+                        <i className="fas fa-plus text-[0.7rem]"></i>
+                      )}
+                      {addingVideo ? 'Ajout en cours...' : 'Ajouter la vidéo'}
+                    </button>
+                  </div>
+
+                  {/* Video list header */}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-[0.72rem] font-bold text-[#EDEDEF]">
+                      <i className="fas fa-list text-[#6366F1] text-[0.65rem] mr-1.5"></i>
+                      Vidéos ({adminVideos.length})
+                    </div>
+                    <button
+                      onClick={loadAdminVideos}
+                      disabled={videosLoading}
+                      className="text-[0.62rem] text-[rgba(255,255,255,0.45)] hover:text-[#6366F1] cursor-pointer bg-transparent border-none flex items-center gap-1 disabled:opacity-50"
+                    >
+                      <i className={`fas fa-sync-alt text-[0.55rem] ${videosLoading ? 'fa-spin' : ''}`}></i>
+                      Actualiser
+                    </button>
+                  </div>
+
+                  {videosLoading && adminVideos.length === 0 ? (
+                    <div className="flex justify-center py-6">
+                      <div className="w-7 h-7 border-2 border-[rgba(255,255,255,0.1)] border-t-[#6366F1] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
+                    </div>
+                  ) : adminVideos.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="w-12 h-12 rounded-full bg-[rgba(99,102,241,0.12)] flex items-center justify-center mx-auto mb-3">
+                        <i className="fas fa-film text-[#6366F1] text-[1.2rem]"></i>
+                      </div>
+                      <p className="text-[0.82rem] text-[rgba(255,255,255,0.25)]">Aucune vidéo ajoutée</p>
+                      <p className="text-[0.65rem] text-[rgba(255,255,255,0.15)] mt-1">Ajoutez votre première vidéo via le formulaire ci-dessus</p>
+                    </div>
+                  ) : (
+                    <div className="max-h-[520px] overflow-y-auto pr-0.5 space-y-2.5 [scrollbar-width:thin]">
+                      {adminVideos.map(v => {
+                        const catBadge: Record<string, { bg: string; color: string; label: string }> = {
+                          chinois: { bg: 'rgba(239,68,68,0.12)', color: '#F87171', label: 'Chinois' },
+                          japonais: { bg: 'rgba(244,114,182,0.12)', color: '#F472B6', label: 'Japonais' },
+                          indien: { bg: 'rgba(251,146,60,0.12)', color: '#FB923C', label: 'Indien' },
+                          entreprise: { bg: 'rgba(99,102,241,0.12)', color: '#818CF8', label: 'Entreprise' },
+                        };
+                        const cat = catBadge[v.category] || catBadge.entreprise;
+                        return (
+                          <div key={v.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl overflow-hidden">
+                            <div className="flex">
+                              {/* Thumbnail */}
+                              <div className="relative w-[110px] sm:w-[140px] shrink-0 bg-[#161719]">
+                                <img
+                                  src={`https://img.youtube.com/vi/${v.youtubeId}/mqdefault.jpg`}
+                                  alt={v.title}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => { (e.target as HTMLImageElement).style.opacity = '0'; }}
+                                />
+                                <div className="absolute bottom-1 right-1 bg-[rgba(0,0,0,0.75)] text-white text-[0.55rem] font-semibold px-1.5 py-0.5 rounded">
+                                  {v.durationMin} min
+                                </div>
+                                {!v.active && (
+                                  <div className="absolute inset-0 bg-[rgba(0,0,0,0.6)] flex items-center justify-center">
+                                    <span className="text-[0.55rem] text-[rgba(255,255,255,0.6)] font-bold uppercase">Inactive</span>
+                                  </div>
+                                )}
+                              </div>
+                              {/* Body */}
+                              <div className="flex-1 min-w-0 p-2.5">
+                                <div className="flex items-start justify-between gap-2 mb-1">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-[0.78rem] font-bold text-[#EDEDEF] truncate">{esc(v.title)}</div>
+                                    <div className="text-[0.62rem] text-[rgba(255,255,255,0.4)] truncate">
+                                      <i className="fas fa-building text-[0.5rem] mr-0.5"></i>{esc(v.sponsor)}
+                                    </div>
+                                  </div>
+                                  <span
+                                    className="shrink-0 text-[0.55rem] font-semibold px-1.5 py-0.5 rounded-full"
+                                    style={{ background: cat.bg, color: cat.color }}
+                                  >
+                                    {cat.label}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="text-[0.62rem] text-[#4ADE80] font-semibold">
+                                    <i className="fas fa-money-bill-wave text-[0.5rem] mr-0.5"></i>${v.reward.toFixed(2)}
+                                  </span>
+                                  <span className="text-[0.55rem] text-[rgba(255,255,255,0.2)]">•</span>
+                                  <span className="text-[0.55rem] text-[rgba(255,255,255,0.35)] font-mono truncate">{v.youtubeId}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    onClick={() => handleToggleVideoActive(v)}
+                                    disabled={togglingVideoId === v.id}
+                                    className={`flex-1 py-1.5 rounded-lg text-[0.6rem] font-semibold border-none cursor-pointer transition-all flex items-center justify-center gap-1 disabled:opacity-50 ${
+                                      v.active
+                                        ? 'bg-[rgba(74,222,128,0.12)] text-[#4ADE80] hover:bg-[rgba(74,222,128,0.2)]'
+                                        : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)]'
+                                    }`}
+                                  >
+                                    {togglingVideoId === v.id ? (
+                                      <div className="w-3 h-3 border-[1.5px] border-current border-t-transparent rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
+                                    ) : (
+                                      <>
+                                        <i className={`fas ${v.active ? 'fa-toggle-on' : 'fa-toggle-off'} text-[0.65rem]`}></i>
+                                        {v.active ? 'Actif' : 'Inactif'}
+                                      </>
+                                    )}
+                                  </button>
+                                  <button
+                                    onClick={() => { setDeleteVideoId(v.id); setDeleteVideoTitle(v.title); }}
+                                    className="px-2.5 py-1.5 rounded-lg bg-[rgba(248,113,113,0.12)] text-[#F87171] text-[0.6rem] font-semibold border-none cursor-pointer transition-all hover:bg-[rgba(248,113,113,0.2)] flex items-center gap-1"
+                                    title="Supprimer la vidéo"
+                                  >
+                                    <i className="fas fa-trash text-[0.55rem]"></i>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
             </>
           )}
         </div>
@@ -1422,6 +1782,67 @@ export default function AdminScreen() {
                 }}
               >
                 {deletingUser ? (
+                  <div className="w-4 h-4 border-2 border-[rgba(248,113,113,0.3)] border-t-[#F87171] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
+                ) : (
+                  <><i className="fas fa-trash text-[0.7rem]"></i> Supprimer</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Video Confirmation Modal */}
+      {deleteVideoId && (
+        <div
+          className="fixed inset-0 backdrop-blur-sm z-[7000] flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.5)' }}
+          onClick={() => { setDeleteVideoId(null); setDeleteVideoTitle(''); }}
+        >
+          <div
+            className="rounded-2xl p-7 w-[88%] max-w-[320px] text-center"
+            style={{
+              background: '#1A1B1E',
+              border: '1px solid rgba(255,255,255,0.08)',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+              animation: 'modalIn 0.25s ease-out',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-14 h-14 rounded-full bg-[rgba(248,113,113,0.12)] flex items-center justify-center mx-auto mb-4">
+              <i className="fas fa-trash text-[#F87171] text-[1.2rem]"></i>
+            </div>
+            <h3 className="mb-2 text-[1.05rem] font-extrabold text-[#EDEDEF]">Supprimer la vidéo</h3>
+            <p className="text-[0.82rem] mb-1 leading-relaxed text-[rgba(255,255,255,0.55)]">
+              Voulez-vous vraiment supprimer
+            </p>
+            <p className="text-[0.92rem] font-bold text-[#F87171] mb-2 truncate px-2">{deleteVideoTitle} ?</p>
+            <p className="text-[0.68rem] text-[rgba(255,255,255,0.35)] mb-5">
+              Cette action est irréversible. La vidéo ne sera plus visible par les utilisateurs.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setDeleteVideoId(null); setDeleteVideoTitle(''); }}
+                className="flex-1 py-3 rounded-xl font-semibold text-[0.82rem] cursor-pointer transition-all active:scale-95"
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1.5px solid rgba(255,255,255,0.1)',
+                  color: 'rgba(255,255,255,0.55)',
+                }}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleDeleteVideo}
+                disabled={deletingVideo}
+                className="flex-1 py-3 rounded-xl font-semibold text-[0.82rem] cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                style={{
+                  background: 'rgba(248,113,113,0.2)',
+                  border: '1px solid rgba(248,113,113,0.3)',
+                  color: '#F87171',
+                }}
+              >
+                {deletingVideo ? (
                   <div className="w-4 h-4 border-2 border-[rgba(248,113,113,0.3)] border-t-[#F87171] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
                 ) : (
                   <><i className="fas fa-trash text-[0.7rem]"></i> Supprimer</>

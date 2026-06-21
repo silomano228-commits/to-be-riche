@@ -252,18 +252,20 @@ export default function VideoPlatformScreen() {
         )}
       </div>
 
-      {/* Video player modal with NO seeking/scrolling */}
+      {/* Video player modal with NO seeking/scrolling — Quit button always available */}
       {activeVideo && (
         <VideoPlayerModal
           video={activeVideo}
           onClose={() => setActiveVideo(null)}
           onReward={async (reward) => {
+            // Show reward + today's cumulative earnings in the congratulations modal
+            const newTodayTotal = totalEarnedToday + reward;
             setCongratsData({
               show: true,
               type: 'video',
               amount: reward,
               title: 'Vidéo regardée !',
-              message: `Vous avez gagné $${reward.toFixed(2)} sur votre compte vidéo !`,
+              message: `+$${reward.toFixed(2)} crédités sur votre compte vidéo. Total gagné aujourd'hui : $${newTodayTotal.toFixed(2)}.`,
               onClose: () => setCongratsData({ show: false, type: 'video' }),
             });
             await globalRefreshUser();
@@ -399,7 +401,7 @@ function VideoPlayerModal({ video, onClose, onReward }: {
   }, [video.id]);
 
   // Prevent scroll on the container
-  const preventScroll = (e: React.WheelEvent | React.TouchMoveEvent) => {
+  const preventScroll = (e: React.WheelEvent | React.TouchEvent) => {
     e.preventDefault();
   };
 
@@ -427,19 +429,24 @@ function VideoPlayerModal({ video, onClose, onReward }: {
   return (
     <div className="fixed inset-0 z-[9000] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.9)' }}>
       <div className="w-full max-w-[420px]">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-[0.55rem] font-bold px-1.5 py-0.5 rounded text-white" style={{ background: CATEGORY_COLOR[video.category] }}>
+        {/* Header — Quit (X) button ALWAYS visible (top-right, 44px touch target) */}
+        <div className="flex items-center justify-between mb-3 gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span className="text-[0.55rem] font-bold px-1.5 py-0.5 rounded text-white flex-shrink-0" style={{ background: CATEGORY_COLOR[video.category] }}>
               {CATEGORY_FLAG[video.category]} {CATEGORY_LABEL[video.category]}
             </span>
-            <span className="text-[0.6rem] text-white/60">Sponsorisé par {video.sponsor}</span>
+            <span className="text-[0.6rem] text-white/60 truncate">Sponsorisé par {video.sponsor}</span>
           </div>
-          {canClaim && (
-            <button onClick={onClose} className="text-white/60 hover:text-white cursor-pointer">
-              <i className="fas fa-times text-[1rem]"></i>
-            </button>
-          )}
+          {/* Always-visible Quit button — anyone can quit at any moment */}
+          <button
+            onClick={onClose}
+            aria-label="Quitter la vidéo"
+            title="Quitter la vidéo"
+            className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center cursor-pointer transition-all active:scale-95 border-none"
+            style={{ background: 'rgba(239,68,68,0.95)', color: '#FFFFFF', boxShadow: '0 2px 10px rgba(239,68,68,0.45)' }}
+          >
+            <i className="fas fa-times text-[1.15rem]"></i>
+          </button>
         </div>
 
         {/* Title */}
@@ -455,8 +462,9 @@ function VideoPlayerModal({ video, onClose, onReward }: {
         >
           <div id="yt-player" className="w-full h-full" style={{ pointerEvents: 'none' }}></div>
 
-          {/* Overlay to block all interaction */}
-          <div className="absolute inset-0" style={{ pointerEvents: 'none' }}></div>
+          {/* Transparent overlay that CAPTURES all pointer events so the user
+              cannot click the YouTube iframe to seek/pause/interact. */}
+          <div className="absolute inset-0" style={{ background: 'transparent' }}></div>
 
           {/* Progress bar */}
           <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/20">
@@ -494,6 +502,17 @@ function VideoPlayerModal({ video, onClose, onReward }: {
           style={{ background: canClaim ? 'linear-gradient(135deg, #22C55E, #14B8A6)' : '#4B5563', color: '#FFFFFF' }}
         >
           {claiming ? 'Réclamation...' : canClaim ? `Réclamer $${video.reward.toFixed(2)}` : `Regardez ${Math.ceil(50 - watchedPercent)}% de plus`}
+        </button>
+
+        {/* Always-available Quit button — visible at ANY moment during playback.
+            The user explicitly requested that everyone can quit the video at any time. */}
+        <button
+          onClick={onClose}
+          className="w-full mt-2 py-3 rounded-xl font-bold text-[0.8rem] cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-2"
+          style={{ background: 'rgba(239,68,68,0.12)', color: '#FCA5A5', border: '1px solid rgba(239,68,68,0.4)' }}
+        >
+          <i className="fas fa-times-circle text-[0.9rem]"></i>
+          Quitter la vidéo
         </button>
       </div>
     </div>

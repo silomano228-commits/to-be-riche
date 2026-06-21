@@ -22,8 +22,12 @@ export default function ProfileScreen() {
   const [showReferrals, setShowReferrals] = useState(false);
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
+  const [shareSheetOpen, setShareSheetOpen] = useState(false);
   const [worldLink, setWorldLink] = useState<string | null>(null);
   const [worldLinkSeen, setWorldLinkSeen] = useState(false);
+
+  // shareUrl is only the window origin — safe to compute lazily on the client.
+  const shareUrl = typeof window !== 'undefined' ? window.location.origin : 'https://beriche.duckdns.org';
 
   const loadReferrals = async () => {
     try {
@@ -50,7 +54,10 @@ export default function ProfileScreen() {
       .catch(() => { /* */ });
   }, [user]);
 
-  const referralLink = `https://beriche.duckdns.org/?ref=${user?.referralCode || ''}`;
+  const referralLink = `${shareUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://beriche.duckdns.org')}/?ref=${user?.referralCode || ''}`;
+
+  const buildShareText = () =>
+    `Rejoins Be Rich et gagne de l'argent ! Utilise mon code: ${user?.referralCode || ''}. Inscris-toi: ${referralLink}`;
 
   const handleCopyCode = async () => {
     if (!user?.referralCode) return;
@@ -75,26 +82,117 @@ export default function ProfileScreen() {
   const handleShare = async () => {
     if (!user?.referralCode) return;
     const shareData = {
-      title: 'Be Rich - Investissement & Trading',
-      text: `Rejoins Be Rich avec mon code de parrainage ${user.referralCode} et commence à investir ! 💰`,
+      title: 'Be Rich',
+      text: buildShareText(),
       url: referralLink,
     };
-    try {
-      if (navigator.share) {
+    // Try native share sheet first (mostly mobile)
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
         await navigator.share(shareData);
-        addToast('Lien partagé !', 'success');
-      } else {
-        await navigator.clipboard.writeText(referralLink);
         setShared(true);
-        addToast('Lien copié !', 'success');
         setTimeout(() => setShared(false), 2000);
+        return;
+      } catch (err: any) {
+        // If the user explicitly cancelled, do NOT show the fallback
+        if (err && err.name === 'AbortError') return;
+        // For any other error, fall through to custom sheet
       }
-    } catch {
-      await navigator.clipboard.writeText(referralLink);
-      setShared(true);
-      addToast('Lien copié !', 'success');
-      setTimeout(() => setShared(false), 2000);
     }
+    // Fallback custom share sheet (desktop / unsupported browsers)
+    setShareSheetOpen(true);
+  };
+
+  // Open a share URL in a new tab and give feedback
+  const openShareUrl = (url: string, label: string) => {
+    try {
+      if (url.startsWith('sms:') || url.startsWith('mailto:')) {
+        // Use window.open with _self to navigate on the same tab for SMS / mail
+        window.open(url, '_self');
+      } else {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
+      addToast(`Partage via ${label} ouvert`, 'success');
+    } catch {
+      addToast(`Impossible d'ouvrir ${label}`, 'error');
+    }
+  };
+
+  const handleShareVia = (platform: string) => {
+    if (!user?.referralCode) return;
+    const text = buildShareText();
+    const url = referralLink;
+    const enc = encodeURIComponent;
+
+    switch (platform) {
+      case 'whatsapp':
+        openShareUrl(`https://wa.me/?text=${enc(text)}`, 'WhatsApp');
+        break;
+      case 'whatsapp_business':
+        openShareUrl(`https://api.whatsapp.com/send?text=${enc(text)}`, 'WhatsApp Business');
+        break;
+      case 'telegram':
+        openShareUrl(`https://t.me/share/url?url=${enc(url)}&text=${enc(text)}`, 'Telegram');
+        break;
+      case 'facebook':
+        openShareUrl(`https://www.facebook.com/sharer/sharer.php?u=${enc(url)}&quote=${enc(text)}`, 'Facebook');
+        break;
+      case 'sms':
+        openShareUrl(`sms:?&body=${enc(text)}`, 'SMS');
+        break;
+      case 'tiktok':
+      case 'instagram':
+      case 'snapchat':
+        // These platforms have no direct share URL — copy link + open the app/site
+        copyLinkThenOpen(platform);
+        break;
+      case 'copy':
+        copyLinkOnly();
+        break;
+      default:
+        break;
+    }
+    setShareSheetOpen(false);
+  };
+
+  const copyLinkOnly = async () => {
+    try {
+      await navigator.clipboard.writeText(referralLink);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = referralLink;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch { /* */ }
+      document.body.removeChild(ta);
+    }
+    setShared(true);
+    addToast('Lien copié !', 'success');
+    setTimeout(() => setShared(false), 2000);
+  };
+
+  const copyLinkThenOpen = async (platform: string) => {
+    const target: Record<string, { url: string; label: string }> = {
+      tiktok: { url: 'https://www.tiktok.com/', label: 'TikTok' },
+      instagram: { url: 'https://www.instagram.com/', label: 'Instagram' },
+      snapchat: { url: 'https://www.snapchat.com/', label: 'Snapchat' },
+    };
+    const t = target[platform];
+    if (!t) return;
+    // Copy the referral link first, then open the app/site so the user can paste
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      addToast(`Lien copié — collez-le sur ${t.label}`, 'success');
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = referralLink;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch { /* */ }
+      document.body.removeChild(ta);
+      addToast(`Lien copié — collez-le sur ${t.label}`, 'success');
+    }
+    setTimeout(() => window.open(t.url, '_blank', 'noopener,noreferrer'), 300);
   };
 
   const handleWorldLinkClick = async () => {
@@ -201,14 +299,10 @@ export default function ProfileScreen() {
           </div>
 
           {/* Account grid on gradient background */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)' }}>
               <div className="text-[0.6rem] uppercase text-white/60">Principal</div>
               <div className="text-[0.95rem] font-black text-white">{formatMoney(user.balance)}</div>
-            </div>
-            <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)' }}>
-              <div className="text-[0.6rem] uppercase text-white/60">Investissement</div>
-              <div className="text-[0.95rem] font-black text-white">{formatMoney(user.investBalance)}</div>
             </div>
             <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)' }}>
               <div className="text-[0.6rem] uppercase text-white/60">Trading</div>
@@ -628,6 +722,94 @@ export default function ProfileScreen() {
                 Se déconnecter
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Share Sheet — fallback when navigator.share is unavailable */}
+      {shareSheetOpen && (
+        <div
+          className="fixed inset-0 z-[7000] flex items-end sm:items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setShareSheetOpen(false)}
+        >
+          <div
+            className="w-full sm:w-[420px] max-h-[85vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl p-5"
+            style={{
+              background: '#FFFFFF',
+              boxShadow: '0 -8px 30px rgba(0,0,0,0.18)',
+              animation: 'slideUp 0.25s ease-out',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-[1rem] font-extrabold" style={{ color: '#1F2937' }}>Partager Be Rich</h3>
+              <button
+                onClick={() => setShareSheetOpen(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer"
+                style={{ background: 'rgba(0,0,0,0.05)', color: 'rgba(0,0,0,0.55)' }}
+                aria-label="Fermer"
+              >
+                <i className="fas fa-times text-[0.85rem]"></i>
+              </button>
+            </div>
+            <p className="text-[0.72rem] mb-4" style={{ color: 'rgba(0,0,0,0.5)' }}>
+              Partage ton code <strong style={{ color: '#F59E0B' }}>{user?.referralCode}</strong> et invite tes amis à rejoindre Be Rich.
+            </p>
+
+            {/* Referral link preview */}
+            <div
+              className="rounded-xl p-3 mb-4 flex items-center gap-2"
+              style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.12)' }}
+            >
+              <i className="fas fa-link text-[0.8rem]" style={{ color: '#F59E0B' }}></i>
+              <span className="flex-1 text-[0.72rem] truncate font-mono" style={{ color: 'rgba(0,0,0,0.7)' }} title={referralLink}>{referralLink}</span>
+            </div>
+
+            {/* Platform grid */}
+            <div className="grid grid-cols-4 gap-3">
+              {[
+                { id: 'whatsapp', label: 'WhatsApp', icon: 'fab fa-whatsapp', color: '#25D366' },
+                { id: 'whatsapp_business', label: 'WhatsApp Business', icon: 'fab fa-whatsapp', color: '#0B5A3E' },
+                { id: 'telegram', label: 'Telegram', icon: 'fab fa-telegram-plane', color: '#0088CC' },
+                { id: 'facebook', label: 'Facebook', icon: 'fab fa-facebook-f', color: '#1877F2' },
+                { id: 'tiktok', label: 'TikTok', icon: 'fab fa-tiktok', color: '#000000' },
+                { id: 'instagram', label: 'Instagram', icon: 'fab fa-instagram', color: '#E1306C' },
+                { id: 'snapchat', label: 'Snapchat', icon: 'fab fa-snapchat-ghost', color: '#FFFC00' },
+                { id: 'sms', label: 'SMS', icon: 'fas fa-comment-sms', color: '#22C55E' },
+              ].map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => handleShareVia(p.id)}
+                  className="flex flex-col items-center gap-1.5 cursor-pointer border-none bg-transparent"
+                  title={p.label}
+                >
+                  <span
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center transition-transform"
+                    style={{ background: `${p.color}1A`, color: p.color }}
+                    onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+                  >
+                    <i className={`${p.icon} text-[1.1rem]`}></i>
+                  </span>
+                  <span className="text-[0.62rem] text-center leading-tight" style={{ color: 'rgba(0,0,0,0.6)' }}>{p.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Copy link action */}
+            <button
+              onClick={() => handleShareVia('copy')}
+              className="w-full mt-4 py-3 rounded-xl font-semibold text-[0.85rem] cursor-pointer transition-all active:scale-[0.98] flex items-center justify-center gap-2 border-none"
+              style={{
+                background: shared ? 'rgba(34,197,94,0.15)' : 'linear-gradient(135deg, #FBBF24, #F59E0B)',
+                color: shared ? '#22C55E' : '#0F172A',
+              }}
+            >
+              <i className={`fas ${shared ? 'fa-check' : 'fa-copy'} text-[0.85rem]`}></i>
+              {shared ? 'Lien copié !' : 'Copier le lien'}
+            </button>
           </div>
         </div>
       )}

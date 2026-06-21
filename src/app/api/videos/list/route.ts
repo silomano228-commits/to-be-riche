@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
-import { getDailyVideos, DAILY_VIDEO_LIMIT } from '@/lib/videos';
+import { getDailyVideos, DAILY_VIDEO_LIMIT, type VideoItem } from '@/lib/videos';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +27,31 @@ export async function GET(request: Request) {
     }
 
     const today = new Date().toISOString().slice(0, 10);
-    const dailyVideos = getDailyVideos();
+
+    // Admin-managed links take priority over the default daily catalog.
+    // If the administrator has added active video links, those are shown to all users.
+    // Otherwise, fall back to the built-in daily catalog (rotates each day).
+    const adminLinks = await db.adminVideoLink.findMany({
+      where: { active: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    let dailyVideos: VideoItem[];
+    let source: 'admin' | 'catalog';
+    if (adminLinks.length > 0) {
+      dailyVideos = adminLinks.map((l) => ({
+        id: l.youtubeId,
+        title: l.title,
+        category: (['chinois', 'japonais', 'indien'].includes(l.category) ? l.category : 'entreprise') as VideoItem['category'],
+        sponsor: l.sponsor,
+        durationMin: l.durationMin,
+        reward: l.reward,
+      }));
+      source = 'admin';
+    } else {
+      dailyVideos = getDailyVideos();
+      source = 'catalog';
+    }
 
     const watched = await db.videoWatch.findMany({
       where: { userId: user.id, watchDate: today },
@@ -62,6 +86,7 @@ export async function GET(request: Request) {
       videoBalance: user.videoBalance,
       videoDepositRequired: user.videoDepositRequired,
       daysWatching,
+      source,
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });

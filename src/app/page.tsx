@@ -194,6 +194,12 @@ function AuthScreen() {
       <div className="w-full max-w-[330px] text-center px-5 relative z-[1]">
         <LogoImg className="w-[100px] h-[100px] mx-auto mb-4" style={{ filter: 'drop-shadow(0 8px 32px rgba(34,197,94,0.25))' }} />
         <h1 className="text-[1.8rem] font-black mb-1 bg-gradient-to-r from-[#22C55E] to-[#16A34A] bg-clip-text text-transparent tracking-[2px]">BE RICH</h1>
+        {/* Communication platform tagline */}
+        <div className="inline-flex items-center gap-1.5 mb-1 px-3 py-1 rounded-full bg-[rgba(20,184,166,0.1)] border border-[rgba(20,184,166,0.2)]">
+          <i className="fas fa-globe-asia text-[#14B8A6] text-[0.6rem]"></i>
+          <span className="text-[0.58rem] font-bold text-[#0F766E] uppercase tracking-wide">Plateforme de communication des grandes entreprises</span>
+        </div>
+        <p className="text-[0.6rem] text-[rgba(0,0,0,0.45)] mb-4">Regardez des vidéos d&rsquo;entreprises chinoises, japonaises et indiennes &mdash; soyez pay&eacute;s&nbsp;!</p>
 
         {/* OTP Verification Step — Registration only */}
         {otpStep ? (
@@ -410,17 +416,17 @@ function HomeScreen() {
             {/* Compact 2x2 Account Grid — Glass Cards */}
             <div className="grid grid-cols-2 gap-1.5">
               <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
-                <div className="w-8 h-8 icon-box bg-[rgba(59,130,246,0.15)] shrink-0"><i className="fas fa-chart-line text-[0.65rem] text-[#3B82F6]"></i></div>
+                <div className="w-8 h-8 icon-box bg-[rgba(34,197,94,0.15)] shrink-0"><i className="fas fa-wallet text-[0.65rem] text-[#22C55E]"></i></div>
                 <div className="min-w-0">
-                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Invest.</div>
-                  <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.investBalance)}</div>
+                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Principal</div>
+                  <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.balance)}</div>
                 </div>
               </div>
               <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
-                <div className="w-8 h-8 icon-box bg-[rgba(245,158,11,0.15)] shrink-0"><i className="fas fa-dice text-[0.65rem] text-[#F59E0B]"></i></div>
+                <div className="w-8 h-8 icon-box bg-[rgba(245,158,11,0.15)] shrink-0"><i className="fas fa-bolt text-[0.65rem] text-[#F59E0B]"></i></div>
                 <div className="min-w-0">
-                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Jeu</div>
-                  <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.balance)}</div>
+                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Trading</div>
+                  <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.tradeBalance || 0)}</div>
                 </div>
               </div>
               <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
@@ -543,8 +549,6 @@ function WalletScreen() {
   if (!user) return null;
 
   const accounts = [
-    { key: 'principal', label: 'Compte Principal', balance: user.balance, icon: 'fa-wallet', iconColor: '#22C55E', iconBg: 'bg-[rgba(34,197,94,0.12)]', borderColor: '#22C55E' },
-    { key: 'invest', label: "Compte d'Investissement", balance: user.investBalance, icon: 'fa-chart-line', iconColor: '#3B82F6', iconBg: 'bg-[rgba(59,130,246,0.12)]', borderColor: '#3B82F6' },
     { key: 'trade', label: 'Compte de Trading', balance: user.tradeBalance, icon: 'fa-bolt', iconColor: '#F59E0B', iconBg: 'bg-[rgba(245,158,11,0.12)]', borderColor: '#F59E0B' },
     { key: 'project', label: 'Compte de Projet', balance: user.projectBalance, icon: 'fa-building', iconColor: '#8B5CF6', iconBg: 'bg-[rgba(139,92,246,0.12)]', borderColor: '#8B5CF6' },
   ] as const;
@@ -559,8 +563,8 @@ function WalletScreen() {
           <div className="absolute -bottom-10 -left-10 w-[140px] h-[140px] bg-[radial-gradient(circle,rgba(255,255,255,0.1),transparent_60%)]" style={{ animation: 'orbFloat 8s ease-in-out infinite 4s reverse' }} />
           <div className="relative z-[1]">
             <div className="flex items-center gap-2 mb-1">
-              <div className="w-9 h-9 icon-box bg-white/20"><i className={`fas ${accounts[0].icon} text-[0.85rem] text-white`}></i></div>
-              <div className="text-[0.7rem] text-white/70 font-semibold uppercase tracking-[1.5px]">{accounts[0].label}</div>
+              <div className="w-9 h-9 icon-box bg-white/20"><i className="fas fa-wallet text-[0.85rem] text-white"></i></div>
+              <div className="text-[0.7rem] text-white/70 font-semibold uppercase tracking-[1.5px]">Compte Principal</div>
             </div>
             <div className="text-[2rem] font-black tracking-[-1px] text-white mb-3">{formatMoney(user.balance)}</div>
             <div className="flex gap-2">
@@ -574,7 +578,7 @@ function WalletScreen() {
         <PromoBanner compact />
 
         {/* Other Accounts — Glass Cards with colored left border */}
-        {accounts.slice(1).map((acc) => (
+        {accounts.map((acc) => (
           <div key={acc.key} className="glass-card rounded-2xl p-4 mb-3" style={{ borderLeft: `4px solid ${acc.borderColor}` }}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2.5">

@@ -1,6 +1,25 @@
 import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
-import { getDailyVideos, DAILY_VIDEO_LIMIT } from '@/lib/videos';
+import { getDailyVideos, DAILY_VIDEO_LIMIT, type VideoItem } from '@/lib/videos';
+
+// Build the current video list: admin links take priority over the catalog.
+async function getCurrentVideos(): Promise<VideoItem[]> {
+  const adminLinks = await db.adminVideoLink.findMany({
+    where: { active: true },
+    orderBy: { createdAt: 'desc' },
+  });
+  if (adminLinks.length > 0) {
+    return adminLinks.map((l) => ({
+      id: l.youtubeId,
+      title: l.title,
+      category: (['chinois', 'japonais', 'indien'].includes(l.category) ? l.category : 'entreprise') as VideoItem['category'],
+      sponsor: l.sponsor,
+      durationMin: l.durationMin,
+      reward: l.reward,
+    }));
+  }
+  return getDailyVideos();
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -63,7 +82,7 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    const dailyVideos = getDailyVideos();
+    const dailyVideos = await getCurrentVideos();
     const videoData = dailyVideos.find((v) => v.id === videoId);
     if (!videoData) {
       return NextResponse.json({ success: false, error: 'Vidéo non disponible aujourd\'hui' }, { status: 400 });

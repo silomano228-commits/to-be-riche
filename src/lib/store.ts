@@ -99,7 +99,7 @@ export const useAppStore = create<AppState>((set) => ({
       set((s) => ({ notifications: s.notifications.filter((n) => n.id !== nId) }));
     }, 4000);
   },
-  removeNotification: (id) => set((s) => ({ notifications: s.notifications.filter((n) => n.id !== nId) })),
+  removeNotification: (id) => set((s) => ({ notifications: s.notifications.filter((n) => n.id !== id) })),
 }));
 
 export function formatMoney(v: number): string {
