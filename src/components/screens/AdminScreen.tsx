@@ -840,8 +840,7 @@ export default function AdminScreen() {
                             <span><i className="fas fa-calendar text-[0.45rem] mr-0.5 text-[#818CF8]"></i>{created}</span>
                           </div>
                         </div>
-                        {u.role !== 'admin' && (
-                          <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="flex items-center gap-1.5 shrink-0">
                             <button
                               onClick={() => {
                                 if (editBalanceUserId === u.id) {
@@ -869,29 +868,32 @@ export default function AdminScreen() {
                             >
                               <i className="fas fa-pen text-[0.55rem]"></i>
                             </button>
-                            <button
-                              onClick={() => { setTransferUserId(transferUserId === u.id ? null : u.id); setMessageUserId(null); setEditBalanceUserId(null); setEditBalanceDraft(null); }}
-                              className="w-7 h-7 rounded-lg bg-[rgba(34,197,94,0.12)] flex items-center justify-center text-[#4ADE80] cursor-pointer border-none shrink-0 hover:bg-[rgba(34,197,94,0.2)] transition-colors"
-                              title="Transférer vers Principal"
-                            >
-                              <i className="fas fa-exchange-alt text-[0.55rem]"></i>
-                            </button>
-                            <button
-                              onClick={() => { setMessageUserId(messageUserId === u.id ? null : u.id); setTransferUserId(null); setEditBalanceUserId(null); setEditBalanceDraft(null); }}
-                              className="w-7 h-7 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center text-[#6366F1] cursor-pointer border-none shrink-0 hover:bg-[rgba(99,102,241,0.2)] transition-colors"
-                              title="Envoyer un message"
-                            >
-                              <i className="fas fa-comment text-[0.6rem]"></i>
-                            </button>
-                            <button
-                              onClick={() => { setDeleteUserId(u.id); setDeleteUserName(u.name); }}
-                              className="w-7 h-7 rounded-lg bg-[rgba(248,113,113,0.12)] flex items-center justify-center text-[#F87171] cursor-pointer border-none shrink-0 hover:bg-[rgba(248,113,113,0.2)] transition-colors"
-                              title="Supprimer cet utilisateur"
-                            >
-                              <i className="fas fa-trash text-[0.55rem]"></i>
-                            </button>
+                            {u.role !== 'admin' && (
+                              <>
+                                <button
+                                  onClick={() => { setTransferUserId(transferUserId === u.id ? null : u.id); setMessageUserId(null); setEditBalanceUserId(null); setEditBalanceDraft(null); }}
+                                  className="w-7 h-7 rounded-lg bg-[rgba(34,197,94,0.12)] flex items-center justify-center text-[#4ADE80] cursor-pointer border-none shrink-0 hover:bg-[rgba(34,197,94,0.2)] transition-colors"
+                                  title="Transférer vers Principal"
+                                >
+                                  <i className="fas fa-exchange-alt text-[0.55rem]"></i>
+                                </button>
+                                <button
+                                  onClick={() => { setMessageUserId(messageUserId === u.id ? null : u.id); setTransferUserId(null); setEditBalanceUserId(null); setEditBalanceDraft(null); }}
+                                  className="w-7 h-7 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center text-[#6366F1] cursor-pointer border-none shrink-0 hover:bg-[rgba(99,102,241,0.2)] transition-colors"
+                                  title="Envoyer un message"
+                                >
+                                  <i className="fas fa-comment text-[0.6rem]"></i>
+                                </button>
+                                <button
+                                  onClick={() => { setDeleteUserId(u.id); setDeleteUserName(u.name); }}
+                                  className="w-7 h-7 rounded-lg bg-[rgba(248,113,113,0.12)] flex items-center justify-center text-[#F87171] cursor-pointer border-none shrink-0 hover:bg-[rgba(248,113,113,0.2)] transition-colors"
+                                  title="Supprimer cet utilisateur"
+                                >
+                                  <i className="fas fa-trash text-[0.55rem]"></i>
+                                </button>
+                              </>
+                            )}
                           </div>
-                        )}
                       </div>
                       {/* Balances grid — 4 wallet accounts in a clean 2x2 layout */}
                       <div className="grid grid-cols-2 gap-1.5 mt-2.5">
