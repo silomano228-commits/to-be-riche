@@ -21,6 +21,15 @@ async function checkAdmin(request: Request) {
   return { error: null, admin };
 }
 
+// Investment levels — mirror of /api/invest/create. Used when approving an
+// investment-type deposit to create the Investment record with the correct
+// rate. totalCycles = 0 means UNLIMITED collection days.
+const INVESTMENT_LEVELS: Record<number, { rate: number; label: string }> = {
+  1: { rate: 5, label: 'Niveau 1 — Débutant' },
+  2: { rate: 5, label: 'Niveau 2 — Business' },
+  3: { rate: 5, label: 'Niveau 3 — Elite' },
+};
+
 // GET — Liste tous les dépôts en attente (admin)
 export async function GET(request: Request) {
   try {
@@ -35,11 +44,13 @@ export async function GET(request: Request) {
     const pending = deposits.filter(d => d.status === 'pending').length;
     const approved = deposits.filter(d => d.status === 'approved').length;
     const rejected = deposits.filter(d => d.status === 'rejected').length;
+    // Count of investment-type deposits (so the admin badge can highlight them)
+    const pendingInvestments = deposits.filter(d => d.status === 'pending' && d.type === 'investment').length;
 
     return NextResponse.json({
       success: true,
       data: deposits,
-      stats: { pending, approved, rejected, total: deposits.length },
+      stats: { pending, approved, rejected, total: deposits.length, pendingInvestments },
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
@@ -47,6 +58,10 @@ export async function GET(request: Request) {
 }
 
 // POST — Approuver ou rejeter un dépôt (admin)
+// When the deposit has type='investment', approval creates the actual
+// Investment record with the countdown starting NOW (nextClaimAt = +24h,
+// finishesAt = null for unlimited cycles). The user's principal balance is
+// NOT credited — the funds are invested directly.
 export async function POST(request: Request) {
   try {
     const { error } = await checkAdmin(request);
@@ -62,30 +77,99 @@ export async function POST(request: Request) {
     if (!deposit) return NextResponse.json({ success: false, error: 'Dépôt non trouvé' });
     if (deposit.status !== 'pending') return NextResponse.json({ success: false, error: 'Dépôt déjà traité' });
 
+    const isInvestment = deposit.type === 'investment';
+    const now = new Date();
+
     if (action === 'reject') {
       await db.pendingDeposit.update({
         where: { id: depositId },
-        data: { status: 'rejected' },
+        data: { status: 'rejected', processedAt: now },
       });
       // Notify user
-      await notifyUser({
-        userId: deposit.userId,
-        type: 'deposit_rejected',
-        title: 'Dépôt rejeté',
-        message: `Votre dépôt de ${deposit.amountUsd.toFixed(2)} $ a été rejeté.`,
-        link: 'deposit',
-      });
+      if (isInvestment) {
+        await notifyUser({
+          userId: deposit.userId,
+          type: 'investment_rejected',
+          title: 'Dépôt d\'investissement rejeté',
+          message: `Votre demande de dépôt d'investissement de ${deposit.amountUsd.toFixed(2)} $ a été rejetée par l'administrateur. Aucun fonds n'a été débité.`,
+          link: 'invest',
+        });
+      } else {
+        await notifyUser({
+          userId: deposit.userId,
+          type: 'deposit_rejected',
+          title: 'Dépôt rejeté',
+          message: `Votre dépôt de ${deposit.amountUsd.toFixed(2)} $ a été rejeté.`,
+          link: 'deposit',
+        });
+      }
       return NextResponse.json({ success: true, message: 'Dépôt rejeté' });
     }
 
-    // Approuver — créditer le solde principal de l'utilisateur
+    // ============ APPROVE ============
+    if (isInvestment) {
+      // Investment-type deposit: create the Investment record now.
+      // The countdown starts at approval time (NOT at request time).
+      const level = deposit.investmentLevel ?? 1;
+      const invAmount = deposit.investmentAmount ?? deposit.amountUsd;
+      const levelConfig = INVESTMENT_LEVELS[level];
+      const rate = levelConfig?.rate ?? 5;
+      const levelLabel = levelConfig?.label ?? `Niveau ${level}`;
+
+      // nextClaimAt = 24h from now. totalCycles = 0 means UNLIMITED.
+      const nextClaimAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+      await db.$transaction(async (tx) => {
+        await tx.pendingDeposit.update({
+          where: { id: depositId },
+          data: { status: 'approved', txHash: txHash || null, processedAt: now },
+        });
+
+        await tx.investment.create({
+          data: {
+            userId: deposit.userId,
+            level,
+            amount: invAmount,
+            rate,
+            totalCycles: 0, // 0 = unlimited
+            doneCycles: 0,
+            earned: 0,
+            status: 'active',
+            nextClaimAt,
+            finishesAt: null, // never finishes (unlimited)
+          },
+        });
+
+        await tx.transaction.create({
+          data: {
+            type: 'invest_create',
+            amount: -invAmount,
+            detail: `Investissement approuvé: ${levelLabel} — $${invAmount.toFixed(2)} à ${rate}%/jour (collecte illimitée) — Paiement TRX — Compte à rebours démarré`,
+            userId: deposit.userId,
+          },
+        });
+      });
+
+      // Notify user that investment is now active and countdown has started
+      await notifyUser({
+        userId: deposit.userId,
+        type: 'investment_approved',
+        title: 'Investissement approuvé !',
+        message: `Votre dépôt d'investissement ${levelLabel} de ${invAmount.toFixed(2)} $ a été approuvé. L'investissement est maintenant actif et le compte à rebours a démarré — vous pourrez collecter vos premiers gains dans 24h.`,
+        link: 'invest',
+      });
+
+      return NextResponse.json({ success: true, message: 'Investissement approuvé — compte à rebours démarré' });
+    }
+
+    // ---------- Standard principal-wallet deposit (existing behavior) ----------
     const depositUser = await db.user.findUnique({ where: { id: deposit.userId } });
     const isFirstDeposit = !depositUser?.hasInvested;
 
     await db.$transaction(async (tx) => {
       await tx.pendingDeposit.update({
         where: { id: depositId },
-        data: { status: 'approved', txHash: txHash || null },
+        data: { status: 'approved', txHash: txHash || null, processedAt: now },
       });
       await tx.user.update({
         where: { id: deposit.userId },

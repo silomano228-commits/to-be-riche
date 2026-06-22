@@ -421,7 +421,7 @@ export default function VideoPlatformScreen() {
 
       {/* Share modal (native share sheet) */}
       {showShareModal && (
-        <ShareModal referralCode={user?.referralCode || ''} onClose={() => setShowShareModal(false)} />
+        <ShareModal referralCode={user?.referralCode || ''} addToast={addToast} onClose={() => setShowShareModal(false)} />
       )}
 
       <CongratulationsModal data={congratsData} />
@@ -776,7 +776,7 @@ function VideoWithdrawModal({ videoBalance, onClose, onSuccess, addToast }: {
 }
 
 // ===== Share modal with native share sheet =====
-function ShareModal({ referralCode, onClose }: { referralCode: string; onClose: () => void }) {
+function ShareModal({ referralCode, addToast, onClose }: { referralCode: string; addToast: (msg: string, type: 'success' | 'error' | 'info') => void; onClose: () => void }) {
   const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/?ref=${referralCode}` : '';
   const shareText = `Rejoins Be Rich, la plateforme de communication pour les grandes entreprises ! Gagne de l'argent en regardant des vidéos. ${shareUrl}`;
 
@@ -787,11 +787,30 @@ function ShareModal({ referralCode, onClose }: { referralCode: string; onClose: 
         onClose();
       } catch { /* user cancelled */ }
     } else {
-      // Fallback: copy to clipboard
-      try {
-        await navigator.clipboard.writeText(shareText);
-        alert('Lien copié dans le presse-papiers !');
-      } catch { /* ignore */ }
+      // Fallback: copy full share text to clipboard
+      await copyLink(true);
+    }
+  };
+
+  const copyLink = async (copyFullText = false) => {
+    const textToCopy = copyFullText ? shareText : shareUrl;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(textToCopy);
+      } else {
+        // Legacy fallback for non-secure contexts
+        const ta = document.createElement('textarea');
+        ta.value = textToCopy;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      addToast('Lien copié !', 'success');
+    } catch {
+      addToast('Impossible de copier le lien.', 'error');
     }
   };
 
@@ -808,18 +827,35 @@ function ShareModal({ referralCode, onClose }: { referralCode: string; onClose: 
     <div className="fixed inset-0 z-[8500] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.8)' }} onClick={onClose}>
       <div className="w-full max-w-[380px] rounded-2xl bg-white p-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-[1rem] font-black text-[#1F2937]">Partager Be Rich</h3>
+          <h3 className="text-[1rem] font-black text-[#1F2937]">Invitez vos amis</h3>
           <button onClick={onClose} className="text-[#6B7280] cursor-pointer"><i className="fas fa-times"></i></button>
         </div>
 
-        <div className="rounded-xl p-3 mb-4" style={{ background: '#F0FDFA', border: '1px solid #A7F3D0' }}>
-          <div className="text-[0.6rem] text-[#0F766E] mb-1">Votre lien de parrainage</div>
-          <div className="text-[0.7rem] font-bold text-[#0F766E] break-all">{shareUrl}</div>
+        {/* Read-only invite link field + copy button */}
+        <div className="rounded-xl p-3 mb-3" style={{ background: '#F0FDFA', border: '1px solid #A7F3D0' }}>
+          <div className="text-[0.6rem] text-[#0F766E] mb-1.5">Votre lien de parrainage</div>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              readOnly
+              value={shareUrl}
+              onFocus={(e) => e.currentTarget.select()}
+              className="flex-1 min-w-0 text-[0.7rem] font-bold text-[#0F766E] bg-white/70 rounded-lg px-2 py-2 outline-none border border-[#A7F3D0] focus:border-[#14B8A6]"
+            />
+            <button
+              onClick={() => copyLink(false)}
+              className="shrink-0 px-3 py-2 rounded-lg font-bold text-[0.7rem] border-none cursor-pointer transition-all active:scale-95 whitespace-nowrap"
+              style={{ background: '#14B8A6', color: '#FFFFFF' }}
+              aria-label="Copier le lien"
+            >
+              <i className="fas fa-copy mr-1"></i>Copier
+            </button>
+          </div>
         </div>
 
         {/* Native share button */}
         <button onClick={handleNativeShare} className="w-full py-3 rounded-xl font-bold text-[0.85rem] border-none cursor-pointer mb-4 transition-all active:scale-95" style={{ background: 'linear-gradient(135deg, #14B8A6, #0F766E)', color: '#FFFFFF' }}>
-          <i className="fas fa-share-nodes mr-1.5"></i>Partager via...
+          <i className="fas fa-share-nodes mr-1.5"></i>Partager
         </button>
 
         {/* App grid */}

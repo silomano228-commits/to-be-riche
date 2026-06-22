@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { validatePaymentAddress } from '@/lib/payment';
+import { notifyAdmin } from '@/lib/notify';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,31 +98,22 @@ export async function POST(request: Request) {
     const trxPrice = siteConfig?.trxUsdPrice || 0.12;
     const cfaUsdRate = siteConfig?.cfaUsdRate || 600;
 
-    const now = new Date();
-    // nextClaimAt = 24h from now. totalCycles = 0 means UNLIMITED collection days.
-    const nextClaimAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    // ========================================================================
+    // INVESTMENT APPROVAL FLOW (Task 7):
+    // The Investment record is NOT created here. We only create a pending
+    // deposit request (PendingDeposit for TRX / YasDeposit for YAS) with
+    // type='investment' and the investment details (level, amount, payment
+    // method). The admin must approve the deposit before the Investment is
+    // actually created — and only then does the countdown (nextClaimAt,
+    // finishesAt) start. See /api/admin/deposits and /api/admin/yas-deposits.
+    // ========================================================================
 
-    // Create the investment (active immediately, unlimited cycles)
-    const investment = await db.investment.create({
-      data: {
-        userId: user.id,
-        level,
-        amount,
-        rate: config.rate,
-        totalCycles: 0, // 0 = unlimited
-        doneCycles: 0,
-        earned: 0,
-        status: 'active',
-        nextClaimAt,
-        finishesAt: null, // never finishes (unlimited)
-      },
-    });
+    const paymentMethodStr = paymentMethod as 'yas' | 'trx';
+    let pendingId: string | null = null;
 
-    // Create the pending deposit record (YAS or TRX) for this investment.
-    // The investment is active immediately; the deposit is processed by admin.
-    if (paymentMethod === 'trx') {
+    if (paymentMethodStr === 'trx') {
       const amountTrx = amount / trxPrice;
-      await db.pendingDeposit.create({
+      const pending = await db.pendingDeposit.create({
         data: {
           userId: user.id,
           amountUsd: amount,
@@ -130,12 +122,17 @@ export async function POST(request: Request) {
           userAddress: userAddress.trim(),
           destination: `invest_level_${level}`,
           status: 'pending',
+          type: 'investment',
+          investmentLevel: level,
+          investmentAmount: amount,
+          paymentMethod: 'trx',
         },
       });
+      pendingId = pending.id;
     } else {
       const amountCfa = amount * cfaUsdRate;
       const amountTrx = amount / trxPrice;
-      await db.yasDeposit.create({
+      const pending = await db.yasDeposit.create({
         data: {
           userId: user.id,
           amountCfa,
@@ -145,35 +142,49 @@ export async function POST(request: Request) {
           yasAccount: userAddress.trim(),
           destination: `invest_level_${level}`,
           status: 'pending',
+          type: 'investment',
+          investmentLevel: level,
+          investmentAmount: amount,
         },
       });
+      pendingId = pending.id;
     }
 
-    // Create transaction record
+    // Create a transaction record (informational — funds not yet invested)
     await db.transaction.create({
       data: {
         type: 'invest_create',
         amount: -amount,
-        detail: `Investissement créé: ${config.label} — $${amount.toFixed(2)} à ${config.rate}%/jour (collecte illimitée) — Paiement ${paymentMethod.toUpperCase()}`,
+        detail: `Demande d'investissement ${config.label} — $${amount.toFixed(2)} à ${config.rate}%/jour (collecte illimitée) — Paiement ${paymentMethodStr.toUpperCase()} — En attente d'approbation admin`,
         userId: user.id,
       },
     });
 
-    // Notify user
+    // Notify user that their deposit request has been submitted
     await db.userNotification.create({
       data: {
         userId: user.id,
-        type: 'investment_created',
-        title: 'Investissement créé !',
-        message: `Votre investissement ${config.label} de $${amount.toFixed(2)} est actif. Paiement ${paymentMethod.toUpperCase()} en cours de traitement. Les fonds seront disponibles dans les 6 heures. Collecte quotidienne illimitée !`,
+        type: 'investment_pending',
+        title: 'Demande de dépôt envoyée',
+        message: `Votre demande de dépôt d'investissement ${config.label} de $${amount.toFixed(2)} a été envoyée. L'administrateur va l'approuver avant que les fonds ne soient disponibles et que l'investissement commence. Le compte à rebours démarrera après l'approbation.`,
+        link: 'invest',
       },
+    });
+
+    // Notify admin (badge count + admin notification panel)
+    await notifyAdmin({
+      type: 'investment_deposit_request',
+      title: 'Nouvelle demande de dépôt d\'investissement',
+      message: `${user.name} a demandé un dépôt d'investissement ${config.label} de $${amount.toFixed(2)} (${paymentMethodStr.toUpperCase()}) — en attente d'approbation.`,
+      userId: user.id,
+      depositId: pendingId,
     });
 
     return NextResponse.json({
       success: true,
-      investment,
-      paymentMethod,
-      message: `Investissement créé: $${amount.toFixed(2)} à ${config.rate}%/jour. Paiement ${paymentMethod.toUpperCase()} en cours — fonds disponibles dans les 6 heures. Collecte illimitée !`,
+      pendingApproval: true,
+      paymentMethod: paymentMethodStr,
+      message: `Votre demande de dépôt a été envoyée. L'administrateur va l'approuver avant que les fonds ne soient disponibles et que l'investissement commence. Le compte à rebours démarrera après l'approbation.`,
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });

@@ -45,6 +45,8 @@ export async function GET(request: Request) {
         read: n.read,
         ticketId: n.ticketId,
         userId: n.userId,
+        depositId: n.depositId,
+        withdrawalId: n.withdrawalId,
         createdAt: n.createdAt.toISOString(),
       })),
       unreadCount,

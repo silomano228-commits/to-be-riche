@@ -21,6 +21,15 @@ async function checkAdmin(request: Request) {
   return { error: null, admin };
 }
 
+// Investment levels — mirror of /api/invest/create. Used when approving an
+// investment-type Yas deposit to create the Investment record with the correct
+// rate. totalCycles = 0 means UNLIMITED collection days.
+const INVESTMENT_LEVELS: Record<number, { rate: number; label: string }> = {
+  1: { rate: 5, label: 'Niveau 1 — Débutant' },
+  2: { rate: 5, label: 'Niveau 2 — Business' },
+  3: { rate: 5, label: 'Niveau 3 — Elite' },
+};
+
 // GET — Liste toutes les demandes de conversion Yas du Togo
 export async function GET(request: Request) {
   try {
@@ -35,11 +44,12 @@ export async function GET(request: Request) {
     const pending = deposits.filter(d => d.status === 'pending').length;
     const approved = deposits.filter(d => d.status === 'approved').length;
     const rejected = deposits.filter(d => d.status === 'rejected').length;
+    const pendingInvestments = deposits.filter(d => d.status === 'pending' && d.type === 'investment').length;
 
     return NextResponse.json({
       success: true,
       data: deposits,
-      stats: { pending, approved, rejected, total: deposits.length },
+      stats: { pending, approved, rejected, total: deposits.length, pendingInvestments },
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
@@ -47,6 +57,10 @@ export async function GET(request: Request) {
 }
 
 // POST — Approuver ou rejeter une demande Yas
+// When the deposit has type='investment', approval creates the actual
+// Investment record with the countdown starting NOW (nextClaimAt = +24h,
+// finishesAt = null for unlimited cycles). The user's principal balance is
+// NOT credited — the funds are invested directly.
 export async function POST(request: Request) {
   try {
     const { error } = await checkAdmin(request);
@@ -62,30 +76,96 @@ export async function POST(request: Request) {
     if (!deposit) return NextResponse.json({ success: false, error: 'Demande non trouvée' });
     if (deposit.status !== 'pending') return NextResponse.json({ success: false, error: 'Demande déjà traitée' });
 
+    const isInvestment = deposit.type === 'investment';
+    const now = new Date();
+
     if (action === 'reject') {
       await db.yasDeposit.update({
         where: { id: depositId },
-        data: { status: 'rejected', adminNote: adminNote || null },
+        data: { status: 'rejected', adminNote: adminNote || null, processedAt: now },
       });
-      // Notify user about rejection
-      await notifyUser({
-        userId: deposit.userId,
-        type: 'deposit_rejected',
-        title: 'Dépôt Yas rejeté',
-        message: `Votre dépôt de ${deposit.amountCfa.toLocaleString()} FCFA a été rejeté.`,
-        link: 'deposit',
-      });
+      if (isInvestment) {
+        await notifyUser({
+          userId: deposit.userId,
+          type: 'investment_rejected',
+          title: 'Dépôt d\'investissement Yas rejeté',
+          message: `Votre demande de dépôt d'investissement de ${deposit.amountCfa.toLocaleString()} FCFA (${deposit.amountUsd.toFixed(2)} $) a été rejetée par l'administrateur. Aucun fonds n'a été débité.`,
+          link: 'invest',
+        });
+      } else {
+        await notifyUser({
+          userId: deposit.userId,
+          type: 'deposit_rejected',
+          title: 'Dépôt Yas rejeté',
+          message: `Votre dépôt de ${deposit.amountCfa.toLocaleString()} FCFA a été rejeté.`,
+          link: 'deposit',
+        });
+      }
       return NextResponse.json({ success: true, message: 'Demande rejetée' });
     }
 
-    // Approuver — créditer le solde principal
+    // ============ APPROVE ============
+    if (isInvestment) {
+      // Investment-type Yas deposit: create the Investment record now.
+      // The countdown starts at approval time (NOT at request time).
+      const level = deposit.investmentLevel ?? 1;
+      const invAmount = deposit.investmentAmount ?? deposit.amountUsd;
+      const levelConfig = INVESTMENT_LEVELS[level];
+      const rate = levelConfig?.rate ?? 5;
+      const levelLabel = levelConfig?.label ?? `Niveau ${level}`;
+
+      const nextClaimAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+      await db.$transaction(async (tx) => {
+        await tx.yasDeposit.update({
+          where: { id: depositId },
+          data: { status: 'approved', adminNote: adminNote || 'Dépôt investissement approuvé. Compte à rebours démarré.', processedAt: now },
+        });
+
+        await tx.investment.create({
+          data: {
+            userId: deposit.userId,
+            level,
+            amount: invAmount,
+            rate,
+            totalCycles: 0, // 0 = unlimited
+            doneCycles: 0,
+            earned: 0,
+            status: 'active',
+            nextClaimAt,
+            finishesAt: null, // never finishes (unlimited)
+          },
+        });
+
+        await tx.transaction.create({
+          data: {
+            type: 'invest_create',
+            amount: -invAmount,
+            detail: `Investissement approuvé: ${levelLabel} — $${invAmount.toFixed(2)} à ${rate}%/jour (collecte illimitée) — Paiement YAS — Compte à rebours démarré`,
+            userId: deposit.userId,
+          },
+        });
+      });
+
+      await notifyUser({
+        userId: deposit.userId,
+        type: 'investment_approved',
+        title: 'Investissement approuvé !',
+        message: `Votre dépôt d'investissement ${levelLabel} de ${deposit.amountCfa.toLocaleString()} FCFA (${invAmount.toFixed(2)} $) a été approuvé. L'investissement est maintenant actif et le compte à rebours a démarré — vous pourrez collecter vos premiers gains dans 24h.`,
+        link: 'invest',
+      });
+
+      return NextResponse.json({ success: true, message: 'Investissement Yas approuvé — compte à rebours démarré' });
+    }
+
+    // ---------- Standard principal-wallet Yas deposit (existing behavior) ----------
     const depositUser = await db.user.findUnique({ where: { id: deposit.userId } });
     const isFirstDeposit = !depositUser?.hasInvested;
 
     await db.$transaction(async (tx) => {
       await tx.yasDeposit.update({
         where: { id: depositId },
-        data: { status: 'approved', adminNote: adminNote || 'Dépôt validé. Solde principal crédité.' },
+        data: { status: 'approved', adminNote: adminNote || 'Dépôt validé. Solde principal crédité.', processedAt: now },
       });
       await tx.user.update({
         where: { id: deposit.userId },

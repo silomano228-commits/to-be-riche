@@ -1,0 +1,606 @@
+     1→'use client';
+     2→
+     3→import { useState } from 'react';
+     4→import { useAppStore } from '@/lib/store';
+     5→import { Header, LogoImg, INVEST_LEVELS } from '@/components/shared';
+     6→
+     7→// =====================================================================
+     8→// Be Rich — Guide complet
+     9→// Tous les comptes, méthodes de paiement et mécaniques de l'app.
+    10→// =====================================================================
+    11→
+    12→type SectionId =
+    13→  | 'videos'
+    14→  | 'invest'
+    15→  | 'game'
+    16→  | 'account'
+    17→  | 'payments'
+    18→  | 'referral'
+    19→  | 'ads'
+    20→  | 'nav';
+    21→
+    22→interface SectionDef {
+    23→  id: SectionId;
+    24→  label: string;
+    25→  icon: string;
+    26→  color: string;
+    27→  summary: string;
+    28→}
+    29→
+    30→const SECTIONS: SectionDef[] = [
+    31→  { id: 'videos',   label: 'Plateforme Vidéo',           icon: 'fa-video',         color: '#14B8A6', summary: "Les entreprises vous paient pour regarder leurs vidéos" },
+    32→  { id: 'invest',   label: 'Make Money — Investissement', icon: 'fa-chart-line',    color: '#059669', summary: '3 niveaux · 5% par jour · collecte illimitée' },
+    33→  { id: 'game',     label: 'Jeu — Roue de la Fortune',   icon: 'fa-dice',          color: '#F59E0B', summary: '10 tours/jour · $0.10 à $1.00 · bouton ARRÊTER' },
+    34→  { id: 'account',  label: 'Compte Principal',           icon: 'fa-wallet',        color: '#22C55E', summary: 'Solde pour le jeu et les petites collectes' },
+    35→  { id: 'payments', label: 'Méthodes de Paiement',       icon: 'fa-credit-card',   color: '#EF4444', summary: 'YAS & TRX · min $5 / $1 · 6 heures' },
+    36→  { id: 'referral', label: 'Parrainage',                 icon: 'fa-gift',          color: '#EC4899', summary: 'BR-XXXXX · 12 (Niv.2) · 25 (Niv.3) · 3 jours vidéo' },
+    37→  { id: 'ads',      label: 'Publicités',                 icon: 'fa-bullhorn',      color: '#F97316', summary: '46 entreprises · 6 layouts visuels · fermables' },
+    38→  { id: 'nav',      label: 'Navigation',                 icon: 'fa-compass',       color: '#64748B', summary: '4 onglets : Vidéos · Make Money · Guide · Profil' },
+    39→];
+    40→
+    41→export default function GuideScreen() {
+    42→  const { user } = useAppStore();
+    43→  const [open, setOpen] = useState<Set<SectionId>>(new Set<SectionId>(['videos']));
+    44→
+    45→  const toggle = (id: SectionId) => {
+    46→    setOpen((prev) => {
+    47→      const next = new Set(prev);
+    48→      if (next.has(id)) next.delete(id);
+    49→      else next.add(id);
+    50→      return next;
+    51→    });
+    52→  };
+    53→
+    54→  if (!user) return null;
+    55→
+    56→  return (
+    57→    <>
+    58→      <Header title="Guide" icon="fa-compass" iconColor="#14B8A6" />
+    59→      <div className="flex-1 overflow-y-auto bg-gradient-to-b from-[#F8FBFA] to-[#F0FDFA]">
+    60→        {/* ---------- Hero ---------- */}
+    61→        <div className="px-4 pt-4 pb-3">
+    62→          <div className="rounded-3xl p-5 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #22C55E 0%, #14B8A6 100%)' }}>
+    63→            <div className="absolute -right-6 -top-6 w-28 h-28 rounded-full bg-white/10" />
+    64→            <div className="absolute -right-2 bottom-2 w-16 h-16 rounded-full bg-white/10" />
+    65→            <div className="relative flex items-start gap-3">
+    66→              <LogoImg className="w-14 h-14 rounded-2xl bg-white/20 p-1.5 shrink-0" />
+    67→              <div className="flex-1 min-w-0">
+    68→                <h1 className="text-[1.2rem] font-black text-white leading-tight">Guide Be Rich</h1>
+    69→                <p className="text-[0.72rem] text-white/85 mt-1 leading-relaxed">
+    70→                  Plateforme de communication pour les grandes entreprises. Les sociétés
+    71→                  chinoises, japonaises et indiennes — et désormais aussi coréennes,
+    72→                  américaines et européennes — vous paient pour regarder leurs vidéos
+    73→                  promotionnelles.
+    74→                </p>
+    75→              </div>
+    76→            </div>
+    77→            <div className="relative mt-3 flex flex-wrap gap-1.5">
+    78→              <Pill icon="fa-video" text="Vidéos" />
+    79→              <Pill icon="fa-chart-line" text="Investir" />
+    80→              <Pill icon="fa-dice" text="Jeu" />
+    81→              <Pill icon="fa-share-nodes" text="Parrainage" />
+    82→            </div>
+    83→          </div>
+    84→        </div>
+    85→
+    86→        {/* ---------- Quick help ---------- */}
+    87→        <div className="px-4 pb-2">
+    88→          <div className="rounded-2xl bg-white p-3.5 border border-[#E5E7EB] flex items-center gap-3">
+    89→            <div className="w-9 h-9 rounded-xl bg-[#ECFDF5] flex items-center justify-center shrink-0">
+    90→              <i className="fas fa-lightbulb text-[#0F766E] text-[0.85rem]" />
+    91→            </div>
+    92→            <p className="text-[0.72rem] text-[#4B5563] leading-snug">
+    93→              Touchez une section ci-dessous pour la déplier. Chaque rubrique explique comment
+    94→              gagner et retirer votre argent en toute sécurité.
+    95→            </p>
+    96→          </div>
+    97→        </div>
+    98→
+    99→        {/* ---------- Accordion ---------- */}
+   100→        <div className="px-4 pb-8 pt-2 space-y-2.5">
+   101→          {SECTIONS.map((s) => {
+   102→            const isOpen = open.has(s.id);
+   103→            return (
+   104→              <div key={s.id} className="rounded-2xl bg-white border border-[#E5E7EB] overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+   105→                <button
+   106→                  type="button"
+   107→                  onClick={() => toggle(s.id)}
+   108→                  className="w-full px-4 py-3.5 flex items-center gap-3 text-left cursor-pointer transition-colors hover:bg-[#F9FAFB] active:bg-[#F3F4F6]"
+   109→                  aria-expanded={isOpen}
+   110→                >
+   111→                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${s.color}1A` }}>
+   112→                    <i className={`fas ${s.icon} text-[0.95rem]`} style={{ color: s.color }} />
+   113→                  </div>
+   114→                  <div className="flex-1 min-w-0">
+   115→                    <div className="text-[0.86rem] font-black text-[#1F2937] truncate">{s.label}</div>
+   116→                    <div className="text-[0.66rem] text-[#6B7280] truncate">{s.summary}</div>
+   117→                  </div>
+   118→                  <i className={`fas fa-chevron-down text-[0.7rem] text-[#9CA3AF] transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+   119→                </button>
+   120→                <div className={`grid transition-all duration-300 ease-out ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+   121→                  <div className="overflow-hidden">
+   122→                    <div className="px-4 pb-4 pt-1 border-t border-[#F3F4F6]">
+   123→                      {s.id === 'videos' && <VideosContent />}
+   124→                      {s.id === 'invest' && <InvestContent />}
+   125→                      {s.id === 'game' && <GameContent />}
+   126→                      {s.id === 'account' && <AccountContent />}
+   127→                      {s.id === 'payments' && <PaymentsContent />}
+   128→                      {s.id === 'referral' && <ReferralContent />}
+   129→                      {s.id === 'ads' && <AdsContent />}
+   130→                      {s.id === 'nav' && <NavContent />}
+   131→                    </div>
+   132→                  </div>
+   133→                </div>
+   134→              </div>
+   135→            );
+   136→          })}
+   137→        </div>
+   138→
+   139→        {/* ---------- Footer note ---------- */}
+   140→        <div className="px-4 pb-6">
+   141→          <div className="rounded-2xl p-4 text-center" style={{ background: 'linear-gradient(135deg, #ECFDF5, #F0FDFA)', border: '1px solid #A7F3D0' }}>
+   142→            <i className="fas fa-shield-halved text-[#0F766E] text-[1.1rem] mb-1.5" />
+   143→            <p className="text-[0.72rem] text-[#115E59] leading-relaxed">
+   144→              Be Rich ne demande <strong>jamais</strong> votre mot de passe ni votre code
+   145→              PIN. Tous les dépôts et retraits passent par <strong>YAS</strong> ou{' '}
+   146→              <strong>TRX</strong> et sont disponibles dans les <strong>6 heures</strong>.
+   147→            </p>
+   148→          </div>
+   149→        </div>
+   150→      </div>
+   151→    </>
+   152→  );
+   153→}
+   154→
+   155→// =====================================================================
+   156→// Reusable pieces
+   157→// =====================================================================
+   158→
+   159→function Pill({ icon, text }: { icon: string; text: string }) {
+   160→  return (
+   161→    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[0.62rem] font-semibold">
+   162→      <i className={`fas ${icon} text-[0.55rem]`} />
+   163→      {text}
+   164→    </span>
+   165→  );
+   166→}
+   167→
+   168→/** A small subsection heading inside an accordion body. */
+   169→function SubHead({ title, color }: { title: string; color: string }) {
+   170→  return (
+   171→    <div className="flex items-center gap-2 mb-1 mt-3 first:mt-0">
+   172→      <div className="h-3 w-1 rounded-full" style={{ background: color }} />
+   173→      <h4 className="text-[0.7rem] font-black text-[#1F2937] uppercase tracking-wide">{title}</h4>
+   174→    </div>
+   175→  );
+   176→}
+   177→
+   178→/** A bullet row with a colored icon. */
+   179→function Row({ icon, color, title, children }: { icon: string; color: string; title?: string; children: React.ReactNode }) {
+   180→  return (
+   181→    <div className="flex items-start gap-2.5 py-2">
+   182→      <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ background: `${color}1A` }}>
+   183→        <i className={`fas ${icon} text-[0.7rem]`} style={{ color }} />
+   184→      </div>
+   185→      <div className="flex-1 text-[0.73rem] text-[#374151] leading-relaxed">
+   186→        {title && <span className="font-bold text-[#1F2937]">{title} · </span>}
+   187→        {children}
+   188→      </div>
+   189→    </div>
+   190→  );
+   191→}
+   192→
+   193→/** A highlighted callout box. */
+   194→function Callout({ icon, color, children }: { icon: string; color: string; children: React.ReactNode }) {
+   195→  return (
+   196→    <div className="mt-3 rounded-xl p-3 flex items-start gap-2.5" style={{ background: `${color}12`, border: `1px solid ${color}33` }}>
+   197→      <i className={`fas ${icon} text-[0.8rem] mt-0.5 shrink-0`} style={{ color }} />
+   198→      <div className="text-[0.7rem] text-[#374151] leading-relaxed">{children}</div>
+   199→    </div>
+   200→  );
+   201→}
+   202→
+   203→/** A simple key/value badge row (used for payment methods, levels, etc.). */
+   204→function StatRow({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
+   205→  return (
+   206→    <div className="flex items-center justify-between py-1.5 text-[0.72rem]">
+   207→      <span className="text-[#6B7280]">{label}</span>
+   208→      <span className="font-bold" style={{ color: valueColor || '#1F2937' }}>{value}</span>
+   209→    </div>
+   210→  );
+   211→}
+   212→
+   213→// =====================================================================
+   214→// Section contents
+   215→// =====================================================================
+   216→
+   217→function VideosContent() {
+   218→  const teal = '#14B8A6';
+   219→  return (
+   220→    <>
+   221→      <SubHead title="Le concept" color={teal} />
+   222→      <Row icon="fa-handshake" color={teal} title="Gagnant-gagnant">
+   223→        Be Rich met en relation les grandes entreprises (chinoises, japonaises, indiennes,
+   224→        et désormais aussi coréennes, américaines et européennes) et vous. Elles vous paient
+   225→        pour regarder leurs vidéos promotionnelles courtes. Elles gagnent en visibilité, vous
+   226→        gagnez de l'argent.
+   227→      </Row>
+   228→      <Row icon="fa-coins" color="#22C55E" title="Récompense">
+   229→        $0.15 à $0.30 par vidéo regardée, crédités sur votre{' '}
+   230→        <strong>compte Vidéo</strong>.
+   231→      </Row>
+   232→
+   233→      <SubHead title="Comment regarder" color={teal} />
+   234→      <Row icon="fa-th-large" color={teal} title="5 vidéos visibles à la fois">
+   235→        La page affiche <strong>5 vidéos en même temps</strong> (grille 2 colonnes). Chaque
+   236→        jour, <strong>5 nouvelles vidéos</strong> d'entreprises différentes sont disponibles —
+   237→        elles changent tous les jours.
+   238→      </Row>
+   239→      <Row icon="fa-chart-simple" color="#22C55E" title="Image de progression des gains">
+   240→        Une <strong>barre de progression verte</strong> affiche vos gains du jour et{' '}
+   241→        <strong>augmente normalement</strong> à chaque vidéo regardée, jusqu'à l'objectif
+   242→        quotidien.
+   243→      </Row>
+   244→      <Row icon="fa-door-open" color="#F59E0B" title="Quitter à tout moment">
+   245→        Un bouton <strong>X rouge</strong> reste toujours visible, ainsi qu'un bouton{' '}
+   246→        <strong>Quitter la vidéo</strong>. Vous pouvez quitter la vidéo quand vous le souhaitez.
+   247→      </Row>
+   248→
+   249→      <SubHead title="Le compte Vidéo" color={teal} />
+   250→      <Row icon="fa-wallet" color={teal} title="Alimenté UNIQUEMENT par les vidéos">
+   251→        Le compte Vidéo a son <strong>propre solde</strong>. <strong>Aucun dépôt</strong>{' '}
+   252→        n'est possible sur ce compte : il est alimenté <strong>uniquement</strong> par les
+   253→        récompenses de visionnage.
+   254→      </Row>
+   255→      <Row icon="fa-arrow-up" color="#EF4444" title="Retrait minimum $1">
+   256→        Vous pouvez retirer vos gains vidéo par <strong>YAS</strong> ou <strong>TRX</strong> à
+   257→        partir de <strong>$1</strong> (converti en dollars). Fonds disponibles dans les{' '}
+   258→        <strong>6 heures</strong>.
+   259→      </Row>
+   260→      <Row icon="fa-circle-exclamation" color="#F59E0B" title="Messages d'erreur clairs">
+   261→        Si un retrait est impossible (solde insuffisant, action requise, etc.), un{' '}
+   262→        <strong>message clair</strong> vous indique exactement quoi faire.
+   263→      </Row>
+   264→
+   265→      <SubHead title="Règle des 3 jours (retraits vidéo)" color={teal} />
+   266→      <Row icon="fa-calendar-xmark" color="#F59E0B" title="Pour continuer à retirer">
+   267→        Après <strong>3 jours</strong> de visionnage, pour continuer à faire des{' '}
+   268→        <strong>retraits</strong>, vous devez : (1) avoir un <strong>investissement actif au
+   269→        Niveau 1</strong>, ET (2) avoir invité au moins <strong>1 parrainé</strong>. Le
+   270→        visionnage reste autorisé pendant ce temps.
+   271→      </Row>
+   272→      <Row icon="fa-arrow-trend-up" color="#EC4899" title="Le nombre augmente à chaque cycle">
+   273→        À chaque <strong>cycle de 3 jours</strong>, le nombre de parrainés requis augmente :
+   274→        cycle 1 = 1, cycle 2 = 2, cycle 3 = 3, etc.
+   275→      </Row>
+   276→
+   277→      <Callout icon="fa-user-shield" color={teal}>
+   278→        L'administrateur peut ajouter des <strong>liens vidéo personnalisés</strong> que tous
+   279→        les utilisateurs regarderont. Ces vidéos prioritaires apparaissent avant le catalogue
+   280→        quotidien.
+   281→      </Callout>
+   282→    </>
+   283→  );
+   284→}
+   285→
+   286→function InvestContent() {
+   287→  const green = '#059669';
+   288→  return (
+   289→    <>
+   290→      <SubHead title="Le principe" color={green} />
+   291→      <Row icon="fa-chart-line" color={green} title="3 niveaux d'investissement">
+   292→        Choisissez un niveau, investissez un montant dans sa plage, et gagnez{' '}
+   293→        <strong>5% par jour</strong> sur votre mise — à <strong>tous les niveaux</strong>.
+   294→      </Row>
+   295→      <Row icon="fa-infinity" color="#22C55E" title="Tout est illimité">
+   296→        <strong>Collecte quotidienne illimitée</strong> (jamais de fin) ET{' '}
+   297→        <strong>nombre d'investissements illimité</strong> — vous pouvez créer autant
+   298→        d'investissements que vous voulez à chaque niveau débloqué.
+   299→      </Row>
+   300→
+   301→      <SubHead title="Les 3 niveaux" color={green} />
+   302→      <div className="mt-2 space-y-2">
+   303→        {INVEST_LEVELS.map((lvl) => (
+   304→          <div key={lvl.level} className="rounded-xl p-3 border" style={{ borderColor: `${lvl.color}33`, background: `${lvl.color}0A` }}>
+   305→            <div className="flex items-center gap-2.5 mb-1.5">
+   306→              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${lvl.color}26` }}>
+   307→                <i className={`fas ${lvl.icon} text-[0.8rem]`} style={{ color: lvl.color }} />
+   308→              </div>
+   309→              <div className="flex-1">
+   310→                <div className="text-[0.78rem] font-black text-[#1F2937]">Niveau {lvl.level} · {lvl.name}</div>
+   311→                <div className="text-[0.62rem] text-[#6B7280]">Investissement ${lvl.min} – ${lvl.max}</div>
+   312→              </div>
+   313→              <div className="text-right">
+   314→                <div className="text-[0.78rem] font-black" style={{ color: lvl.color }}>+{lvl.rate}%</div>
+   315→                <div className="text-[0.55rem] text-[#6B7280]">par jour</div>
+   316→              </div>
+   317→            </div>
+   318→            <div className="text-[0.66rem] text-[#4B5563] flex items-center gap-1.5">
+   319→              <i className="fas fa-user-group text-[0.6rem]" style={{ color: lvl.color }} />
+   320→              {lvl.requiredReferrals === 0
+   321→                ? <span><strong>Accès libre</strong> — aucun parrainage requis</span>
+   322→                : <span>Déblocage : <strong>{lvl.requiredReferrals} parrainés inscrits</strong></span>}
+   323→            </div>
+   324→          </div>
+   325→        ))}
+   326→      </div>
+   327→
+   328→      <SubHead title="Déposer" color={green} />
+   329→      <Row icon="fa-arrow-down" color="#22C55E" title="Dépôt direct par YAS ou TRX">
+   330→        À <strong>tous les niveaux</strong>, le dépôt se fait <strong>directement</strong> par
+   331→        YAS ou TRX. <strong>Il n'y a plus de solde d'investissement</strong> à recharger au
+   332→        préalable. Fonds disponibles dans les <strong>6 heures</strong>.
+   333→      </Row>
+   334→
+   335→      <SubHead title="Collecter vos gains" color={green} />
+   336→      <Row icon="fa-arrow-up" color="#EF4444" title="Option 1 — Retrait par YAS ou TRX">
+   337→        Si votre gain est <strong>≥ $5</strong>, vous pouvez le retirer directement par YAS ou
+   338→        TRX. Fonds disponibles dans les <strong>6 heures</strong>.
+   339→      </Row>
+   340→      <Row icon="fa-wallet" color="#22C55E" title="Option 2 — Compte principal">
+   341→        Versement sur le compte principal, <strong>sans minimum</strong>. Si le gain est{' '}
+   342→        <strong>&lt; $5</strong>, seul ce versement est disponible.
+   343→      </Row>
+   344→
+   345→      <SubHead title="Débloquer les niveaux supérieurs" color={green} />
+   346→      <Row icon="fa-user-group" color="#EC4899" title="Parrainage uniquement">
+   347→        Le déblocage est <strong>gratuit</strong> et repose <strong>uniquement sur le
+   348→        parrainage</strong> (plus besoin d'investir au niveau précédent) : Niveau 2 ={' '}
+   349→        <strong>12 parrainés</strong>, Niveau 3 = <strong>25 parrainés</strong>.
+   350→      </Row>
+   351→      <Callout icon="fa-circle-info" color={green}>
+   352→        Le Niveau 1 (Débutant) est en <strong>accès libre</strong>. Les niveaux 2 et 3 se
+   353→        débloquent via le parrainage. Le solde d'investissement a été{' '}
+   354→        <strong>supprimé</strong> — tout se fait par dépôt direct YAS / TRX.
+   355→      </Callout>
+   356→    </>
+   357→  );
+   358→}
+   359→
+   360→function GameContent() {
+   361→  const amber = '#F59E0B';
+   362→  return (
+   363→    <>
+   364→      <SubHead title="La Roue de la Fortune" color={amber} />
+   365→      <Row icon="fa-dice" color={amber} title="Principe">
+   366→        Tournez la roue et tentez de gagner des récompenses en argent à chaque tour.
+   367→      </Row>
+   368→      <Row icon="fa-clock" color="#22C55E" title="10 tours gratuits par jour">
+   369→        Vous disposez de <strong>10 tours gratuits</strong> chaque jour. La roue se
+   370→        réinitialise à <strong>minuit</strong>. Pas de tours payants.
+   371→      </Row>
+   372→
+   373→      <SubHead title="Récompenses & probabilités" color={amber} />
+   374→      <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-1 mt-2">
+   375→        <StatRow label="Récompense par tour gagnant" value="$0.10 – $1.00" valueColor="#F59E0B" />
+   376→        <StatRow label="Taux de gain" value="30% – 60%" valueColor="#22C55E" />
+   377→        <StatRow label="Généralement" value="sous 45%" valueColor="#6B7280" />
+   378→        <StatRow label="Détermination" value="aléatoire, non divulgué" valueColor="#6B7280" />
+   379→      </div>
+   380→
+   381→      <SubHead title="La roue" color={amber} />
+   382→      <Row icon="fa-text-height" color="#22C55E" title="Texte lisible (radial)">
+   383→        Les récompenses sur la roue sont écrites <strong>radialement</strong> (du centre vers
+   384→        l'extérieur), avec un contour sombre pour une <strong>parfaite lisibilité</strong> sur
+   385→        toutes les couleurs.
+   386→      </Row>
+   387→      <Row icon="fa-hand-paper" color="#EF4444" title="Bouton ARRÊTER">
+   388→        Vous pouvez <strong>arrêter la roue vous-même</strong> à tout moment avec le bouton{' '}
+   389→        <strong>ARRÊTER LA ROUE</strong> — la roue s'arrête proprement sur le segment défini.
+   390→      </Row>
+   391→
+   392→      <SubHead title="Où vont les gains" color={amber} />
+   393→      <Row icon="fa-wallet" color="#22C55E" title="Compte principal">
+   394→        <strong>Toutes les opérations du jeu</strong> se font sur le{' '}
+   395→        <strong>compte principal</strong> (solde <code className="bg-[#F3F4F6] px-1 rounded text-[0.65rem]">balance</code>).
+   396→        Les gains sont crédités directement sur ce solde.
+   397→      </Row>
+   398→
+   399→      <SubHead title="Popups" color={amber} />
+   400→      <Row icon="fa-trophy" color="#22C55E" title="À chaque gain">
+   401→        Un popup de <strong>félicitations</strong> (avec confettis) apparaît avec le montant gagné.
+   402→      </Row>
+   403→      <Row icon="fa-redo" color="#EF4444" title="À chaque perte">
+   404→        Un message de <strong>retry</strong> s'affiche avec un conseil motivant pour réessayer
+   405→        si vous avez des tours restants.
+   406→      </Row>
+   407→    </>
+   408→  );
+   409→}
+   410→
+   411→function AccountContent() {
+   412→  const green = '#22C55E';
+   413→  return (
+   414→    <>
+   415→      <SubHead title="Qu'est-ce que le compte principal ?" color={green} />
+   416→      <Row icon="fa-wallet" color={green} title="Le solde de base">
+   417→        Le <strong>compte principal</strong> (solde <code className="bg-[#F3F4F6] px-1 rounded text-[0.65rem]">balance</code>)
+   418→        est le solde central de l'application.
+   419→      </Row>
+   420→
+   421→      <SubHead title="À quoi il sert" color={green} />
+   422→      <Row icon="fa-dice" color="#F59E0B" title="Gains du jeu">
+   423→        Toutes les récompenses de la Roue de la Fortune sont créditées sur le compte principal.
+   424→      </Row>
+   425→      <Row icon="fa-chart-line" color="#059669" title="Petites collectes d'investissement">
+   426→        Les collectes d'investissement <strong>&lt; $5</strong> sont versées sur le compte
+   427→        principal (sans minimum).
+   428→      </Row>
+   429→
+   430→      <SubHead title="Dépôt & retrait" color={green} />
+   431→      <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-1 mt-2">
+   432→        <StatRow label="Dépôt minimum" value="$5" valueColor="#22C55E" />
+   433→        <StatRow label="Retrait minimum" value="$5" valueColor="#EF4444" />
+   434→        <StatRow label="Méthodes" value="YAS ou TRX" valueColor="#1F2937" />
+   435→        <StatRow label="Disponibilité des fonds" value="6 heures" valueColor="#F59E0B" />
+   436→      </div>
+   437→
+   438→      <Callout icon="fa-circle-info" color={green}>
+   439→        Le compte principal est séparé du <strong>compte Vidéo</strong>, qui a son propre solde
+   440→        et ses propres retraits (minimum $1).
+   441→      </Callout>
+   442→    </>
+   443→  );
+   444→}
+   445→
+   446→function PaymentsContent() {
+   447→  const red = '#EF4444';
+   448→  return (
+   449→    <>
+   450→      <SubHead title="Deux méthodes disponibles" color={red} />
+   451→      <div className="mt-2 grid grid-cols-2 gap-2.5">
+   452→        <div className="rounded-xl p-3 border border-[#FECACA] bg-[#FEF2F2]">
+   453→          <div className="w-9 h-9 rounded-lg bg-[#FEE2E2] flex items-center justify-center mb-2">
+   454→            <i className="fas fa-mobile-screen text-[#EF4444] text-[0.85rem]" />
+   455→          </div>
+   456→          <div className="text-[0.82rem] font-black text-[#1F2937]">YAS</div>
+   457→          <div className="text-[0.62rem] text-[#6B7280] leading-snug">Mobile money en FCFA</div>
+   458→        </div>
+   459→        <div className="rounded-xl p-3 border border-[#FECACA] bg-[#FEF2F2]">
+   460→          <div className="w-9 h-9 rounded-lg bg-[#FEE2E2] flex items-center justify-center mb-2">
+   461→            <i className="fas fa-coins text-[#EF4444] text-[0.85rem]" />
+   462→          </div>
+   463→          <div className="text-[0.82rem] font-black text-[#1F2937]">TRX</div>
+   464→          <div className="text-[0.62rem] text-[#6B7280] leading-snug">Cryptomonnaie (Tron)</div>
+   465→        </div>
+   466→      </div>
+   467→
+   468→      <SubHead title="Règles communes" color={red} />
+   469→      <Row icon="fa-layer-group" color={red} title="Tous les comptes & niveaux">
+   470→        YAS et TRX sont disponibles à <strong>tous les niveaux</strong> et pour{' '}
+   471→        <strong>tous les comptes</strong> (Vidéo, Investissement, Compte principal).
+   472→      </Row>
+   473→
+   474→      <SubHead title="Montants minimums" color={red} />
+   475→      <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-1 mt-2">
+   476→        <StatRow label="Compte principal — dépôt / retrait" value="$5" valueColor="#22C55E" />
+   477→        <StatRow label="Compte Vidéo — retrait" value="$1" valueColor="#14B8A6" />
+   478→        <StatRow label="Collecte investissement par YAS / TRX" value="$5 de gain" valueColor="#059669" />
+   479→      </div>
+   480→
+   481→      <Row icon="fa-clock" color="#F59E0B" title="Disponibilité 6 heures">
+   482→        Dès qu'un dépôt ou retrait est lancé, les fonds sont disponibles dans les{' '}
+   483→        <strong>6 heures</strong>. Un message de confirmation vous informe à chaque étape.
+   484→      </Row>
+   485→
+   486→      <Callout icon="fa-shield-halved" color={red}>
+   487→        Ne communiquez <strong>jamais</strong> votre mot de passe ou code PIN. Les transactions
+   488→        sont traitées uniquement via YAS ou TRX.
+   489→      </Callout>
+   490→    </>
+   491→  );
+   492→}
+   493→
+   494→function ReferralContent() {
+   495→  const pink = '#EC4899';
+   496→  return (
+   497→    <>
+   498→      <SubHead title="Votre code de parrainage" color={pink} />
+   499→      <Row icon="fa-gift" color={pink} title="Format BR-XXXXX">
+   500→        Votre code personnel (au format <strong>BR-XXXXX</strong>) est visible dans votre{' '}
+   501→        <strong>Profil</strong>. Partagez-le avec vos amis pour les parrainer.
+   502→      </Row>
+   503→
+   504→      <SubHead title="Partage facile" color={pink} />
+   505→      <Row icon="fa-share-nodes" color={pink} title="Feuille de partage native">
+   506→        Cliquez sur <strong>Partager</strong> pour ouvrir la feuille de partage native de votre
+   507→        téléphone. Le lien inclut automatiquement votre code.
+   508→      </Row>
+   509→      <div className="mt-2 flex flex-wrap gap-1.5">
+   510→        {['WhatsApp', 'TikTok', 'Instagram', 'Telegram', 'Facebook', 'SMS'].map((n) => (
+   511→          <span key={n} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#FCE7F3] text-[#9D174D] text-[0.62rem] font-semibold">
+   512→            <i className="fas fa-check text-[0.5rem]" />
+   513→            {n}
+   514→          </span>
+   515→        ))}
+   516→      </div>
+   517→
+   518→      <SubHead title="Pourquoi parrainer ?" color={pink} />
+   519→      <Row icon="fa-unlock" color="#F59E0B" title="Débloquer les niveaux d'investissement">
+   520→        Le parrainage est <strong>obligatoire</strong> pour débloquer les niveaux supérieurs :
+   521→        <strong>12 parrainés</strong> pour le Niveau 2 (Business), <strong>25 parrainés</strong>{' '}
+   522→        pour le Niveau 3 (Elite).
+   523→      </Row>
+   524→      <Row icon="fa-calendar-xmark" color="#14B8A6" title="Règle des 3 jours (retraits vidéo)">
+   525→        Après 3 jours de visionnage, pour continuer à <strong>retirer</strong> vos gains vidéo,
+   526→        vous devez avoir un investissement actif au Niveau 1 <strong>ET</strong> au moins 1
+   527→        parrainé. Le nombre de parrainés requis <strong>augmente à chaque cycle</strong> de 3
+   528→        jours (cycle 1 = 1, cycle 2 = 2, etc.).
+   529→      </Row>
+   530→
+   531→      <Callout icon="fa-circle-info" color={pink}>
+   532→        Le parrainé doit <strong>s'inscrire</strong> avec votre code pour être comptabilisé.
+   533→        Inviter ne suffit pas — l'inscription est essentielle.
+   534→      </Callout>
+   535→    </>
+   536→  );
+   537→}
+   538→
+   539→function AdsContent() {
+   540→  const orange = '#F97316';
+   541→  return (
+   542→    <>
+   543→      <SubHead title="Affiches publicitaires" color={orange} />
+   544→      <Row icon="fa-bullhorn" color={orange} title="Au changement d'onglet">
+   545→        Des affiches publicitaires d'entreprises apparaissent lors du{' '}
+   546→        <strong>changement d'onglet</strong> dans l'application.
+   547→      </Row>
+   548→      <Row icon="fa-xmark" color="#22C55E" title="Fermables">
+   549→        Chaque publicité est <strong>fermable</strong> avec un petit{' '}
+   550→        <strong>X</strong> en haut de l'affiche. Aucune obligation de regarder.
+   551→      </Row>
+   552→
+   553→      <SubHead title="Une grande variété" color={orange} />
+   554→      <Row icon="fa-building" color="#F59E0B" title="46 entreprises">
+   555→        Pas moins de <strong>46 entreprises</strong> différentes apparaissent dans les
+   556→        publicités — plus jamais "toutes se ressemblent".
+   557→      </Row>
+   558→      <Row icon="fa-shapes" color="#14B8A6" title="6 layouts visuels distincts">
+   559→        Les publicités utilisent <strong>6 modèles visuels différents</strong> (hero, split,
+   560→        banner, card, quote, stats) pour une grande variété visuelle.
+   561→      </Row>
+   562→
+   563→      <Callout icon="fa-handshake" color={orange}>
+   564→        Ces publicités financent une partie des récompenses que vous touchez en regardant les
+   565→        vidéos d'entreprises.
+   566→      </Callout>
+   567→    </>
+   568→  );
+   569→}
+   570→
+   571→function NavContent() {
+   572→  const slate = '#64748B';
+   573→  const tabs = [
+   574→    { icon: 'fa-video', label: 'Vidéos', desc: 'Plateforme de visionnage', color: '#14B8A6' },
+   575→    { icon: 'fa-coins', label: 'Make Money', desc: 'Investir · Jeu · Projets', color: '#059669' },
+   576→    { icon: 'fa-compass', label: 'Guide', desc: 'Cette page', color: slate },
+   577→    { icon: 'fa-user', label: 'Profil', desc: 'Compte, parrainage, paramètres', color: '#F59E0B' },
+   578→  ];
+   579→  return (
+   580→    <>
+   581→      <SubHead title="4 onglets en bas d'écran" color={slate} />
+   582→      <div className="mt-2 space-y-2">
+   583→        {tabs.map((t, i) => (
+   584→          <div key={t.label} className="flex items-center gap-3 rounded-xl p-2.5 border border-[#E5E7EB] bg-[#F9FAFB]">
+   585→            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${t.color}1A` }}>
+   586→              <i className={`fas ${t.icon} text-[0.85rem]`} style={{ color: t.color }} />
+   587→            </div>
+   588→            <div className="flex-1 min-w-0">
+   589→              <div className="text-[0.78rem] font-black text-[#1F2937]">
+   590→                <span className="text-[#9CA3AF] mr-1.5">{i + 1}.</span>{t.label}
+   591→              </div>
+   592→              <div className="text-[0.62rem] text-[#6B7280] truncate">{t.desc}</div>
+   593→            </div>
+   594→          </div>
+   595→        ))}
+   596→      </div>
+   597→
+   598→      <Callout icon="fa-trash-can" color="#EF4444">
+   599→        L'onglet <strong>Finance</strong> a été <strong>supprimé</strong>. Les dépôts et
+   600→        retraits se font désormais directement depuis chaque fonctionnalité (Vidéos, Make
+   601→        Money, etc.) ou depuis le Profil.
+   602→      </Callout>
+   603→    </>
+   604→  );
+   605→}
+   606→

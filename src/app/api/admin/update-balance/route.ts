@@ -4,19 +4,55 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-// Admin-editable balance fields. The investBalance concept was removed —
-// admins now manage: balance (Solde principal), videoBalance (Vidéo),
-// tradeBalance (Trading), projectBalance (Projet).
-type BalanceField = 'balance' | 'videoBalance' | 'tradeBalance' | 'projectBalance';
+// Admin-editable numeric amount fields on the User model.
+// Covers every "amount" the user can hold — not just the 4 wallet balances.
+//
+// Float fields (money amounts):
+//   balance, videoBalance, tradeBalance, projectBalance, investBalance,
+//   gameTotalWon, videoTotalEarned, totalProfit, totalLoss
+//
+// Int fields (counters):
+//   referralCount
+type BalanceField =
+  | 'balance'
+  | 'videoBalance'
+  | 'tradeBalance'
+  | 'projectBalance'
+  | 'investBalance'
+  | 'gameTotalWon'
+  | 'videoTotalEarned'
+  | 'totalProfit'
+  | 'totalLoss'
+  | 'referralCount';
 
 const BALANCE_LABELS: Record<BalanceField, string> = {
   balance: 'Solde principal',
   videoBalance: 'Vidéo',
   tradeBalance: 'Trading',
   projectBalance: 'Projet',
+  investBalance: 'Investissement',
+  gameTotalWon: 'Gains jeu',
+  videoTotalEarned: 'Gains vidéo totaux',
+  totalProfit: 'Profit total',
+  totalLoss: 'Perte totale',
+  referralCount: 'Parrainages',
 };
 
-const VALID_FIELDS: BalanceField[] = ['balance', 'videoBalance', 'tradeBalance', 'projectBalance'];
+// Integer fields stored as Int in Prisma — must be rounded before save.
+const INT_FIELDS: BalanceField[] = ['referralCount'];
+
+const VALID_FIELDS: BalanceField[] = [
+  'balance',
+  'videoBalance',
+  'tradeBalance',
+  'projectBalance',
+  'investBalance',
+  'gameTotalWon',
+  'videoTotalEarned',
+  'totalProfit',
+  'totalLoss',
+  'referralCount',
+];
 
 export async function POST(request: Request) {
   try {
@@ -49,38 +85,43 @@ export async function POST(request: Request) {
     const balanceField = field as BalanceField;
 
     // Validate amount
-    if (typeof amount !== 'number' || amount < 0) {
+    if (typeof amount !== 'number' || isNaN(amount) || amount < 0) {
       return NextResponse.json(
         { success: false, error: 'Le montant doit être un nombre positif ou zéro' },
         { status: 400 }
       );
     }
 
+    // Round integer fields to avoid Prisma Int cast errors
+    const sanitizedAmount = INT_FIELDS.includes(balanceField)
+      ? Math.round(amount)
+      : Math.round(amount * 100) / 100;
+
     // Find user
-    const user = await db.user.findUnique({ where: { id: userId } });
-    if (!user) {
+    const targetUser = await db.user.findUnique({ where: { id: userId } });
+    if (!targetUser) {
       return NextResponse.json(
         { success: false, error: 'Utilisateur introuvable' },
         { status: 404 }
       );
     }
 
-    const oldValue = user[balanceField];
+    const oldValue = (targetUser as any)[balanceField] as number;
     const fieldLabel = BALANCE_LABELS[balanceField];
-    const detail = `Admin: ${fieldLabel} modifié de ${oldValue.toFixed(2)} à ${amount.toFixed(2)} USD`;
+    const detail = `Admin: ${fieldLabel} modifié de ${oldValue.toFixed(2)} à ${sanitizedAmount.toFixed(2)}`;
 
-    // Execute atomic transaction: update balance + create audit log
+    // Execute atomic transaction: update field + create audit log
     await db.$transaction([
       db.user.update({
         where: { id: userId },
         data: {
-          [balanceField]: amount,
+          [balanceField]: sanitizedAmount,
         },
       }),
       db.transaction.create({
         data: {
           type: 'admin_balance_update',
-          amount: Math.abs(amount - oldValue),
+          amount: Math.abs(sanitizedAmount - oldValue),
           detail,
           userId,
         },
@@ -95,6 +136,12 @@ export async function POST(request: Request) {
         videoBalance: true,
         tradeBalance: true,
         projectBalance: true,
+        investBalance: true,
+        gameTotalWon: true,
+        videoTotalEarned: true,
+        totalProfit: true,
+        totalLoss: true,
+        referralCount: true,
       },
     });
 
@@ -104,7 +151,7 @@ export async function POST(request: Request) {
         userId,
         field: balanceField,
         oldValue,
-        newValue: amount,
+        newValue: sanitizedAmount,
         balances: refreshedUser,
       },
     });

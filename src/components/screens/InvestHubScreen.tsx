@@ -31,6 +31,7 @@ export default function InvestHubScreen() {
   const [summary, setSummary] = useState<InvestSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(Date.now());
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
 
   // Create-investment modal state
   const [showCreate, setShowCreate] = useState<number | null>(null);
@@ -62,6 +63,7 @@ export default function InvestHubScreen() {
       if (data.success) {
         setInvestments(data.investments || []);
         setSummary(data.summary || null);
+        setPendingRequests(data.pendingInvestmentRequests || []);
       }
     } catch { /* */ }
     setLoading(false);
@@ -110,9 +112,9 @@ export default function InvestHubScreen() {
         setCongrats({
           show: true,
           type: 'generic',
-          title: 'Investissement créé !',
+          title: 'Demande envoyée !',
           amount: amt,
-          message: data.message || `Votre investissement Niveau ${level} (${lvl.name}) de ${formatMoney(amt)} est actif. Paiement ${method.toUpperCase()} en cours — fonds disponibles dans les 6 heures. Collecte quotidienne illimitée !`,
+          message: data.message || `Votre demande de dépôt d'investissement Niveau ${level} (${lvl.name}) de ${formatMoney(amt)} a été envoyée. L'administrateur va l'approuver avant que les fonds ne soient disponibles et que l'investissement commence. Le compte à rebours démarrera après l'approbation.`,
           onClose: () => setCongrats(c => ({ ...c, show: false })),
         });
       } else {
@@ -214,8 +216,8 @@ export default function InvestHubScreen() {
           show: true,
           type: 'collect',
           amount: data.gain,
-          title: 'Collecte réussie !',
-          message: data.message || `Vous avez réclamé ${formatMoney(data.gain)} — retrait demandé, fonds dans les 6h.`,
+          title: 'Retrait demandé !',
+          message: data.message || `Vous avez réclamé ${formatMoney(data.gain)}. L'administrateur doit approuver le retrait avant que les fonds ne soient envoyés (généralement dans les 6 heures).`,
           onClose: () => setCongrats(c => ({ ...c, show: false })),
         });
       } else {
@@ -326,6 +328,78 @@ export default function InvestHubScreen() {
             </div>
           </div>
         </div>
+
+        {/* Approval-flow info banner (Task 7) */}
+        <div
+          className="rounded-xl p-3 mb-4 flex items-start gap-2.5"
+          style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.22)' }}
+        >
+          <i className="fas fa-user-shield text-[0.85rem] mt-0.5" style={{ color: '#F59E0B' }}></i>
+          <div>
+            <div className="text-[0.78rem] font-bold" style={{ color: '#B45309' }}>Approbation de l'administrateur requise</div>
+            <div className="text-[0.7rem] mt-0.5" style={{ color: 'rgba(180,83,9,0.9)' }}>
+              Lorsque vous lancez un dépôt d'investissement, l'administrateur doit l'approuver avant que les fonds ne soient disponibles. Le compte à rebours ne démarre qu'après l'approbation.
+            </div>
+          </div>
+        </div>
+
+        {/* ---------- Pending investment requests (waiting for admin approval) ---------- */}
+        {pendingRequests.length > 0 && (
+          <>
+            <h3 className="text-[0.88rem] font-bold mb-2.5 flex items-center gap-1.5" style={{ color: '#1F2937' }}>
+              <i className="fas fa-hourglass-half text-[0.75rem]" style={{ color: '#F59E0B' }}></i>
+              En attente d'approbation
+              <span
+                className="text-[0.6rem] font-bold px-2 py-0.5 rounded-full"
+                style={{ background: 'rgba(245,158,11,0.14)', color: '#B45309' }}
+              >
+                {pendingRequests.length}
+              </span>
+            </h3>
+            <div className="space-y-2.5 mb-5">
+              {pendingRequests.map((req) => {
+                const lvl = INVEST_LEVELS[(req.level || 1) - 1];
+                const createdLabel = new Date(req.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+                return (
+                  <div
+                    key={`${req.kind}-${req.id}`}
+                    className="rounded-2xl p-3.5 relative overflow-hidden"
+                    style={{
+                      background: '#FFFFFF',
+                      border: '1px solid rgba(245,158,11,0.28)',
+                      animation: 'slideUp 0.3s ease-out',
+                    }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: 'rgba(245,158,11,0.12)' }}
+                      >
+                        <i className="fas fa-hourglass-half text-[0.85rem]" style={{ color: '#F59E0B' }}></i>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[0.86rem] font-bold truncate" style={{ color: '#1F2937' }}>
+                          Niv. {req.level} — {lvl?.name || 'Investissement'}
+                        </div>
+                        <div className="text-[0.7rem] mt-0.5 flex items-center gap-2 flex-wrap" style={{ color: 'rgba(0,0,0,0.55)' }}>
+                          <span className="font-semibold" style={{ color: '#1F2937' }}>{formatMoney(req.amount)}</span>
+                          <span className="text-[0.6rem] px-1.5 py-0.5 rounded-md" style={{ background: 'rgba(20,184,166,0.1)', color: '#0F766E' }}>
+                            {req.paymentMethod === 'trx' ? 'TRX' : 'YAS'}
+                          </span>
+                          <span className="text-[0.62rem]">· Demandé le {createdLabel}</span>
+                        </div>
+                        <div className="text-[0.65rem] mt-1.5 flex items-center gap-1.5" style={{ color: 'rgba(180,83,9,0.95)' }}>
+                          <i className="fas fa-circle-notch fa-spin text-[0.55rem]"></i>
+                          En attente d'approbation de l'administrateur. Le compte à rebours démarrera après validation.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
 
         {/* Claimable alert */}
         {activeInv.some(i => i.canClaim) && (
@@ -855,7 +929,7 @@ export default function InvestHubScreen() {
                         <span className="text-[0.55rem] font-semibold px-1.5 py-0.5 rounded" style={{ background: 'rgba(239,68,68,0.12)', color: '#EF4444' }}>MIN $5</span>
                       )}
                     </div>
-                    <div className="text-[0.65rem] mt-0.5" style={{ color: 'rgba(0,0,0,0.55)' }}>Retrait direct · Fonds dans les 6 heures</div>
+                    <div className="text-[0.65rem] mt-0.5" style={{ color: 'rgba(0,0,0,0.55)' }}>Retrait direct · Approbation admin requise</div>
                   </div>
                   {payoutChoice === 'yas_trx' && (
                     <i className="fas fa-circle-check text-[0.9rem]" style={{ color: '#14B8A6' }}></i>

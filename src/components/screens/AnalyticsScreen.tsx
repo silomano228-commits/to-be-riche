@@ -91,11 +91,11 @@ export default function AnalyticsScreen() {
           <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4">
             <div className="flex items-center gap-1.5 mb-1.5">
               <div className="w-5 h-5 rounded-md bg-[rgba(99,102,241,0.12)] flex items-center justify-center">
-                <i className="fas fa-bolt text-[0.45rem] text-[#6366F1]"></i>
+                <i className="fas fa-circle-notch text-[0.45rem] text-[#F87171]"></i>
               </div>
-              <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)] uppercase font-semibold">Trading</div>
+              <div className="text-[0.62rem] text-[rgba(0,0,0,0.55)] uppercase font-semibold">Jeu</div>
             </div>
-            <div className="text-[1.1rem] font-black text-[#818CF8]">{formatMoney(user.tradeBalance)}</div>
+            <div className="text-[1.1rem] font-black text-[#F87171]">{formatMoney(user.gameTotalWon ?? 0)}</div>
           </div>
           <div className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-4">
             <div className="flex items-center gap-1.5 mb-1.5">
@@ -149,8 +149,8 @@ export default function AnalyticsScreen() {
         <div className="grid grid-cols-3 gap-2 mb-5">
           {[
             { label: 'Investissements', value: a.activeInvestments ?? '-', icon: 'fa-chart-line' },
-            { label: 'Win Rate Trading', value: a.tradeWinRate ? `${a.tradeWinRate}%` : '-', icon: 'fa-bolt' },
-            { label: 'Entreprises', value: a.activeEnterprises ?? '-', icon: 'fa-building' },
+            { label: 'Parties jouées', value: user.gameSpinsUsed ?? 0, icon: 'fa-circle-notch' },
+            { label: 'Projets', value: a.activeEnterprises ?? '-', icon: 'fa-building' },
           ].map((s, i) => (
             <div key={i} className="bg-[#FFFFFF] border border-[rgba(0,0,0,0.08)] rounded-2xl p-3 text-center">
               <div className="w-9 h-9 rounded-xl mx-auto mb-1.5 flex items-center justify-center bg-[rgba(99,102,241,0.12)]">

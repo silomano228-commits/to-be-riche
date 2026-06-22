@@ -25,10 +25,12 @@ export async function GET(request: Request) {
     const { error } = await checkAdmin(request);
     if (error) return error;
 
-    // Fetch all users who have sent messages
+    // Fetch all users who have ANY chat message (user-sent OR admin-sent).
+    // This ensures admin-initiated conversations (where the admin wrote to a
+    // user who never replied) also appear in the conversation list.
     const usersWithMessages = await db.user.findMany({
       where: {
-        chatMessages: { some: { isAdmin: false } },
+        chatMessages: { some: {} },
       },
       select: {
         id: true,

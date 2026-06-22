@@ -31,24 +31,34 @@ class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError:
   }
 }
 
+// ==================== SCREEN LOADER (lazy-load fallback) ====================
+function ScreenLoader() {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center bg-[#F8F9FA]">
+      <LogoImg className="w-12 h-12 mb-3" style={{ animation: 'spFloat 2s ease-in-out infinite' }} />
+      <div className="w-5 h-5 border-[2.5px] border-[rgba(0,0,0,0.08)] border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
+    </div>
+  );
+}
+
 // Lazy load heavy screen components
-const InvestHubScreen = dynamic(() => import('@/components/screens/InvestHubScreen'), { ssr: false });
-const SpinGameScreen = dynamic(() => import('@/components/screens/SpinGameScreen'), { ssr: false });
-const VideoPlatformScreen = dynamic(() => import('@/components/screens/VideoPlatformScreen'), { ssr: false });
-const EnterpriseScreen = dynamic(() => import('@/components/screens/EnterpriseScreen'), { ssr: false });
-const ProfileScreen = dynamic(() => import('@/components/screens/ProfileScreen'), { ssr: false });
-const AnalyticsScreen = dynamic(() => import('@/components/screens/AnalyticsScreen'), { ssr: false });
-const WithdrawScreen = dynamic(() => import('@/components/screens/WithdrawScreen'), { ssr: false });
-const AdminScreen = dynamic(() => import('@/components/screens/AdminScreen'), { ssr: false });
-const ChatScreen = dynamic(() => import('@/components/screens/ChatScreen'), { ssr: false });
-const DepositScreen = dynamic(() => import('@/components/screens/DepositScreen'), { ssr: false });
-const GuideScreen = dynamic(() => import('@/components/screens/GuideScreen'), { ssr: false });
-const FloatingGift = dynamic(() => import('@/components/FloatingGift'), { ssr: false });
-const TabChangeAd = dynamic(() => import('@/components/TabChangeAd').then(m => ({ default: m.TabChangeAd })), { ssr: false });
-const InstallPrompt = dynamic(() => import('@/components/InstallPrompt'), { ssr: false });
-const NotificationBell = dynamic(() => import('@/components/NotificationBell'), { ssr: false });
-const WithdrawalTicker = dynamic(() => import('@/components/WithdrawalTicker'), { ssr: false });
-const PromoBanner = dynamic(() => import('@/components/PromoBanner'), { ssr: false });
+const InvestHubScreen = dynamic(() => import('@/components/screens/InvestHubScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+const SpinGameScreen = dynamic(() => import('@/components/screens/SpinGameScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+const VideoPlatformScreen = dynamic(() => import('@/components/screens/VideoPlatformScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+const EnterpriseScreen = dynamic(() => import('@/components/screens/EnterpriseScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+const ProfileScreen = dynamic(() => import('@/components/screens/ProfileScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+const AnalyticsScreen = dynamic(() => import('@/components/screens/AnalyticsScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+const WithdrawScreen = dynamic(() => import('@/components/screens/WithdrawScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+const AdminScreen = dynamic(() => import('@/components/screens/AdminScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+const ChatScreen = dynamic(() => import('@/components/screens/ChatScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+const DepositScreen = dynamic(() => import('@/components/screens/DepositScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+const GuideScreen = dynamic(() => import('@/components/screens/GuideScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+const FloatingGift = dynamic(() => import('@/components/FloatingGift'), { ssr: false, loading: () => <ScreenLoader /> });
+const TabChangeAd = dynamic(() => import('@/components/TabChangeAd').then(m => ({ default: m.TabChangeAd })), { ssr: false, loading: () => <ScreenLoader /> });
+const InstallPrompt = dynamic(() => import('@/components/InstallPrompt'), { ssr: false, loading: () => <ScreenLoader /> });
+const NotificationBell = dynamic(() => import('@/components/NotificationBell'), { ssr: false, loading: () => <ScreenLoader /> });
+const WithdrawalTicker = dynamic(() => import('@/components/WithdrawalTicker'), { ssr: false, loading: () => <ScreenLoader /> });
+const PromoBanner = dynamic(() => import('@/components/PromoBanner'), { ssr: false, loading: () => <ScreenLoader /> });
 
 // ==================== SPLASH ====================
 function SplashScreen({ onDone }: { onDone: () => void }) {
@@ -62,9 +72,10 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
       <div className="absolute w-[200px] h-[200px] rounded-full bg-[rgba(34,197,94,0.08)] blur-[80px] top-[25%] left-[15%]" style={{ animation: 'orbFloat 6s ease-in-out infinite' }} />
       <div className="absolute w-[160px] h-[160px] rounded-full bg-[rgba(20,184,166,0.06)] blur-[80px] bottom-[20%] right-[10%]" style={{ animation: 'orbFloat 6s ease-in-out infinite 3s reverse' }} />
       <div className="absolute w-[120px] h-[120px] rounded-full bg-[rgba(245,158,11,0.05)] blur-[80px] top-[60%] left-[60%]" style={{ animation: 'orbFloat 7s ease-in-out infinite 1.5s' }} />
-      <LogoImg className="w-[120px] h-[120px] mb-9" style={{ animation: 'spFloat 3s ease-in-out infinite', filter: 'drop-shadow(0 8px 40px rgba(34,197,94,0.3))' }} />
-      <div className="w-7 h-7 border-[2.5px] border-[rgba(0,0,0,0.08)] border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
-      <div className="text-[rgba(0,0,0,0.25)] mt-5 text-[0.6rem] tracking-[5px] uppercase">Chargement</div>
+      <LogoImg className="w-[140px] h-[140px] mb-5" style={{ animation: 'logoPulse 2.4s ease-in-out infinite', filter: 'drop-shadow(0 8px 40px rgba(34,197,94,0.3))' }} />
+      <h1 className="text-[2rem] font-black mb-6 bg-gradient-to-r from-[#22C55E] to-[#16A34A] bg-clip-text text-transparent tracking-[3px]">BE RICH</h1>
+      <div className="w-5 h-5 border-[2.5px] border-[rgba(0,0,0,0.08)] border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
+      <div className="text-[rgba(0,0,0,0.25)] mt-4 text-[0.6rem] tracking-[5px] uppercase">Chargement</div>
     </div>
   );
 }
@@ -298,11 +309,7 @@ function AuthScreen() {
           </>
         ) : (
           <>
-            <p className="text-[rgba(0,0,0,0.35)] text-[0.72rem] mb-3">{mode === 'login' ? 'Connectez-vous à votre compte.' : 'Rejoignez Be Rich.'}</p>
-            <div className="inline-flex items-center gap-1.5 mb-6 px-3 py-1.5 rounded-full" style={{ background: 'rgba(0,200,83,0.1)', border: '1px solid rgba(0,230,118,0.25)' }}>
-              <i className="fas fa-bullhorn text-[#00E676] text-[0.55rem]"></i>
-              <span className="text-[#00E676] text-[0.55rem] font-semibold tracking-wide">Plateforme de communication pour les grandes entreprises</span>
-            </div>
+            <p className="text-[rgba(0,0,0,0.35)] text-[0.72rem] mb-6">{mode === 'login' ? 'Connectez-vous à votre compte.' : 'Rejoignez Be Rich.'}</p>
             <div className="flex bg-[#FFFFFF] rounded-xl p-[3px] mb-6 border border-[rgba(0,0,0,0.08)]">
               <button onClick={() => { setMode('login'); setErrors({}); }} className={`flex-1 py-[11px] text-center text-[0.82rem] font-semibold rounded-lg transition-all border-none cursor-pointer ${mode === 'login' ? 'bg-[#22C55E] text-white shadow-lg' : 'text-[rgba(0,0,0,0.35)]'}`}>Connexion</button>
               <button onClick={() => { setMode('register'); setErrors({}); }} className={`flex-1 py-[11px] text-center text-[0.82rem] font-semibold rounded-lg transition-all border-none cursor-pointer ${mode === 'register' ? 'bg-[#22C55E] text-white shadow-lg' : 'text-[rgba(0,0,0,0.35)]'}`}>Inscription</button>
@@ -423,10 +430,10 @@ function HomeScreen() {
                 </div>
               </div>
               <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
-                <div className="w-8 h-8 icon-box bg-[rgba(245,158,11,0.15)] shrink-0"><i className="fas fa-bolt text-[0.65rem] text-[#F59E0B]"></i></div>
+                <div className="w-8 h-8 icon-box bg-[rgba(245,158,11,0.15)] shrink-0"><i className="fas fa-dice text-[0.65rem] text-[#F59E0B]"></i></div>
                 <div className="min-w-0">
-                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Trading</div>
-                  <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.tradeBalance || 0)}</div>
+                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Jeu</div>
+                  <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.gameTotalWon || 0)}</div>
                 </div>
               </div>
               <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
@@ -801,6 +808,7 @@ export default function BeRichApp() {
           @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
           @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); } 50% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); } }
           @keyframes claimPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); transform: scale(1); } 50% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); transform: scale(1.03); } }
+          @keyframes logoPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         `}</style>
         {showSplash && <SplashScreen onDone={handleSplashDone} />}
         <div className="h-full flex flex-col min-h-0">

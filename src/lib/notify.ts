@@ -35,6 +35,10 @@ export async function notifyAdmin(params: {
   message: string;
   ticketId?: string;
   userId?: string;
+  // Investment approval flow (Task 7): link to the pending deposit or
+  // withdrawal that triggered this admin notification.
+  depositId?: string;    // PendingDeposit.id or YasDeposit.id
+  withdrawalId?: string; // Withdrawal.id
 }) {
   try {
     await db.adminNotification.create({
@@ -44,6 +48,8 @@ export async function notifyAdmin(params: {
         message: params.message,
         ticketId: params.ticketId || null,
         userId: params.userId || null,
+        depositId: params.depositId || null,
+        withdrawalId: params.withdrawalId || null,
       },
     });
   } catch (e) {

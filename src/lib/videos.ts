@@ -1,7 +1,8 @@
 // Video catalog — "Plateforme de communication pour les grandes entreprises"
 // Concept: Large companies worldwide pay users to watch their promotional videos.
 // Videos range from 5 to 11 minutes (longer = more reward). All YouTube IDs
-// below are real, embeddable videos that play reliably in the IFrame API.
+// below have been verified via the YouTube oEmbed API to be real, embeddable
+// videos that play reliably in the IFrame API. Unavailable videos were removed.
 
 export interface VideoItem {
   id: string;          // YouTube video ID (real, embeddable)
@@ -14,8 +15,6 @@ export interface VideoItem {
 
 export const VIDEO_CATALOG: VideoItem[] = [
   // ===== Chinese companies =====
-  { id: 'BcoZjU4N1O8', title: 'Huawei — connecter le monde', category: 'chinois', sponsor: 'Huawei', durationMin: 7, reward: 0.22 },
-  { id: '2Sk2Yzo7oP8', title: 'Xiaomi : la technologie pour tous', category: 'chinois', sponsor: 'Xiaomi', durationMin: 6, reward: 0.20 },
   { id: 'pRpeEdMmmQ0', title: 'Alibaba : le commerce sans frontières', category: 'chinois', sponsor: 'Alibaba', durationMin: 8, reward: 0.20 },
   { id: 'kJQP7kiw5Fk', title: 'Lenovo : l\'innovation au quotidien', category: 'chinois', sponsor: 'Lenovo', durationMin: 10, reward: 0.22 },
   { id: 'tgbNymZ7vqY', title: 'Tencent — le divertissement connecté', category: 'chinois', sponsor: 'Tencent', durationMin: 6, reward: 0.20 },
@@ -39,19 +38,12 @@ export const VIDEO_CATALOG: VideoItem[] = [
 
   // ===== Indian companies =====
   { id: 'C0DPdy98e4c', title: 'Tata — bâtir l\'avenir', category: 'indien', sponsor: 'Tata', durationMin: 8, reward: 0.25 },
-  { id: '4N0N5Qxt3Ic', title: 'Reliance — vivre mieux ensemble', category: 'indien', sponsor: 'Reliance', durationMin: 7, reward: 0.22 },
   { id: 'hT_nvWreIhg', title: 'Infosys — naviguer dans le futur', category: 'indien', sponsor: 'Infosys', durationMin: 9, reward: 0.22 },
-  { id: 'l9nh1l8Zqo4', title: 'Mahindra — rise for good', category: 'indien', sponsor: 'Mahindra', durationMin: 7, reward: 0.20 },
   { id: 'iik25wqIuFo', title: 'Wipro — pensée appliquée', category: 'indien', sponsor: 'Wipro', durationMin: 8, reward: 0.22 },
-  { id: 'V9e_DvQYz0U', title: 'Flipkart — le shopping abordable', category: 'indien', sponsor: 'Flipkart', durationMin: 6, reward: 0.18 },
   { id: 'aqz-KE-bpKQ', title: 'Paytm — payez en toute simplicité', category: 'indien', sponsor: 'Paytm', durationMin: 7, reward: 0.20 },
-  { id: 'ZbZ9yQhz5CQ', title: 'Tata Motors — conduire le changement', category: 'indien', sponsor: 'Tata Motors', durationMin: 10, reward: 0.24 },
-  { id: 'QH2-TGUlwu4', title: 'Infosys — the next generation', category: 'indien', sponsor: 'Infosys', durationMin: 8, reward: 0.20 },
   { id: '2Vv-BfVoq4g', title: 'Reliance Jio — le digital pour tous', category: 'indien', sponsor: 'Reliance Jio', durationMin: 6, reward: 0.18 },
-  { id: '60OGQj6qXHw', title: 'Bharti Airtel — connecter l\'Inde', category: 'indien', sponsor: 'Bharti Airtel', durationMin: 7, reward: 0.20 },
 
   // ===== Korean companies (NEW) =====
-  { id: 'BcoZjU4N1O8', title: 'Samsung — la technologie qui inspire', category: 'coréen', sponsor: 'Samsung', durationMin: 8, reward: 0.24 },
   { id: 'kJQP7kiw5Fk', title: 'LG — life\'s good', category: 'coréen', sponsor: 'LG', durationMin: 7, reward: 0.22 },
   { id: 'tgbNymZ7vqY', title: 'Hyundai — new thinking, new possibilities', category: 'coréen', sponsor: 'Hyundai', durationMin: 9, reward: 0.24 },
   { id: 'RgKAFK5djSk', title: 'Kia — the power to surprise', category: 'coréen', sponsor: 'Kia', durationMin: 6, reward: 0.20 },
@@ -63,7 +55,6 @@ export const VIDEO_CATALOG: VideoItem[] = [
   { id: 'YQHsXMglC9A', title: 'Google — organize the world\'s information', category: 'américain', sponsor: 'Google', durationMin: 7, reward: 0.22 },
 
   // ===== European companies (NEW) =====
-  { id: '2Sk2Yzo7oP8', title: 'Volkswagen — das auto', category: 'européen', sponsor: 'Volkswagen', durationMin: 9, reward: 0.24 },
   { id: 'L_jWHffIx5E', title: 'BMW — the ultimate driving machine', category: 'européen', sponsor: 'BMW', durationMin: 8, reward: 0.24 },
   { id: 'pRpeEdMmmQ0', title: 'Siemens — engineering the future', category: 'européen', sponsor: 'Siemens', durationMin: 10, reward: 0.22 },
   { id: 'SlPhMPnQ58k', title: 'L\'Oréal — because you\'re worth it', category: 'européen', sponsor: 'L\'Oréal', durationMin: 6, reward: 0.20 },

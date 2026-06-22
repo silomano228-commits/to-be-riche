@@ -175,21 +175,31 @@ model SupportTicket {
 }
 
 model PendingDeposit {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  amountUsd   Float
-  amountTrx   Float
-  trxPrice    Float
-  userAddress String
-  txHash      String?
-  destination String   @default("balance") // balance | video | invest_level_X
-  status      String   @default("pending")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amountUsd         Float
+  amountTrx         Float
+  trxPrice          Float
+  userAddress       String
+  txHash            String?
+  destination       String    @default("balance") // balance | video | invest_level_X
+  status            String    @default("pending")
+  // Investment approval flow: type distinguishes principal-wallet deposits
+  // from investment deposits. When type='investment', admin approval
+  // creates the Investment record (countdown starts at approval time).
+  type              String    @default("deposit") // deposit | investment
+  investmentLevel   Int?
+  investmentAmount  Float?
+  paymentMethod     String?   // yas | trx
+  processedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([userId])
   @@index([status])
+  @@index([type])
+  @@index([status, type])
 }
 
 model SiteConfig {
@@ -247,23 +257,32 @@ model OtpCode {
 }
 
 model YasDeposit {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  amountCfa     Float    @default(0)
-  amountUsd     Float
-  amountTrx     Float
-  trxPrice      Float
-  yasAccount    String
-  trxAddress    String?
-  destination   String   @default("balance")
-  status        String   @default("pending")
-  adminNote     String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amountCfa         Float     @default(0)
+  amountUsd         Float
+  amountTrx         Float
+  trxPrice          Float
+  yasAccount        String
+  trxAddress        String?
+  destination       String    @default("balance")
+  status            String    @default("pending")
+  adminNote         String?
+  // Investment approval flow: type distinguishes principal-wallet deposits
+  // from investment deposits. When type='investment', admin approval
+  // creates the Investment record (countdown starts at approval time).
+  type              String    @default("deposit") // deposit | investment
+  investmentLevel   Int?
+  investmentAmount  Float?
+  processedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([userId])
   @@index([status])
+  @@index([type])
+  @@index([status, type])
 }
 
 model UserNotification {
@@ -283,17 +302,22 @@ model UserNotification {
 }
 
 model AdminNotification {
-  id        String   @id @default(cuid())
-  type      String
-  title     String
-  message   String
-  read      Boolean  @default(false)
-  ticketId  String?
-  userId    String?
-  createdAt DateTime @default(now())
+  id           String   @id @default(cuid())
+  type         String
+  title        String
+  message      String
+  read         Boolean  @default(false)
+  ticketId     String?
+  userId       String?
+  // Investment approval flow: link back to the pending deposit or
+  // withdrawal that triggered this admin notification.
+  depositId    String?  // PendingDeposit.id or YasDeposit.id
+  withdrawalId String?  // Withdrawal.id
+  createdAt    DateTime @default(now())
 
   @@index([read])
   @@index([createdAt])
+  @@index([type])
 }
 
 model TradingPosition {

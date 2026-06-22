@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { validatePaymentAddress } from '@/lib/payment';
+import { notifyAdmin } from '@/lib/notify';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,7 +68,6 @@ export async function POST(request: Request) {
     const newDoneCycles = investment.doneCycles + 1;
     const newEarned = Math.round((investment.earned + gain) * 100) / 100;
     const newNextClaimAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-    const newTotalClaims = user.totalInvestClaims + 1;
 
     // UNLIMITED cycles: totalCycles = 0 means unlimited, never completes.
     // For legacy investments with totalCycles > 0, respect the cap.
@@ -102,6 +102,12 @@ export async function POST(request: Request) {
 
     const siteConfig = await db.siteConfig.findUnique({ where: { id: 'main' } });
     const cfaUsdRate = siteConfig?.cfaUsdRate || 600;
+
+    // Info for the admin notification (set when a withdrawal is created in the
+    // transaction below, and used after commit to send the AdminNotification).
+    // Wrapped in an array container so TypeScript's control-flow narrowing
+    // doesn't reduce it to `null` after the async closure.
+    const withdrawalNotify: Array<{ id: string; isTrx: boolean }> = [];
 
     await db.$transaction(async (tx) => {
       // Update investment: unlimited never completes
@@ -141,9 +147,11 @@ export async function POST(request: Request) {
         });
       } else {
         // Create a withdrawal record (pending). Funds available within 6 hours.
+        // The admin must approve this withdrawal before funds are sent — the
+        // admin is notified via AdminNotification (badge count + desktop push).
         const amountCfa = gain * cfaUsdRate;
         const isTrx = body.paymentType === 'trx'; // 'trx' or 'yas'
-        await tx.withdrawal.create({
+        const withdrawal = await tx.withdrawal.create({
           data: {
             userId: user.id,
             amount: gain,
@@ -158,7 +166,7 @@ export async function POST(request: Request) {
           data: {
             type: 'invest_claim_withdraw',
             amount: gain,
-            detail: `Collecte investissement Niveau ${investment.level}: $${gain.toFixed(2)} — Retrait ${isTrx ? 'TRX' : 'YAS'} demandé (fonds disponibles dans les 6h) — Cycle ${newDoneCycles}${isUnlimited ? ' (illimité)' : `/${investment.totalCycles}`}`,
+            detail: `Collecte investissement Niveau ${investment.level}: $${gain.toFixed(2)} — Retrait ${isTrx ? 'TRX' : 'YAS'} demandé (en attente d'approbation admin) — Cycle ${newDoneCycles}${isUnlimited ? ' (illimité)' : `/${investment.totalCycles}`}`,
             userId: user.id,
           },
         });
@@ -166,10 +174,12 @@ export async function POST(request: Request) {
           data: {
             userId: user.id,
             type: 'withdrawal_pending',
-            title: 'Retrait en cours de traitement',
-            message: `Votre collecte de $${gain.toFixed(2)} a été initiée. Les fonds seront disponibles dans les 6 heures.`,
+            title: 'Retrait en attente d\'approbation',
+            message: `Votre collecte de $${gain.toFixed(2)} a été initiée. L'administrateur doit approuver le retrait avant que les fonds ne soient envoyés (généralement dans les 6 heures).`,
+            link: 'wallet',
           },
         });
+        withdrawalNotify.push({ id: withdrawal.id, isTrx });
       }
 
       // 5% of parrainé's investment gains to admin
@@ -196,6 +206,19 @@ export async function POST(request: Request) {
         }
       }
     });
+
+    // After commit — notify admin of the new withdrawal request (badge count
+    // + admin notification panel + desktop push via AdminNotificationBell).
+    if (withdrawalNotify.length > 0) {
+      const wn = withdrawalNotify[0];
+      await notifyAdmin({
+        type: 'investment_withdrawal_request',
+        title: 'Nouvelle demande de retrait d\'investissement',
+        message: `${user.name} a demandé un retrait de $${gain.toFixed(2)} (${wn.isTrx ? 'TRX' : 'YAS'}) — en attente d'approbation.`,
+        userId: user.id,
+        withdrawalId: wn.id,
+      });
+    }
 
     const payoutLabel = method === 'main'
       ? `versé sur votre compte principal`

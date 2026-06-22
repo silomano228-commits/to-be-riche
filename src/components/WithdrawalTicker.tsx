@@ -4,14 +4,14 @@ import { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '@/lib/store';
 
 // Generate fake withdrawal entries with realistic codes and amounts
-function generateFakeEntries(): Array<{ code: string; type: 'trading' | 'investissement' | 'projet'; amount: number; icon: string }> {
+function generateFakeEntries(): Array<{ code: string; type: 'jeu' | 'investissement' | 'projet'; amount: number; icon: string }> {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const genCode = () => 'BR-' + Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 
-  const entries: Array<{ code: string; type: 'trading' | 'investissement' | 'projet'; amount: number; icon: string }> = [];
+  const entries: Array<{ code: string; type: 'jeu' | 'investissement' | 'projet'; amount: number; icon: string }> = [];
 
   for (let i = 0; i < 10; i++) {
-    entries.push({ code: genCode(), type: 'trading', amount: parseFloat((Math.random() * 48 + 2).toFixed(2)), icon: 'fa-bolt' });
+    entries.push({ code: genCode(), type: 'jeu', amount: parseFloat((Math.random() * 48 + 2).toFixed(2)), icon: 'fa-dice' });
   }
   for (let i = 0; i < 10; i++) {
     entries.push({ code: genCode(), type: 'investissement', amount: parseFloat((Math.random() * 77 + 3).toFixed(2)), icon: 'fa-chart-line' });
@@ -32,8 +32,8 @@ function generateFakeEntries(): Array<{ code: string; type: 'trading' | 'investi
 const FAKE_ENTRIES = generateFakeEntries();
 
 const TYPE_CONFIG: Record<string, { label: string; color: string; bgColor: string; borderColor: string; glow: string }> = {
-  trading: {
-    label: 'Trading',
+  jeu: {
+    label: 'Jeu',
     color: '#F59E0B',
     bgColor: 'rgba(245, 158, 11, 0.1)',
     borderColor: 'rgba(245, 158, 11, 0.25)',

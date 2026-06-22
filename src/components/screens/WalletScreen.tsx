@@ -1,13 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useAppStore, formatMoney } from '@/lib/store';
+import { useState, useEffect, useCallback } from 'react';
+import { useAppStore, formatMoney, authFetch } from '@/lib/store';
 import { Header, PROJECTS } from '@/components/shared';
+
+interface InvestSummary {
+  total: number;
+  active: number;
+  completed: number;
+  totalEarned: number;
+  totalInvested: number;
+}
+
+interface GameStatus {
+  spinsRemaining: number;
+  totalWonToday: number;
+}
 
 export default function WalletScreen() {
   const { user, setPage, setUser, addToast, addNotification } = useAppStore();
   const [flashBal, setFlashBal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [investSummary, setInvestSummary] = useState<InvestSummary | null>(null);
+  const [gameStatus, setGameStatus] = useState<GameStatus | null>(null);
 
   // Fake notifications — intervals: 7, 10, 13, 15 secondes
   useEffect(() => {
@@ -34,6 +49,35 @@ export default function WalletScreen() {
     setTimeout(() => setFlashBal(false), 700);
   }, []);
 
+  // Load investment summary + game status (lightweight, parallel)
+  const loadExtras = useCallback(async () => {
+    const [invRes, gameRes] = await Promise.allSettled([
+      authFetch('/api/invest/list'),
+      authFetch('/api/game/status'),
+    ]);
+    if (invRes.status === 'fulfilled') {
+      try {
+        const data = await invRes.value.json();
+        if (data.success && data.summary) setInvestSummary(data.summary);
+      } catch { /* ignore */ }
+    }
+    if (gameRes.status === 'fulfilled') {
+      try {
+        const data = await gameRes.value.json();
+        if (data.success) {
+          setGameStatus({
+            spinsRemaining: data.spinsRemaining ?? 10,
+            totalWonToday: data.totalWonToday || 0,
+          });
+        }
+      } catch { /* ignore */ }
+    }
+  }, []);
+
+  useEffect(() => {
+    loadExtras();
+  }, [loadExtras]);
+
   // Refresh wallet
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -44,6 +88,7 @@ export default function WalletScreen() {
         setUser(data.user);
         addToast('Solde mis à jour', 'success');
       }
+      await loadExtras();
     } catch { addToast('Erreur', 'error'); }
     setRefreshing(false);
   };
@@ -56,13 +101,22 @@ export default function WalletScreen() {
   const canWithdraw = user.canWithdraw;
   const hoursUntilWithdrawal = user.hoursUntilWithdrawal || 0;
 
+  // Derived account values
+  const principalBalance = user.balance || 0;
+  const totalInvested = investSummary?.totalInvested ?? 0;
+  const totalEarned = investSummary?.totalEarned ?? 0;
+  const activeInvestments = investSummary?.active ?? 0;
+  const spinsRemaining = gameStatus?.spinsRemaining ?? 10;
+  const totalWonToday = gameStatus?.totalWonToday ?? 0;
+  const gameTotalWon = user.gameTotalWon || 0;
+
   return (
     <>
       <Header title="Portefeuille" icon="fa-wallet" iconColor="#00C853" rightElement={
         <button className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90" onClick={() => setPage('profile')}><i className="far fa-user-circle"></i></button>
       } />
       <div className="px-[18px] py-4 flex-1 w-full">
-        {/* Balance Card — Two accounts */}
+        {/* Hero Balance Card — total + refresh */}
         <div className="bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white rounded-2xl p-5 mb-[18px] relative overflow-hidden border border-[rgba(255,255,255,0.05)]">
           <div className="absolute -top-12 -right-12 w-[180px] h-[180px] bg-[radial-gradient(circle,rgba(0,200,83,0.1),transparent_65%)]" />
           <div className="absolute -bottom-10 -left-8 w-[120px] h-[120px] bg-[radial-gradient(circle,rgba(251,191,36,0.06),transparent_65%)]" />
@@ -74,30 +128,85 @@ export default function WalletScreen() {
                 <i className="fas fa-sync-alt text-[0.7rem]" style={refreshing ? { animation: 'spin 0.8s linear infinite' } : {}}></i>
               </button>
             </div>
-            <div className={`text-[2rem] font-black tracking-[-1px] mb-4 ${flashBal ? 'text-[#BBF7D0]' : 'text-white'}`} style={{ transition: 'color 0.6s, transform 0.6s', transform: flashBal ? 'scale(1.04)' : 'scale(1)' }}>{formatMoney(user.balance)}</div>
+            <div className={`text-[2rem] font-black tracking-[-1px] mb-1 ${flashBal ? 'text-[#BBF7D0]' : 'text-white'}`} style={{ transition: 'color 0.6s, transform 0.6s', transform: flashBal ? 'scale(1.04)' : 'scale(1)' }}>{formatMoney(principalBalance)}</div>
+            <div className="text-[0.65rem] opacity-50 font-medium">Solde disponible — Compte Principal</div>
+          </div>
+        </div>
 
-            {/* Two accounts */}
-            <div className="grid grid-cols-2 gap-2.5 mb-4">
-              <div className="bg-[rgba(255,255,255,0.06)] rounded-xl p-3.5 border border-[rgba(255,255,255,0.05)]">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <div className="w-5 h-5 rounded-md bg-[rgba(59,130,246,0.2)] flex items-center justify-center text-[0.5rem]"><i className="fas fa-shield-alt text-[#60A5FA]"></i></div>
-                  <span className="text-[0.6rem] text-[rgba(255,255,255,0.4)] font-semibold uppercase tracking-[0.5px]">Principal</span>
-                </div>
-                <div className="text-[1.05rem] font-black text-white">{formatMoney(user.balance)}</div>
+        {/* ============ Account Cards ============ */}
+        <div className="flex justify-between items-center mb-2.5 mt-1">
+          <h3 className="text-[0.9rem] font-bold text-[#1A2332]">Mes comptes</h3>
+          <span className="text-[0.65rem] text-[#94A3B8] font-medium">3 comptes</span>
+        </div>
+
+        {/* ---- Compte Principal ---- */}
+        <div className="bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white rounded-2xl p-4 mb-3 relative overflow-hidden border border-[rgba(255,255,255,0.05)]">
+          <div className="absolute -top-10 -right-10 w-[120px] h-[120px] bg-[radial-gradient(circle,rgba(0,200,83,0.12),transparent_65%)]" />
+          <div className="relative z-[1]">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-9 h-9 rounded-xl bg-[rgba(0,200,83,0.2)] flex items-center justify-center"><i className="fas fa-shield-alt text-[#00E676] text-[0.95rem]"></i></div>
+              <div className="flex-1">
+                <div className="text-[0.78rem] font-bold text-white">Compte Principal</div>
+                <div className="text-[0.6rem] text-[rgba(255,255,255,0.45)] font-medium uppercase tracking-[0.5px]">Solde disponible</div>
               </div>
-              <div className="bg-[rgba(0,200,83,0.08)] rounded-xl p-3.5 border border-[rgba(0,200,83,0.12)]">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <div className="w-5 h-5 rounded-md bg-[rgba(0,200,83,0.2)] flex items-center justify-center text-[0.5rem]"><i className="fas fa-chart-line text-[#00E676]"></i></div>
-                  <span className="text-[0.6rem] text-[rgba(255,255,255,0.4)] font-semibold uppercase tracking-[0.5px]">Gains</span>
-                </div>
-                <div className="text-[1.05rem] font-black text-[#86EFAC]">{formatMoney(totalProfit)}</div>
-              </div>
+              <span className="text-[0.55rem] font-bold text-[#86EFAC] bg-[rgba(0,200,83,0.15)] px-2 py-1 rounded-full uppercase tracking-wide">Actif</span>
             </div>
-
+            <div className="text-[1.6rem] font-black tracking-[-0.5px] mb-3 text-white">{formatMoney(principalBalance)}</div>
             <div className="flex gap-2">
-              <button className="flex-1 py-[11px] rounded-lg text-[0.78rem] font-semibold cursor-pointer flex items-center justify-center gap-1.5 border-none font-[Inter] transition-transform active:scale-95 bg-[rgba(0,200,83,0.15)] text-[#86EFAC]" onClick={() => setPage('invest')}><i className="fas fa-arrow-down"></i> Déposer</button>
-              <button className="flex-1 py-[11px] rounded-lg text-[0.78rem] font-semibold cursor-pointer flex items-center justify-center gap-1.5 border-none font-[Inter] transition-transform active:scale-95 bg-[rgba(251,191,36,0.15)] text-[#FDE68A]" onClick={() => setPage('withdraw')}><i className="fas fa-arrow-up"></i> Retirer</button>
+              <button className="flex-1 py-[11px] rounded-lg text-[0.78rem] font-semibold cursor-pointer flex items-center justify-center gap-1.5 border-none font-[Inter] transition-transform active:scale-95 bg-[rgba(0,200,83,0.18)] text-[#86EFAC]" onClick={() => setPage('deposit')}><i className="fas fa-arrow-down"></i> Déposer</button>
+              <button className="flex-1 py-[11px] rounded-lg text-[0.78rem] font-semibold cursor-pointer flex items-center justify-center gap-1.5 border-none font-[Inter] transition-transform active:scale-95 bg-[rgba(251,191,36,0.18)] text-[#FDE68A]" onClick={() => setPage('withdraw')}><i className="fas fa-arrow-up"></i> Retirer</button>
             </div>
+          </div>
+        </div>
+
+        {/* ---- Compte Jeu ---- */}
+        <div className="rounded-2xl p-4 mb-3 relative overflow-hidden border border-[rgba(251,191,36,0.18)]" style={{ background: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)' }}>
+          <div className="absolute -top-10 -right-10 w-[120px] h-[120px] bg-[radial-gradient(circle,rgba(251,191,36,0.25),transparent_65%)]" />
+          <div className="relative z-[1]">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-9 h-9 rounded-xl bg-[rgba(245,158,11,0.18)] flex items-center justify-center"><i className="fas fa-dice text-[#D97706] text-[0.95rem]"></i></div>
+              <div className="flex-1">
+                <div className="text-[0.78rem] font-bold text-[#92400E]">Compte Jeu</div>
+                <div className="text-[0.6rem] text-[#B45309] font-medium uppercase tracking-[0.5px]">Roue de la fortune</div>
+              </div>
+              <span className="text-[0.55rem] font-bold text-[#92400E] bg-[rgba(245,158,11,0.2)] px-2 py-1 rounded-full uppercase tracking-wide">{spinsRemaining} tours</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <div className="bg-white/70 rounded-xl p-2.5 border border-[rgba(245,158,11,0.15)]">
+                <div className="text-[0.58rem] text-[#92400E] font-semibold uppercase tracking-wide mb-0.5">Tours restants</div>
+                <div className="text-[1.05rem] font-black text-[#92400E] leading-none">{spinsRemaining}<span className="text-[0.7rem] text-[#B45309] font-bold">/10</span></div>
+              </div>
+              <div className="bg-white/70 rounded-xl p-2.5 border border-[rgba(245,158,11,0.15)]">
+                <div className="text-[0.58rem] text-[#92400E] font-semibold uppercase tracking-wide mb-0.5">Gagné aujourd&apos;hui</div>
+                <div className="text-[1.05rem] font-black text-[#00C853] leading-none">{formatMoney(totalWonToday)}</div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between text-[0.62rem] text-[#92400E] mb-2.5 px-0.5">
+              <span><i className="fas fa-trophy mr-1 text-[#D97706]"></i> Total cumulé : <strong>{formatMoney(gameTotalWon)}</strong></span>
+            </div>
+            <button className="w-full py-[11px] rounded-lg text-[0.82rem] font-bold cursor-pointer flex items-center justify-center gap-1.5 border-none font-[Inter] transition-transform active:scale-95 text-white" style={{ background: 'linear-gradient(90deg, #F59E0B 0%, #D97706 100%)' }} onClick={() => setPage('game')}><i className="fas fa-play"></i> Jouer maintenant</button>
+          </div>
+        </div>
+
+        {/* ---- Compte Investissement ---- */}
+        <div className="rounded-2xl p-4 mb-4 relative overflow-hidden border border-[rgba(20,184,166,0.2)]" style={{ background: 'linear-gradient(135deg, #F0FDFA 0%, #CCFBF1 100%)' }}>
+          <div className="absolute -top-10 -right-10 w-[120px] h-[120px] bg-[radial-gradient(circle,rgba(20,184,166,0.2),transparent_65%)]" />
+          <div className="relative z-[1]">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-9 h-9 rounded-xl bg-[rgba(20,184,166,0.18)] flex items-center justify-center"><i className="fas fa-seedling text-[#0F766E] text-[0.95rem]"></i></div>
+              <div className="flex-1">
+                <div className="text-[0.78rem] font-bold text-[#134E4A]">Compte Investissement</div>
+                <div className="text-[0.6rem] text-[#0F766E] font-medium uppercase tracking-[0.5px]">5% / jour — illimité</div>
+              </div>
+              <span className="text-[0.55rem] font-bold text-[#0F766E] bg-[rgba(20,184,166,0.2)] px-2 py-1 rounded-full uppercase tracking-wide">{activeInvestments} actif{activeInvestments > 1 ? 's' : ''}</span>
+            </div>
+            <div className="text-[1.6rem] font-black tracking-[-0.5px] mb-1 text-[#134E4A]">{formatMoney(totalInvested)}</div>
+            <div className="text-[0.62rem] text-[#0F766E] font-medium mb-3">Total investi · <span className="text-[#00C853] font-bold">+{formatMoney(totalEarned)} gagnés</span></div>
+            <div className="flex gap-2">
+              <button className="flex-1 py-[11px] rounded-lg text-[0.78rem] font-semibold cursor-pointer flex items-center justify-center gap-1.5 border-none font-[Inter] transition-transform active:scale-95 text-white" style={{ background: 'linear-gradient(90deg, #14B8A6 0%, #0D9488 100%)' }} onClick={() => setPage('invest')}><i className="fas fa-arrow-down"></i> Déposer</button>
+              <button className="flex-1 py-[11px] rounded-lg text-[0.78rem] font-semibold cursor-pointer flex items-center justify-center gap-1.5 border-none font-[Inter] transition-transform active:scale-95 bg-white text-[#0F766E] border border-[rgba(20,184,166,0.25)]" onClick={() => setPage('invest')}><i className="fas fa-list"></i> Voir mes investissements</button>
+            </div>
+            <p className="text-[0.6rem] text-[#0F766E] opacity-75 mt-2 leading-relaxed"><i className="fas fa-info-circle mr-1"></i> Dépôt via YAS ou TRX — même système que le compte principal. Vérification sous 6h.</p>
           </div>
         </div>
 
@@ -158,11 +267,11 @@ export default function WalletScreen() {
 
         {/* 48h Withdrawal Info */}
         {user.hasInvested && !canWithdraw && hoursUntilWithdrawal > 0 && (
-          <div className="rounded-xl p-3.5 flex items-start gap-3 mb-[18px] bg-[#EFF6FF] border-l-[3px] border-[#3B82F6]">
-            <i className="fas fa-clock text-[#2563EB] mt-0.5 shrink-0 text-[0.9rem]"></i>
+          <div className="rounded-xl p-3.5 flex items-start gap-3 mb-[18px] bg-[#ECFDF5] border-l-[3px] border-[#14B8A6]">
+            <i className="fas fa-clock text-[#0F766E] mt-0.5 shrink-0 text-[0.9rem]"></i>
             <div className="flex-1">
-              <h4 className="text-[0.82rem] mb-0.5 font-bold text-[#1E40AF]">Premier retrait dans {hoursUntilWithdrawal}h</h4>
-              <p className="text-[0.72rem] leading-relaxed text-[#3B82F6]">Vous pourrez retirer vos gains 48h après votre premier dépôt.</p>
+              <h4 className="text-[0.82rem] mb-0.5 font-bold text-[#0F766E]">Premier retrait dans {hoursUntilWithdrawal}h</h4>
+              <p className="text-[0.72rem] leading-relaxed text-[#0F766E]">Vous pourrez retirer vos gains 48h après votre premier dépôt.</p>
             </div>
           </div>
         )}

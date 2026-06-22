@@ -4,16 +4,17 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAppStore, formatMoney, esc, authFetch, type AppUser } from '@/lib/store';
 import { Header, LogoImg, Modal, INVEST_LEVELS, ENTERPRISE_TYPES, ENTERPRISE_NAMES } from '@/components/shared';
 
-// Trading level definitions
-const TRADING_LEVELS = [
-  { level: 1, name: 'Débutant', color: '#22C55E', minTrades: 0, icon: 'fa-seedling' },
-  { level: 2, name: 'Apprenti', color: '#3B82F6', minTrades: 5, icon: 'fa-chart-line' },
-  { level: 3, name: 'Intermédiaire', color: '#F59E0B', minTrades: 15, icon: 'fa-bolt' },
-  { level: 4, name: 'Expert', color: '#8B5CF6', minTrades: 30, icon: 'fa-crown' },
-  { level: 5, name: 'Maître', color: '#EF4444', minTrades: 50, icon: 'fa-gem' },
-];
-
 const REQUIRED_REFERRALS = 10;
+
+// Daily spin limit (kept in sync with /api/game/status)
+const DAILY_SPINS = 10;
+
+interface GameStats {
+  spinsUsed: number;
+  spinsRemaining: number;
+  dailySpins: number;
+  totalWonToday: number;
+}
 
 export default function ProfileScreen() {
   const { user, clearUser, setPage, addToast } = useAppStore();
@@ -25,6 +26,7 @@ export default function ProfileScreen() {
   const [shareSheetOpen, setShareSheetOpen] = useState(false);
   const [worldLink, setWorldLink] = useState<string | null>(null);
   const [worldLinkSeen, setWorldLinkSeen] = useState(false);
+  const [gameStats, setGameStats] = useState<GameStats | null>(null);
 
   // shareUrl is only the window origin — safe to compute lazily on the client.
   const shareUrl = typeof window !== 'undefined' ? window.location.origin : 'https://beriche.duckdns.org';
@@ -53,6 +55,24 @@ export default function ProfileScreen() {
       })
       .catch(() => { /* */ });
   }, [user]);
+
+  // Fetch wheel game stats (spins used / total won today)
+  useEffect(() => {
+    if (!user) return;
+    authFetch('/api/game/status')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setGameStats({
+            spinsUsed: data.spinsUsed ?? 0,
+            spinsRemaining: data.spinsRemaining ?? DAILY_SPINS,
+            dailySpins: data.dailySpins ?? DAILY_SPINS,
+            totalWonToday: data.totalWonToday || 0,
+          });
+        }
+      })
+      .catch(() => { /* */ });
+  }, [user?.id]);
 
   const referralLink = `${shareUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://beriche.duckdns.org')}/?ref=${user?.referralCode || ''}`;
 
@@ -222,15 +242,16 @@ export default function ProfileScreen() {
   const currentInvestLevel = INVEST_LEVELS[investLevelIdx];
   const nextInvestLevel = investLevelIdx < INVEST_LEVELS.length - 1 ? INVEST_LEVELS[investLevelIdx + 1] : null;
 
-  // Determine trading level based on completedWithdrawals as proxy for trades
-  const tradeCount = user.completedWithdrawals || 0;
-  const tradeLevelIdx = TRADING_LEVELS.reduce((acc, lvl, i) => tradeCount >= lvl.minTrades ? i : acc, 0);
-  const currentTradeLevel = TRADING_LEVELS[tradeLevelIdx];
-  const nextTradeLevel = tradeLevelIdx < TRADING_LEVELS.length - 1 ? TRADING_LEVELS[tradeLevelIdx + 1] : null;
-
   // Referral next level
   const referralNextLevel = INVEST_LEVELS.find(l => (user.referralCount || 0) < l.requiredReferrals);
   const referralRemaining = referralNextLevel ? referralNextLevel.requiredReferrals - (user.referralCount || 0) : 0;
+
+  // Wheel game helpers
+  const spinsRemaining = gameStats?.spinsRemaining ?? (DAILY_SPINS - (user.gameSpinsUsed ?? 0));
+  const spinsUsed = gameStats?.spinsUsed ?? (user.gameSpinsUsed ?? 0);
+  const dailySpins = gameStats?.dailySpins ?? DAILY_SPINS;
+  const totalWonToday = gameStats?.totalWonToday ?? 0;
+  const spinsProgress = dailySpins > 0 ? Math.min(100, (spinsRemaining / dailySpins) * 100) : 0;
 
   return (
     <>
@@ -305,8 +326,8 @@ export default function ProfileScreen() {
               <div className="text-[0.95rem] font-black text-white">{formatMoney(user.balance)}</div>
             </div>
             <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)' }}>
-              <div className="text-[0.6rem] uppercase text-white/60">Trading</div>
-              <div className="text-[0.95rem] font-black text-white">{formatMoney(user.tradeBalance)}</div>
+              <div className="text-[0.6rem] uppercase text-white/60">Jeu</div>
+              <div className="text-[0.95rem] font-black text-white">{formatMoney(user.gameTotalWon ?? 0)}</div>
             </div>
             <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)' }}>
               <div className="text-[0.6rem] uppercase text-white/60">Projet</div>
@@ -381,7 +402,7 @@ export default function ProfileScreen() {
           )}
         </div>
 
-        {/* Niveau de Trading Section */}
+        {/* Niveau de Jeu / Jeu de Roue Section */}
         <div
           className="rounded-2xl p-4 mb-4"
           style={{
@@ -390,46 +411,67 @@ export default function ProfileScreen() {
           }}
         >
           <div className="flex items-center gap-2.5 mb-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.12)' }}>
-              <i className={`fas ${currentTradeLevel.icon} text-[0.75rem]`} style={{ color: currentTradeLevel.color }}></i>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(248,113,113,0.12)' }}>
+              <i className="fas fa-circle-notch text-[0.75rem]" style={{ color: '#F87171' }}></i>
             </div>
             <div className="flex-1">
-              <h4 className="text-[0.88rem] font-bold" style={{ color: '#1F2937' }}>Niveau de Trading</h4>
-              <div className="text-[0.65rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>Votre expérience en trading</div>
+              <h4 className="text-[0.88rem] font-bold" style={{ color: '#1F2937' }}>Jeu de Roue</h4>
+              <div className="text-[0.65rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>Vos parties de roue quotidienne</div>
             </div>
             <span
               className="text-[0.75rem] font-bold px-3 py-1 rounded-full"
-              style={{ background: `${currentTradeLevel.color}20`, color: currentTradeLevel.color }}
+              style={{ background: 'rgba(248,113,113,0.12)', color: '#F87171' }}
             >
-              {currentTradeLevel.name}
+              {spinsRemaining}/{dailySpins}
             </span>
           </div>
 
-          {/* Progress bar to next level */}
-          <div className="relative">
+          {/* Stats grid */}
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.08)' }}>
+              <div className="text-[0.6rem]" style={{ color: 'rgba(0,0,0,0.35)' }}>Parties jouées</div>
+              <div className="text-[1rem] font-black" style={{ color: '#F87171' }}>{spinsUsed}</div>
+            </div>
+            <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.08)' }}>
+              <div className="text-[0.6rem]" style={{ color: 'rgba(0,0,0,0.35)' }}>Gagné aujourd'hui</div>
+              <div className="text-[1rem] font-black" style={{ color: '#22C55E' }}>{formatMoney(totalWonToday)}</div>
+            </div>
+            <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.08)' }}>
+              <div className="text-[0.6rem]" style={{ color: 'rgba(0,0,0,0.35)' }}>Total cumulé</div>
+              <div className="text-[1rem] font-black" style={{ color: '#6366F1' }}>{formatMoney(user.gameTotalWon ?? 0)}</div>
+            </div>
+          </div>
+
+          {/* Progress bar: tours restants aujourd'hui */}
+          <div className="relative mb-3">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[0.68rem]" style={{ color: 'rgba(0,0,0,0.4)' }}>Niveau {currentTradeLevel.level}/{TRADING_LEVELS.length}</span>
-              {nextTradeLevel && (
-                <span className="text-[0.68rem] font-semibold" style={{ color: nextTradeLevel.color }}>→ {nextTradeLevel.name} ({nextTradeLevel.minTrades} trades)</span>
-              )}
+              <span className="text-[0.68rem]" style={{ color: 'rgba(0,0,0,0.4)' }}>Tours restants aujourd'hui</span>
+              <span className="text-[0.68rem] font-semibold" style={{ color: '#F87171' }}>{spinsRemaining}/{dailySpins}</span>
             </div>
             <div className="w-full h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.08)' }}>
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{
-                  width: nextTradeLevel ? `${(tradeCount / nextTradeLevel.minTrades) * 100}%` : '100%',
-                  background: `linear-gradient(90deg, ${currentTradeLevel.color}, ${nextTradeLevel?.color || currentTradeLevel.color})`,
+                  width: `${spinsProgress}%`,
+                  background: 'linear-gradient(90deg, #F87171, #EF4444)',
                   maxWidth: '100%',
                 }}
               ></div>
             </div>
           </div>
 
-          {nextTradeLevel && (
-            <div className="mt-2 text-[0.62rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>
-              <i className="fas fa-chart-bar mr-1"></i>{tradeCount}/{nextTradeLevel.minTrades} transactions pour le prochain niveau
-            </div>
-          )}
+          <button
+            onClick={() => setPage('game')}
+            className="w-full py-2.5 rounded-xl font-semibold text-[0.82rem] border-none cursor-pointer flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+            style={{
+              background: 'linear-gradient(135deg, #F87171, #EF4444)',
+              color: '#FFFFFF',
+              boxShadow: '0 2px 12px rgba(248,113,113,0.25)',
+            }}
+          >
+            <i className="fas fa-play text-[0.6rem]"></i>
+            {spinsRemaining > 0 ? 'Jouer maintenant' : 'Voir le jeu'}
+          </button>
         </div>
 
         {/* Referral Stats — prominent section */}

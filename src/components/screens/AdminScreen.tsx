@@ -5,6 +5,7 @@ import { io, Socket } from 'socket.io-client';
 import { useAppStore, formatMoney, esc, authFetch, type AppUser } from '@/lib/store';
 import { Header, LogoImg, Modal, INVEST_LEVELS, ENTERPRISE_TYPES, ENTERPRISE_NAMES } from '@/components/shared';
 import NotificationBell from '@/components/NotificationBell';
+import AdminNotificationBell from '@/components/AdminNotificationBell';
 
 interface AdminChatMsg {
   id: string;
@@ -101,14 +102,23 @@ export default function AdminScreen() {
   const [transferAmount, setTransferAmount] = useState('');
   const [transferSending, setTransferSending] = useState(false);
 
-  // Edit balance state (Users tab) — full 4-field draft editor.
-  // The admin edits balance / videoBalance / tradeBalance / projectBalance
-  // simultaneously; on save we POST one update-balance call per changed field.
+  // Edit balance state (Users tab) — full draft editor covering ALL user
+  // amounts: balance (Solde principal), videoBalance (Vidéo), tradeBalance
+  // (Trading), projectBalance (Projet), investBalance (Investissement),
+  // gameTotalWon (Gains jeu), videoTotalEarned (Gains vidéo totaux),
+  // totalProfit (Profit total), totalLoss (Perte totale), referralCount
+  // (Parrainages). On save we POST one update-balance call per changed field.
   type BalanceDraft = {
     balance: string;
     videoBalance: string;
     tradeBalance: string;
     projectBalance: string;
+    investBalance: string;
+    gameTotalWon: string;
+    videoTotalEarned: string;
+    totalProfit: string;
+    totalLoss: string;
+    referralCount: string;
   };
   const [editBalanceUserId, setEditBalanceUserId] = useState<string | null>(null);
   const [editBalanceDraft, setEditBalanceDraft] = useState<BalanceDraft | null>(null);
@@ -143,6 +153,12 @@ export default function AdminScreen() {
   const lastChatFetchId = useRef<string>('0');
   const socketRef = useRef<Socket | null>(null);
   const selectedUserIdRef = useRef<string | null>(null);
+  // New-conversation picker — lets the admin start a chat with ANY user
+  // (not just those who already messaged). The admin can search by name/email.
+  const [showNewConversation, setShowNewConversation] = useState(false);
+  const [newConvSearch, setNewConvSearch] = useState('');
+  // Search filter for the existing conversations list.
+  const [convSearch, setConvSearch] = useState('');
 
   // Keep selectedUserIdRef in sync with selectedUserId
   useEffect(() => {
@@ -485,6 +501,12 @@ export default function AdminScreen() {
       videoBalance: 'Vidéo',
       tradeBalance: 'Trading',
       projectBalance: 'Projet',
+      investBalance: 'Investissement',
+      gameTotalWon: 'Gains jeu',
+      videoTotalEarned: 'Gains vidéo totaux',
+      totalProfit: 'Profit total',
+      totalLoss: 'Perte totale',
+      referralCount: 'Parrainages',
     };
     // Detect changed fields and validate every input (must parse to >=0 numbers).
     type FieldKey = keyof BalanceDraft;
@@ -734,6 +756,7 @@ export default function AdminScreen() {
         rightElement={
           <div className="flex items-center gap-1.5">
             <NotificationBell dark />
+            <AdminNotificationBell dark />
             <button
               onClick={refreshAll}
               className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] cursor-pointer border-none"
@@ -830,6 +853,12 @@ export default function AdminScreen() {
                                     videoBalance: String(u.videoBalance ?? 0),
                                     tradeBalance: String(u.tradeBalance ?? 0),
                                     projectBalance: String(u.projectBalance ?? 0),
+                                    investBalance: String(u.investBalance ?? 0),
+                                    gameTotalWon: String(u.gameTotalWon ?? 0),
+                                    videoTotalEarned: String(u.videoTotalEarned ?? 0),
+                                    totalProfit: String(u.totalProfit ?? 0),
+                                    totalLoss: String(u.totalLoss ?? 0),
+                                    referralCount: String(u.referralCount ?? 0),
                                   });
                                 }
                                 setTransferUserId(null);
@@ -864,7 +893,7 @@ export default function AdminScreen() {
                           </div>
                         )}
                       </div>
-                      {/* Balances grid — 4 accounts in a clean 2x2 layout */}
+                      {/* Balances grid — 4 wallet accounts in a clean 2x2 layout */}
                       <div className="grid grid-cols-2 gap-1.5 mt-2.5">
                         {([
                           { label: 'Solde principal', val: u.balance ?? 0, color: '#22C55E', icon: 'fa-wallet' },
@@ -878,6 +907,23 @@ export default function AdminScreen() {
                               <span className="text-[0.5rem] text-[rgba(255,255,255,0.4)] uppercase tracking-[0.3px] font-semibold">{b.label}</span>
                             </div>
                             <div className="text-[0.78rem] font-bold text-[#EDEDEF]">{formatMoney(b.val)}</div>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Secondary amounts row — investBalance, gameTotalWon, totalProfit, totalLoss, referralCount */}
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 px-1">
+                        {([
+                          { label: 'Invest.', val: formatMoney(u.investBalance ?? 0), color: '#3B82F6', icon: 'fa-chart-line' },
+                          { label: 'Jeu', val: formatMoney(u.gameTotalWon ?? 0), color: '#EC4899', icon: 'fa-dice' },
+                          { label: 'Vidéo tot.', val: formatMoney(u.videoTotalEarned ?? 0), color: '#06B6D4', icon: 'fa-film' },
+                          { label: 'Profit', val: formatMoney(u.totalProfit ?? 0), color: '#10B981', icon: 'fa-arrow-trend-up' },
+                          { label: 'Perte', val: formatMoney(u.totalLoss ?? 0), color: '#EF4444', icon: 'fa-arrow-trend-down' },
+                          { label: 'Parrainages', val: String(u.referralCount ?? 0), color: '#818CF8', icon: 'fa-users' },
+                        ]).map((s) => (
+                          <div key={s.label} className="flex items-center gap-1">
+                            <i className={`fas ${s.icon} text-[0.45rem]`} style={{ color: s.color }}></i>
+                            <span className="text-[0.5rem] text-[rgba(255,255,255,0.4)] uppercase tracking-[0.3px] font-semibold">{s.label}:</span>
+                            <span className="text-[0.62rem] font-bold text-[#EDEDEF]">{s.val}</span>
                           </div>
                         ))}
                       </div>
@@ -959,7 +1005,7 @@ export default function AdminScreen() {
                           </div>
                         </div>
                       )}
-                      {/* Inline edit balance — 4-field draft editor */}
+                      {/* Inline edit balance — full draft editor (ALL amounts) */}
                       {editBalanceUserId === u.id && editBalanceDraft && (
                         <div className="mt-2.5 pt-2.5 border-t border-[rgba(255,255,255,0.06)]">
                           <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)] mb-2 font-semibold flex items-center gap-1">
@@ -972,6 +1018,12 @@ export default function AdminScreen() {
                               { key: 'videoBalance' as const, label: 'Vidéo', color: '#14B8A6', icon: 'fa-video' },
                               { key: 'tradeBalance' as const, label: 'Trading', color: '#F59E0B', icon: 'fa-bolt' },
                               { key: 'projectBalance' as const, label: 'Projet', color: '#8B5CF6', icon: 'fa-building' },
+                              { key: 'investBalance' as const, label: 'Investissement', color: '#3B82F6', icon: 'fa-chart-line' },
+                              { key: 'gameTotalWon' as const, label: 'Gains jeu', color: '#EC4899', icon: 'fa-dice' },
+                              { key: 'videoTotalEarned' as const, label: 'Gains vidéo totaux', color: '#06B6D4', icon: 'fa-film' },
+                              { key: 'totalProfit' as const, label: 'Profit total', color: '#10B981', icon: 'fa-arrow-trend-up' },
+                              { key: 'totalLoss' as const, label: 'Perte totale', color: '#EF4444', icon: 'fa-arrow-trend-down' },
+                              { key: 'referralCount' as const, label: 'Parrainages', color: '#818CF8', icon: 'fa-users' },
                             ]).map(acc => (
                               <div key={acc.key} className="bg-[#161719] rounded-lg p-2 border-l-[3px]" style={{ borderLeftColor: acc.color }}>
                                 <div className="flex items-center gap-1 mb-1">
@@ -979,7 +1031,7 @@ export default function AdminScreen() {
                                   <span className="text-[0.55rem] text-[rgba(255,255,255,0.55)] font-semibold uppercase tracking-[0.3px]">{acc.label}</span>
                                 </div>
                                 <input
-                                  type="number" step="0.01" min="0"
+                                  type="number" step={acc.key === 'referralCount' ? '1' : '0.01'} min="0"
                                   value={editBalanceDraft[acc.key]}
                                   onChange={(e) => setEditBalanceDraft(prev => prev ? { ...prev, [acc.key]: e.target.value } : prev)}
                                   placeholder="0.00"
@@ -1033,12 +1085,23 @@ export default function AdminScreen() {
                       </div>
                     ))}
                   </div>
-                  {pendingDeposits.filter(d => d.status === 'pending').map((d: any) => (
-                    <div key={d.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] border-l-[3px] border-l-[#6366F1] rounded-2xl p-3 mb-2">
+                  {pendingDeposits.filter(d => d.status === 'pending').map((d: any) => {
+                    const isInvestment = d.type === 'investment';
+                    const invLevel = d.investmentLevel;
+                    const invAmount = d.investmentAmount ?? d.amountUsd;
+                    return (
+                    <div key={d.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] border-l-[3px] rounded-2xl p-3 mb-2" style={{ borderLeftColor: isInvestment ? '#22C55E' : '#6366F1' }}>
                       <div className="flex items-center justify-between mb-2">
                         <div>
-                          <div className="text-[0.78rem] font-bold text-[#EDEDEF]">{esc(d.user?.name || '?')}</div>
-                          <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">{formatMoney(d.amountUsd)} → {d.amountTrx?.toFixed(2)} TRX</div>
+                          <div className="text-[0.78rem] font-bold text-[#EDEDEF] flex items-center gap-1.5 flex-wrap">
+                            {esc(d.user?.name || '?')}
+                            {isInvestment && (
+                              <span className="text-[0.55rem] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-1" style={{ background: 'rgba(34,197,94,0.14)', color: '#22C55E' }}>
+                                <i className="fas fa-chart-line text-[0.45rem]"></i>Investissement{invLevel ? ` Niv. ${invLevel}` : ''}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">{formatMoney(invAmount)}{isInvestment ? ' (investi)' : ''} → {d.amountTrx?.toFixed(2)} TRX</div>
                         </div>
                         <span className="text-[0.6rem] bg-[rgba(99,102,241,0.12)] text-[#6366F1] px-2 py-0.5 rounded-full">TRX</span>
                       </div>
@@ -1056,11 +1119,19 @@ export default function AdminScreen() {
                         </div>
                         <div className="text-[0.72rem] font-mono font-bold text-[#818CF8] break-all leading-relaxed mt-1">{esc(d.userAddress || 'Non renseigné')}</div>
                       </div>
+                      {isInvestment && (
+                        <div className="bg-[rgba(34,197,94,0.08)] rounded-lg p-2 mb-2 border border-[rgba(34,197,94,0.15)]">
+                          <p className="text-[0.6rem] text-[rgba(34,197,94,0.85)]">
+                            <i className="fas fa-info-circle mr-1"></i>
+                            L'approbation crée l'investissement <strong>Niv. {invLevel ?? 1}</strong> de <strong>{formatMoney(invAmount)}</strong> et démarre le compte à rebours (24h → première collecte).
+                          </p>
+                        </div>
+                      )}
                       <div className="flex gap-2">
                         <button
                           onClick={async () => {
                             const r = await authFetch('/api/admin/deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId: d.id, action: 'approve' }) });
-                            const data = await r.json(); if (data.success) { addToast('Approuvé', 'success'); loadDeposits(); } else addToast(data.error, 'error');
+                            const data = await r.json(); if (data.success) { addToast(data.message || 'Approuvé', 'success'); loadDeposits(); } else addToast(data.error, 'error');
                           }}
                           className="flex-1 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer"
                         >Approuver</button>
@@ -1073,7 +1144,8 @@ export default function AdminScreen() {
                         >Rejeter</button>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                   {pendingDeposits.filter(d => d.status === 'pending').length === 0 && (
                     <p className="text-center text-[0.82rem] text-[rgba(255,255,255,0.25)] py-4">Aucun dépôt TRX en attente</p>
                   )}
@@ -1123,29 +1195,51 @@ export default function AdminScreen() {
                       </div>
                     ))}
                   </div>
-                  {yasDeposits.filter(d => d.status === 'pending').map((d: any) => (
-                    <div key={d.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] border-l-[3px] border-l-[#818CF8] rounded-2xl p-3 mb-2">
+                  {yasDeposits.filter(d => d.status === 'pending').map((d: any) => {
+                    const isInvestment = d.type === 'investment';
+                    const invLevel = d.investmentLevel;
+                    const invAmount = d.investmentAmount ?? d.amountUsd;
+                    return (
+                    <div key={d.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] border-l-[3px] rounded-2xl p-3 mb-2" style={{ borderLeftColor: isInvestment ? '#22C55E' : '#818CF8' }}>
                       <div className="flex items-center justify-between mb-2">
                         <div>
-                          <div className="text-[0.78rem] font-bold text-[#EDEDEF]">{esc(d.user?.name || '?')}</div>
+                          <div className="text-[0.78rem] font-bold text-[#EDEDEF] flex items-center gap-1.5 flex-wrap">
+                            {esc(d.user?.name || '?')}
+                            {isInvestment && (
+                              <span className="text-[0.55rem] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-1" style={{ background: 'rgba(34,197,94,0.14)', color: '#22C55E' }}>
+                                <i className="fas fa-chart-line text-[0.45rem]"></i>Investissement{invLevel ? ` Niv. ${invLevel}` : ''}
+                              </span>
+                            )}
+                          </div>
                           <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">{d.amountCfa ? `${d.amountCfa.toLocaleString()} FCFA` : formatMoney(d.amountUsd)} → {d.amountTrx?.toFixed(2)} TRX</div>
-                          {d.amountCfa > 0 && <div className="text-[0.6rem] text-[#818CF8]">{formatMoney(d.amountUsd)} USD</div>}
+                          {d.amountCfa > 0 && <div className="text-[0.6rem] text-[#818CF8]">{formatMoney(d.amountUsd)} USD{isInvestment ? ' (investi)' : ''}</div>}
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[0.6rem] bg-[rgba(34,197,94,0.12)] text-[#22C55E] px-2 py-0.5 rounded-full font-semibold">→ Solde</span>
+                          <span className="text-[0.6rem] px-2 py-0.5 rounded-full font-semibold" style={{ background: isInvestment ? 'rgba(34,197,94,0.14)' : 'rgba(34,197,94,0.12)', color: '#22C55E' }}>
+                            {isInvestment ? '→ Invest.' : '→ Solde'}
+                          </span>
                           <span className="text-[0.6rem] bg-[rgba(99,102,241,0.12)] text-[#6366F1] px-2 py-0.5 rounded-full font-semibold">Yas 🇹🇬</span>
                         </div>
                       </div>
                       <div className="bg-[#161719] rounded-lg p-2.5 mb-2 space-y-1">
                         <div className="flex justify-between items-center"><span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Compte Yas client</span><span className="text-[0.7rem] font-bold text-[#EDEDEF]">{esc(d.yasAccount)}</span></div>
                       </div>
+                      {isInvestment && (
+                        <div className="bg-[rgba(34,197,94,0.08)] rounded-lg p-2 mb-2 border border-[rgba(34,197,94,0.15)]">
+                          <p className="text-[0.6rem] text-[rgba(34,197,94,0.85)]">
+                            <i className="fas fa-info-circle mr-1"></i>
+                            L'approbation crée l'investissement <strong>Niv. {invLevel ?? 1}</strong> de <strong>{formatMoney(invAmount)}</strong> et démarre le compte à rebours (24h → première collecte).
+                          </p>
+                        </div>
+                      )}
                       <div className="mb-2"><input type="text" value={yasNote[d.id] || ''} onChange={(e) => setYasNote(prev => ({ ...prev, [d.id]: e.target.value }))} placeholder="Note admin (optionnel)" className="w-full py-2 px-3 bg-[#161719] border-[1px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.72rem] text-white outline-none focus:border-[#6366F1]" /></div>
                       <div className="flex gap-2">
-                        <button onClick={async () => { const r = await authFetch('/api/admin/yas-deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId: d.id, action: 'approve', adminNote: yasNote[d.id] || 'Dépôt validé. Solde principal crédité.' }) }); const data = await r.json(); if (data.success) { addToast('Approuvé - Solde crédité', 'success'); loadYasDeposits(); } else addToast(data.error, 'error'); }} className="flex-1 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer"><i className="fas fa-check mr-1"></i>Approuver</button>
+                        <button onClick={async () => { const r = await authFetch('/api/admin/yas-deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId: d.id, action: 'approve', adminNote: yasNote[d.id] || (isInvestment ? 'Investissement approuvé. Compte à rebours démarré.' : 'Dépôt validé. Solde principal crédité.') }) }); const data = await r.json(); if (data.success) { addToast(data.message || 'Approuvé', 'success'); loadYasDeposits(); } else addToast(data.error, 'error'); }} className="flex-1 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer"><i className="fas fa-check mr-1"></i>Approuver</button>
                         <button onClick={async () => { const r = await authFetch('/api/admin/yas-deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId: d.id, action: 'reject', adminNote: yasNote[d.id] || undefined }) }); const data = await r.json(); if (data.success) { addToast('Rejeté', 'info'); loadYasDeposits(); } else addToast(data.error, 'error'); }} className="flex-1 py-2 rounded-lg bg-[rgba(248,113,113,0.15)] text-[#F87171] text-[0.72rem] font-semibold border-none cursor-pointer">Rejeter</button>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                   {yasDeposits.filter(d => d.status === 'pending').length === 0 && (
                     <div className="text-center py-6"><div className="w-12 h-12 rounded-full bg-[rgba(34,197,94,0.12)] flex items-center justify-center mx-auto mb-2"><i className="fas fa-check-circle text-[#22C55E] text-[1.2rem]"></i></div><p className="text-[0.82rem] text-[rgba(255,255,255,0.25)]">Aucun dépôt Yas en attente</p></div>
                   )}
@@ -1168,14 +1262,22 @@ export default function AdminScreen() {
                     ))}
                   </div>
                   {withdrawals.filter(w => w.status === 'pending').map((w: any) => {
-                    const isYas = w.type === 'yas';
+                    const isYas = w.type === 'yas' || w.type === 'invest_yas';
+                    const isInvestment = w.type === 'invest_yas' || w.type === 'invest_trx';
                     const badgeText = isYas ? 'Yas 🇹🇬' : 'TRX';
                     const badgeColor = isYas ? '#22C55E' : '#818CF8';
                     return (
-                      <div key={w.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] border-l-[3px] rounded-2xl p-3 mb-2" style={{ borderLeftColor: badgeColor }}>
+                      <div key={w.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] border-l-[3px] rounded-2xl p-3 mb-2" style={{ borderLeftColor: isInvestment ? '#22C55E' : badgeColor }}>
                         <div className="flex items-center justify-between mb-2">
                           <div>
-                            <div className="text-[0.78rem] font-bold text-[#EDEDEF]">{esc(w.user?.name || '?')}</div>
+                            <div className="text-[0.78rem] font-bold text-[#EDEDEF] flex items-center gap-1.5 flex-wrap">
+                              {esc(w.user?.name || '?')}
+                              {isInvestment && (
+                                <span className="text-[0.55rem] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-1" style={{ background: 'rgba(34,197,94,0.14)', color: '#22C55E' }}>
+                                  <i className="fas fa-chart-line text-[0.45rem]"></i>Investissement
+                                </span>
+                              )}
+                            </div>
                             <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">{formatMoney(w.amount)}</div>
                             {isYas && w.amountCfa > 0 && (
                               <div className="text-[0.6rem]" style={{ color: badgeColor }}>{(w.amountCfa || 0).toLocaleString('fr-FR')} FCFA</div>
@@ -1234,22 +1336,34 @@ export default function AdminScreen() {
                   {selectedUserId ? (
                     /* ========== CHAT VIEW ========== */
                     <div className="flex flex-col" style={{ minHeight: 'calc(100vh - 180px)' }}>
-                      {/* Chat Header - User info */}
+                      {/* Chat Header - User info (falls back to usersList when starting a brand new conversation) */}
+                      {(() => {
+                        const conv = conversations.find(c => c.user_id === selectedUserId);
+                        const uInfo = conv
+                          ? { name: conv.user_name, email: conv.user_email, balance: conv.user_balance }
+                          : (() => {
+                              const u = usersList.find((x: any) => x.id === selectedUserId);
+                              return u ? { name: u.name, email: u.email, balance: u.balance ?? 0 } : { name: null, email: null, balance: 0 };
+                            })();
+                        const initials = (uInfo.name || '?').split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
+                        return (
                       <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 mb-3 flex items-center gap-3">
                         <button onClick={closeConversation} className="w-8 h-8 rounded-lg bg-[rgba(255,255,255,0.06)] flex items-center justify-center text-[rgba(255,255,255,0.45)] cursor-pointer border-none shrink-0">
                           <i className="fas fa-arrow-left text-[0.7rem]"></i>
                         </button>
                         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#6366F1] to-[#4F46E5] flex items-center justify-center text-white text-[0.7rem] font-bold shrink-0">
-                          {conversations.find(c => c.user_id === selectedUserId)?.user_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?'}
+                          {initials}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-[0.85rem] font-bold text-[#EDEDEF] truncate">{conversations.find(c => c.user_id === selectedUserId)?.user_name || 'Utilisateur'}</div>
-                          <div className="text-[0.6rem] text-[rgba(255,255,255,0.35)] truncate">{conversations.find(c => c.user_id === selectedUserId)?.user_email}</div>
+                          <div className="text-[0.85rem] font-bold text-[#EDEDEF] truncate">{esc(uInfo.name || 'Utilisateur')}</div>
+                          <div className="text-[0.6rem] text-[rgba(255,255,255,0.35)] truncate">{esc(uInfo.email || '')}</div>
                         </div>
                         <div className="text-right shrink-0">
-                          <div className="text-[0.75rem] font-bold text-[#4ADE80]">{formatMoney(conversations.find(c => c.user_id === selectedUserId)?.user_balance || 0)}</div>
+                          <div className="text-[0.75rem] font-bold text-[#4ADE80]">{formatMoney(uInfo.balance || 0)}</div>
                         </div>
                       </div>
+                        );
+                      })()}
 
                       {/* Messages Area */}
                       <div ref={chatScrollRef} className="flex-1 overflow-y-auto min-h-0 mb-3 space-y-1" style={{ maxHeight: 'calc(100vh - 340px)' }}>
@@ -1327,23 +1441,118 @@ export default function AdminScreen() {
                         <div className="w-8 h-8 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center shrink-0">
                           <i className="fas fa-comments text-[#6366F1] text-[0.85rem]"></i>
                         </div>
-                        <div>
+                        <div className="flex-1">
                           <div className="text-[#EDEDEF] text-[0.85rem] font-bold">Messagerie</div>
-                          <div className="text-[rgba(255,255,255,0.45)] text-[0.65rem]">Répondez aux utilisateurs en temps réel</div>
+                          <div className="text-[rgba(255,255,255,0.45)] text-[0.65rem]">Choisissez un utilisateur à qui écrire</div>
                         </div>
+                        <button
+                          onClick={() => { setShowNewConversation(v => !v); setNewConvSearch(''); }}
+                          className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-[0.7rem] font-bold border-none cursor-pointer transition-all ${
+                            showNewConversation
+                              ? 'bg-[rgba(255,255,255,0.08)] text-[rgba(255,255,255,0.65)]'
+                              : 'bg-[#6366F1] text-white'
+                          }`}
+                          title="Démarrer une nouvelle conversation"
+                        >
+                          <i className="fas fa-plus text-[0.6rem]"></i>
+                          {showNewConversation ? 'Annuler' : 'Nouvelle'}
+                        </button>
                       </div>
 
-                      {conversations.length === 0 && (
+                      {/* New conversation picker — admin chooses any user */}
+                      {showNewConversation && (
+                        <div className="bg-[#0E0F11] border border-[rgba(99,102,241,0.2)] rounded-2xl p-3 mb-4">
+                          <div className="text-[0.7rem] font-bold text-[#EDEDEF] mb-2 flex items-center gap-1.5">
+                            <i className="fas fa-user-plus text-[#6366F1] text-[0.65rem]"></i>
+                            Sélectionner un utilisateur
+                          </div>
+                          <input
+                            type="text"
+                            value={newConvSearch}
+                            onChange={(e) => setNewConvSearch(e.target.value)}
+                            placeholder="Rechercher par nom ou email..."
+                            autoFocus
+                            className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.78rem] text-white outline-none focus:border-[#6366F1] mb-2"
+                          />
+                          <div className="max-h-64 overflow-y-auto space-y-1">
+                            {usersList
+                              .filter((u: any) => u.role !== 'admin')
+                              .filter((u: any) => {
+                                if (!newConvSearch.trim()) return true;
+                                const s = newConvSearch.toLowerCase();
+                                return u.name?.toLowerCase().includes(s) || u.email?.toLowerCase().includes(s);
+                              })
+                              .slice(0, 30)
+                              .map((u: any) => {
+                                const hasConv = conversations.some((c) => c.user_id === u.id);
+                                return (
+                                  <button
+                                    key={u.id}
+                                    onClick={() => {
+                                      setShowNewConversation(false);
+                                      setNewConvSearch('');
+                                      setConvSearch('');
+                                      openConversation(u.id);
+                                    }}
+                                    className="w-full flex items-center gap-2.5 py-2 px-3 rounded-lg text-left border-none cursor-pointer transition-all bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(99,102,241,0.12)]"
+                                  >
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#6366F1] to-[#4F46E5] flex items-center justify-center text-white text-[0.6rem] font-bold shrink-0">
+                                      {u.name?.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || '?'}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="text-[0.75rem] font-bold text-[#EDEDEF] truncate">{esc(u.name)}</div>
+                                      <div className="text-[0.62rem] text-[rgba(255,255,255,0.35)] truncate">{esc(u.email)}</div>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                      <div className="text-[0.65rem] font-bold text-[#4ADE80]">{formatMoney(u.balance || 0)}</div>
+                                      {hasConv && <div className="text-[0.5rem] text-[rgba(255,255,255,0.3)]">Conversation existante</div>}
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            {usersList
+                              .filter((u: any) => u.role !== 'admin')
+                              .filter((u: any) => {
+                                if (!newConvSearch.trim()) return true;
+                                const s = newConvSearch.toLowerCase();
+                                return u.name?.toLowerCase().includes(s) || u.email?.toLowerCase().includes(s);
+                              }).length === 0 && (
+                              <p className="text-center text-[0.72rem] text-[rgba(255,255,255,0.3)] py-3">Aucun utilisateur trouvé</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Search filter for existing conversations */}
+                      {!showNewConversation && conversations.length > 0 && (
+                        <div className="mb-3">
+                          <input
+                            type="text"
+                            value={convSearch}
+                            onChange={(e) => setConvSearch(e.target.value)}
+                            placeholder="Rechercher une conversation..."
+                            className="w-full py-2 px-3 bg-[#0E0F11] border-[1px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.72rem] text-white outline-none focus:border-[#6366F1]"
+                          />
+                        </div>
+                      )}
+
+                      {!showNewConversation && conversations.length === 0 && (
                         <div className="text-center py-8">
                           <div className="w-12 h-12 rounded-full bg-[rgba(99,102,241,0.12)] flex items-center justify-center mx-auto mb-3">
                             <i className="fas fa-inbox text-[#6366F1] text-[1.2rem]"></i>
                           </div>
                           <p className="text-[0.82rem] text-[rgba(255,255,255,0.25)]">Aucune conversation pour le moment</p>
-                          <p className="text-[0.65rem] text-[rgba(255,255,255,0.15)] mt-1">Les messages des utilisateurs apparaîtront ici</p>
+                          <p className="text-[0.65rem] text-[rgba(255,255,255,0.15)] mt-1">Cliquez sur « Nouvelle » pour démarrer une conversation</p>
                         </div>
                       )}
 
-                      {conversations.map((conv) => (
+                      {!showNewConversation && conversations
+                        .filter((conv) => {
+                          if (!convSearch.trim()) return true;
+                          const s = convSearch.toLowerCase();
+                          return conv.user_name?.toLowerCase().includes(s) || conv.user_email?.toLowerCase().includes(s);
+                        })
+                        .map((conv) => (
                         <button
                           key={conv.user_id}
                           onClick={() => openConversation(conv.user_id)}
