@@ -536,8 +536,47 @@ function WalletScreen() {
   const [transferAmt, setTransferAmt] = useState('');
   const [transferring, setTransferring] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [gameStatus, setGameStatus] = useState<{ spinsRemaining: number; totalWonToday: number } | null>(null);
+  const [investSummary, setInvestSummary] = useState<{ totalInvested: number; totalEarned: number; active: number } | null>(null);
 
   const refresh = async () => { setRefreshing(true); try { await refreshUser(); } catch { /* */ } setRefreshing(false); };
+
+  // Fetch game status + investment summary in parallel on mount (silent failures)
+  useEffect(() => {
+    let cancelled = false;
+    const loadExtras = async () => {
+      const [invRes, gameRes] = await Promise.allSettled([
+        authFetch('/api/invest/list'),
+        authFetch('/api/game/status'),
+      ]);
+      if (cancelled) return;
+      if (invRes.status === 'fulfilled') {
+        try {
+          const data = await invRes.value.json();
+          if (data.success && data.summary) {
+            setInvestSummary({
+              totalInvested: data.summary.totalInvested || 0,
+              totalEarned: data.summary.totalEarned || 0,
+              active: data.summary.active || 0,
+            });
+          }
+        } catch { /* ignore */ }
+      }
+      if (gameRes.status === 'fulfilled') {
+        try {
+          const data = await gameRes.value.json();
+          if (data.success) {
+            setGameStatus({
+              spinsRemaining: data.spinsRemaining ?? 10,
+              totalWonToday: data.totalWonToday || 0,
+            });
+          }
+        } catch { /* ignore */ }
+      }
+    };
+    loadExtras();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleTransfer = async () => {
     const amt = parseFloat(transferAmt);
@@ -556,16 +595,22 @@ function WalletScreen() {
   if (!user) return null;
 
   // Vidéo account is funded only by watching videos (no deposit/transfer),
-  // so it's a display-only card. Trading and Project are transferable.
+  // so it's a display-only card. Project is transferable to/from Principal.
   const accounts = [
     { key: 'video', label: 'Compte Vidéo', balance: user.videoBalance || 0, icon: 'fa-video', iconColor: '#14B8A6', iconBg: 'bg-[rgba(20,184,166,0.12)]', borderColor: '#14B8A6', transferable: false },
-    { key: 'trade', label: 'Compte de Trading', balance: user.tradeBalance, icon: 'fa-bolt', iconColor: '#F59E0B', iconBg: 'bg-[rgba(245,158,11,0.12)]', borderColor: '#F59E0B', transferable: true },
     { key: 'project', label: 'Compte de Projet', balance: user.projectBalance, icon: 'fa-building', iconColor: '#8B5CF6', iconBg: 'bg-[rgba(139,92,246,0.12)]', borderColor: '#8B5CF6', transferable: true },
   ] as const;
 
   // Label helper for the transfer modal — kept inline since the modal is small.
   const accountLabel = (k: string) =>
-    k === 'principal' ? 'Principal' : k === 'trade' ? 'Trading' : k === 'project' ? 'Projets' : k === 'video' ? 'Vidéo' : k;
+    k === 'principal' ? 'Principal' : k === 'project' ? 'Projets' : k === 'video' ? 'Vidéo' : k;
+
+  // Derived values from API (silent fallbacks if fetch failed)
+  const spinsRemaining = gameStatus?.spinsRemaining ?? 10;
+  const totalWonToday = gameStatus?.totalWonToday ?? 0;
+  const totalInvested = investSummary?.totalInvested ?? 0;
+  const totalEarned = investSummary?.totalEarned ?? 0;
+  const activeInvestments = investSummary?.active ?? 0;
 
   return (
     <>
@@ -591,7 +636,48 @@ function WalletScreen() {
         {/* Promo Banner — compact */}
         <PromoBanner compact />
 
-        {/* Other Accounts — Glass Cards with colored left border */}
+        {/* Section header — Mes comptes */}
+        <div className="flex justify-between items-center mb-2.5 mt-1">
+          <h3 className="text-[0.9rem] font-bold text-[#1F2937]">Mes comptes</h3>
+        </div>
+
+        {/* Compte Jeu — Amber card with dice icon */}
+        <div className="glass-card rounded-2xl p-4 mb-3" style={{ borderLeft: '4px solid #F59E0B' }}>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 icon-box bg-[rgba(245,158,11,0.12)]"><i className="fas fa-dice text-[0.9rem]" style={{ color: '#F59E0B' }}></i></div>
+              <div>
+                <div className="text-[0.7rem] text-[rgba(0,0,0,0.5)] font-semibold uppercase tracking-[1.5px]">Compte Jeu</div>
+                <div className="text-[0.55rem] text-[#F59E0B] font-semibold mt-0.5">Roue de la fortune</div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-[1.3rem] font-black text-[#1F2937]">{formatMoney(user.gameTotalWon || 0)}</div>
+              <div className="text-[0.55rem] text-[rgba(0,0,0,0.45)] font-medium">{spinsRemaining} tours restants · {formatMoney(totalWonToday)} aujourd&apos;hui</div>
+            </div>
+          </div>
+          <button onClick={() => setPage('game')} className="w-full py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none text-white transition-transform active:scale-95" style={{ background: 'linear-gradient(90deg, #F59E0B 0%, #FBBF24 100%)' }}><i className="fas fa-play text-[0.65rem]"></i> Jouer maintenant</button>
+        </div>
+
+        {/* Compte Investissement — Teal card with seedling icon */}
+        <div className="glass-card rounded-2xl p-4 mb-3" style={{ borderLeft: '4px solid #14B8A6' }}>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 icon-box bg-[rgba(20,184,166,0.12)]"><i className="fas fa-seedling text-[0.9rem]" style={{ color: '#0F766E' }}></i></div>
+              <div>
+                <div className="text-[0.7rem] text-[rgba(0,0,0,0.5)] font-semibold uppercase tracking-[1.5px]">Compte Investissement</div>
+                <div className="text-[0.55rem] text-[#0F766E] font-semibold mt-0.5">+{formatMoney(totalEarned)} gagnés · {activeInvestments} actif{activeInvestments > 1 ? 's' : ''}</div>
+              </div>
+            </div>
+            <div className="text-[1.3rem] font-black text-[#1F2937]">{formatMoney(totalInvested)}</div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setPage('invest')} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none text-white transition-transform active:scale-95" style={{ background: 'linear-gradient(90deg, #14B8A6 0%, #0F766E 100%)' }}><i className="fas fa-arrow-down text-[0.65rem]"></i> Déposer</button>
+            <button onClick={() => setPage('invest')} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border border-[rgba(20,184,166,0.25)] bg-transparent text-[#0F766E] transition-transform active:scale-95"><i className="fas fa-list text-[0.65rem]"></i> Voir mes investissements</button>
+          </div>
+        </div>
+
+        {/* Autres comptes — Vidéo et Projet (Glass Cards with colored left border) */}
         {accounts.map((acc) => (
           <div key={acc.key} className="glass-card rounded-2xl p-4 mb-3" style={{ borderLeft: `4px solid ${acc.borderColor}` }}>
             <div className="flex items-center justify-between mb-2">
@@ -657,7 +743,6 @@ function WalletScreen() {
             { icon: 'fa-chart-line', color: '#22C55E', bg: 'bg-[rgba(34,197,94,0.10)]', label: 'Gains totaux', value: formatMoney(user.totalProfit || 0), sub: 'Cumul des gains' },
             { icon: 'fa-arrow-trend-down', color: '#F87171', bg: 'bg-[rgba(248,113,113,0.10)]', label: 'Pertes totales', value: formatMoney(user.totalLoss || 0), sub: 'Cumul des pertes' },
             { icon: 'fa-video', color: '#14B8A6', bg: 'bg-[rgba(20,184,166,0.10)]', label: 'Solde vidéo', value: formatMoney(user.videoBalance || 0), sub: 'Compte vidéo autonome' },
-            { icon: 'fa-bolt', color: '#F59E0B', bg: 'bg-[rgba(245,158,11,0.10)]', label: 'Solde trading', value: formatMoney(user.tradeBalance || 0), sub: 'Compte de trading' },
             { icon: 'fa-building', color: '#8B5CF6', bg: 'bg-[rgba(139,92,246,0.10)]', label: 'Solde projet', value: formatMoney(user.projectBalance || 0), sub: 'Compte de projet' },
           ].map((s, i, arr) => (
             <div key={s.label} className={`flex items-center gap-3 px-3 py-3 ${i < arr.length - 1 ? 'border-b border-[rgba(0,0,0,0.05)]' : ''}`}>
