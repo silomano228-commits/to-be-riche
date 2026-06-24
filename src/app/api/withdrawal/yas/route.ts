@@ -9,11 +9,8 @@ export const dynamic = 'force-dynamic';
 // POST — Create a YAS withdrawal request (user enters USD, we convert to CFA)
 export async function POST(request: Request) {
   try {
-    const token = getAuthToken(request);
-    if (!token) return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
-
-    const user = await db.user.findUnique({ where: { id: token } });
-    if (!user) return NextResponse.json({ success: false, error: 'Utilisateur introuvable' }, { status: 401 });
+    const user = await getAuthToken(request);
+    if (!user) return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
 
     const body = await request.json();
     const { amountUsd, yasAccount } = body;
@@ -133,10 +130,7 @@ export async function POST(request: Request) {
 // GET — Check YAS config (cfaUsdRate) and pending YAS withdrawal for the form
 export async function GET(request: Request) {
   try {
-    const token = getAuthToken(request);
-    if (!token) return NextResponse.json({ success: false }, { status: 401 });
-
-    const user = await db.user.findUnique({ where: { id: token } });
+    const user = await getAuthToken(request);
     if (!user) return NextResponse.json({ success: false }, { status: 401 });
 
     const config = await db.siteConfig.findUnique({ where: { id: 'main' } });

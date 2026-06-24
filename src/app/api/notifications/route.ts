@@ -7,11 +7,8 @@ export const dynamic = 'force-dynamic';
 // GET — Fetch user notifications
 export async function GET(request: Request) {
   try {
-    const token = getAuthToken(request);
-    if (!token) return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
-
-    const user = await db.user.findUnique({ where: { id: token } });
-    if (!user) return NextResponse.json({ success: false, error: 'Utilisateur introuvable' }, { status: 401 });
+    const user = await getAuthToken(request);
+    if (!user) return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
     const unreadOnly = searchParams.get('unreadOnly') === 'true';
@@ -47,11 +44,8 @@ export async function GET(request: Request) {
 // POST — Mark notifications as read
 export async function POST(request: Request) {
   try {
-    const token = getAuthToken(request);
-    if (!token) return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
-
-    const user = await db.user.findUnique({ where: { id: token } });
-    if (!user) return NextResponse.json({ success: false, error: 'Utilisateur introuvable' }, { status: 401 });
+    const user = await getAuthToken(request);
+    if (!user) return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
 
     const { notificationId, markAllRead } = await request.json();
 

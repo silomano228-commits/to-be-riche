@@ -20,6 +20,10 @@ async function getUser(request: Request) {
 
 // Wheel segments: 20 segments with many elements for visual richness.
 // Win amounts calibrated for $5 minimum deposit.
+// NOTE: One segment is the rare $10.00 grand prize (gold/yellow). The actual
+// probability of landing on $10 is controlled by pickSegment() in /api/game/spin
+// (~5% of wins), NOT by the visual segment count. The visual segment is just
+// so the user can SEE that the $10 prize exists on the wheel.
 export const WHEEL_SEGMENTS = [
   { label: '$0.10', reward: 0.10, isWin: true, color: '#22C55E' },
   { label: 'Perdu', reward: 0, isWin: false, color: '#475569' },
@@ -30,7 +34,8 @@ export const WHEEL_SEGMENTS = [
   { label: '$0.10', reward: 0.10, isWin: true, color: '#22C55E' },
   { label: 'Perdu', reward: 0, isWin: false, color: '#475569' },
   { label: '$0.30', reward: 0.30, isWin: true, color: '#84CC16' },
-  { label: 'Perdu', reward: 0, isWin: false, color: '#475569' },
+  // Rare $10 grand prize — bright gold to stand out from every other segment.
+  { label: '$10.00', reward: 10.00, isWin: true, color: '#FCD34D' },
   { label: '$1.00', reward: 1.00, isWin: true, color: '#EF4444' },
   { label: 'Perdu', reward: 0, isWin: false, color: '#475569' },
   { label: '$0.20', reward: 0.20, isWin: true, color: '#14B8A6' },
@@ -44,6 +49,11 @@ export const WHEEL_SEGMENTS = [
 ];
 
 export const DAILY_SPINS = 10;
+
+// Cost per spin (in USD). Deducted from principal balance first; if principal
+// balance is short, the remainder is taken from investBalance. If neither
+// account can cover the full $0.20, the spin is rejected.
+export const SPIN_COST = 0.20;
 
 export async function GET(request: Request) {
   try {

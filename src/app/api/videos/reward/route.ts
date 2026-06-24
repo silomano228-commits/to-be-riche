@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
-import { getDailyVideos, DAILY_VIDEO_LIMIT, type VideoItem } from '@/lib/videos';
+import { getDailyVideos, DAILY_VIDEO_LIMIT, getVideoReward, computeDayNumber, type VideoItem } from '@/lib/videos';
 
 // Build the current video list: admin links take priority over the catalog.
 async function getCurrentVideos(): Promise<VideoItem[]> {
@@ -93,8 +93,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Vidéo déjà regardée aujourd\'hui' }, { status: 400 });
     }
 
-    const reward = videoData.reward;
+    // Compute the day number for this user's video reward cycle.
+    // - If videoFirstWatchAt is null → day 1 (first ever watch).
+    // - Otherwise → floor((now - videoFirstWatchAt) / 1d) + 1.
+    // The reward is then derived deterministically from (userId, dayNumber,
+    // videoIndex) so the same user always gets the same reward for the same
+    // video on the same day. Day 1 totals $1.60-$1.80 across 5 videos; day 2+
+    // totals $0.60-$0.95. See src/lib/videos.ts for the full distribution.
     const now = new Date();
+    const dayNumber = computeDayNumber(user.videoFirstWatchAt, now);
+    const videoIndex = dailyVideos.findIndex((v) => v.id === videoId);
+    const reward = getVideoReward(user.id, videoIndex >= 0 ? videoIndex : 0, dayNumber);
 
     await db.$transaction(async (tx) => {
       await tx.videoWatch.create({

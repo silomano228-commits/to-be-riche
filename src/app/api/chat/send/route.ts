@@ -7,11 +7,8 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
-    const token = getAuthToken(request);
-    if (!token) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
-
-    const user = await db.user.findUnique({ where: { id: token } });
-    if (!user) return NextResponse.json({ success: false, error: 'Utilisateur non trouvé' }, { status: 401 });
+    const user = await getAuthToken(request);
+    if (!user) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
 
     const { content } = await request.json();
     if (!content || !content.trim()) {
@@ -19,7 +16,7 @@ export async function POST(request: Request) {
     }
 
     const message = await db.chatMessage.create({
-      data: { content: content.trim(), userId: token, isAdmin: user.role === 'admin' },
+      data: { content: content.trim(), userId: user.id, isAdmin: user.role === 'admin' },
     });
 
     // Notify admin if this is a non-admin user message
@@ -41,7 +38,7 @@ export async function POST(request: Request) {
         me: true,
         isAdmin: message.isAdmin,
         isAdminMsg: message.isAdmin,
-        userId: token,
+        userId: user.id,
         userName: user.name,
         t: message.createdAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
         date: message.createdAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),

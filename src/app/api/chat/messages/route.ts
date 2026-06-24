@@ -6,10 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
-    const token = getAuthToken(request);
-    if (!token) return NextResponse.json({ success: false });
-
-    const user = await db.user.findUnique({ where: { id: token } });
+    const user = await getAuthToken(request);
     if (!user) return NextResponse.json({ success: false });
 
     const { searchParams } = new URL(request.url);
@@ -41,7 +38,7 @@ export async function GET(request: Request) {
 
     // Regular user: fetch their own messages
     const messages = await db.chatMessage.findMany({
-      where: { userId: token, id: { gt: lastId } },
+      where: { userId: user.id, id: { gt: lastId } },
       orderBy: { createdAt: 'asc' },
       include: { user: { select: { name: true } } },
     });

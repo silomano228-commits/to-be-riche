@@ -1,6 +1,8 @@
 // Shared helpers for Trading Arena API routes
 // Professional price simulation with realistic market microstructure
 
+import { getAuthToken } from '@/lib/auth';
+
 export const BASE_PRICES: Record<string, { base: number; volatility: number; decimals: number; pip: number }> = {
   'EUR/USD':   { base: 1.085,  volatility: 0.008,  decimals: 5, pip: 0.0001 },
   'GBP/USD':   { base: 1.27,   volatility: 0.012,  decimals: 5, pip: 0.0001 },
@@ -321,13 +323,13 @@ export function calculatePL(
 }
 
 /**
- * Auth helpers - consistent with existing routes
+ * Auth helpers - consistent with existing routes.
+ *
+ * Anti-fraud (hidden): getToken now resolves the user via the sessionToken
+ * cookie (with backward-compat for legacy user.id cookies) by delegating to
+ * getAuthToken() from @/lib/auth. It returns the user object (or null) so
+ * callers no longer need to do a second db.user.findUnique lookup.
  */
-export function getToken(request: Request): string | null {
-  const authHeader = request.headers.get('x-auth-token');
-  if (authHeader) return authHeader;
-  const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(/br_token=([^;]+)/);
-  if (match) return match[1];
-  return null;
+export async function getToken(request: Request) {
+  return getAuthToken(request);
 }

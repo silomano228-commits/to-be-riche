@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
-import { getDailyVideos, DAILY_VIDEO_LIMIT, type VideoItem } from '@/lib/videos';
+import { getDailyVideos, DAILY_VIDEO_LIMIT, getVideoReward, computeDayNumber, getDailyVideoTotal, type VideoItem } from '@/lib/videos';
 
 export const dynamic = 'force-dynamic';
 
@@ -141,11 +141,30 @@ export async function GET(request: Request) {
     });
 
     const watchedMap = new Map(watched.map((w) => [w.videoId, w]));
-    const videosWithStatus = dailyVideos.map((v) => ({
-      ...v,
-      watched: watchedMap.has(v.id),
-      watchedAt: watchedMap.get(v.id)?.watchedAt || null,
-    }));
+
+    // Compute per-video reward badges for the current user/day. For logged-in
+    // users we use the deterministic day-1 / day-2+ distribution from
+    // getVideoReward (day 1 totals $1.60-$1.80; day 2+ totals $0.60-$0.95).
+    // The catalog `reward` field is only used as a fallback display hint when
+    // no user is logged in (e.g. for public/anonymous previews).
+    const dayNumber = computeDayNumber(user.videoFirstWatchAt);
+    const potentialTotalToday = getDailyVideoTotal(user.id, dayNumber);
+
+    const videosWithStatus = dailyVideos.map((v, idx) => {
+      const computedReward = getVideoReward(user.id, idx, dayNumber);
+      const watchedRow = watchedMap.get(v.id);
+      // If the user already watched this video today, the reward field shows
+      // the actual credited amount from the watch record (so the UI badge
+      // matches what was actually paid). Otherwise show the computed reward
+      // for the current day.
+      const displayReward = watchedRow ? watchedRow.reward : computedReward;
+      return {
+        ...v,
+        reward: displayReward,
+        watched: !!watchedRow,
+        watchedAt: watchedRow?.watchedAt || null,
+      };
+    });
 
     const watchedCount = watched.length;
     const remaining = Math.max(0, DAILY_VIDEO_LIMIT - watchedCount);
@@ -161,6 +180,8 @@ export async function GET(request: Request) {
       remaining,
       dailyLimit: DAILY_VIDEO_LIMIT,
       totalEarnedToday,
+      potentialTotalToday,
+      dayNumber,
       videoBalance: user.videoBalance,
       videoDepositRequired: cycleState.videoDepositRequired,
       daysWatching: cycleState.daysWatching,

@@ -104,6 +104,16 @@ export default function NotificationBell({ dark = false }: { dark?: boolean }) {
     return '#6B7280';
   };
 
+  // Extract the sentence containing "actualisez" (case-insensitive) so we can
+  // surface it as a prominent refresh callout in the detail modal.
+  const REFRESH_REGEX = /actualisez/i;
+  const getRefreshSentence = (msg: string): string | null => {
+    if (!msg || !REFRESH_REGEX.test(msg)) return null;
+    // Grab the surrounding sentence (delimited by . ! ? or end of string).
+    const m = msg.match(/[^.!?]*actualisez[^.!?]*[.!?]*/i);
+    return m ? m[0].trim() : 'Actualisez votre page pour voir les changements.';
+  };
+
   if (!user) return null;
 
   const btnClass = dark
@@ -213,6 +223,30 @@ export default function NotificationBell({ dark = false }: { dark?: boolean }) {
 
             {/* Modal body - full message */}
             <div className="p-4 max-h-[50vh] overflow-y-auto">
+              {/* Refresh callout — shown when the notification message asks the user to refresh. */}
+              {(() => {
+                const sentence = getRefreshSentence(selectedNotif.message);
+                if (!sentence) return null;
+                return (
+                  <div
+                    className="rounded-lg p-3 mb-3 flex items-start gap-2.5"
+                    style={{
+                      background: '#FFFBEB', // amber-50
+                      border: '2px solid #FCD34D', // amber-300
+                    }}
+                  >
+                    <i className="fas fa-sync-alt text-[0.85rem] mt-0.5 shrink-0" style={{ color: '#B45309', animation: 'spin 2.5s linear infinite' }} />
+                    <div>
+                      <div className="text-[0.72rem] font-black mb-0.5" style={{ color: '#92400E' }}>
+                        🔄 Actualisez votre page
+                      </div>
+                      <div className="text-[0.7rem] font-bold leading-snug" style={{ color: '#78350F' }}>
+                        {sentence}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
               <p className="text-[0.8rem] text-[rgba(0,0,0,0.7)] leading-relaxed whitespace-pre-wrap">{selectedNotif.message}</p>
             </div>
 

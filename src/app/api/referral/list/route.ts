@@ -6,15 +6,10 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
-    const token = getAuthToken(request);
+    const user = await getAuthToken(request);
 
-    if (!token) {
-      return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
-    }
-
-    const user = await db.user.findUnique({ where: { id: token } });
     if (!user) {
-      return NextResponse.json({ success: false, error: 'Utilisateur non trouvé' }, { status: 404 });
+      return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
     }
 
     // Find all users who were referred by this user's code

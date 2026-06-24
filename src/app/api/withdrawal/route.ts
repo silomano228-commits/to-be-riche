@@ -9,11 +9,8 @@ export const dynamic = 'force-dynamic';
 // GET — Check withdrawal status (pending withdrawals for current user)
 export async function GET(request: Request) {
   try {
-    const token = getAuthToken(request);
-    if (!token) return NextResponse.json({ success: false, error: 'Non autorisé' });
-
-    const user = await db.user.findUnique({ where: { id: token } });
-    if (!user) return NextResponse.json({ success: false, error: 'Utilisateur introuvable' });
+    const user = await getAuthToken(request);
+    if (!user) return NextResponse.json({ success: false, error: 'Non autorisé' });
 
     const withdrawals = await db.withdrawal.findMany({
       where: { userId: user.id },
@@ -29,11 +26,8 @@ export async function GET(request: Request) {
 // POST — Create a TRX withdrawal request (no balance deduction — admin approves then executes)
 export async function POST(request: Request) {
   try {
-    const token = getAuthToken(request);
-    if (!token) return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
-
-    const user = await db.user.findUnique({ where: { id: token } });
-    if (!user) return NextResponse.json({ success: false, error: 'Utilisateur introuvable' }, { status: 401 });
+    const user = await getAuthToken(request);
+    if (!user) return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
 
     const body = await request.json();
     const { amount, trxAddress } = body;

@@ -77,3 +77,110 @@ export function getDailyVideos(date: Date = new Date()): VideoItem[] {
 }
 
 export const DAILY_VIDEO_LIMIT = 5;
+
+// ---- Per-user / per-day reward computation (Task 10-A) ----
+//
+// Day 1 (very first day a user watches videos): total reward for all 5 daily
+// videos must be between $1.60 and $1.80, with each video giving $0.30-$0.40.
+// Day 2 and beyond: total reward for all 5 daily videos must be < $1.00
+// (target $0.60-$0.95), with each video giving $0.10-$0.20.
+//
+// The computation is deterministic per (userId, dayNumber, videoIndex) — the
+// same user always gets the same reward for the same video on the same day,
+// but rewards vary between users and between days.
+
+// Simple deterministic string hash (djb2). Returns a non-negative integer.
+function hashStr(str: string): number {
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
+}
+
+/**
+ * Compute the day number (1-based) for a user's video reward cycle.
+ * - If videoFirstWatchAt is null → 1 (this is the very first day)
+ * - Otherwise → floor((now - videoFirstWatchAt) / 1 day) + 1
+ */
+export function computeDayNumber(
+  videoFirstWatchAt: Date | string | null,
+  now: Date = new Date()
+): number {
+  if (!videoFirstWatchAt) return 1;
+  const firstMs = new Date(videoFirstWatchAt).getTime();
+  const diffMs = now.getTime() - firstMs;
+  if (diffMs < 0) return 1;
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
+}
+
+/**
+ * Compute the deterministic reward (in USD) for a single video.
+ *
+ * Day 1 (dayNumber === 1): each video rewards $0.30-$0.40, total for 5
+ * videos lands in $1.60-$1.80.
+ * Day 2+ (dayNumber >= 2): each video rewards $0.10-$0.20, total for 5
+ * videos lands in $0.60-$0.95.
+ *
+ * The total is picked deterministically from hash(userId + dayNumber), then
+ * distributed across the 5 videos with deterministic per-video jitter that
+ * sums to zero so the overall total stays on target.
+ */
+export function getVideoReward(
+  userId: string,
+  videoIndex: number,
+  dayNumber: number
+): number {
+  const isDay1 = dayNumber === 1;
+  const minPerVideo = isDay1 ? 0.30 : 0.10;
+  const maxPerVideo = isDay1 ? 0.40 : 0.20;
+  const minTotal = isDay1 ? 1.60 : 0.60;
+  const maxTotal = isDay1 ? 1.80 : 0.95;
+  const numVideos = DAILY_VIDEO_LIMIT;
+
+  // Deterministic target total in [minTotal, maxTotal] from hash(userId, dayNumber).
+  // We shrink the effective range by a small margin so that after rounding each
+  // of the 5 rewards to 2 decimals (cumulative rounding error up to ±$0.025),
+  // the rounded sum still lands strictly within [minTotal, maxTotal].
+  const targetHash = hashStr(`target:${userId}:${dayNumber}`);
+  const roundingMargin = 0.025;
+  const effectiveMin = minTotal + roundingMargin;
+  const effectiveMax = maxTotal - roundingMargin;
+  const targetTotal = effectiveMin + (targetHash % 1000) / 1000 * (effectiveMax - effectiveMin);
+
+  // Equal share of the "extra" above the per-video baseline (5 * minPerVideo).
+  const totalMin = minPerVideo * numVideos;
+  const extra = targetTotal - totalMin;
+  const baseExtra = extra / numVideos;
+
+  // Generate 5 deterministic jitters in [-0.01, 0.01], then center them so
+  // they sum to exactly 0. After centering, each jitter lies in [-0.02, 0.02],
+  // which is small enough to keep every reward within [minPerVideo, maxPerVideo]
+  // for all valid baseExtra values (baseExtra ∈ [0.02, 0.06] on day 1 and
+  // [0.02, 0.09] on day 2+).
+  const jitterRange = 0.01;
+  const rawJitters: number[] = [];
+  for (let i = 0; i < numVideos; i++) {
+    const h = hashStr(`jitter:${userId}:${dayNumber}:${i}`);
+    rawJitters.push(((h % 1000) / 1000 - 0.5) * 2 * jitterRange);
+  }
+  const meanJitter = rawJitters.reduce((a, b) => a + b, 0) / numVideos;
+  const jitter = rawJitters[videoIndex] - meanJitter;
+
+  const rawReward = minPerVideo + baseExtra + jitter;
+  // Round to 2 decimal places (cent).
+  return Math.round(rawReward * 100) / 100;
+}
+
+/**
+ * Compute the deterministic total reward for all 5 daily videos for a given
+ * user/day. Useful for verifying the day's total lands within the target
+ * range and for surfacing "potential earnings today" in the UI.
+ */
+export function getDailyVideoTotal(userId: string, dayNumber: number): number {
+  let sum = 0;
+  for (let i = 0; i < DAILY_VIDEO_LIMIT; i++) {
+    sum += getVideoReward(userId, i, dayNumber);
+  }
+  return Math.round(sum * 100) / 100;
+}

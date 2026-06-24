@@ -132,16 +132,20 @@ export async function POST(request: Request) {
       });
 
       if (method === 'main') {
-        // Credit the main account directly (no minimum)
+        // Feature 1: Daily collection now credits the INVESTMENT account
+        // (investBalance) — NOT the principal balance. The user must transfer
+        // funds from invest → principal (via /api/transfer) to access them.
+        // That transfer is the ONLY withdrawal path from the investment
+        // account, and is subject to the level-2 hold (Feature 3).
         await tx.user.update({
           where: { id: user.id },
-          data: { balance: { increment: gain } },
+          data: { investBalance: { increment: gain } },
         });
         await tx.transaction.create({
           data: {
             type: 'invest_claim',
             amount: gain,
-            detail: `Collecte investissement Niveau ${investment.level}: +$${gain.toFixed(2)} versé sur le compte principal — Cycle ${newDoneCycles}${isUnlimited ? ' (illimité)' : `/${investment.totalCycles}`}`,
+            detail: `Collecte journalière — compte investissement — Niveau ${investment.level}: +$${gain.toFixed(2)} — Cycle ${newDoneCycles}${isUnlimited ? ' (illimité)' : `/${investment.totalCycles}`}`,
             userId: user.id,
           },
         });
@@ -221,7 +225,7 @@ export async function POST(request: Request) {
     }
 
     const payoutLabel = method === 'main'
-      ? `versé sur votre compte principal`
+      ? `versé sur votre compte d'investissement`
       : `retrait demandé (fonds disponibles dans les 6h)`;
 
     return NextResponse.json({

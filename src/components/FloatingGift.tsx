@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAppStore, esc, authFetch } from '@/lib/store';
 
-const REQUIRED_REFERRALS = 10;
+const REQUIRED_REFERRALS = 12;
 
 // Mysterious, enticing stage messages — like a slow reveal
 const STAGE_MESSAGES = [
@@ -17,8 +17,54 @@ const STAGE_MESSAGES = [
   { min: 7, msg: "Un monde nouveau se dessine.", emoji: '⭐', sub: "Presque là" },
   { min: 8, msg: "Les portes d'un univers plus vaste sont proches.", emoji: '🚪', sub: "À deux doigts" },
   { min: 9, msg: "Un dernier pas... et tout change.", emoji: '🔑', sub: "Le moment est proche" },
-  { min: 10, msg: "Un nouveau monde s'offre à vous !", emoji: '🎉', sub: "Horizon débloqué" },
+  { min: 10, msg: "La promesse se précise. Encore un effort.", emoji: '🔥', sub: "Vous chauffez" },
+  { min: 11, msg: "Plus qu'un seul parrainage... le cadeau est à portée de main !", emoji: '⚡', sub: "À un cheveu" },
+  { min: 12, msg: "Félicitations ! Vous avez débloqué votre cadeau de 5,00 $ ! 🎉", emoji: '🎉', sub: "Cadeau débloqué" },
 ];
+
+// === Drag state helpers ===
+const POS_STORAGE_KEY = 'beRich.floatingGift.pos';
+const BUTTON_SIZE = 64; // main circle width/height
+const DEFAULT_MARGIN_RIGHT = 18;
+const DEFAULT_MARGIN_BOTTOM = 80;
+const EDGE_PAD = 4; // px — keep button inside viewport
+
+interface Pos { x: number; y: number; }
+
+function getDefaultPos(): Pos {
+  if (typeof window === 'undefined') return { x: 0, y: 0 };
+  return {
+    x: window.innerWidth - BUTTON_SIZE - DEFAULT_MARGIN_RIGHT,
+    y: window.innerHeight - BUTTON_SIZE - DEFAULT_MARGIN_BOTTOM,
+  };
+}
+
+function clampPos(p: Pos): Pos {
+  if (typeof window === 'undefined') return p;
+  const maxX = Math.max(EDGE_PAD, window.innerWidth - BUTTON_SIZE - EDGE_PAD);
+  const maxY = Math.max(EDGE_PAD, window.innerHeight - BUTTON_SIZE - EDGE_PAD);
+  return {
+    x: Math.min(Math.max(EDGE_PAD, p.x), maxX),
+    y: Math.min(Math.max(EDGE_PAD, p.y), maxY),
+  };
+}
+
+function loadStoredPos(): Pos {
+  try {
+    const raw = typeof window !== 'undefined' ? window.localStorage.getItem(POS_STORAGE_KEY) : null;
+    if (raw) {
+      const p = JSON.parse(raw);
+      if (typeof p?.x === 'number' && typeof p?.y === 'number') {
+        return clampPos({ x: p.x, y: p.y });
+      }
+    }
+  } catch { /* ignore */ }
+  return getDefaultPos();
+}
+
+function saveStoredPos(p: Pos) {
+  try { window.localStorage.setItem(POS_STORAGE_KEY, JSON.stringify(p)); } catch { /* ignore */ }
+}
 
 export default function FloatingGift() {
   const { user, addToast } = useAppStore();
@@ -28,12 +74,39 @@ export default function FloatingGift() {
   const [worldLink, setWorldLink] = useState<string | null>(null);
   const [worldLinkSeen, setWorldLinkSeen] = useState(false);
 
+  // === Drag state ===
+  // Lazy initializer so the saved position is read once on first client render
+  // (avoids calling setState inside an effect — and is SSR-safe via the window guard).
+  const [pos, setPos] = useState<Pos | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return loadStoredPos();
+  });
+  const [dragging, setDragging] = useState(false);
+  const [showHandle, setShowHandle] = useState(false); // hover hint
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    offsetX: number;
+    offsetY: number;
+    moved: boolean;
+    pointerId: number | null;
+  } | null>(null);
+
   useEffect(() => {
     const t = setInterval(() => setPulse(p => p + 1), 4000);
     return () => clearInterval(t);
   }, []);
 
-  // Fetch world link when modal opens and user has 10+ referrals
+  // Re-clamp position on viewport resize (e.g. orientation change, browser chrome show/hide)
+  useEffect(() => {
+    const onResize = () => {
+      setPos(prev => (prev ? clampPos(prev) : prev));
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // Fetch world link when modal opens and user has 12+ referrals
   useEffect(() => {
     if (!open || !user) return;
     const referralCount = user.referralCount || 0;
@@ -73,13 +146,82 @@ export default function FloatingGift() {
     window.open(worldLink, '_blank', 'noopener');
   };
 
+  // === Drag handlers (pointer events) ===
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!pos) return;
+    // Don't start drag if user clicked on the share/copy buttons inside the modal — but those are in the modal, not the button, so we're safe.
+    e.preventDefault();
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch { /* ignore */ }
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      offsetX: e.clientX - pos.x,
+      offsetY: e.clientY - pos.y,
+      moved: false,
+      pointerId: e.pointerId,
+    };
+    setDragging(true);
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current || dragRef.current.pointerId !== e.pointerId) return;
+    const dx = e.clientX - dragRef.current.startX;
+    const dy = e.clientY - dragRef.current.startY;
+    // Spec: < 5px movement = click, ≥ 5px = drag.
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) dragRef.current.moved = true;
+    const next = clampPos({
+      x: e.clientX - dragRef.current.offsetX,
+      y: e.clientY - dragRef.current.offsetY,
+    });
+    setPos(next);
+  };
+
+  const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    const ref = dragRef.current;
+    dragRef.current = null;
+    setDragging(false);
+    if (!ref) return;
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch { /* ignore */ }
+    if (!ref.moved) {
+      // Treat as click — open modal
+      setOpen(true);
+      setAnimClass('giftModalIn');
+    } else {
+      // Persist final position
+      setPos(cur => {
+        if (cur) saveStoredPos(cur);
+        return cur;
+      });
+    }
+  };
+
+  // Until we have a measured position (first client mount), render nothing to avoid SSR/CLS jumps.
+  if (!pos) {
+    return null;
+  }
+
   return (
     <>
-      {/* Floating Gift Button + Parrainez Banner */}
+      {/* Floating Gift Button + Parrainez Banner — DRAGGABLE */}
       <div
-        className="fixed z-[100] cursor-pointer"
-        style={{ bottom: '80px', right: '18px' }}
-        onClick={() => { setOpen(true); setAnimClass('giftModalIn'); }}
+        className="fixed z-[100] select-none"
+        style={{
+          left: `${pos.x}px`,
+          top: `${pos.y}px`,
+          cursor: dragging ? 'grabbing' : 'grab',
+          touchAction: 'none', // prevent scroll while dragging on mobile
+          transition: dragging ? 'none' : 'left 0.15s ease, top 0.15s ease',
+        }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onMouseEnter={() => setShowHandle(true)}
+        onMouseLeave={() => setShowHandle(false)}
       >
         <div className="flex items-center gap-2">
           {/* Parrainez Banner — visible when not complete */}
@@ -100,6 +242,20 @@ export default function FloatingGift() {
 
           {/* Main button */}
           <div className="relative">
+            {/* Drag handle hint — appears on hover, top-left */}
+            <div
+              className="absolute -top-2 -left-2 w-5 h-5 rounded-full flex items-center justify-center text-[0.55rem] pointer-events-none transition-opacity duration-200 z-10"
+              style={{
+                background: '#FFFFFF',
+                color: '#F59E0B',
+                border: '1px solid rgba(245,158,11,0.3)',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                opacity: showHandle || dragging ? 1 : 0,
+              }}
+              title="Glissez pour déplacer"
+            >
+              ✥
+            </div>
             {/* Prominent pulsing glow ring — larger */}
             <div className="absolute inset-0 w-[64px] h-[64px] rounded-full"
               style={{
@@ -287,33 +443,66 @@ export default function FloatingGift() {
                 </div>
               )}
 
-              {/* Completed message — subtle gold celebration */}
+              {/* $5 Gift Reveal — prominent celebratory banner shown at 12+ referrals */}
               {isComplete && (
-                <div
-                  className="rounded-xl p-3.5 mb-4 flex items-center gap-3"
-                  style={{
-                    background: 'rgba(245,158,11,0.1)',
-                    border: '1px solid rgba(245,158,11,0.15)',
-                  }}
-                >
+                <>
                   <div
-                    className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ background: 'rgba(245,158,11,0.15)' }}
+                    className="rounded-xl p-4 mb-3 relative overflow-hidden"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(245,158,11,0.18), rgba(251,191,36,0.12))',
+                      border: '2px solid rgba(245,158,11,0.45)',
+                      boxShadow: '0 4px 16px rgba(245,158,11,0.15)',
+                    }}
                   >
-                    <i className="fas fa-crown text-[0.65rem]" style={{ color: '#FBBF24' }}></i>
-                  </div>
-                  <div>
-                    <div className="text-[0.7rem] font-bold" style={{ color: '#FBBF24' }}>
-                      Horizons débloqués
+                    <div className="absolute -top-4 -right-4 text-[2.2rem] opacity-25" style={{ animation: 'giftCelebrate 3s ease-in-out infinite' }}>🎉</div>
+                    <div className="relative flex items-center gap-3">
+                      <div
+                        className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: 'linear-gradient(135deg, #F59E0B, #FBBF24)', boxShadow: '0 2px 10px rgba(245,158,11,0.35)' }}
+                      >
+                        <i className="fas fa-gift text-[1rem]" style={{ color: '#FFFFFF' }}></i>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[0.78rem] font-black" style={{ color: '#B45309' }}>
+                          🎉 Cadeau débloqué !
+                        </div>
+                        <div className="text-[0.68rem] font-bold mt-0.5" style={{ color: '#92400E' }}>
+                          5,00 $ crédités sur votre compte principal
+                        </div>
+                        <div className="text-[0.58rem] mt-0.5" style={{ color: 'rgba(180,83,9,0.75)' }}>
+                          Actualisez votre page pour voir votre nouveau solde.
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-[0.58rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>
-                      Un monde d'opportunités étendues vous attend
+                  </div>
+
+                  {/* Subtle secondary celebration card */}
+                  <div
+                    className="rounded-xl p-3.5 mb-4 flex items-center gap-3"
+                    style={{
+                      background: 'rgba(245,158,11,0.1)',
+                      border: '1px solid rgba(245,158,11,0.15)',
+                    }}
+                  >
+                    <div
+                      className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ background: 'rgba(245,158,11,0.15)' }}
+                    >
+                      <i className="fas fa-crown text-[0.65rem]" style={{ color: '#FBBF24' }}></i>
+                    </div>
+                    <div>
+                      <div className="text-[0.7rem] font-bold" style={{ color: '#FBBF24' }}>
+                        Horizons débloqués
+                      </div>
+                      <div className="text-[0.58rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>
+                        Un monde d'opportunités étendues vous attend
+                      </div>
                     </div>
                   </div>
-                </div>
+                </>
               )}
 
-              {/* World Link Section — shown when 10+ referrals and link exists */}
+              {/* World Link Section — shown when 12+ referrals and link exists */}
               {isComplete && worldLink && (
                 <div
                   className="rounded-xl p-4 mb-4 relative overflow-hidden"

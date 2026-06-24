@@ -30,12 +30,12 @@ interface SectionDef {
 
 const SECTIONS: SectionDef[] = [
   { id: 'concept',  label: 'Le Concept',                     icon: 'fa-lightbulb',      color: '#14B8A6', summary: 'Be Rich vous paie pour regarder des vidéos, investir et jouer' },
-  { id: 'videos',   label: 'La Plateforme Vidéo',            icon: 'fa-video',          color: '#14B8A6', summary: '5 vidéos/jour · $0.15 à $0.30 · retrait dès $1' },
-  { id: 'invest',   label: "L'Investissement (Make Money)",  icon: 'fa-chart-line',     color: '#059669', summary: '3 niveaux · 5%/jour · approbation admin requise' },
-  { id: 'game',     label: 'Le Jeu de Roue',                 icon: 'fa-dice',           color: '#F59E0B', summary: '10 tours/jour · bouton ARRÊTER · gains sur compte principal' },
-  { id: 'accounts', label: 'Les Comptes',                    icon: 'fa-wallet',         color: '#22C55E', summary: 'Principal · Jeu · Investissement · Vidéo · Projet' },
-  { id: 'payments', label: 'Dépôts et Retraits',             icon: 'fa-credit-card',    color: '#EF4444', summary: 'YAS & TRX · min $5 / $1 · approbation sous 6h' },
-  { id: 'referral', label: 'Parrainage',                     icon: 'fa-gift',           color: '#EC4899', summary: 'Code BR-XXXXXX · débloque les niveaux et les retraits vidéo' },
+  { id: 'videos',   label: 'La Plateforme Vidéo',            icon: 'fa-video',          color: '#14B8A6', summary: '5 vidéos/jour · J1 : $1.60-$1.80 · retrait dès $1' },
+  { id: 'invest',   label: "L'Investissement (Make Money)",  icon: 'fa-chart-line',     color: '#059669', summary: '3 niveaux · 5%/jour · dépôt direct dans les niveaux' },
+  { id: 'game',     label: 'Le Jeu de Roue',                 icon: 'fa-dice',           color: '#F59E0B', summary: '10 tours/jour · 0,20 $/tour · jackpot 10 $' },
+  { id: 'accounts', label: 'Les Comptes',                    icon: 'fa-wallet',         color: '#22C55E', summary: 'Principal · Investissement · Jeu · Vidéo · Projet' },
+  { id: 'payments', label: 'Dépôts et Retraits',             icon: 'fa-credit-card',    color: '#EF4444', summary: 'YAS & TRX · approbation admin · actualisez la page' },
+  { id: 'referral', label: 'Parrainage',                     icon: 'fa-gift',           color: '#EC4899', summary: 'Code BR-XXXXXX · 12 filleuls = 5 $ de cadeau' },
   { id: 'nav',      label: 'Navigation',                     icon: 'fa-compass',        color: '#64748B', summary: '4 onglets : Vidéos · Make Money · Guide · Profil' },
 ];
 
@@ -207,23 +207,14 @@ function ConceptContent() {
   return (
     <>
       <Row icon="fa-handshake" color={teal} title="Le principe">
-        Be Rich est une plateforme où les <strong>grandes entreprises</strong> vous paient
-        pour regarder leurs <strong>vidéos promotionnelles</strong>. Elles gagnent en
-        visibilité, vous gagnez de l&apos;argent.
-      </Row>
-      <Row icon="fa-globe" color="#059669" title="Entreprises du monde entier">
-        Sociétés <strong>chinoises, japonaises, indiennes, coréennes, américaines et
-        européennes</strong> publient leurs vidéos chaque jour.
+        Les <strong>entreprises</strong> paient pour leur <strong>visibilité</strong>.
+        Vous regardez leurs vidéos, vous investissez, vous jouez —{' '}
+        <strong>vous gagnez</strong>.
       </Row>
       <Row icon="fa-coins" color="#F59E0B" title="3 façons de gagner">
-        Regarder des <strong>vidéos</strong>, <strong>investir</strong> dans les niveaux
-        Make Money, ou jouer à la <strong>roue de la fortune</strong>.
+        <strong>Vidéos</strong>, <strong>investissements</strong> et{' '}
+        <strong>roue de la fortune</strong>.
       </Row>
-
-      <Callout icon="fa-rocket" color={teal}>
-        Plus vous êtes actif (vidéos + parrainage), plus vous débloquez de niveaux
-        d&apos;investissement et de retraits.
-      </Callout>
     </>
   );
 }
@@ -233,28 +224,22 @@ function VideosContent() {
   return (
     <>
       <Row icon="fa-th-large" color={teal} title="5 vidéos par jour">
-        La page affiche <strong>5 vidéos</strong> différentes chaque jour. Elles changent
-        toutes les 24h.
+        <strong>5 vidéos</strong> différentes chaque jour. Regardez au moins{' '}
+        <strong>30%</strong> de chaque vidéo pour encaisser.
       </Row>
       <Row icon="fa-coins" color="#22C55E" title="Récompense">
-        <strong>$0.15 à $0.30</strong> par vidéo, crédités sur votre{' '}
-        <strong>compte Vidéo</strong>. Regardez au moins <strong>30%</strong> de la vidéo
-        pour encaisser.
-      </Row>
-      <Row icon="fa-door-open" color="#F59E0B" title="Quitter à tout moment">
-        Un bouton <strong>X rouge</strong> reste visible : vous pouvez quitter la vidéo
-        quand vous le souhaitez.
+        <strong>Jour 1 : $1.60 à $1.80</strong> au total.{' '}
+        <strong>Jours suivants :</strong> moins de <strong>$1.00</strong> par jour.
+        Crédités sur votre <strong>compte Vidéo</strong>.
       </Row>
       <Row icon="fa-arrow-up" color="#EF4444" title="Retrait minimum $1">
-        Retirez vos gains vidéo par YAS ou TRX à partir de <strong>$1</strong>. Fonds
-        disponibles dans les <strong>6 heures</strong>.
+        Retirez vos gains vidéo par YAS ou TRX à partir de <strong>$1</strong>.
       </Row>
 
       <Callout icon="fa-calendar-xmark" color={teal}>
-        <strong>Règle des 3 jours :</strong> après 3 jours, pour continuer à retirer vos
-        gains vidéo, vous devez avoir un <strong>investissement Niveau 1 actif</strong> ET
-        des <strong>parrainés</strong>. Le nombre de parrainés requis{' '}
-        <strong>augmente à chaque cycle</strong> (cycle 1 = 1, cycle 2 = 2, etc.).
+        <strong>Règle des 3 jours :</strong> après 3 jours, pour retirer vos gains vidéo,
+        vous devez avoir un <strong>investissement Niveau 1 actif</strong> ET des{' '}
+        <strong>parrainés</strong>.
       </Callout>
     </>
   );
@@ -263,16 +248,16 @@ function VideosContent() {
 function InvestContent() {
   const green = '#059669';
   const LEVELS = [
-    { level: 1, name: 'Débutant',      min: 5,   max: 15,   rate: 5, refs: 0,  color: '#22C55E', icon: 'fa-seedling' },
-    { level: 2, name: 'Intermédiaire', min: 65,  max: 250,  rate: 5, refs: 12, color: '#14B8A6', icon: 'fa-chart-line' },
-    { level: 3, name: 'Expert',        min: 500, max: 3000, rate: 5, refs: 25, color: '#F59E0B', icon: 'fa-crown' },
+    { level: 1, name: 'Débutant', min: 5,   max: 15,   rate: 5, refs: 0,  color: '#22C55E', icon: 'fa-seedling' },
+    { level: 2, name: 'Business', min: 65,  max: 250,  rate: 5, refs: 12, color: '#14B8A6', icon: 'fa-chart-line' },
+    { level: 3, name: 'Elite',    min: 500, max: 3000, rate: 5, refs: 25, color: '#F59E0B', icon: 'fa-crown' },
   ];
   return (
     <>
       <Row icon="fa-chart-line" color={green} title="3 niveaux · 5% par jour">
-        Choisissez un niveau, déposez un montant dans sa plage, gagnez{' '}
-        <strong>5% chaque jour</strong>. Investissements <strong>illimités</strong> et{' '}
-        <strong>retrait quotidien de 5%</strong>.
+        Tous les niveaux rapportent <strong>5%/jour</strong>,{' '}
+        <strong>collecte illimitée</strong>. <strong>Les dépôts se font directement dans
+        les niveaux</strong> (section Investir), pas sur le compte principal.
       </Row>
 
       <div className="mt-2 space-y-2">
@@ -294,18 +279,22 @@ function InvestContent() {
             <div className="text-[0.66rem] text-[#4B5563] flex items-center gap-1.5">
               <i className="fas fa-user-group text-[0.6rem]" style={{ color: lvl.color }} />
               {lvl.refs === 0
-                ? <span><strong>Accès libre</strong> — aucun parrainage requis</span>
-                : <span>Déblocage : <strong>{lvl.refs} parrainés inscrits</strong></span>}
+                ? <span><strong>Accès libre</strong></span>
+                : <span>Déblocage : <strong>{lvl.refs} parrainés</strong></span>}
             </div>
           </div>
         ))}
       </div>
 
       <Callout icon="fa-user-shield" color="#F59E0B">
-        <strong>Approbation admin requise.</strong> Après votre dépôt (YAS ou TRX — même
-        système que le compte principal), l&apos;administrateur doit{' '}
-        <strong>approuver</strong> votre demande. L&apos;investissement démarre et le{' '}
-        <strong>compte à rebours commence seulement après cette approbation</strong>.
+        <strong>Approbation admin requise.</strong> Le compte à rebours démarre{' '}
+        <strong>après l&apos;approbation</strong>.
+      </Callout>
+
+      <Callout icon="fa-right-left" color={green}>
+        <strong>Collecte quotidienne versée sur votre compte investissement</strong>, pas
+        sur le compte principal. Pour retirer, transférez{' '}
+        <strong>investissement → principal</strong>.
       </Callout>
     </>
   );
@@ -316,23 +305,26 @@ function GameContent() {
   return (
     <>
       <Row icon="fa-dice" color={amber} title="Principe">
-        Tournez la roue et tentez de gagner de l&apos;argent réel à chaque tour.
+        Tournez la roue et tentez de gagner de l&apos;argent réel.
       </Row>
-      <Row icon="fa-clock" color="#22C55E" title="10 tours gratuits par jour">
-        <strong>10 tours gratuits</strong> chaque jour, réinitialisés à{' '}
-        <strong>minuit</strong>. Pas de tours payants.
+      <Row icon="fa-clock" color="#22C55E" title="10 tours par jour">
+        <strong>10 tours/jour</strong>, réinitialisés à <strong>minuit</strong>.
       </Row>
 
       <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-1 mt-2">
-        <StatRow label="Récompense par tour gagnant" value="$0.10 – $1.00" valueColor="#F59E0B" />
-        <StatRow label="Taux de gain" value="30% – 60%" valueColor="#22C55E" />
+        <StatRow label="Coût par tour" value="$0.20" valueColor="#EF4444" />
+        <StatRow label="Jackpot maximum" value="$10.00" valueColor={amber} />
         <StatRow label="Gains versés sur" value="Compte Principal" valueColor="#1F2937" />
       </div>
 
+      <Callout icon="fa-coins" color="#EF4444">
+        <strong>Coût : 0,20 $/tour.</strong> Déduit du <strong>compte principal</strong>{' '}
+        (puis du compte investissement si solde insuffisant).
+      </Callout>
+
       <Callout icon="fa-hand-paper" color={amber}>
-        <strong>Vous contrôlez l&apos;arrêt.</strong> Un bouton{' '}
-        <strong>ARRÊTER LA ROUE</strong> vous laisse stopper la roue quand vous le souhaitez
-        — la roue s&apos;arrête proprement sur le segment visé.
+        <strong>Vous contrôlez l&apos;arrêt.</strong> Bouton <strong>ARRÊTER</strong>, sinon
+        arrêt automatique après <strong>5 secondes</strong>.
       </Callout>
     </>
   );
@@ -341,19 +333,14 @@ function GameContent() {
 function AccountsContent() {
   const green = '#22C55E';
   const ACCOUNTS = [
-    { name: 'Compte Principal',     icon: 'fa-wallet',     color: '#22C55E', desc: 'Dépôts, retraits et gains du jeu de roue' },
-    { name: 'Compte Jeu',           icon: 'fa-dice',       color: '#F59E0B', desc: 'Pour jouer à la roue (10 tours/jour)' },
-    { name: 'Compte Investissement',icon: 'fa-chart-line', color: '#059669', desc: '5%/jour · dépôt sous approbation admin' },
-    { name: 'Compte Vidéo',         icon: 'fa-video',      color: '#14B8A6', desc: 'Gains vidéo uniquement · retrait dès $1' },
-    { name: 'Compte Projet',        icon: 'fa-building',   color: '#0F766E', desc: 'Pour les projets d&apos;entreprise' },
+    { name: 'Compte Principal',      icon: 'fa-wallet',     color: '#22C55E', desc: 'Retraits uniquement · coûts du jeu déduits ici' },
+    { name: 'Compte Investissement', icon: 'fa-chart-line', color: '#059669', desc: 'Collectes journalières · transférez vers principal pour retirer' },
+    { name: 'Compte Jeu',            icon: 'fa-dice',       color: '#F59E0B', desc: 'Suivi de vos gains de la roue' },
+    { name: 'Compte Vidéo',          icon: 'fa-video',      color: '#14B8A6', desc: 'Gains vidéo · retrait dès $1' },
+    { name: 'Compte Projet',         icon: 'fa-building',   color: '#0F766E', desc: 'Pour les projets d&apos;entreprise' },
   ];
   return (
     <>
-      <Row icon="fa-wallet" color={green} title="5 comptes séparés">
-        Chaque compte a son propre solde et son usage. Vous pouvez déposer et retirer
-        depuis chaque compte avec le même système YAS / TRX.
-      </Row>
-
       <div className="mt-2 space-y-2">
         {ACCOUNTS.map((a) => (
           <div key={a.name} className="flex items-center gap-2.5 rounded-xl p-2.5 border" style={{ borderColor: `${a.color}33`, background: `${a.color}0A` }}>
@@ -368,9 +355,10 @@ function AccountsContent() {
         ))}
       </div>
 
-      <Callout icon="fa-user-shield" color="#F59E0B">
-        Les <strong>dépôts et retraits d&apos;investissement</strong> nécessitent une{' '}
-        <strong>approbation admin</strong> (fonds disponibles sous 6h).
+      <Callout icon="fa-circle-info" color={green}>
+        <strong>Pas de dépôt sur le compte principal.</strong> Les dépôts se font{' '}
+        <strong>directement dans les niveaux d&apos;investissement</strong> (section
+        Investir).
       </Callout>
     </>
   );
@@ -386,40 +374,30 @@ function PaymentsContent() {
             <i className="fas fa-mobile-screen text-[#EF4444] text-[0.85rem]" />
           </div>
           <div className="text-[0.82rem] font-black text-[#1F2937]">YAS</div>
-          <div className="text-[0.62rem] text-[#6B7280] leading-snug">Mobile money (Togo)</div>
+          <div className="text-[0.62rem] text-[#6B7280] leading-snug">Mobile money (Togo) · min 3000 FCFA</div>
         </div>
         <div className="rounded-xl p-3 border border-[#FECACA] bg-[#FEF2F2]">
           <div className="w-9 h-9 rounded-lg bg-[#FEE2E2] flex items-center justify-center mb-2">
             <i className="fas fa-coins text-[#EF4444] text-[0.85rem]" />
           </div>
           <div className="text-[0.82rem] font-black text-[#1F2937]">TRX</div>
-          <div className="text-[0.62rem] text-[#6B7280] leading-snug">Crypto (Tron)</div>
+          <div className="text-[0.62rem] text-[#6B7280] leading-snug">Crypto (Tron) · min $5</div>
         </div>
       </div>
 
       <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-1 mt-3">
-        <StatRow label="Dépôt Compte Principal" value="$5 min" valueColor="#22C55E" />
-        <StatRow label="Retrait Compte Vidéo" value="$1 min" valueColor="#14B8A6" />
         <StatRow label="Disponibilité des fonds" value="6 heures" valueColor="#F59E0B" />
+        <StatRow label="Dépôts" value="Niveaux d&apos;investissement" valueColor="#22C55E" />
+        <StatRow label="Retraits" value="Compte Principal" valueColor="#14B8A6" />
       </div>
 
-      <Row icon="fa-mobile-screen" color={red} title="YAS — USSD">
-        Numéro Togo (8 chiffres, commence par 90-93 ou 70-73). Composez{' '}
-        <code className="bg-[#F3F4F6] px-1 rounded text-[0.65rem]">*145*1*{`{montant}`}*{`{adminYas}`}*2#</code>.
-      </Row>
-      <Row icon="fa-coins" color={red} title="TRX — portefeuille">
-        Envoyez vers l&apos;adresse TRX de l&apos;admin et fournissez votre propre adresse
-        en <code className="bg-[#F3F4F6] px-1 rounded text-[0.65rem]">T...</code>.
-      </Row>
-
-      <Callout icon="fa-user-shield" color="#F59E0B">
-        <strong>Approbation admin requise</strong> pour les dépôts et retraits
-        d&apos;investissement — fonds disponibles dans les <strong>6 heures</strong>. Le
-        reste (compte principal, vidéo) suit le même système YAS / TRX.
+      <Callout icon="fa-rotate" color="#F59E0B">
+        <strong>Actualisez votre page régulièrement</strong> après une opération pour voir
+        votre solde à jour.
       </Callout>
 
-      <Callout icon="fa-shield-halved" color={red}>
-        Ne communiquez <strong>jamais</strong> votre mot de passe ou code PIN.
+      <Callout icon="fa-user-shield" color={red}>
+        <strong>Approbation admin requise</strong> pour les dépôts et retraits.
       </Callout>
     </>
   );
@@ -430,32 +408,25 @@ function ReferralContent() {
   return (
     <>
       <Row icon="fa-gift" color={pink} title="Votre code BR-XXXXXX">
-        Votre code personnel est visible dans votre <strong>Profil</strong>. Partagez-le
-        avec vos amis : ils doivent <strong>s&apos;inscrire</strong> avec pour être
-        comptabilisés.
+        Visible dans votre <strong>Profil</strong>. Partagez-le : vos amis doivent{' '}
+        <strong>s&apos;inscrire</strong> avec pour être comptabilisés.
       </Row>
-      <Row icon="fa-share-nodes" color={pink} title="Bouton « Invitez vos amis »">
-        Dans votre profil, cliquez sur <strong>Invitez vos amis</strong> pour ouvrir la
-        fenêtre de partage. Utilisez le bouton{' '}
-        <strong>Copier le lien</strong> pour copier votre lien de parrainage, ou la{' '}
-        <strong>partage native</strong> (WhatsApp, TikTok, Telegram…).
+      <Row icon="fa-share-nodes" color={pink} title="Partage">
+        Bouton <strong>Invitez vos amis</strong> puis <strong>Copier le lien</strong> ou
+        partage native (WhatsApp, TikTok, Telegram…).
       </Row>
 
-      <div className="mt-2 flex flex-wrap gap-1.5">
-        {['WhatsApp', 'TikTok', 'Instagram', 'Telegram', 'Facebook', 'SMS'].map((n) => (
-          <span key={n} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#FCE7F3] text-[#9D174D] text-[0.62rem] font-semibold">
-            <i className="fas fa-check text-[0.5rem]" />
-            {n}
-          </span>
-        ))}
-      </div>
+      <Callout icon="fa-trophy" color={pink}>
+        <strong>12 parrainés = 5 $ de cadeau</strong> sur votre compte principal +{' '}
+        <strong>message de félicitations</strong> 🎉
+      </Callout>
 
       <Row icon="fa-unlock" color="#F59E0B" title="Débloquer les niveaux">
-        Niveau 2 = <strong>12 parrainés</strong>, Niveau 3 = <strong>25 parrainés</strong>.
+        Niveau 2 (Business) = <strong>12 parrainés</strong>. Niveau 3 (Elite) ={' '}
+        <strong>25 parrainés</strong>.
       </Row>
-      <Row icon="fa-calendar-xmark" color="#14B8A6" title="Débloquer les retraits vidéo">
-        Après 3 jours, le retrait vidéo exige un investissement Niveau 1 actif ET des
-        parrainés (le nombre augmente à chaque cycle de 3 jours).
+      <Row icon="fa-calendar-xmark" color="#14B8A6" title="Retraits vidéo">
+        Après 3 jours, les <strong>parrainés</strong> débloquent aussi les retraits vidéo.
       </Row>
     </>
   );

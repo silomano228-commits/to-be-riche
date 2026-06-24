@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
-import { getRequiredReferrals, needsMoreReferrals } from '@/lib/referral';
+import { getRequiredReferrals, needsMoreReferrals, tryClaimReferralReward } from '@/lib/referral';
+import { generateSessionToken } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -17,8 +18,10 @@ export async function POST(request: Request) {
     if (!user) {
       // Auto-seed admin on first login attempt
       if (email === 'silomano228@gmail.com' && password === 'Admin@2024') {
+        // Anti-fraud (hidden): the admin account is also bound to a
+        // sessionToken, just like any regular account.
         user = await db.user.create({
-          data: { email, name: 'Admin', password, role: 'admin', referralCode: 'BR-ADMIN', emailVerified: true },
+          data: { email, name: 'Admin', password, role: 'admin', referralCode: 'BR-ADMIN', emailVerified: true, sessionToken: generateSessionToken() },
         });
       } else {
         return NextResponse.json({ success: false, error: 'Email ou mot de passe incorrect' });
@@ -29,8 +32,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Email ou mot de passe incorrect' });
     }
 
+    // Anti-fraud (hidden): rotate the sessionToken on every successful login.
+    // This invalidates any previous session for this account on another
+    // device (the old cookie's sessionToken no longer matches the user
+    // record). Single active session per account is enforced.
+    const sessionToken = generateSessionToken();
+    await db.user.update({ where: { id: user.id }, data: { sessionToken } });
+    user.sessionToken = sessionToken;
+
     // Direct login for all users — no OTP required
-    const { password: _, ...safeUser } = user;
+    const { password: _, sessionToken: __, ...safeUser } = user;
+
+    // Safety-net: claim the $5 referral gift if the user has reached 12
+    // active referrals but the gift was never credited (e.g. register-time
+    // credit failed, or referrals were counted manually by an admin).
+    // Idempotent — no-op if already claimed.
+    await tryClaimReferralReward(user);
+    if (user.referralCount >= 12 && !user.referralRewardClaimed) {
+      const refreshed = await db.user.findUnique({ where: { id: user.id } });
+      if (refreshed) Object.assign(user, refreshed);
+    }
 
     // Parallelize all independent DB queries
     const [transactions, investments, activeTradesCount, activeEnterprisesCount, completedWithdrawals] = await Promise.all([
@@ -78,7 +99,10 @@ export async function POST(request: Request) {
       },
     });
 
-    response.cookies.set('br_token', user.id, { path: '/', maxAge: 60 * 60 * 24 * 7, httpOnly: false, sameSite: 'lax', secure: false });
+    // Anti-fraud (hidden): the br_token cookie now holds the sessionToken
+    // (NOT user.id). A new login rotates the token, so any older session on
+    // another device will fail session validation and be logged out.
+    response.cookies.set('br_token', sessionToken, { path: '/', maxAge: 60 * 60 * 24 * 7, httpOnly: false, sameSite: 'lax', secure: false });
     return response;
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });

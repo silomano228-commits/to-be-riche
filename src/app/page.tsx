@@ -59,6 +59,7 @@ const InstallPrompt = dynamic(() => import('@/components/InstallPrompt'), { ssr:
 const NotificationBell = dynamic(() => import('@/components/NotificationBell'), { ssr: false, loading: () => <ScreenLoader /> });
 const WithdrawalTicker = dynamic(() => import('@/components/WithdrawalTicker'), { ssr: false, loading: () => <ScreenLoader /> });
 const PromoBanner = dynamic(() => import('@/components/PromoBanner'), { ssr: false, loading: () => <ScreenLoader /> });
+const RefreshReminderBanner = dynamic(() => import('@/components/RefreshReminderBanner'), { ssr: false, loading: () => null });
 
 // ==================== SPLASH ====================
 function SplashScreen({ onDone }: { onDone: () => void }) {
@@ -163,6 +164,7 @@ function AuthScreen() {
     const fd = new FormData(e.target as HTMLFormElement);
     const name = (fd.get('name') as string)?.trim() || '';
     const email = (fd.get('email') as string)?.trim() || '';
+    const phone = (fd.get('phone') as string)?.trim() || '';
     const password = fd.get('password') as string || '';
     const password2 = fd.get('password2') as string || '';
     const referralCode = (fd.get('referralCode') as string)?.trim().toUpperCase() || '';
@@ -174,7 +176,7 @@ function AuthScreen() {
     setErrors({});
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password, password2, referralCode }), headers: { 'Content-Type': 'application/json' } });
+      const res = await fetch('/api/auth/register', { method: 'POST', body: JSON.stringify({ name, email, phone: phone.trim(), password, password2, referralCode }), headers: { 'Content-Type': 'application/json' } });
       const data = await res.json();
       if (data.success && data.requires_verification) {
         // Account created — must verify email via OTP
@@ -325,6 +327,7 @@ function AuthScreen() {
               <form onSubmit={handleRegister}>
                 <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Nom complet</label><input name="name" type="text" required placeholder="Jean Dupont" minLength={2} className={`w-full premium-input ${errors.name ? '!border-[#F87171]' : ''}`} />{errors.name && <p className="text-[#F87171] text-[0.65rem] mt-0.5">{errors.name}</p>}</div>
                 <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Email</label><input name="email" type="email" required placeholder="votre@email.com" className="w-full premium-input" /></div>
+                <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Numéro de téléphone</label><input name="phone" type="tel" required placeholder="+228 90 12 34 56" className={`w-full premium-input ${errors.phone ? '!border-[#F87171]' : ''}`} />{errors.phone && <p className="text-[#F87171] text-[0.65rem] mt-0.5">{errors.phone}</p>}</div>
                 <div className="mb-2.5 w-full relative"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Mot de passe</label><input name="password" type={showPw.r ? 'text' : 'password'} required placeholder="Min. 6 caractères" minLength={6} className={`w-full premium-input pr-11 ${errors.password ? '!border-[#F87171]' : ''}`} /><button type="button" onClick={() => setShowPw({ ...showPw, r: !showPw.r })} className="absolute right-3 top-[34px] bg-transparent border-none text-[rgba(0,0,0,0.35)] cursor-pointer p-0.5"><i className={`fas ${showPw.r ? 'fa-eye-slash' : 'fa-eye'}`}></i></button>{errors.password && <p className="text-[#F87171] text-[0.65rem] mt-0.5">{errors.password}</p>}</div>
                 <div className="mb-2.5 w-full relative"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Confirmer</label><input name="password2" type={showPw.r2 ? 'text' : 'password'} required placeholder="••••••••" className={`w-full premium-input pr-11 ${errors.password2 ? '!border-[#F87171]' : ''}`} /><button type="button" onClick={() => setShowPw({ ...showPw, r2: !showPw.r2 })} className="absolute right-3 top-[34px] bg-transparent border-none text-[rgba(0,0,0,0.35)] cursor-pointer p-0.5"><i className={`fas ${showPw.r2 ? 'fa-eye-slash' : 'fa-eye'}`}></i></button>{errors.password2 && <p className="text-[#F87171] text-[0.65rem] mt-0.5">{errors.password2}</p>}</div>
                 <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Code de parrainage <span className="opacity-50">(optionnel)</span></label><input name="referralCode" type="text" placeholder="BR-XXXXXX" defaultValue={prefilledReferral} className={`w-full premium-input ${prefilledReferral ? '!border-[#22C55E] !bg-[rgba(34,197,94,0.04)]' : ''}`} />{prefilledReferral && <p className="text-[#22C55E] text-[0.6rem] mt-0.5 font-medium"><i className="fas fa-user-friends mr-1"></i>Code de parrainage appliqué !</p>}</div>
@@ -586,7 +589,12 @@ function WalletScreen() {
     try {
       const res = await authFetch('/api/transfer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ from: transferTarget.from, to: transferTarget.to, amount: amt }) });
       const data = await res.json();
-      if (data.success) { addToast('Transfert effectué !', 'success'); setTransferAmt(''); setTransferTarget(null); await refreshUser(); }
+      if (data.success) {
+        // Level-2 hold: funds sent to escrow for 10 days — surface the API's message verbatim.
+        if (data.held) addToast(data.message || 'Transfert en cours. Les fonds seront disponibles sous 10 jours.', 'info');
+        else addToast('Transfert effectué !', 'success');
+        setTransferAmt(''); setTransferTarget(null); await refreshUser();
+      }
       else { addToast(data.error, 'error'); }
     } catch { addToast('Erreur', 'error'); }
     setTransferring(false);
@@ -601,9 +609,9 @@ function WalletScreen() {
     { key: 'project', label: 'Compte de Projet', balance: user.projectBalance, icon: 'fa-building', iconColor: '#8B5CF6', iconBg: 'bg-[rgba(139,92,246,0.12)]', borderColor: '#8B5CF6', transferable: true },
   ] as const;
 
-  // Label helper for the transfer modal — kept inline since the modal is small.
+  // Label helper for the transfer modal — 'trade' intentionally absent (trading account removed).
   const accountLabel = (k: string) =>
-    k === 'principal' ? 'Principal' : k === 'project' ? 'Projets' : k === 'video' ? 'Vidéo' : k;
+    k === 'principal' ? 'Principal' : k === 'invest' ? 'Investissement' : k === 'project' ? 'Projets' : k === 'video' ? 'Vidéo' : k;
 
   // Derived values from API (silent fallbacks if fetch failed)
   const spinsRemaining = gameStatus?.spinsRemaining ?? 10;
@@ -626,10 +634,8 @@ function WalletScreen() {
               <div className="text-[0.7rem] text-white/70 font-semibold uppercase tracking-[1.5px]">Compte Principal</div>
             </div>
             <div className="text-[2rem] font-black tracking-[-1px] text-white mb-3">{formatMoney(user.balance)}</div>
-            <div className="flex gap-2">
-              <button onClick={() => setPage('deposit')} className="flex-1 py-[11px] rounded-xl text-[0.78rem] font-semibold cursor-pointer flex items-center justify-center gap-1.5 border-none bg-white/20 text-white hover:bg-white/30 transition-colors"><i className="fas fa-arrow-down"></i> Déposer</button>
-              <button onClick={() => setPage('withdraw')} className="flex-1 py-[11px] rounded-xl text-[0.78rem] font-semibold cursor-pointer flex items-center justify-center gap-1.5 border-none bg-white/10 text-white/80 hover:bg-white/20 transition-colors"><i className="fas fa-arrow-up"></i> Retirer</button>
-            </div>
+            <button onClick={() => setPage('withdraw')} className="w-full py-[11px] rounded-xl text-[0.78rem] font-semibold cursor-pointer flex items-center justify-center gap-1.5 border-none bg-white/15 text-white hover:bg-white/25 transition-colors"><i className="fas fa-arrow-up"></i> Retirer</button>
+            <button onClick={() => setPage('invest')} className="mt-2 w-full text-[0.66rem] text-white/70 hover:text-white underline-offset-2 hover:underline transition-colors border-none bg-transparent cursor-pointer"><i className="fas fa-info-circle mr-1"></i>Les dépôts se font directement dans les niveaux d&apos;investissement</button>
           </div>
         </div>
 
@@ -672,9 +678,10 @@ function WalletScreen() {
             <div className="text-[1.3rem] font-black text-[#1F2937]">{formatMoney(totalInvested)}</div>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setPage('invest')} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none text-white transition-transform active:scale-95" style={{ background: 'linear-gradient(90deg, #14B8A6 0%, #0F766E 100%)' }}><i className="fas fa-arrow-down text-[0.65rem]"></i> Déposer</button>
+            <button onClick={() => setTransferTarget({ from: 'invest', to: 'principal', label: 'Retirer vers Principal', fee: false, fromColor: '#14B8A6', toColor: '#22C55E', fromIcon: 'fa-seedling', toIcon: 'fa-wallet' })} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none text-white transition-transform active:scale-95" style={{ background: 'linear-gradient(90deg, #14B8A6 0%, #0F766E 100%)' }}><i className="fas fa-arrow-left text-[0.65rem]"></i> Retirer vers Principal</button>
             <button onClick={() => setPage('invest')} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border border-[rgba(20,184,166,0.25)] bg-transparent text-[#0F766E] transition-transform active:scale-95"><i className="fas fa-list text-[0.65rem]"></i> Voir mes investissements</button>
           </div>
+          <p className="mt-2 text-[0.6rem] text-[rgba(0,0,0,0.45)] flex items-center gap-1"><i className="fas fa-info-circle text-[#0F766E]"></i>Pour retirer, transférez vers le compte principal.</p>
         </div>
 
         {/* Autres comptes — Vidéo et Projet (Glass Cards with colored left border) */}
@@ -743,6 +750,7 @@ function WalletScreen() {
             { icon: 'fa-chart-line', color: '#22C55E', bg: 'bg-[rgba(34,197,94,0.10)]', label: 'Gains totaux', value: formatMoney(user.totalProfit || 0), sub: 'Cumul des gains' },
             { icon: 'fa-arrow-trend-down', color: '#F87171', bg: 'bg-[rgba(248,113,113,0.10)]', label: 'Pertes totales', value: formatMoney(user.totalLoss || 0), sub: 'Cumul des pertes' },
             { icon: 'fa-video', color: '#14B8A6', bg: 'bg-[rgba(20,184,166,0.10)]', label: 'Solde vidéo', value: formatMoney(user.videoBalance || 0), sub: 'Compte vidéo autonome' },
+            { icon: 'fa-seedling', color: '#14B8A6', bg: 'bg-[rgba(20,184,166,0.10)]', label: 'Solde investissement', value: formatMoney(user.investBalance || 0), sub: 'Compte d\'investissement' },
             { icon: 'fa-building', color: '#8B5CF6', bg: 'bg-[rgba(139,92,246,0.10)]', label: 'Solde projet', value: formatMoney(user.projectBalance || 0), sub: 'Compte de projet' },
           ].map((s, i, arr) => (
             <div key={s.label} className={`flex items-center gap-3 px-3 py-3 ${i < arr.length - 1 ? 'border-b border-[rgba(0,0,0,0.05)]' : ''}`}>
@@ -919,6 +927,7 @@ export default function BeRichApp() {
         <TabChangeAd ad={currentAd} onClose={dismissAd} />
         <ToastContainer />
         <NotificationContainer />
+        {user && <RefreshReminderBanner />}
         {user && <WithdrawalTicker />}
       </div>
       <ServiceWorkerRegistrar />

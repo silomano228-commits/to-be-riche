@@ -26,11 +26,8 @@ const DAILY_MESSAGES = [
 
 export async function GET(request: Request) {
   try {
-    const token = getAuthToken(request);
-    if (!token) return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
-
-    const user = await db.user.findUnique({ where: { id: token } });
-    if (!user) return NextResponse.json({ success: false, error: 'Utilisateur introuvable' }, { status: 401 });
+    const user = await getAuthToken(request);
+    if (!user) return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
 
     // Calculate referral info
     const completedWithdrawals = await db.withdrawal.count({

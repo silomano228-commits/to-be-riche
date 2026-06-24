@@ -26,6 +26,7 @@ interface FakeWinner {
 }
 
 const DAILY_LIMIT = 10;
+const SPIN_COST = 0.20; // mirrors backend /api/game/status SPIN_COST export
 
 const FAKE_NAMES = ['Aminata', 'Kwame', 'Fatou', 'Mamadou', 'Awa', 'Ibrahim', 'Rokia', 'Seydou', 'Kadiatou', 'Ousmane', 'Bintou', 'Lassina'];
 const FLAGS = ['🇨🇮', '🇲🇱', '🇧🇫', '🇸🇳', '🇬🇳', '🇳🇪', '🇹🇬', '🇧🇯'];
@@ -42,6 +43,7 @@ interface PendingSpinResult {
   segmentIdx: number;
   isWin: boolean;
   winAmount: number;
+  netResult: number; // winAmount - SPIN_COST (negative on loss)
   spinsRemaining?: number;
 }
 
@@ -64,10 +66,13 @@ export default function SpinGameScreen() {
   );
   const [stopRequested, setStopRequested] = useState(false);
   const [transitionStyle, setTransitionStyle] = useState<string>(LONG_TRANSITION);
+  const [costToast, setCostToast] = useState<{ amount: number; key: number } | null>(null);
+  const [jackpot, setJackpot] = useState(false); // true while the $10 JACKPOT celebration overlay is showing
 
   const spinsRemainingRef = useRef(spinsRemaining);
   const spinningRef = useRef(spinning);
   const triggerSpinRef = useRef<() => void>(() => {});
+  const handleStopWheelRef = useRef<() => void>(() => {});
   const pendingResultRef = useRef<PendingSpinResult | null>(null);
   const spinTimeoutRef = useRef<number | null>(null);
 
@@ -122,20 +127,32 @@ export default function SpinGameScreen() {
     setSpinsRemaining(newRemaining);
     setSpinsUsed((prev) => prev + 1);
 
-    if (data.isWin) {
+    // $10 grand-prize branch — special JACKPOT celebration overlay.
+    if (data.isWin && data.winAmount >= 10) {
+      setTotalWonToday((prev) => prev + (data.winAmount || 0));
+      setJackpot(true);
+      setCongratsData({
+        show: true,
+        type: 'win',
+        title: 'JACKPOT ! 🎉',
+        amount: data.winAmount,
+        message: `Gros lot remporté : ${data.winAmount.toFixed(2)} $ ! Après coût de ${SPIN_COST.toFixed(2)} $, votre gain net est de ${data.netResult.toFixed(2)} $.`,
+        onClose: () => { setCongratsData({ show: false, type: 'win' }); setJackpot(false); },
+      });
+    } else if (data.isWin) {
       setTotalWonToday((prev) => prev + (data.winAmount || 0));
       setCongratsData({
         show: true,
         type: 'win',
         amount: data.winAmount,
-        message: `Vous avez gagné $${data.winAmount.toFixed(2)} à la roue !`,
+        message: `Vous avez gagné ${data.winAmount.toFixed(2)} $ ! Après coût de ${SPIN_COST.toFixed(2)} $, votre gain net est de ${data.netResult.toFixed(2)} $.`,
         onClose: () => setCongratsData({ show: false, type: 'win' }),
       });
     } else {
       setCongratsData({
         show: true,
         type: 'loss',
-        message: 'Vous n\'avez pas gagné cette fois-ci.',
+        message: `Perdu. Coût du tour : ${SPIN_COST.toFixed(2)} $. Résultat net : ${data.netResult.toFixed(2)} $.`,
         showRetry: newRemaining > 0,
         onClose: () => setCongratsData({ show: false, type: 'loss' }),
         onRetry: () => {
@@ -160,6 +177,13 @@ export default function SpinGameScreen() {
       return;
     }
 
+    // Client-side balance precheck — saves a network round-trip when the user is broke.
+    const available = (user?.balance || 0) + (user?.investBalance || 0);
+    if (available < SPIN_COST) {
+      addToast('Solde insuffisant (minimum 0,20 $)', 'error');
+      return;
+    }
+
     setSpinning(true);
     setStopRequested(false);
     setTransitionStyle(LONG_TRANSITION);
@@ -173,12 +197,16 @@ export default function SpinGameScreen() {
       const data = await res.json();
 
       if (data.success) {
-        // Backend has ALREADY decided the outcome. Store it for later
-        // (used by both the 4.5s auto-finish and the manual STOP button).
+        // Backend has ALREADY decided the outcome + deducted the $0.20 cost.
+        // Reveal a floating "-0,20 $" toast near the balance, then store the
+        // pending result for later (used by both the 5s auto-stop and the
+        // manual STOP button).
+        setCostToast({ amount: -SPIN_COST, key: Date.now() });
         pendingResultRef.current = {
           segmentIdx: data.segmentIdx,
           isWin: data.isWin,
           winAmount: data.winAmount,
+          netResult: typeof data.netResult === 'number' ? data.netResult : (data.isWin ? data.winAmount : 0) - SPIN_COST,
           spinsRemaining: data.spinsRemaining,
         };
 
@@ -193,11 +221,16 @@ export default function SpinGameScreen() {
 
         setRotation(finalRotation);
 
+        // 5s auto-stop safety net — the user can stop earlier via the STOP
+        // button (which calls handleStopWheelRef.current() and clears this
+        // timer). handleStopWheel sets up its own short 850ms finish timer.
         spinTimeoutRef.current = window.setTimeout(() => {
-          processResult();
-        }, 4500);
+          handleStopWheelRef.current();
+        }, 5000);
       } else {
-        if (data.dailyLimitReached) {
+        if (data.insufficientBalance) {
+          addToast(data.error || 'Solde insuffisant (minimum 0,20 $)', 'error');
+        } else if (data.dailyLimitReached) {
           setSpinsRemaining(0);
           addToast(data.error || 'Limite quotidienne atteinte. Revenez demain !', 'info');
         } else {
@@ -209,10 +242,11 @@ export default function SpinGameScreen() {
       addToast('Erreur de connexion', 'error');
       setSpinning(false);
     }
-  }, [rotation, segments.length, addToast, processResult]);
+  }, [rotation, segments.length, addToast, user?.balance, user?.investBalance]);
 
   // Manual STOP: redirect the wheel to land exactly on the backend-chosen
   // segment using a short 0.8s ease-out transition, then process the result.
+  // Idempotent: if pendingResultRef is null (already processed or auto-stopped), no-op.
   const handleStopWheel = useCallback(() => {
     if (!pendingResultRef.current) return;
     if (spinTimeoutRef.current !== null) {
@@ -252,7 +286,15 @@ export default function SpinGameScreen() {
     spinsRemainingRef.current = spinsRemaining;
     spinningRef.current = spinning;
     triggerSpinRef.current = triggerSpin;
-  }, [spinsRemaining, spinning, triggerSpin]);
+    handleStopWheelRef.current = handleStopWheel;
+  }, [spinsRemaining, spinning, triggerSpin, handleStopWheel]);
+
+  // Auto-dismiss the floating "-0,20 $" cost toast after 1.6s.
+  useEffect(() => {
+    if (!costToast) return;
+    const t = setTimeout(() => setCostToast(null), 1600);
+    return () => clearTimeout(t);
+  }, [costToast]);
 
   if (loading) {
     return (
@@ -334,21 +376,26 @@ export default function SpinGameScreen() {
                   const textRotation = (normalizedAngle > 90 && normalizedAngle < 270)
                     ? labelAngle + 180
                     : labelAngle;
+                  // $10 grand-prize segment — gold background, bolder + larger text.
+                  const isJackpot = seg.isWin && seg.reward >= 10;
+                  const fillColor = isJackpot ? '#FBBF24' : seg.color;
+                  const fontSize = isJackpot ? 11 : 9;
+                  const fontWeight = isJackpot ? 900 : 'bold';
                   return (
                     <g key={i}>
-                      <path d={path} fill={seg.color} stroke="#FFFFFF" strokeWidth="1" opacity={seg.isWin ? 0.95 : 0.7} />
+                      <path d={path} fill={fillColor} stroke="#FFFFFF" strokeWidth={isJackpot ? 1.5 : 1} opacity={seg.isWin ? 0.98 : 0.7} />
                       <text
                         x={lx} y={ly}
-                        fill="#FFFFFF"
-                        stroke="#0F172A"
+                        fill={isJackpot ? '#78350F' : '#FFFFFF'}
+                        stroke={isJackpot ? '#FFFFFF' : '#0F172A'}
                         strokeWidth="0.35"
                         paintOrder="stroke"
-                        fontSize="9"
-                        fontWeight="bold"
+                        fontSize={fontSize}
+                        fontWeight={fontWeight}
                         textAnchor="middle"
                         dominantBaseline="middle"
                         transform={`rotate(${textRotation} ${lx} ${ly})`}
-                        style={{ textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}
+                        style={{ textShadow: isJackpot ? '0 1px 3px rgba(255,255,255,0.6)' : '0 1px 2px rgba(0,0,0,0.6)' }}
                       >
                         {seg.label}
                       </text>
@@ -367,19 +414,40 @@ export default function SpinGameScreen() {
 
         {/* Spin button + manual STOP button */}
         <div className="px-4 mb-3 space-y-2">
+          {/* Spin cost badge — prominently displayed above the spin button */}
+          <div className="flex items-center justify-center gap-2">
+            <div className="rounded-full px-3 py-1 flex items-center gap-1.5" style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)' }}>
+              <i className="fas fa-coins text-[#FBBF24] text-[0.6rem]"></i>
+              <span className="text-[0.65rem] font-bold text-[#FBBF24]">Coût : {SPIN_COST.toFixed(2).replace('.', ',')} $ / tour</span>
+            </div>
+          </div>
+
           {spinsRemaining > 0 ? (
-            <button
-              onClick={() => triggerSpin()}
-              disabled={spinning}
-              className="w-full py-4 rounded-2xl font-black text-[1rem] border-none cursor-pointer disabled:opacity-50 transition-all active:scale-[0.97] flex items-center justify-center gap-2"
-              style={{ background: 'linear-gradient(135deg, #F59E0B, #EF4444)', color: '#FFFFFF', boxShadow: '0 6px 20px rgba(245,158,11,0.5)' }}
-            >
-              {spinning ? (
-                <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }}></div>Rotation...</>
-              ) : (
-                <><i className="fas fa-play"></i>Tourner la roue</>
-              )}
-            </button>
+            (() => {
+              const available = (user?.balance || 0) + (user?.investBalance || 0);
+              const insufficient = available < SPIN_COST;
+              return (
+                <>
+                  <button
+                    onClick={() => triggerSpin()}
+                    disabled={spinning || insufficient}
+                    className="w-full py-4 rounded-2xl font-black text-[1rem] border-none cursor-pointer disabled:opacity-50 transition-all active:scale-[0.97] flex items-center justify-center gap-2"
+                    style={{ background: 'linear-gradient(135deg, #F59E0B, #EF4444)', color: '#FFFFFF', boxShadow: insufficient ? 'none' : '0 6px 20px rgba(245,158,11,0.5)' }}
+                  >
+                    {spinning ? (
+                      <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }}></div>Rotation...</>
+                    ) : insufficient ? (
+                      <><i className="fas fa-ban"></i>Solde insuffisant (minimum 0,20 $)</>
+                    ) : (
+                      <><i className="fas fa-play"></i>Tourner la roue</>
+                    )}
+                  </button>
+                  {insufficient && !spinning && (
+                    <p className="text-[0.65rem] text-center text-[#FBBF24] font-medium">Solde principal + investissement inférieur à 0,20 $. Rechargez pour jouer.</p>
+                  )}
+                </>
+              );
+            })()
           ) : (
             <div className="rounded-2xl p-4 text-center" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
               <i className="fas fa-clock text-[#F59E0B] text-[1.2rem] mb-1"></i>
@@ -389,23 +457,77 @@ export default function SpinGameScreen() {
           )}
 
           {/* Manual STOP button — only visible while the wheel is spinning
-              and the user hasn't already requested a stop. */}
+              and the user hasn't already requested a stop. Large, pulsing,
+              red/amber so it's impossible to miss. */}
           {spinning && !stopRequested && (
             <button
               onClick={handleStopWheel}
-              className="w-full py-3 rounded-2xl font-black text-[0.92rem] border-none cursor-pointer transition-all active:scale-[0.97] flex items-center justify-center gap-2"
+              className="w-full py-5 rounded-2xl font-black text-[1.05rem] border-none cursor-pointer transition-all active:scale-[0.97] flex items-center justify-center gap-2"
               style={{
-                background: 'linear-gradient(135deg, #EF4444, #B91C1C)',
+                background: 'linear-gradient(135deg, #EF4444, #F59E0B)',
                 color: '#FFFFFF',
-                boxShadow: '0 6px 18px rgba(239,68,68,0.5)',
-                border: '2px solid rgba(255,255,255,0.25)',
-                animation: 'pulse 1.4s ease-in-out infinite',
+                boxShadow: '0 8px 24px rgba(239,68,68,0.6), 0 0 0 4px rgba(245,158,11,0.2)',
+                border: '3px solid rgba(255,255,255,0.4)',
+                animation: 'spinPulse 0.9s ease-in-out infinite',
+                letterSpacing: '1px',
               }}
             >
-              <i className="fas fa-hand-paper"></i>ARRÊTER LA ROUE
+              <i className="fas fa-hand-paper text-[1.1rem]"></i>ARRÊTER LA ROUE
             </button>
           )}
         </div>
+
+        {/* Floating "-0,20 $" cost toast — positioned over the Solde cell. */}
+        {costToast && (
+          <div
+            key={costToast.key}
+            className="fixed left-1/2 -translate-x-1/2 z-[7000] pointer-events-none"
+            style={{
+              bottom: 'calc(50% - 120px)',
+              animation: 'costFloat 1.6s ease-out forwards',
+            }}
+          >
+            <div
+              className="px-4 py-2 rounded-full font-black text-[0.95rem] flex items-center gap-1.5"
+              style={{
+                background: 'linear-gradient(135deg, rgba(239,68,68,0.95), rgba(245,158,11,0.95))',
+                color: '#FFFFFF',
+                boxShadow: '0 6px 20px rgba(239,68,68,0.5)',
+                border: '2px solid rgba(255,255,255,0.4)',
+              }}
+            >
+              <i className="fas fa-coins"></i>
+              <span>-{SPIN_COST.toFixed(2).replace('.', ',')} $</span>
+            </div>
+          </div>
+        )}
+
+        {/* JACKPOT overlay — extra confetti burst behind the modal. */}
+        {jackpot && (
+          <div className="fixed inset-0 z-[7500] pointer-events-none overflow-hidden">
+            {Array.from({ length: 80 }).map((_, i) => {
+              const colors = ['#FBBF24', '#F59E0B', '#22C55E', '#FFFFFF', '#FCD34D', '#EF4444'];
+              const color = colors[i % colors.length];
+              const left = Math.random() * 100;
+              const delay = Math.random() * 0.6;
+              const duration = 2 + Math.random() * 2;
+              const size = 8 + Math.random() * 10;
+              return (
+                <div
+                  key={i}
+                  className="absolute top-[-20px] rounded-sm"
+                  style={{
+                    left: `${left}%`,
+                    width: `${size}px`,
+                    height: `${size * 1.5}px`,
+                    background: color,
+                    animation: `jackpotFall ${duration}s ease-in ${delay}s forwards`,
+                  }}
+                />
+              );
+            })}
+          </div>
+        )}
 
         {/* Stats */}
         <div className="px-4 mb-4">
@@ -473,9 +595,10 @@ export default function SpinGameScreen() {
               <div>
                 <div className="text-[0.72rem] font-bold mb-0.5 text-white">Règles du jeu</div>
                 <div className="text-[0.65rem] leading-relaxed text-white/60">
-                  • 10 tours gratuits par jour<br/>
+                  • 10 tours par jour<br/>
+                  • Coût : 0,20 $ par tour (débité du principal puis de l&apos;investissement)<br/>
                   • La roue se réinitialise à minuit<br/>
-                  • Récompenses: $0.10 à $1.00<br/>
+                  • Récompenses : 0,10 $ à 10,00 $ (segment doré = gros lot !)<br/>
                   • Les gains vont sur votre solde principal
                 </div>
               </div>
@@ -483,6 +606,24 @@ export default function SpinGameScreen() {
           </div>
         </div>
       </div>
+
+      {/* Local keyframes: cost-toast float-up + jackpot confetti fall + STOP-button pulse. */}
+      <style>{`
+        @keyframes costFloat {
+          0% { transform: translate(-50%, 10px); opacity: 0; }
+          15% { transform: translate(-50%, 0); opacity: 1; }
+          80% { transform: translate(-50%, -40px); opacity: 1; }
+          100% { transform: translate(-50%, -70px); opacity: 0; }
+        }
+        @keyframes jackpotFall {
+          0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(105vh) rotate(900deg); opacity: 0; }
+        }
+        @keyframes spinPulse {
+          0%, 100% { transform: scale(1); box-shadow: 0 8px 24px rgba(239,68,68,0.6), 0 0 0 4px rgba(245,158,11,0.2); }
+          50% { transform: scale(1.04); box-shadow: 0 12px 32px rgba(239,68,68,0.8), 0 0 0 10px rgba(245,158,11,0); }
+        }
+      `}</style>
 
       <CongratulationsModal data={congratsData} />
     </>

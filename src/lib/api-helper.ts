@@ -60,12 +60,26 @@ export async function getUserFromCookie(): Promise<SafeUser | null> {
   const token = cookieStore.get('br_token')?.value;
   if (!token) return null;
 
-  const user = await db.user.findUnique({
-    where: { id: token },
-  });
+  // Anti-fraud (hidden): the br_token cookie now holds a sessionToken (not
+  // user.id). Resolve the user by sessionToken first; fall back to id for
+  // backward compat with legacy sessions. If the user has a sessionToken set
+  // but the cookie holds a legacy user.id, the session was invalidated by a
+  // newer login elsewhere → return null.
+  const bySession = await db.user.findFirst({ where: { sessionToken: token } });
+  if (bySession) return toSafeUser(bySession);
 
-  if (!user) return null;
-  return toSafeUser(user);
+  const byId = await db.user.findUnique({ where: { id: token } });
+  if (byId) {
+    if (!byId.sessionToken) {
+      // Legacy session (cookie = user.id, no sessionToken yet). Accept it;
+      // the sessionToken will be minted on the next login.
+      return toSafeUser(byId);
+    }
+    // sessionToken is set but the cookie holds user.id → invalidated session.
+    return null;
+  }
+
+  return null;
 }
 
 export function formatMoney(amount: number): string {

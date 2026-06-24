@@ -8,20 +8,17 @@ export const dynamic = 'force-dynamic';
 // Used by client for fast polling without full session refresh
 export async function GET(request: Request) {
   try {
-    const token = getAuthToken(request);
-    if (!token) return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
-
-    const user = await db.user.findUnique({ where: { id: token } });
-    if (!user) return NextResponse.json({ success: false, error: 'Utilisateur introuvable' }, { status: 401 });
+    const user = await getAuthToken(request);
+    if (!user) return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
 
     // Check for pending TRX deposits
     const pendingTrx = await db.pendingDeposit.findFirst({
-      where: { userId: token, status: 'pending' },
+      where: { userId: user.id, status: 'pending' },
     });
 
     // Check for pending Yas deposits
     const pendingYas = await db.yasDeposit.findFirst({
-      where: { userId: token, status: 'pending' },
+      where: { userId: user.id, status: 'pending' },
     });
 
     const hasPending = !!(pendingTrx || pendingYas);

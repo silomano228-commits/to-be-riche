@@ -10,11 +10,8 @@ const REQUIRED_REFERRALS = 10;
 // GET — Returns world link if user has 10+ referrals and admin has set it
 export async function GET(request: Request) {
   try {
-    const token = getAuthToken(request);
-    if (!token) return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
-
-    const user = await db.user.findUnique({ where: { id: token } });
-    if (!user) return NextResponse.json({ success: false, error: 'Utilisateur introuvable' }, { status: 401 });
+    const user = await getAuthToken(request);
+    if (!user) return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
 
     // Check if user has enough referrals
     if (user.referralCount < REQUIRED_REFERRALS) {
@@ -57,11 +54,8 @@ export async function GET(request: Request) {
 // POST — Mark the world link as seen by the user
 export async function POST(request: Request) {
   try {
-    const token = getAuthToken(request);
-    if (!token) return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
-
-    const user = await db.user.findUnique({ where: { id: token } });
-    if (!user) return NextResponse.json({ success: false, error: 'Utilisateur introuvable' }, { status: 401 });
+    const user = await getAuthToken(request);
+    if (!user) return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
 
     if (user.referralCount < REQUIRED_REFERRALS) {
       return NextResponse.json({ success: false, error: 'Non éligible' }, { status: 403 });

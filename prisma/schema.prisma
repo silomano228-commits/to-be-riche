@@ -32,6 +32,19 @@ model User {
   totalInvestClaims Int         @default(0)
   investClaimBlocked Boolean     @default(false)
   worldLinkSeen   Boolean       @default(false)
+  // Anti-fraud: unique phone number per account + session token to prevent
+  // concurrent logins with the same account on multiple devices.
+  phone           String?       @unique
+  sessionToken    String?
+  // Referral milestone reward: $5 credited to principal when user reaches 12
+  // active referrals. Tracked to avoid crediting twice.
+  referralRewardClaimed Boolean @default(false)
+  // Level-2 investment withdrawal hold (escrow). When a user transfers funds
+  // OUT of the investment account before unlocking level 2 (12 referrals) the
+  // amount is held here and released to the principal balance only after
+  // 10 days AND level-2 unlock. Hidden from the UI.
+  heldInvestBalance Float      @default(0)
+  heldReleaseAt     DateTime?
   // Video platform autonomous account
   videoBalance           Float     @default(0)
   videoWatchedCount      Int       @default(0)

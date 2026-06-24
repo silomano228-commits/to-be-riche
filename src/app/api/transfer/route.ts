@@ -18,24 +18,31 @@ async function getUser(request: Request) {
   return db.user.findUnique({ where: { id: token } });
 }
 
-const VALID_ACCOUNTS = ['principal', 'invest', 'trade', 'project'] as const;
+// Feature 2: trade account is removed — only principal, invest, and project
+// remain. The invest → principal direction is the ONLY withdrawal path from
+// the investment account (Feature 2). Deposits to invest are NOT allowed via
+// transfer — they must go through the investment-level creation flow.
+const VALID_ACCOUNTS = ['principal', 'invest', 'project'] as const;
 type AccountType = typeof VALID_ACCOUNTS[number];
 
 const ACCOUNT_LABELS: Record<AccountType, string> = {
   principal: 'Compte Principal',
   invest: "Compte d'Investissement",
-  trade: 'Compte de Trading',
   project: 'Compte de Projet',
 };
 
-const FEE_RATE = 0.02; // 2% fee on transfers TO invest, trade, or project accounts
+// Feature 2: 2% fee applies ONLY to transfers OUT of the principal account
+// (i.e. principal → project). Transfers TO principal (invest → principal,
+// project → principal) are free — they are withdrawals, not deposits.
+const FEE_RATE = 0.02;
 const MIN_TRANSFER = 2;
+const HOLD_DAYS = 10;
+const LEVEL_2_REFERRAL_REQUIREMENT = 12;
 
 function getBalance(user: Record<string, unknown>, account: AccountType): number {
   switch (account) {
     case 'principal': return user.balance as number;
     case 'invest': return user.investBalance as number;
-    case 'trade': return user.tradeBalance as number;
     case 'project': return user.projectBalance as number;
   }
 }
@@ -44,7 +51,6 @@ function getFieldName(account: AccountType): string {
   switch (account) {
     case 'principal': return 'balance';
     case 'invest': return 'investBalance';
-    case 'trade': return 'tradeBalance';
     case 'project': return 'projectBalance';
   }
 }
@@ -64,7 +70,7 @@ export async function POST(request: Request) {
     }
 
     if (!VALID_ACCOUNTS.includes(from) || !VALID_ACCOUNTS.includes(to)) {
-      return NextResponse.json({ success: false, error: 'Invalid account type. Use "principal", "invest", "trade", or "project".' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Invalid account type. Use "principal", "invest", or "project".' }, { status: 400 });
     }
 
     const fromAccount = from as AccountType;
@@ -72,6 +78,16 @@ export async function POST(request: Request) {
 
     if (fromAccount === toAccount) {
       return NextResponse.json({ success: false, error: 'Source and destination cannot be the same' }, { status: 400 });
+    }
+
+    // Feature 2 / Feature 4: deposits to the investment account are NOT
+    // allowed via transfer — they must go through the investment-level
+    // creation flow (/api/invest/create). Principal → invest is blocked.
+    if (fromAccount === 'principal' && toAccount === 'invest') {
+      return NextResponse.json({
+        success: false,
+        error: 'Les dépôts se font directement dans les niveaux d\'investissement',
+      }, { status: 400 });
     }
 
     const transferAmount = Number(amount);
@@ -85,17 +101,66 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: `Insufficient balance in ${ACCOUNT_LABELS[fromAccount]}. Have $${sourceBalance.toFixed(2)}` }, { status: 400 });
     }
 
-    // Calculate fee for transfers TO invest, trade, or project accounts (not back to principal)
+    // Feature 2: fee only on transfers OUT of principal (principal → project).
+    // Transfers TO principal are free (withdrawals).
     let fee = 0;
     let receivedAmount = transferAmount;
-    if (toAccount !== 'principal') {
+    if (fromAccount === 'principal') {
       fee = Math.round(transferAmount * FEE_RATE * 100) / 100;
       receivedAmount = Math.round((transferAmount - fee) * 100) / 100;
     }
 
-    // Perform the transfer
-    const updateData: Record<string, { decrement: number } | { increment: number }> = {};
+    // Feature 3 (HIDDEN level-2 hold): when transferring invest → principal
+    // (the withdrawal path), if the user has an active investment at level 2
+    // or higher AND has not yet reached 12 referrals, the funds are held in
+    // escrow (heldInvestBalance) and released after 10 days AND 12 referrals.
+    // The user is told "available within 10 days" — the referral condition is
+    // intentionally hidden from the UI.
+    if (fromAccount === 'invest' && toAccount === 'principal') {
+      const level2PlusInvestment = await db.investment.findFirst({
+        where: { userId: user.id, level: { gte: 2 }, status: 'active' },
+      });
 
+      if (level2PlusInvestment && user.referralCount < LEVEL_2_REFERRAL_REQUIREMENT) {
+        // Hold the funds in escrow
+        const releaseAt = new Date(Date.now() + HOLD_DAYS * 24 * 60 * 60 * 1000);
+        await db.$transaction([
+          db.user.update({
+            where: { id: user.id },
+            data: {
+              investBalance: { decrement: transferAmount },
+              heldInvestBalance: { increment: transferAmount },
+              heldReleaseAt: releaseAt,
+            },
+          }),
+          db.transaction.create({
+            data: {
+              type: 'transfer_hold',
+              amount: -transferAmount,
+              detail: `Fonds en attente de débloquage — disponible dans ${HOLD_DAYS} jours (transfert investissement → principal)`,
+              userId: user.id,
+            },
+          }),
+        ]);
+
+        return NextResponse.json({
+          success: true,
+          transfer: {
+            from: fromAccount,
+            to: toAccount,
+            amount: transferAmount,
+            fee: 0,
+            received: transferAmount,
+            held: true,
+            releaseAt: releaseAt.toISOString(),
+          },
+          message: 'Transfert en cours. Les fonds seront disponibles sur votre compte principal sous 10 jours.',
+        });
+      }
+    }
+
+    // Perform the transfer (normal path — no hold)
+    const updateData: Record<string, { decrement: number } | { increment: number }> = {};
     updateData[getFieldName(fromAccount)] = { decrement: transferAmount };
     updateData[getFieldName(toAccount)] = { increment: receivedAmount };
 
@@ -130,6 +195,7 @@ export async function POST(request: Request) {
         amount: transferAmount,
         fee,
         received: receivedAmount,
+        held: false,
       },
       message: `Transferred $${transferAmount.toFixed(2)} from ${ACCOUNT_LABELS[fromAccount]} to ${ACCOUNT_LABELS[toAccount]}${fee > 0 ? ` (fee: $${fee.toFixed(2)})` : ''}`,
     });

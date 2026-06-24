@@ -5,9 +5,7 @@ import { getSimulatedPrice, getSimulatedPriceWithWalk, calculatePL, getToken } f
 export const dynamic = 'force-dynamic';
 
 async function getUser(request: Request) {
-  const token = getToken(request);
-  if (!token) return null;
-  return db.user.findUnique({ where: { id: token } });
+  return getToken(request);
 }
 
 export async function GET(request: Request) {

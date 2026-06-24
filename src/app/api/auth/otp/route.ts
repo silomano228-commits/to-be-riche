@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { initiateOtp, verifyOtp } from '@/lib/auth';
+import { initiateOtp, verifyOtp, generateSessionToken } from '@/lib/auth';
 import { getRequiredReferrals, needsMoreReferrals } from '@/lib/referral';
 
 export const dynamic = 'force-dynamic';
@@ -49,9 +49,13 @@ export async function POST(request: Request) {
 
       // For email_verification: mark email as verified and log the user in
       if (otpPurpose === 'email_verification') {
+        // Anti-fraud (hidden): rotate the sessionToken on email verification
+        // (completes registration). This invalidates the pre-verification
+        // sessionToken that was minted at /register, so any cookie issued
+        // before verification can no longer be used.
         await db.user.update({
           where: { email },
-          data: { emailVerified: true },
+          data: { emailVerified: true, sessionToken: generateSessionToken() },
         });
       }
 
@@ -61,7 +65,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, error: 'Utilisateur non trouvé' });
       }
 
-      const { password: _, ...safeUser } = user;
+      const { password: _, sessionToken: __, ...safeUser } = user;
 
       const transactions = await db.transaction.findMany({
         where: { userId: user.id },
@@ -123,7 +127,10 @@ export async function POST(request: Request) {
         },
       });
 
-      response.cookies.set('br_token', user.id, {
+      // Anti-fraud (hidden): set the br_token cookie to the user's current
+      // sessionToken (NOT user.id). The sessionToken was just rotated above,
+      // so this is the single valid session for this account.
+      response.cookies.set('br_token', user.sessionToken || '', {
         path: '/',
         maxAge: 60 * 60 * 24 * 7,
         httpOnly: false,

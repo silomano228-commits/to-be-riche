@@ -753,19 +753,47 @@ export default function AdminScreen() {
             <i className="fas fa-arrow-left text-[0.8rem]"></i>
           </button>
         }
-        rightElement={
-          <div className="flex items-center gap-1.5">
-            <NotificationBell dark />
-            <AdminNotificationBell dark />
-            <button
-              onClick={refreshAll}
-              className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] cursor-pointer border-none"
-            >
-              <i className="fas fa-sync-alt text-[0.7rem]"></i>
-            </button>
-          </div>
-        }
       />
+      {/* Top-bar controls — split into separate boxes for clarity (was a cramped right cluster). */}
+      <div
+        className="flex gap-2 px-[18px] py-2 bg-[#0E0F11] border-b border-[rgba(255,255,255,0.06)]"
+      >
+        {/* Box 1 — User notifications */}
+        <div
+          className="flex-1 min-w-0 flex flex-col items-center rounded-xl p-2.5"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          <NotificationBell dark />
+          <span className="text-[0.52rem] font-medium text-[rgba(255,255,255,0.55)] mt-1 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
+            Notifs utilisateur
+          </span>
+        </div>
+
+        {/* Box 2 — Admin notifications */}
+        <div
+          className="flex-1 min-w-0 flex flex-col items-center rounded-xl p-2.5"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          <AdminNotificationBell dark />
+          <span className="text-[0.52rem] font-medium text-[rgba(255,255,255,0.55)] mt-1 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
+            Notifs admin
+          </span>
+        </div>
+
+        {/* Box 3 — Refresh */}
+        <button
+          onClick={refreshAll}
+          className="flex-1 min-w-0 flex flex-col items-center rounded-xl p-2.5 bg-transparent cursor-pointer transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center text-[rgba(255,255,255,0.55)] text-[0.85rem]">
+            <i className="fas fa-sync-alt text-[0.8rem]"></i>
+          </div>
+          <span className="text-[0.52rem] font-medium text-[rgba(255,255,255,0.55)] mt-1 text-center whitespace-nowrap">
+            Actualiser
+          </span>
+        </button>
+      </div>
       <div className="flex-1 w-full overflow-y-auto min-h-0">
         {/* Tabs */}
         <div className="flex bg-[#0E0F11] border-b border-[rgba(255,255,255,0.06)] px-1 overflow-x-auto">
