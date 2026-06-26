@@ -208,13 +208,13 @@ function AuthScreen() {
   };
 
   return (
-    <section className="absolute inset-0 bg-gradient-to-br from-[#F0FDF4] via-[#F8F9FA] to-[#ECFDF5] flex flex-col items-center justify-center z-[200]">
+    <section className="absolute inset-0 bg-gradient-to-br from-[#F0FDF4] via-[#F8F9FA] to-[#ECFDF5] flex flex-col items-center justify-start sm:justify-center overflow-y-auto z-[200]">
       {/* Floating decorative orbs */}
       <div className="absolute w-[200px] h-[200px] rounded-full bg-[rgba(34,197,94,0.06)] blur-[80px] top-[15%] left-[10%]" style={{ animation: 'orbFloat 6s ease-in-out infinite' }} />
       <div className="absolute w-[160px] h-[160px] rounded-full bg-[rgba(20,184,166,0.05)] blur-[80px] bottom-[15%] right-[10%]" style={{ animation: 'orbFloat 6s ease-in-out infinite 3s reverse' }} />
       <div className="absolute w-[120px] h-[120px] rounded-full bg-[rgba(245,158,11,0.04)] blur-[80px] top-[50%] right-[25%]" style={{ animation: 'orbFloat 7s ease-in-out infinite 1.5s' }} />
 
-      <div className="w-full max-w-[330px] text-center px-5 relative z-[1]">
+      <div className="w-full max-w-[330px] text-center px-5 relative z-[1] py-6 my-auto">
         <LogoImg className="w-[100px] h-[100px] mx-auto mb-4" style={{ filter: 'drop-shadow(0 8px 32px rgba(34,197,94,0.25))' }} />
         <h1 className="text-[1.8rem] font-black mb-1 bg-gradient-to-r from-[#22C55E] to-[#16A34A] bg-clip-text text-transparent tracking-[2px]">BE RICH</h1>
         {/* Communication platform tagline */}
@@ -296,12 +296,17 @@ function AuthScreen() {
               ))}
             </div>
 
+            {/* Hint when code is incomplete */}
+            {otpCode.length < 6 && (
+              <p className="text-[0.65rem] text-[rgba(0,0,0,0.4)] mb-2"><i className="fas fa-info-circle mr-1"></i>Entrez les 6 chiffres reçus par email pour finaliser</p>
+            )}
+
             <button
               onClick={handleOtpVerify}
               disabled={otpLoading || otpCode.length < 6}
-              className="w-full py-3.5 rounded-xl btn-gradient-green text-[0.88rem] cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2 mb-3"
+              className="w-full py-3.5 rounded-xl btn-gradient-green text-[0.88rem] cursor-not-allowed disabled:opacity-60 enabled:cursor-pointer transition-transform active:scale-[0.97] flex items-center justify-center gap-2 mb-3"
             >
-              {otpLoading ? <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <><i className="fas fa-check-circle"></i> Vérifier</>}
+              {otpLoading ? <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <><i className="fas fa-check-circle"></i> Finaliser l&rsquo;inscription</>}
             </button>
 
             <button
@@ -341,7 +346,7 @@ function AuthScreen() {
                 <div className="mb-2.5 w-full relative"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Mot de passe</label><input name="password" type={showPw.r ? 'text' : 'password'} required placeholder="Min. 6 caractères" minLength={6} className={`w-full premium-input pr-11 ${errors.password ? '!border-[#F87171]' : ''}`} /><button type="button" onClick={() => setShowPw({ ...showPw, r: !showPw.r })} className="absolute right-3 top-[34px] bg-transparent border-none text-[rgba(0,0,0,0.35)] cursor-pointer p-0.5"><i className={`fas ${showPw.r ? 'fa-eye-slash' : 'fa-eye'}`}></i></button>{errors.password && <p className="text-[#F87171] text-[0.65rem] mt-0.5">{errors.password}</p>}</div>
                 <div className="mb-2.5 w-full relative"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Confirmer</label><input name="password2" type={showPw.r2 ? 'text' : 'password'} required placeholder="••••••••" className={`w-full premium-input pr-11 ${errors.password2 ? '!border-[#F87171]' : ''}`} /><button type="button" onClick={() => setShowPw({ ...showPw, r2: !showPw.r2 })} className="absolute right-3 top-[34px] bg-transparent border-none text-[rgba(0,0,0,0.35)] cursor-pointer p-0.5"><i className={`fas ${showPw.r2 ? 'fa-eye-slash' : 'fa-eye'}`}></i></button>{errors.password2 && <p className="text-[#F87171] text-[0.65rem] mt-0.5">{errors.password2}</p>}</div>
                 <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Code de parrainage <span className="opacity-50">(optionnel)</span></label><input name="referralCode" type="text" placeholder="BR-XXXXXX" defaultValue={prefilledReferral} className={`w-full premium-input ${prefilledReferral ? '!border-[#22C55E] !bg-[rgba(34,197,94,0.04)]' : ''}`} />{prefilledReferral && <p className="text-[#22C55E] text-[0.6rem] mt-0.5 font-medium"><i className="fas fa-user-friends mr-1"></i>Code de parrainage appliqué !</p>}</div>
-                <button type="submit" disabled={loading} className="w-full py-3.5 rounded-xl btn-gradient-green text-[0.88rem] cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">{loading ? <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <><i className="fas fa-user-plus"></i> Créer mon compte</>}</button>
+                <button type="submit" disabled={loading} className="w-full py-3.5 rounded-xl btn-gradient-green text-[0.88rem] cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">{loading ? <><div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /><span>Envoi du code...</span></> : <><i className="fas fa-user-plus"></i> Créer mon compte</>}</button>
               </form>
             )}
           </>
