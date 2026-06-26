@@ -118,6 +118,16 @@ function AuthScreen() {
       const data = await res.json();
       if (data.success) {
         setUser(data.user); addToast('Bienvenue, ' + data.user.name, 'success'); setPage('videos');
+      } else if (data.needs_verification) {
+        // Account exists but email isn't verified — switch to OTP screen.
+        setOtpEmail(email);
+        setOtpStep(true);
+        if (data.plain_code) {
+          setSimCode(data.plain_code);
+          addToast('Mode simulation - Code: ' + data.plain_code, 'info');
+        } else {
+          addToast('Code de vérification envoyé à ' + email, 'success');
+        }
       } else {
         addToast(data.error, 'error');
       }

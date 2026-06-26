@@ -2,7 +2,7 @@ import { db } from '@/lib/db';
 import { notifyUser, notifyAdmin } from '@/lib/notify';
 import { tryClaimReferralReward, getRequiredReferrals, needsMoreReferrals } from '@/lib/referral';
 import { NextResponse } from 'next/server';
-import { generateSessionToken } from '@/lib/auth';
+import { generateSessionToken, initiateOtp } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,10 +84,10 @@ export async function POST(request: Request) {
     const referralCode = await getUniqueReferralCode();
     const sessionToken = generateSessionToken();
 
-    // Create user with emailVerified = true — NO email verification step.
-    // The user is logged in directly after registration.
+    // Create user with emailVerified = false — must verify email via OTP
+    // before being able to log in.
     const user = await db.user.create({
-      data: { email, name, password, role: 'user', referralCode, referredByCode, emailVerified: true, phone, sessionToken },
+      data: { email, name, password, role: 'user', referralCode, referredByCode, emailVerified: false, phone, sessionToken },
     });
 
     // If referred, increment the referrer's referral count
@@ -114,52 +114,17 @@ export async function POST(request: Request) {
       userId: user.id,
     });
 
-    // Build the user payload (mirrors /api/auth/login) so the frontend can
-    // log the user in directly without any verification step.
-    const { password: _, sessionToken: __, ...safeUser } = user;
-
-    const [transactions, investments, activeTradesCount, activeEnterprisesCount, completedWithdrawals] = await Promise.all([
-      db.transaction.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } }),
-      db.investment.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } }),
-      db.trade.count({ where: { userId: user.id, resolved: false } }),
-      db.enterprise.count({ where: { userId: user.id, status: 'active' } }),
-      db.withdrawal.count({ where: { userId: user.id, status: 'approved' } }),
-    ]);
-
-    const now = new Date();
-    const activeInvestments = investments.filter((i) => i.status === 'active');
-    const claimableInvestments = activeInvestments.filter((i) => i.nextClaimAt && now >= i.nextClaimAt);
-
-    const firstDepositDate = user.firstDepositAt;
-    const canWithdraw = user.role === 'admin' ? true : firstDepositDate
-      ? (now.getTime() - new Date(firstDepositDate).getTime()) >= 48 * 60 * 60 * 1000
-      : false;
-
-    const hoursUntilWithdrawal = firstDepositDate && !canWithdraw
-      ? Math.ceil(48 - (now.getTime() - new Date(firstDepositDate).getTime()) / (60 * 60 * 1000))
-      : 0;
+    // Send OTP email for email verification (Gmail SMTP via nodemailer).
+    // The user must verify their email via the code received by email before
+    // being able to log in.
+    const otpResult = await initiateOtp(email, name, 'email_verification', 10);
 
     const response = NextResponse.json({
       success: true,
-      user: {
-        ...safeUser,
-        investBalance: user.investBalance,
-        tradeBalance: user.tradeBalance,
-        projectBalance: user.projectBalance,
-        totalProfit: user.totalProfit,
-        totalLoss: user.totalLoss,
-        transactions,
-        investments,
-        activeTradesCount,
-        activeEnterprisesCount,
-        claimableInvestments: claimableInvestments.length,
-        canWithdraw,
-        hoursUntilWithdrawal,
-        completedWithdrawals,
-        requiredReferrals: getRequiredReferrals(completedWithdrawals),
-        needsReferral: needsMoreReferrals(completedWithdrawals, user.referralCount),
-        unlockedLevel: user.unlockedLevel,
-      },
+      requires_verification: true,
+      email,
+      message: 'Vérifiez votre email pour activer votre compte',
+      plain_code: otpResult.plain_code, // only set in simulation mode (no Gmail creds)
     });
 
     // Anti-fraud (hidden): set the sessionToken as the br_token cookie.

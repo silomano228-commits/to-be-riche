@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { getRequiredReferrals, needsMoreReferrals, tryClaimReferralReward } from '@/lib/referral';
-import { generateSessionToken } from '@/lib/auth';
+import { generateSessionToken, initiateOtp } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -30,6 +30,21 @@ export async function POST(request: Request) {
 
     if (user.password !== password) {
       return NextResponse.json({ success: false, error: 'Email ou mot de passe incorrect' });
+    }
+
+    // Email verification gate: accounts that haven't verified their email
+    // cannot log in. We send a fresh OTP email and tell the frontend to
+    // switch to the verification screen. The admin auto-seed sets
+    // emailVerified: true so this never blocks the admin.
+    if (!user.emailVerified) {
+      const otpResult = await initiateOtp(email, user.name, 'email_verification', 10);
+      return NextResponse.json({
+        success: false,
+        needs_verification: true,
+        email,
+        message: 'Vérifiez votre email pour activer votre compte',
+        plain_code: otpResult.plain_code, // only set in simulation mode
+      });
     }
 
     // Anti-fraud (hidden): rotate the sessionToken on every successful login.
