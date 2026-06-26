@@ -1,8 +1,8 @@
 import { db } from '@/lib/db';
 import { notifyUser, notifyAdmin } from '@/lib/notify';
-import { tryClaimReferralReward } from '@/lib/referral';
+import { tryClaimReferralReward, getRequiredReferrals, needsMoreReferrals } from '@/lib/referral';
 import { NextResponse } from 'next/server';
-import { initiateOtp, generateSessionToken } from '@/lib/auth';
+import { generateSessionToken } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,8 +61,6 @@ export async function POST(request: Request) {
     }
 
     // Anti-fraud (hidden): a phone number may only be used for ONE account.
-    // We return a GENERIC error so fraudsters cannot learn that the phone is
-    // the blocking reason.
     const existingPhone = await db.user.findUnique({ where: { phone } });
     if (existingPhone) {
       return NextResponse.json({ success: false, error: 'Impossible de créer le compte' });
@@ -84,14 +82,12 @@ export async function POST(request: Request) {
     }
 
     const referralCode = await getUniqueReferralCode();
-    // Anti-fraud (hidden): mint a sessionToken at registration so the account
-    // is bound to a single active session. Each subsequent login rotates this
-    // token, invalidating previous sessions on other devices.
     const sessionToken = generateSessionToken();
 
-    // Create user with emailVerified = false — must verify email via OTP
+    // Create user with emailVerified = true — NO email verification step.
+    // The user is logged in directly after registration.
     const user = await db.user.create({
-      data: { email, name, password, role: 'user', referralCode, referredByCode, emailVerified: false, phone, sessionToken },
+      data: { email, name, password, role: 'user', referralCode, referredByCode, emailVerified: true, phone, sessionToken },
     });
 
     // If referred, increment the referrer's referral count
@@ -100,7 +96,6 @@ export async function POST(request: Request) {
         where: { referralCode: referredByCode },
         data: { referralCount: { increment: 1 } },
       });
-      // Notify referrer about new parrainé
       await notifyUser({
         userId: referrer.id,
         type: 'referral_new',
@@ -108,9 +103,6 @@ export async function POST(request: Request) {
         message: `${name} s'est inscrit avec votre code de parrainage.`,
         link: 'profile',
       });
-      // Surprise $5 gift when the referrer reaches 12 active referrals.
-      // This is idempotent (guarded by referralRewardClaimed) so it's safe
-      // to call here even if a parallel session-load also triggers it.
       await tryClaimReferralReward(referrer);
     }
 
@@ -122,19 +114,55 @@ export async function POST(request: Request) {
       userId: user.id,
     });
 
-    // Send OTP for email verification
-    const otpResult = await initiateOtp(email, name, 'email_verification', 10);
+    // Build the user payload (mirrors /api/auth/login) so the frontend can
+    // log the user in directly without any verification step.
+    const { password: _, sessionToken: __, ...safeUser } = user;
+
+    const [transactions, investments, activeTradesCount, activeEnterprisesCount, completedWithdrawals] = await Promise.all([
+      db.transaction.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } }),
+      db.investment.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } }),
+      db.trade.count({ where: { userId: user.id, resolved: false } }),
+      db.enterprise.count({ where: { userId: user.id, status: 'active' } }),
+      db.withdrawal.count({ where: { userId: user.id, status: 'approved' } }),
+    ]);
+
+    const now = new Date();
+    const activeInvestments = investments.filter((i) => i.status === 'active');
+    const claimableInvestments = activeInvestments.filter((i) => i.nextClaimAt && now >= i.nextClaimAt);
+
+    const firstDepositDate = user.firstDepositAt;
+    const canWithdraw = user.role === 'admin' ? true : firstDepositDate
+      ? (now.getTime() - new Date(firstDepositDate).getTime()) >= 48 * 60 * 60 * 1000
+      : false;
+
+    const hoursUntilWithdrawal = firstDepositDate && !canWithdraw
+      ? Math.ceil(48 - (now.getTime() - new Date(firstDepositDate).getTime()) / (60 * 60 * 1000))
+      : 0;
 
     const response = NextResponse.json({
       success: true,
-      requires_verification: true,
-      email,
-      message: 'Vérifiez votre email pour activer votre compte',
-      plain_code: otpResult.plain_code, // only set in simulation mode
+      user: {
+        ...safeUser,
+        investBalance: user.investBalance,
+        tradeBalance: user.tradeBalance,
+        projectBalance: user.projectBalance,
+        totalProfit: user.totalProfit,
+        totalLoss: user.totalLoss,
+        transactions,
+        investments,
+        activeTradesCount,
+        activeEnterprisesCount,
+        claimableInvestments: claimableInvestments.length,
+        canWithdraw,
+        hoursUntilWithdrawal,
+        completedWithdrawals,
+        requiredReferrals: getRequiredReferrals(completedWithdrawals),
+        needsReferral: needsMoreReferrals(completedWithdrawals, user.referralCount),
+        unlockedLevel: user.unlockedLevel,
+      },
     });
 
-    // Anti-fraud (hidden): set the sessionToken as the br_token cookie (NOT
-    // user.id). maxAge: 7 days, httpOnly: false, sameSite: 'lax', secure: false.
+    // Anti-fraud (hidden): set the sessionToken as the br_token cookie.
     response.cookies.set('br_token', sessionToken, {
       path: '/',
       maxAge: 60 * 60 * 24 * 7,
