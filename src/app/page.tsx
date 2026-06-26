@@ -333,20 +333,60 @@ function AuthScreen() {
             </div>
             {mode === 'login' ? (
               <form onSubmit={handleLogin}>
-                <div className="mb-4 w-full"><label className="block mb-1.5 text-[0.75rem] font-semibold text-[rgba(0,0,0,0.45)]">Email</label><input name="email" type="email" required placeholder="votre@email.com" className="w-full premium-input" /></div>
-                <div className="mb-4 w-full relative"><label className="block mb-1.5 text-[0.75rem] font-semibold text-[rgba(0,0,0,0.45)]">Mot de passe</label><input name="password" type={showPw.l ? 'text' : 'password'} required placeholder="••••••••" className="w-full premium-input pr-11" /><button type="button" onClick={() => setShowPw({ ...showPw, l: !showPw.l })} className="absolute right-3 top-[38px] bg-transparent border-none text-[rgba(0,0,0,0.35)] cursor-pointer p-0.5"><i className={`fas ${showPw.l ? 'fa-eye-slash' : 'fa-eye'}`}></i></button></div>
-                <button type="submit" disabled={loading} className="w-full py-3.5 rounded-xl btn-gradient-green text-[0.88rem] cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">{loading ? <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <><i className="fas fa-arrow-right"></i> Se connecter</>}</button>
-                <div className="mt-3"><a href="/forgot-password" className="text-[0.72rem] text-[#22C55E] font-medium hover:underline">Mot de passe oublié ?</a></div>
+                {/* Email */}
+                <div className="mb-2 w-full relative">
+                  <i className="fas fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgba(0,0,0,0.3)] text-[0.78rem] pointer-events-none"></i>
+                  <input name="email" type="email" required placeholder="Adresse email" className="w-full py-2.5 pl-10 pr-3.5 bg-white/80 border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.82rem] font-medium text-[#1F2937] placeholder:text-[rgba(0,0,0,0.35)] placeholder:font-normal outline-none focus:border-[#22C55E] focus:bg-white focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)] transition-all" />
+                </div>
+                {/* Mot de passe */}
+                <div className="mb-3 w-full relative">
+                  <i className="fas fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgba(0,0,0,0.3)] text-[0.78rem] pointer-events-none"></i>
+                  <input name="password" type={showPw.l ? 'text' : 'password'} required placeholder="Mot de passe" className="w-full py-2.5 pl-10 pr-10 bg-white/80 border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.82rem] font-medium text-[#1F2937] placeholder:text-[rgba(0,0,0,0.35)] placeholder:font-normal outline-none focus:border-[#22C55E] focus:bg-white focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)] transition-all" />
+                  <button type="button" onClick={() => setShowPw({ ...showPw, l: !showPw.l })} className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-[rgba(0,0,0,0.35)] cursor-pointer p-0.5"><i className={`fas ${showPw.l ? 'fa-eye-slash' : 'fa-eye'} text-[0.78rem]`}></i></button>
+                </div>
+                <button type="submit" disabled={loading} className="w-full py-3 rounded-xl btn-gradient-green text-[0.85rem] cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">{loading ? <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <><i className="fas fa-arrow-right"></i> Se connecter</>}</button>
+                <div className="mt-3"><a href="/forgot-password" className="text-[0.7rem] text-[#22C55E] font-medium hover:underline">Mot de passe oublié ?</a></div>
               </form>
             ) : (
               <form onSubmit={handleRegister}>
-                <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Nom complet</label><input name="name" type="text" required placeholder="Jean Dupont" minLength={2} className={`w-full premium-input ${errors.name ? '!border-[#F87171]' : ''}`} />{errors.name && <p className="text-[#F87171] text-[0.65rem] mt-0.5">{errors.name}</p>}</div>
-                <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Email</label><input name="email" type="email" required placeholder="votre@email.com" className="w-full premium-input" /></div>
-                <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Numéro de téléphone</label><input name="phone" type="tel" required placeholder="+228 90 12 34 56" className={`w-full premium-input ${errors.phone ? '!border-[#F87171]' : ''}`} />{errors.phone && <p className="text-[#F87171] text-[0.65rem] mt-0.5">{errors.phone}</p>}</div>
-                <div className="mb-2.5 w-full relative"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Mot de passe</label><input name="password" type={showPw.r ? 'text' : 'password'} required placeholder="Min. 6 caractères" minLength={6} className={`w-full premium-input pr-11 ${errors.password ? '!border-[#F87171]' : ''}`} /><button type="button" onClick={() => setShowPw({ ...showPw, r: !showPw.r })} className="absolute right-3 top-[34px] bg-transparent border-none text-[rgba(0,0,0,0.35)] cursor-pointer p-0.5"><i className={`fas ${showPw.r ? 'fa-eye-slash' : 'fa-eye'}`}></i></button>{errors.password && <p className="text-[#F87171] text-[0.65rem] mt-0.5">{errors.password}</p>}</div>
-                <div className="mb-2.5 w-full relative"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Confirmer</label><input name="password2" type={showPw.r2 ? 'text' : 'password'} required placeholder="••••••••" className={`w-full premium-input pr-11 ${errors.password2 ? '!border-[#F87171]' : ''}`} /><button type="button" onClick={() => setShowPw({ ...showPw, r2: !showPw.r2 })} className="absolute right-3 top-[34px] bg-transparent border-none text-[rgba(0,0,0,0.35)] cursor-pointer p-0.5"><i className={`fas ${showPw.r2 ? 'fa-eye-slash' : 'fa-eye'}`}></i></button>{errors.password2 && <p className="text-[#F87171] text-[0.65rem] mt-0.5">{errors.password2}</p>}</div>
-                <div className="mb-2.5 w-full"><label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(0,0,0,0.45)]">Code de parrainage <span className="opacity-50">(optionnel)</span></label><input name="referralCode" type="text" placeholder="BR-XXXXXX" defaultValue={prefilledReferral} className={`w-full premium-input ${prefilledReferral ? '!border-[#22C55E] !bg-[rgba(34,197,94,0.04)]' : ''}`} />{prefilledReferral && <p className="text-[#22C55E] text-[0.6rem] mt-0.5 font-medium"><i className="fas fa-user-friends mr-1"></i>Code de parrainage appliqué !</p>}</div>
-                <button type="submit" disabled={loading} className="w-full py-3.5 rounded-xl btn-gradient-green text-[0.88rem] cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">{loading ? <><div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /><span>Envoi du code...</span></> : <><i className="fas fa-user-plus"></i> Créer mon compte</>}</button>
+                {/* Nom complet */}
+                <div className="mb-1.5 w-full relative">
+                  <i className="fas fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgba(0,0,0,0.3)] text-[0.78rem] pointer-events-none"></i>
+                  <input name="name" type="text" required placeholder="Nom complet" minLength={2} className={`w-full py-2.5 pl-10 pr-3.5 bg-white/80 border-[1.5px] ${errors.name ? 'border-[#F87171]' : 'border-[rgba(0,0,0,0.08)]'} rounded-xl text-[0.82rem] font-medium text-[#1F2937] placeholder:text-[rgba(0,0,0,0.35)] placeholder:font-normal outline-none focus:border-[#22C55E] focus:bg-white focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)] transition-all`} />
+                  {errors.name && <p className="text-[#F87171] text-[0.6rem] mt-0.5 text-left ml-1">{errors.name}</p>}
+                </div>
+                {/* Email */}
+                <div className="mb-1.5 w-full relative">
+                  <i className="fas fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgba(0,0,0,0.3)] text-[0.78rem] pointer-events-none"></i>
+                  <input name="email" type="email" required placeholder="Adresse email" className="w-full py-2.5 pl-10 pr-3.5 bg-white/80 border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.82rem] font-medium text-[#1F2937] placeholder:text-[rgba(0,0,0,0.35)] placeholder:font-normal outline-none focus:border-[#22C55E] focus:bg-white focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)] transition-all" />
+                </div>
+                {/* Téléphone */}
+                <div className="mb-1.5 w-full relative">
+                  <i className="fas fa-phone absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgba(0,0,0,0.3)] text-[0.78rem] pointer-events-none"></i>
+                  <input name="phone" type="tel" required placeholder="Numéro de téléphone (ex: +228 90 12 34 56)" className={`w-full py-2.5 pl-10 pr-3.5 bg-white/80 border-[1.5px] ${errors.phone ? 'border-[#F87171]' : 'border-[rgba(0,0,0,0.08)]'} rounded-xl text-[0.82rem] font-medium text-[#1F2937] placeholder:text-[rgba(0,0,0,0.35)] placeholder:font-normal outline-none focus:border-[#22C55E] focus:bg-white focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)] transition-all`} />
+                  {errors.phone && <p className="text-[#F87171] text-[0.6rem] mt-0.5 text-left ml-1">{errors.phone}</p>}
+                </div>
+                {/* Mot de passe */}
+                <div className="mb-1.5 w-full relative">
+                  <i className="fas fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgba(0,0,0,0.3)] text-[0.78rem] pointer-events-none"></i>
+                  <input name="password" type={showPw.r ? 'text' : 'password'} required placeholder="Mot de passe (min. 6 caractères)" minLength={6} className={`w-full py-2.5 pl-10 pr-10 bg-white/80 border-[1.5px] ${errors.password ? 'border-[#F87171]' : 'border-[rgba(0,0,0,0.08)]'} rounded-xl text-[0.82rem] font-medium text-[#1F2937] placeholder:text-[rgba(0,0,0,0.35)] placeholder:font-normal outline-none focus:border-[#22C55E] focus:bg-white focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)] transition-all`} />
+                  <button type="button" onClick={() => setShowPw({ ...showPw, r: !showPw.r })} className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-[rgba(0,0,0,0.35)] cursor-pointer p-0.5"><i className={`fas ${showPw.r ? 'fa-eye-slash' : 'fa-eye'} text-[0.78rem]`}></i></button>
+                  {errors.password && <p className="text-[#F87171] text-[0.6rem] mt-0.5 text-left ml-1">{errors.password}</p>}
+                </div>
+                {/* Confirmer */}
+                <div className="mb-1.5 w-full relative">
+                  <i className="fas fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgba(0,0,0,0.3)] text-[0.78rem] pointer-events-none"></i>
+                  <input name="password2" type={showPw.r2 ? 'text' : 'password'} required placeholder="Confirmer le mot de passe" className={`w-full py-2.5 pl-10 pr-10 bg-white/80 border-[1.5px] ${errors.password2 ? 'border-[#F87171]' : 'border-[rgba(0,0,0,0.08)]'} rounded-xl text-[0.82rem] font-medium text-[#1F2937] placeholder:text-[rgba(0,0,0,0.35)] placeholder:font-normal outline-none focus:border-[#22C55E] focus:bg-white focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)] transition-all`} />
+                  <button type="button" onClick={() => setShowPw({ ...showPw, r2: !showPw.r2 })} className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-[rgba(0,0,0,0.35)] cursor-pointer p-0.5"><i className={`fas ${showPw.r2 ? 'fa-eye-slash' : 'fa-eye'} text-[0.78rem]`}></i></button>
+                  {errors.password2 && <p className="text-[#F87171] text-[0.6rem] mt-0.5 text-left ml-1">{errors.password2}</p>}
+                </div>
+                {/* Code de parrainage (optionnel) */}
+                <div className="mb-3 w-full relative">
+                  <i className="fas fa-gift absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgba(0,0,0,0.3)] text-[0.78rem] pointer-events-none"></i>
+                  <input name="referralCode" type="text" placeholder="Code de parrainage (optionnel)" defaultValue={prefilledReferral} className={`w-full py-2.5 pl-10 pr-3.5 bg-white/80 border-[1.5px] ${prefilledReferral ? 'border-[#22C55E] !bg-[rgba(34,197,94,0.04)]' : 'border-[rgba(0,0,0,0.08)]'} rounded-xl text-[0.82rem] font-medium text-[#1F2937] placeholder:text-[rgba(0,0,0,0.35)] placeholder:font-normal outline-none focus:border-[#22C55E] focus:bg-white focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)] transition-all`} />
+                  {prefilledReferral && <p className="text-[#22C55E] text-[0.6rem] mt-0.5 text-left ml-1 font-medium"><i className="fas fa-user-friends mr-1"></i>Code de parrainage appliqué !</p>}
+                </div>
+                <button type="submit" disabled={loading} className="w-full py-3 rounded-xl btn-gradient-green text-[0.85rem] cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">{loading ? <><div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /><span>Envoi du code...</span></> : <><i className="fas fa-user-plus"></i> Créer mon compte</>}</button>
               </form>
             )}
           </>
