@@ -89,7 +89,7 @@ export async function POST(request: Request) {
           userId: deposit.userId,
           type: 'investment_rejected',
           title: 'Dépôt d\'investissement Yas rejeté',
-          message: `Votre demande de dépôt d'investissement de ${deposit.amountCfa.toLocaleString()} FCFA (${deposit.amountUsd.toFixed(2)} $) a été rejetée par l'administrateur. Aucun fonds n'a été débité.`,
+          message: `Votre demande de dépôt d'investissement de ${deposit.amountCfa.toLocaleString()} FCFA (${deposit.amountUsd.toFixed(2)} $) a été rejetée par l'administrateur. Aucun fonds n'a été débité. Actualisez votre page régulièrement pour voir votre solde à jour.`,
           link: 'invest',
         });
       } else {
@@ -97,7 +97,7 @@ export async function POST(request: Request) {
           userId: deposit.userId,
           type: 'deposit_rejected',
           title: 'Dépôt Yas rejeté',
-          message: `Votre dépôt de ${deposit.amountCfa.toLocaleString()} FCFA a été rejeté.`,
+          message: `Votre dépôt de ${deposit.amountCfa.toLocaleString()} FCFA a été rejeté. Actualisez votre page régulièrement pour voir votre solde à jour.`,
           link: 'deposit',
         });
       }
@@ -151,7 +151,7 @@ export async function POST(request: Request) {
         userId: deposit.userId,
         type: 'investment_approved',
         title: 'Investissement approuvé !',
-        message: `Votre dépôt d'investissement ${levelLabel} de ${deposit.amountCfa.toLocaleString()} FCFA (${invAmount.toFixed(2)} $) a été approuvé. L'investissement est maintenant actif et le compte à rebours a démarré — vous pourrez collecter vos premiers gains dans 24h.`,
+        message: `Votre dépôt d'investissement ${levelLabel} de ${deposit.amountCfa.toLocaleString()} FCFA (${invAmount.toFixed(2)} $) a été approuvé. Votre investissement a été activé. Le compte à rebours de 24h a démarré — vous pourrez collecter vos premiers gains demain. Actualisez votre page régulièrement pour voir votre solde à jour.`,
         link: 'invest',
       });
 
@@ -216,7 +216,7 @@ export async function POST(request: Request) {
       userId: deposit.userId,
       type: 'deposit_approved',
       title: 'Dépôt Yas approuvé !',
-      message: `Votre dépôt de ${deposit.amountCfa.toLocaleString()} FCFA (${deposit.amountUsd.toFixed(2)} $) a été approuvé et crédité.`,
+      message: `Votre dépôt de ${deposit.amountCfa.toLocaleString()} FCFA (${deposit.amountUsd.toFixed(2)} $) a été approuvé et crédité. Actualisez votre page régulièrement pour voir votre solde à jour.`,
       link: 'wallet',
     });
 

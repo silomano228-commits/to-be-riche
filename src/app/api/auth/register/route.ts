@@ -63,12 +63,12 @@ export async function POST(request: Request) {
     // Anti-fraud (hidden): a phone number may only be used for ONE account.
     const existingPhone = await db.user.findUnique({ where: { phone } });
     if (existingPhone) {
-      return NextResponse.json({ success: false, error: 'Impossible de créer le compte' });
+      return NextResponse.json({ success: false, error: 'Ce numéro de téléphone est déjà utilisé. Un seul compte par numéro de téléphone.' });
     }
 
     const existing = await db.user.findUnique({ where: { email } });
     if (existing) {
-      return NextResponse.json({ success: false, error: 'Email déjà utilisé' });
+      return NextResponse.json({ success: false, error: 'Cette adresse email est déjà utilisée. Un seul compte par adresse email.' });
     }
 
     // Validate referral code if provided

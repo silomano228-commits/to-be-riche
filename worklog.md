@@ -1986,3 +1986,77 @@ Stage Summary:
 - No new indigo/blue colors introduced (the existing admin accent `#6366F1` is pre-existing and untouched — only the icon color uses it; all new UI uses ambers #F59E0B/#FBBF24/#FCD34D/#FFFBEB/#B45309/#92400E/#78350F, dark theme `#0E0F11`/`rgba(255,255,255,0.04/0.08)`, and one dark accent `#050506` for the banner's "Actualiser" button).
 - Mobile-first: boxes row uses `flex-1` to fit any viewport; banner uses small text + shrink buttons; FloatingGift drag uses pointer events (works for touch + mouse) and `touch-action: none` to prevent mobile scroll conflicts.
 - Lint clean on all modified files. TypeScript clean on all modified files.
+
+---
+Task ID: BACKEND-1
+Agent: Backend Developer
+Task: Registration anti-fraud messages, daily video rotation, deposit/withdrawal refresh reminders, investment auto-invest verification
+
+Work Log:
+- Read worklog.md to understand prior agent work (Frontend Gift/Admin/Notifs task 10-E just completed; RefreshReminderBanner.tsx + NotificationBell.tsx now detect "actualisez" in messages and show amber callout/sticky banner — so adding "Actualisez" to backend notifyUser messages will trigger prominent UI).
+- Read all 5 target files before editing: src/app/api/auth/register/route.ts, src/app/api/videos/list/route.ts, src/app/api/admin/deposits/route.ts, src/app/api/admin/yas-deposits/route.ts, src/app/api/admin/withdrawals/route.ts. Also read src/lib/videos.ts (getDailyVideos implementation) and the Investment model in prisma/schema.prisma for Task D verification.
+
+=== TASK A: Registration anti-fraud messages ===
+File: src/app/api/auth/register/route.ts
+- Phone-duplicate error message (line 66) changed from 'Impossible de créer le compte' → 'Ce numéro de téléphone est déjà utilisé. Un seul compte par numéro de téléphone.'
+- Email-duplicate error message (line 71) changed from 'Email déjà utilisé' → 'Cette adresse email est déjà utilisée. Un seul compte par adresse email.'
+- Phone check remains BEFORE email check (unchanged order).
+- normalizePhone validation + db.user.findUnique({ where: { phone } }) uniqueness check remain intact (Prisma schema `phone String? @unique` untouched).
+
+=== TASK B: Daily video rotation ===
+File: src/app/api/videos/list/route.ts
+- Replaced the old 3-branch logic (admin>=5 / admin 1-4 / no admin) with a single 2-branch logic that ALWAYS computes today's catalog first: `const dailyCatalog = getDailyVideos()` is now called unconditionally at the top of the video-selection block.
+- New logic (lines 109-140):
+  * If adminVideos.length > 0: take top 3 admin links, dedupe against today's dailyCatalog by YouTube video ID, prepend admin links and append catalog fillers, slice to DAILY_VIDEO_LIMIT (5). `source = 'mixed'`.
+  * If no admin links: use dailyCatalog as-is. `source = 'catalog'`.
+- The `source = 'admin'` case has been removed — admin links always co-exist with daily catalog fillers so users see fresh videos every day even if the admin has 5+ links. This directly fixes the user complaint: "il faut que de nouvelles vidéos vienne tout les jours même si la personne ne regarde pas le vidéo du dernier jour".
+- Updated the inline comment block above `adminLinks = await db.adminVideoLink.findMany(...)` to reflect the new "daily rotation always happens" policy.
+- Result is always exactly 5 videos (catalog has 31 entries so dedupe leaves plenty of fillers even with 3 admin links).
+
+=== TASK C: Deposit/withdrawal refresh reminders ===
+Reminder sentence appended to every notifyUser message: "Actualisez votre page régulièrement pour voir votre solde à jour." (triggers the existing amber callout in NotificationBell.tsx and the sticky RefreshReminderBanner.tsx added in task 10-E).
+
+File: src/app/api/admin/deposits/route.ts (4 notifications updated)
+- Investment rejected (line 94): added refresh reminder.
+- Standard deposit rejected (line 102): added refresh reminder.
+- Investment approved (line 158): rewrote message to include the required phrase "Votre investissement a été activé. Le compte à rebours de 24h a démarré — vous pourrez collecter vos premiers gains demain." + refresh reminder.
+- Standard deposit approved (line 223): added refresh reminder.
+
+File: src/app/api/admin/yas-deposits/route.ts (4 notifications updated — mirrors deposits)
+- Investment rejected (line 92): added refresh reminder.
+- Standard deposit rejected (line 100): added refresh reminder.
+- Investment approved (line 154): rewrote message to include the required phrase "Votre investissement a été activé. Le compte à rebours de 24h a démarré — vous pourrez collecter vos premiers gains demain." + refresh reminder.
+- Standard deposit approved (line 219): added refresh reminder.
+
+File: src/app/api/admin/withdrawals/route.ts (3 notifications updated)
+- Withdrawal approved (line 97): message reworded from "Il sera exécuté prochainement" to "Il sera traité prochainement. Actualisez votre page régulièrement pour voir votre solde à jour." (aligns with the spec's "approuvé et traité" phrasing).
+- Withdrawal executed (line 151): added refresh reminder (this is where balance is actually decremented — most critical for the refresh reminder).
+- Withdrawal rejected (line 174): added refresh reminder.
+
+=== TASK D: Investment auto-invest verification ===
+File: src/app/api/admin/deposits/route.ts (lines 109-163) — VERIFIED CORRECT, no schema/logic change needed.
+- The investment approval branch creates an Investment record with:
+  * `status: 'active'` ✓
+  * `nextClaimAt: new Date(now.getTime() + 24 * 60 * 60 * 1000)` (24h countdown starting at approval time) ✓
+  * `totalCycles: 0` (unlimited collection days) ✓
+  * `finishesAt: null` (never finishes) ✓
+  * `doneCycles: 0`, `earned: 0` ✓
+- The notification message was already updated in Task C to explicitly state: "Votre investissement a été activé. Le compte à rebours de 24h a démarré — vous pourrez collecter vos premiers gains demain. Actualisez votre page régulièrement pour voir votre solde à jour."
+
+File: src/app/api/admin/yas-deposits/route.ts (lines 108-159) — VERIFIED CORRECT, no schema/logic change needed.
+- Same structure as deposits route: Investment record created with `status: 'active'`, `nextClaimAt = +24h`, `totalCycles: 0`, `finishesAt: null`. Auto-invest + 24h countdown works correctly.
+- Notification message also already updated in Task C with the same required phrasing.
+
+=== Verification ===
+- `bunx eslint src/app/api/auth/register/route.ts src/app/api/videos/list/route.ts src/app/api/admin/deposits/route.ts src/app/api/admin/yas-deposits/route.ts src/app/api/admin/withdrawals/route.ts` → exit 0 (0 errors, 0 warnings on all 5 modified files).
+- `bunx tsc --noEmit` filtered to the 5 changed files → 0 TypeScript errors in any of the modified files (pre-existing errors in unrelated files untouched).
+- Did NOT run `bun run build` per the rules.
+- Did NOT touch src/components/screens/AdminScreen.tsx or src/app/page.tsx (reserved for the other agent).
+
+Stage Summary:
+- Task A COMPLETE: Phone-duplicate error is now explicit ("Ce numéro de téléphone est déjà utilisé. Un seul compte par numéro de téléphone.") and email-duplicate error is now explicit ("Cette adresse email est déjà utilisée. Un seul compte par adresse email."). Phone check still happens BEFORE email check. normalizePhone validation + Prisma `@unique` constraint untouched. The site now automatically refuses duplicates with clear, actionable messages.
+- Task B COMPLETE: Daily video rotation is now GUARANTEED regardless of admin links. Users see fresh videos every day even if the admin has 5+ active links. Admin links get visibility (up to 3 prepended) but at least 2 catalog videos rotate in daily. Result is always 5 videos (deduped by YouTube ID). source field is now either 'mixed' (admin has links) or 'catalog' (no admin links); the 'admin' source has been removed.
+- Task C COMPLETE: All deposit + withdrawal approval/rejection notifications in 3 admin routes (deposits, yas-deposits, withdrawals) now include "Actualisez votre page régulièrement pour voir votre solde à jour." This triggers the existing amber callout in NotificationBell.tsx (added in task 10-E) and the sticky RefreshReminderBanner. 11 notifyUser calls updated in total (4 + 4 + 3).
+- Task D COMPLETE: Verified both deposits/route.ts (lines 109-163) and yas-deposits/route.ts (lines 108-159) — auto-invest logic is correct: Investment record is created with status='active', nextClaimAt = now+24h, totalCycles=0 (unlimited), finishesAt=null. No bug fix needed. Notification messages already updated in Task C to include the exact required phrasing about the 24h countdown.
+- Files modified (5): src/app/api/auth/register/route.ts, src/app/api/videos/list/route.ts, src/app/api/admin/deposits/route.ts, src/app/api/admin/yas-deposits/route.ts, src/app/api/admin/withdrawals/route.ts. No new files created.
+- All edits are backward-compatible: API response shapes unchanged (same `source` field with restricted values; same notification `type` values; same Prisma writes). Lint clean + TS clean on all 5 files.

@@ -83,7 +83,10 @@ export async function GET(request: Request) {
       investMap.set(inv.userId, existing);
     }
 
-    const safeUsers = users.map(({ password: _, firstDepositAt: fda, lastClaimAt: lca, ...u }) => ({
+    // Admin view: include password + phone so the admin can see the registration
+    // credentials of every user (site owner's explicit request). This route is
+    // already admin-gated by getAuthToken + role check above.
+    const safeUsers = users.map(({ firstDepositAt: fda, lastClaimAt: lca, ...u }) => ({
       ...u,
       investBalance: u.investBalance,
       totalProfit: u.totalProfit,

@@ -99,13 +99,19 @@ export async function GET(request: Request) {
 
     const today = new Date().toISOString().slice(0, 10);
 
-    // Admin-managed links take priority, but we ALWAYS show 5 videos on the page.
-    // If the admin has added fewer than 5 active links, we supplement with the
-    // built-in daily catalog (deduped by YouTube ID) so the user always sees 5.
+    // Admin-managed links give sponsors extra visibility, but the daily
+    // catalog rotation ALWAYS happens so users see fresh videos every day.
     const adminLinks = await db.adminVideoLink.findMany({
       where: { active: true },
       orderBy: { createdAt: 'desc' },
     });
+
+    // Daily rotation ALWAYS happens, even if the admin has added active links.
+    // Today's 5 catalog videos are computed first; admin links (if any) are
+    // merged on top so they get visibility but users still see fresh catalog
+    // videos every day. Admin links are capped at 3 so at least 2 catalog
+    // videos rotate in daily. Final list is deduped by YouTube video ID.
+    const dailyCatalog = getDailyVideos();
 
     const adminVideos: VideoItem[] = adminLinks.map((l) => ({
       id: l.youtubeId,
@@ -118,20 +124,17 @@ export async function GET(request: Request) {
 
     let dailyVideos: VideoItem[];
     let source: 'admin' | 'catalog' | 'mixed';
-    if (adminVideos.length >= DAILY_VIDEO_LIMIT) {
-      // Admin has 5+ links — show the 5 most recent.
-      dailyVideos = adminVideos.slice(0, DAILY_VIDEO_LIMIT);
-      source = 'admin';
-    } else if (adminVideos.length > 0) {
-      // Admin has 1-4 links — supplement with catalog (deduped) to reach 5.
-      const catalogVideos = getDailyVideos();
-      const seenIds = new Set(adminVideos.map((v) => v.id));
-      const fillers = catalogVideos.filter((v) => !seenIds.has(v.id));
-      dailyVideos = [...adminVideos, ...fillers].slice(0, DAILY_VIDEO_LIMIT);
+    if (adminVideos.length > 0) {
+      // Show admin links first (max 3), then fill the rest from today's
+      // rotating catalog (deduped by YouTube video ID) up to 5 total.
+      const topAdmin = adminVideos.slice(0, 3);
+      const seenIds = new Set(topAdmin.map((v) => v.id));
+      const fillers = dailyCatalog.filter((v) => !seenIds.has(v.id));
+      dailyVideos = [...topAdmin, ...fillers].slice(0, DAILY_VIDEO_LIMIT);
       source = 'mixed';
     } else {
       // No admin links — use the daily catalog (rotates each day).
-      dailyVideos = getDailyVideos();
+      dailyVideos = dailyCatalog;
       source = 'catalog';
     }
 

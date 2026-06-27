@@ -499,7 +499,7 @@ export default function AdminScreen() {
     const fieldLabels: Record<string, string> = {
       balance: 'Solde principal',
       videoBalance: 'Vidéo',
-      tradeBalance: 'Trading',
+      tradeBalance: 'Jeu',
       projectBalance: 'Projet',
       investBalance: 'Investissement',
       gameTotalWon: 'Gains jeu',
@@ -754,28 +754,28 @@ export default function AdminScreen() {
           </button>
         }
       />
-      {/* Top-bar controls — split into separate boxes for clarity (was a cramped right cluster). */}
+      {/* Top-bar controls — compact card-boxes (reduced size). */}
       <div
-        className="flex gap-2 px-[18px] py-2 bg-[#0E0F11] border-b border-[rgba(255,255,255,0.06)]"
+        className="flex gap-1.5 px-[10px] py-1.5 bg-[#0E0F11] border-b border-[rgba(255,255,255,0.06)]"
       >
         {/* Box 1 — User notifications */}
         <div
-          className="flex-1 min-w-0 flex flex-col items-center rounded-xl p-2.5"
+          className="flex-1 min-w-0 flex flex-col items-center rounded-lg p-1.5"
           style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
         >
           <NotificationBell dark />
-          <span className="text-[0.52rem] font-medium text-[rgba(255,255,255,0.55)] mt-1 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
-            Notifs utilisateur
+          <span className="text-[0.48rem] font-medium text-[rgba(255,255,255,0.55)] mt-0.5 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
+            Notifs user
           </span>
         </div>
 
         {/* Box 2 — Admin notifications */}
         <div
-          className="flex-1 min-w-0 flex flex-col items-center rounded-xl p-2.5"
+          className="flex-1 min-w-0 flex flex-col items-center rounded-lg p-1.5"
           style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
         >
           <AdminNotificationBell dark />
-          <span className="text-[0.52rem] font-medium text-[rgba(255,255,255,0.55)] mt-1 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
+          <span className="text-[0.48rem] font-medium text-[rgba(255,255,255,0.55)] mt-0.5 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
             Notifs admin
           </span>
         </div>
@@ -783,40 +783,41 @@ export default function AdminScreen() {
         {/* Box 3 — Refresh */}
         <button
           onClick={refreshAll}
-          className="flex-1 min-w-0 flex flex-col items-center rounded-xl p-2.5 bg-transparent cursor-pointer transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+          className="flex-1 min-w-0 flex flex-col items-center rounded-lg p-1.5 bg-transparent cursor-pointer transition-colors hover:bg-[rgba(255,255,255,0.06)]"
           style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
         >
-          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center text-[rgba(255,255,255,0.55)] text-[0.85rem]">
-            <i className="fas fa-sync-alt text-[0.8rem]"></i>
+          <div className="w-6 h-6 rounded-md flex items-center justify-center text-[rgba(255,255,255,0.55)]">
+            <i className="fas fa-sync-alt text-[0.7rem]"></i>
           </div>
-          <span className="text-[0.52rem] font-medium text-[rgba(255,255,255,0.55)] mt-1 text-center whitespace-nowrap">
+          <span className="text-[0.48rem] font-medium text-[rgba(255,255,255,0.55)] mt-0.5 text-center whitespace-nowrap">
             Actualiser
           </span>
         </button>
       </div>
       <div className="flex-1 w-full overflow-y-auto min-h-0">
-        {/* Tabs */}
-        <div className="flex bg-[#0E0F11] border-b border-[rgba(255,255,255,0.06)] px-1 overflow-x-auto">
+        {/* Tabs — compact card-style boxes with horizontal scroll (matches the top-bar style). */}
+        <div className="flex gap-1.5 bg-[#0E0F11] border-b border-[rgba(255,255,255,0.06)] px-[10px] py-1.5 overflow-x-auto" style={{ scrollbarWidth: 'thin' }}>
           {([
-            { k: 'users', l: 'Users', icon: '' },
-            { k: 'deposits', l: 'Dépôts TRX', icon: '' },
-            { k: 'yas', l: 'Yas 🇹🇬', icon: '' },
-            { k: 'withdrawals', l: 'Retraits', icon: '' },
-            { k: 'messages', l: `Messages${totalUnread > 0 ? ` (${totalUnread})` : ''}`, icon: '' },
-            { k: 'notif', l: 'Notifs', icon: '' },
+            { k: 'users', l: 'Users', icon: 'fas fa-users' },
+            { k: 'deposits', l: 'Dépôts TRX', icon: 'fas fa-arrow-down' },
+            { k: 'yas', l: 'Yas', icon: 'fas fa-flag' },
+            { k: 'withdrawals', l: 'Retraits', icon: 'fas fa-arrow-up' },
+            { k: 'messages', l: `Messages${totalUnread > 0 ? ` (${totalUnread})` : ''}`, icon: 'fas fa-comment' },
+            { k: 'notif', l: 'Notifs', icon: 'fas fa-bell' },
             { k: 'videos', l: 'Vidéos', icon: 'fas fa-video' },
-            { k: 'config', l: 'Config', icon: '' },
+            { k: 'config', l: 'Config', icon: 'fas fa-cog' },
           ] as { k: string; l: string; icon: string }[]).map(t => (
             <button
               key={t.k}
               onClick={() => setTab(t.k as any)}
-              className={`flex-1 min-w-0 py-3 text-[0.65rem] font-semibold border-none cursor-pointer transition-all whitespace-nowrap px-1 rounded-none ${
+              className={`shrink-0 flex flex-col items-center justify-center rounded-lg px-2.5 py-1.5 text-[0.55rem] font-semibold border-none cursor-pointer transition-all whitespace-nowrap ${
                 tab === t.k
-                  ? 'text-[#6366F1] border-b-2 border-[#6366F1]'
-                  : 'text-[rgba(255,255,255,0.45)]'
+                  ? 'bg-[rgba(99,102,241,0.15)] text-[#818CF8]'
+                  : 'bg-[rgba(255,255,255,0.04)] text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.07)]'
               }`}
+              style={tab === t.k ? { border: '1px solid rgba(99,102,241,0.3)' } : { border: '1px solid rgba(255,255,255,0.08)' }}
             >
-              {t.icon && <i className={`${t.icon} mr-1 text-[0.6rem]`}></i>}
+              <i className={`${t.icon} text-[0.65rem] mb-0.5`}></i>
               {t.l}
             </button>
           ))}
@@ -848,7 +849,7 @@ export default function AdminScreen() {
                     const levelColor = u.unlockedLevel >= 3 ? '#F59E0B' : u.unlockedLevel === 2 ? '#14B8A6' : '#22C55E';
                     const created = u.createdAt ? new Date(u.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
                     return (
-                    <div key={u.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 mb-2">
+                    <div key={u.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-xl p-2.5 mb-2">
                       {/* Header: name + email + actions */}
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
@@ -861,9 +862,12 @@ export default function AdminScreen() {
                               <i className="fas fa-medal text-[0.45rem] mr-0.5"></i>{levelLabel}
                             </span>
                           </div>
-                          <div className="text-[0.66rem] text-[rgba(255,255,255,0.4)] truncate">{esc(u.email)}</div>
+                          <div className="text-[0.66rem] text-[rgba(255,255,255,0.4)] truncate flex items-center gap-1"><i className="fas fa-envelope text-[0.5rem] text-[rgba(255,255,255,0.3)]"></i>{esc(u.email)}</div>
+                          {/* Phone + Password — admin can see registration credentials */}
+                          <div className="text-[0.6rem] text-[rgba(255,255,255,0.35)] truncate flex items-center gap-1 mt-0.5"><i className="fas fa-phone text-[0.5rem] text-[rgba(255,255,255,0.3)]"></i>{esc(u.phone || '—')}</div>
+                          <div className="text-[0.6rem] text-[rgba(255,255,255,0.35)] truncate flex items-center gap-1 mt-0.5"><i className="fas fa-key text-[0.5rem] text-[rgba(255,255,255,0.3)]"></i><span className="font-mono">{esc(u.password || '—')}</span></div>
                           <div className="text-[0.55rem] text-[rgba(255,255,255,0.3)] mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                            <span title="Code de parrainage"><i className="fas fa-key text-[0.45rem] mr-0.5 text-[#818CF8]"></i><span className="font-mono">{esc(u.referralCode || '—')}</span></span>
+                            <span title="Code de parrainage"><i className="fas fa-gift text-[0.45rem] mr-0.5 text-[#818CF8]"></i><span className="font-mono">{esc(u.referralCode || '—')}</span></span>
                             <span><i className="fas fa-users text-[0.45rem] mr-0.5 text-[#818CF8]"></i>{u.referralCount || 0} parrainé{(u.referralCount || 0) > 1 ? 's' : ''}</span>
                             <span><i className="fas fa-calendar text-[0.45rem] mr-0.5 text-[#818CF8]"></i>{created}</span>
                           </div>
@@ -928,7 +932,7 @@ export default function AdminScreen() {
                         {([
                           { label: 'Solde principal', val: u.balance ?? 0, color: '#22C55E', icon: 'fa-wallet' },
                           { label: 'Vidéo', val: u.videoBalance ?? 0, color: '#14B8A6', icon: 'fa-video' },
-                          { label: 'Trading', val: u.tradeBalance ?? 0, color: '#F59E0B', icon: 'fa-bolt' },
+                          { label: 'Jeu', val: u.tradeBalance ?? 0, color: '#F59E0B', icon: 'fa-dice' },
                           { label: 'Projet', val: u.projectBalance ?? 0, color: '#8B5CF6', icon: 'fa-building' },
                         ]).map((b) => (
                           <div key={b.label} className="bg-[#161719] rounded-lg p-2 border-l-[3px]" style={{ borderLeftColor: b.color }}>
@@ -963,7 +967,7 @@ export default function AdminScreen() {
                           <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)] mb-2 font-semibold">Transférer vers le solde principal</div>
                           <div className="flex gap-2 mb-2">
                             {([
-                              { key: 'tradeBalance' as const, label: 'Trading', bal: u.tradeBalance || 0, color: '#F59E0B' },
+                              { key: 'tradeBalance' as const, label: 'Jeu', bal: u.tradeBalance || 0, color: '#F59E0B' },
                               { key: 'projectBalance' as const, label: 'Projet', bal: u.projectBalance || 0, color: '#8B5CF6' },
                             ]).map(acc => (
                               <button key={acc.key} onClick={() => setTransferAccount(acc.key)}
@@ -1046,7 +1050,7 @@ export default function AdminScreen() {
                             {([
                               { key: 'balance' as const, label: 'Solde principal', color: '#22C55E', icon: 'fa-wallet' },
                               { key: 'videoBalance' as const, label: 'Vidéo', color: '#14B8A6', icon: 'fa-video' },
-                              { key: 'tradeBalance' as const, label: 'Trading', color: '#F59E0B', icon: 'fa-bolt' },
+                              { key: 'tradeBalance' as const, label: 'Jeu', color: '#F59E0B', icon: 'fa-dice' },
                               { key: 'projectBalance' as const, label: 'Projet', color: '#8B5CF6', icon: 'fa-building' },
                               { key: 'investBalance' as const, label: 'Investissement', color: '#3B82F6', icon: 'fa-chart-line' },
                               { key: 'gameTotalWon' as const, label: 'Gains jeu', color: '#EC4899', icon: 'fa-dice' },

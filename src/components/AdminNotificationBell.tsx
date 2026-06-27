@@ -233,7 +233,7 @@ export default function AdminNotificationBell({ dark = false }: { dark?: boolean
         <>
           <div className="fixed inset-0 z-[4999]" onClick={() => setOpen(false)} />
           <div
-            className="absolute right-0 top-11 w-[320px] max-h-[440px] bg-[#0E0F11] rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.5)] border border-[rgba(255,255,255,0.08)] z-[5000] overflow-hidden"
+            className="fixed right-2 top-14 w-[320px] max-w-[calc(100vw-1rem)] max-h-[70vh] bg-[#0E0F11] rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.5)] border border-[rgba(255,255,255,0.08)] z-[5000] overflow-hidden flex flex-col"
             style={{ animation: 'modalIn 0.2s ease-out' }}
           >
             {/* Header */}
@@ -253,7 +253,7 @@ export default function AdminNotificationBell({ dark = false }: { dark?: boolean
             </div>
 
             {/* List */}
-            <div className="overflow-y-auto max-h-[380px]">
+            <div className="overflow-y-auto flex-1 min-h-0">
               {notifications.length === 0 ? (
                 <div className="p-6 text-center">
                   <i className="fas fa-bell-slash text-[1.5rem] text-[rgba(255,255,255,0.15)] mb-2"></i>
@@ -296,7 +296,7 @@ export default function AdminNotificationBell({ dark = false }: { dark?: boolean
         <>
           <div className="fixed inset-0 bg-black/60 z-[5999]" onClick={() => setSelectedNotif(null)} />
           <div
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-[380px] bg-[#0E0F11] rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.5)] border border-[rgba(255,255,255,0.08)] z-[6000] overflow-hidden"
+            className="fixed left-1/2 -translate-x-1/2 top-[5vh] w-[92%] max-w-[380px] max-h-[90vh] bg-[#0E0F11] rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.5)] border border-[rgba(255,255,255,0.08)] z-[6000] overflow-hidden flex flex-col"
             style={{ animation: 'modalIn 0.25s ease-out' }}
           >
             {/* Modal header */}
@@ -322,7 +322,7 @@ export default function AdminNotificationBell({ dark = false }: { dark?: boolean
             </div>
 
             {/* Modal body */}
-            <div className="p-4 max-h-[50vh] overflow-y-auto">
+            <div className="p-4 overflow-y-auto flex-1 min-h-0">
               <p className="text-[0.8rem] text-[rgba(255,255,255,0.75)] leading-relaxed whitespace-pre-wrap">{selectedNotif.message}</p>
             </div>
 
