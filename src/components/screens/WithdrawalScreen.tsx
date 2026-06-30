@@ -115,6 +115,15 @@ export default function WithdrawalScreen() {
             <span className="text-[0.72rem]">Vérification en cours...</span>
           </div>
 
+          <div className="bg-[#FFFBEB] rounded-xl p-3.5 mb-5 w-full border-2 border-[#F59E0B]">
+            <div className="flex items-center gap-2.5">
+              <i className="fas fa-exclamation-triangle text-[#D97706] text-[1.1rem]"></i>
+              <p className="text-[0.82rem] text-[#92400E] font-bold leading-relaxed text-left">
+                ⚠️ Actualisez la page très souvent pour que l'argent apparaisse !
+              </p>
+            </div>
+          </div>
+
           <button onClick={() => setPage('wallet')} className="w-full max-w-[200px] py-3.5 rounded-xl bg-gradient-to-r from-[#00E676] to-[#00C853] text-white font-semibold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(0,200,83,0.2)] font-[Inter] transition-transform active:scale-[0.97]">
             Retour au portefeuille
           </button>

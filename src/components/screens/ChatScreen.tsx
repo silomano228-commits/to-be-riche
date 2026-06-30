@@ -146,9 +146,16 @@ export default function ChatScreen() {
 
   // Auto-scroll on new messages
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    // Use requestAnimationFrame + small delay to ensure DOM has updated
+    const scrollToBottom = () => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+    };
+    const raf = requestAnimationFrame(() => {
+      setTimeout(scrollToBottom, 50);
+    });
+    return () => cancelAnimationFrame(raf);
   }, [messages]);
 
   const handleSend = async (customText?: string) => {
@@ -240,9 +247,9 @@ export default function ChatScreen() {
         }
       />
 
-      <div className="flex-1 flex flex-col w-full overflow-hidden" style={{ background: 'linear-gradient(180deg, #F0FDF4 0%, #F8F9FA 15%, #F8F9FA 100%)' }}>
+      <div className="flex-1 flex flex-col w-full overflow-hidden min-h-0" style={{ background: 'linear-gradient(180deg, #F0FDF4 0%, #F8F9FA 15%, #F8F9FA 100%)' }}>
         {/* Chat Messages Area */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0 px-4 py-4 space-y-1">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0 px-4 pt-4 pb-6 space-y-1" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))' }}>
           {loading && messages.length === 0 && (
             <div className="text-center py-12">
               <div className="w-10 h-10 rounded-2xl bg-[rgba(34,197,94,0.1)] flex items-center justify-center mx-auto mb-3">

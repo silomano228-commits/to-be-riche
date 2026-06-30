@@ -520,8 +520,8 @@ function HomeScreen() {
             { icon: 'fa-dice', label: 'Jeu', page: 'game', color: '#F87171', bg: 'rgba(248,113,113,0.12)', borderColor: 'border-[#F87171]' },
             { icon: 'fa-building', label: 'Projets', page: 'enterprise', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)', borderColor: 'border-[#8B5CF6]' },
           ].map((a, i) => (
-            <button key={i} onClick={() => setPage(a.page)} className={`flex-1 glass-card rounded-xl py-2.5 px-1 text-center cursor-pointer transition-all active:scale-95 hover:shadow-md hover:scale-[1.04] border-b-2 ${a.borderColor}`}>
-              <div className="w-10 h-10 icon-box mx-auto mb-1" style={{ backgroundColor: a.bg }}><i className={`fas ${a.icon} text-[0.9rem]`} style={{ color: a.color }}></i></div>
+            <button key={i} onClick={() => setPage(a.page)} className={`flex-1 glass-card rounded-xl py-2 px-1 text-center cursor-pointer transition-all active:scale-95 hover:shadow-md hover:scale-[1.04] border-b-2 ${a.borderColor}`}>
+              <div className="w-9 h-9 icon-box mx-auto mb-1" style={{ backgroundColor: a.bg }}><i className={`fas ${a.icon} text-[0.8rem]`} style={{ color: a.color }}></i></div>
               <div className="text-[0.6rem] font-semibold text-[rgba(0,0,0,0.55)] leading-tight">{a.label}</div>
             </button>
           ))}
@@ -536,25 +536,21 @@ function HomeScreen() {
         {/* Promo Banner */}
         <PromoBanner />
 
-        {/* Quick Guide Link — Teal left border accent */}
-        <button onClick={() => setPage('guide')} className="w-full glass-card rounded-xl p-3.5 mb-4 flex items-center gap-3 cursor-pointer transition-all active:scale-[0.98] hover:translate-x-1" style={{ borderLeft: '4px solid #14B8A6' }}>
-          <div className="w-10 h-10 icon-box bg-[rgba(20,184,166,0.12)] shrink-0"><i className="fas fa-compass text-[#14B8A6] text-[1rem]"></i></div>
-          <div className="flex-1 text-left">
-            <div className="text-[0.82rem] font-bold text-[#1F2937]">Guide & Analyses</div>
-            <div className="text-[0.62rem] text-[rgba(0,0,0,0.45)]">Tout savoir pour bien investir · Signaux de marché</div>
-          </div>
-          <i className="fas fa-chevron-right text-[rgba(0,0,0,0.35)] text-[0.7rem]"></i>
-        </button>
-
-        {/* Referral Gift Teaser — Gold gradient left border + shimmer */}
-        <button onClick={() => setPage('profile')} className="w-full glass-card rounded-xl p-3 mb-4 flex items-center gap-3 cursor-pointer transition-all active:scale-[0.98]" style={{ borderLeft: '4px solid', borderImage: 'linear-gradient(to bottom, #F59E0B, #D97706) 1' }}>
-          <div className="w-9 h-9 icon-box bg-[rgba(245,158,11,0.15)] shrink-0"><i className="fas fa-gift text-[#F59E0B] text-[0.9rem]" style={{ animation: 'shimmer 1.5s linear infinite', background: 'linear-gradient(90deg, #D97706 0%, #FCD34D 30%, #FBBF24 50%, #FCD34D 70%, #D97706 100%)', backgroundSize: '200% 100%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}></i></div>
-          <div className="flex-1 text-left">
-            <div className="text-[0.75rem] font-bold text-[#1F2937]">Un cadeau vous attend</div>
-            <div className="text-[0.58rem] text-[rgba(0,0,0,0.45)]">Parrainez vos amis pour débloquer des horizons</div>
-          </div>
-          <i className="fas fa-chevron-right text-[rgba(0,0,0,0.35)] text-[0.65rem]"></i>
-        </button>
+        {/* Shortcuts — Small cards with horizontal scroll */}
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          {[
+            { icon: 'fa-compass', label: 'Guide', page: 'guide', color: '#14B8A6', bg: 'rgba(20,184,166,0.12)', borderColor: 'border-[#14B8A6]' },
+            { icon: 'fa-gift', label: 'Parrainage', page: 'profile', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', borderColor: 'border-[#F59E0B]' },
+            { icon: 'fa-comment', label: 'Messages', page: 'chat', color: '#6366F1', bg: 'rgba(99,102,241,0.12)', borderColor: 'border-[#6366F1]' },
+            { icon: 'fa-video', label: 'Vidéos', page: 'videos', color: '#14B8A6', bg: 'rgba(20,184,166,0.12)', borderColor: 'border-[#14B8A6]' },
+            { icon: 'fa-newspaper', label: 'Actualités', page: 'guide', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)', borderColor: 'border-[#8B5CF6]' },
+          ].map((a, i) => (
+            <button key={i} onClick={() => setPage(a.page)} className={`glass-card rounded-xl py-2 px-2 text-center cursor-pointer transition-all active:scale-95 hover:shadow-md border-b-2 ${a.borderColor} shrink-0 min-w-[72px]`}>
+              <div className="w-8 h-8 icon-box mx-auto mb-1" style={{ backgroundColor: a.bg }}><i className={`fas ${a.icon} text-[0.75rem]`} style={{ color: a.color }}></i></div>
+              <div className="text-[0.55rem] font-semibold text-[rgba(0,0,0,0.55)] leading-tight whitespace-nowrap">{a.label}</div>
+            </button>
+          ))}
+        </div>
 
         {/* Recent Activity */}
         {txs.length > 0 && (
@@ -957,6 +953,7 @@ export default function BeRichApp() {
           @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); } 50% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); } }
           @keyframes claimPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); transform: scale(1); } 50% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); transform: scale(1.03); } }
           @keyframes logoPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+          .overflow-x-auto::-webkit-scrollbar { display: none; }
         `}</style>
         {showSplash && <SplashScreen onDone={handleSplashDone} />}
         <div className="h-full flex flex-col min-h-0">

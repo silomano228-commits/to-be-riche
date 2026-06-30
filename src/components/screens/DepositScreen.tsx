@@ -274,6 +274,14 @@ export default function DepositScreen() {
                 </p>
               </div>
             </div>
+            <div className="bg-[#FFFBEB] rounded-xl p-3 mb-3 border-2 border-[#F59E0B]">
+              <div className="flex items-center gap-2.5">
+                <i className="fas fa-exclamation-triangle text-[#D97706] text-[1rem]"></i>
+                <p className="text-[0.78rem] text-[#92400E] font-bold leading-relaxed text-left">
+                  ⚠️ Actualisez la page très souvent pour que l'argent apparaisse !
+                </p>
+              </div>
+            </div>
           </div>
           <button onClick={() => setPage('wallet')} className="w-full py-3.5 rounded-xl text-[#050506] font-bold text-[0.88rem] border-none cursor-pointer" style={{ backgroundColor: pendingColor }}>
             <i className="fas fa-wallet mr-2"></i>Retour au portefeuille
@@ -379,9 +387,17 @@ export default function DepositScreen() {
                 </div>
               </div>
               <h3 className="text-[1.2rem] font-bold text-[#1F2937] mb-2">Dépôt soumis !</h3>
-              <p className="text-[0.82rem] text-[rgba(0,0,0,0.55)] mb-6 max-w-[280px] mx-auto">
+              <p className="text-[0.82rem] text-[rgba(0,0,0,0.55)] mb-4 max-w-[280px] mx-auto">
                 Votre dépôt de <strong className="text-[#6366F1]">{formatMoney(parseFloat(depositAmt))}</strong> est en attente de confirmation par notre équipe.
               </p>
+              <div className="bg-[#FFFBEB] rounded-xl p-4 mb-6 max-w-[280px] mx-auto border-2 border-[#F59E0B]">
+                <div className="flex items-center gap-2.5">
+                  <i className="fas fa-exclamation-triangle text-[#D97706] text-[1.1rem]"></i>
+                  <p className="text-[0.82rem] text-[#92400E] font-bold leading-relaxed text-left">
+                    ⚠️ Actualisez la page très souvent pour que l'argent apparaisse !
+                  </p>
+                </div>
+              </div>
               <button onClick={() => setPage('wallet')} className="w-full py-3.5 rounded-xl bg-[#6366F1] text-white font-bold text-[0.88rem] border-none cursor-pointer">
                 <i className="fas fa-wallet mr-2"></i>Retour au portefeuille
               </button>
@@ -625,6 +641,14 @@ export default function DepositScreen() {
               <p className="text-[0.82rem] text-[rgba(0,0,0,0.55)] mb-4 max-w-[300px] mx-auto">
                 Votre dépôt de <strong className="text-[#22C55E]">{Math.round(yasAmountCfa).toLocaleString('fr-FR')} FCFA</strong> ({formatMoney(yasAmountUsd)}) est en attente de validation.
               </p>
+              <div className="bg-[#FFFBEB] rounded-xl p-4 mb-4 max-w-[300px] mx-auto border-2 border-[#F59E0B]">
+                <div className="flex items-center gap-2.5">
+                  <i className="fas fa-exclamation-triangle text-[#D97706] text-[1.1rem]"></i>
+                  <p className="text-[0.82rem] text-[#92400E] font-bold leading-relaxed text-left">
+                    ⚠️ Actualisez la page très souvent pour que l'argent apparaisse !
+                  </p>
+                </div>
+              </div>
               <div className="bg-[#FFFFFF] rounded-xl p-4 mb-6 max-w-[300px] mx-auto border border-[rgba(0,0,0,0.08)]">
                 <div className="flex items-center gap-2 justify-center">
                   <div className="w-2 h-2 rounded-full bg-[#22C55E]" style={{ animation: 'pulse 1.5s infinite' }} />

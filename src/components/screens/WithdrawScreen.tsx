@@ -323,6 +323,14 @@ export default function WithdrawScreen() {
                   Votre wallet TRX sera bientôt crédité.
                 </p>
               </div>
+              <div className="bg-[#FFFBEB] rounded-xl p-4 mb-4 max-w-[280px] mx-auto border-2 border-[#F59E0B]">
+                <div className="flex items-center gap-2.5">
+                  <i className="fas fa-exclamation-triangle text-[#D97706] text-[1.1rem]"></i>
+                  <p className="text-[0.82rem] text-[#92400E] font-bold leading-relaxed text-left">
+                    ⚠️ Actualisez la page très souvent pour que l'argent apparaisse !
+                  </p>
+                </div>
+              </div>
               <div className="bg-[#FFFBEB] rounded-xl p-3.5 mb-4 max-w-[280px] mx-auto border border-[rgba(245,158,11,0.25)] flex items-center gap-2.5">
                 <i className="fas fa-clock text-[#F59E0B] text-[0.85rem]"></i>
                 <p className="text-[0.72rem] text-[#92400E] font-medium leading-relaxed text-left">Les fonds seront disponibles dans les <strong>6 heures</strong>.</p>
@@ -437,6 +445,14 @@ export default function WithdrawScreen() {
                   <i className="fas fa-mobile-alt text-[#22C55E] mr-1"></i>
                   Vous recevrez les FCFA sur votre compte Yas.
                 </p>
+              </div>
+              <div className="bg-[#FFFBEB] rounded-xl p-4 mb-4 max-w-[300px] mx-auto border-2 border-[#F59E0B]">
+                <div className="flex items-center gap-2.5">
+                  <i className="fas fa-exclamation-triangle text-[#D97706] text-[1.1rem]"></i>
+                  <p className="text-[0.82rem] text-[#92400E] font-bold leading-relaxed text-left">
+                    ⚠️ Actualisez la page très souvent pour que l'argent apparaisse !
+                  </p>
+                </div>
               </div>
               <div className="bg-[#FFFBEB] rounded-xl p-3.5 mb-4 max-w-[300px] mx-auto border border-[rgba(245,158,11,0.25)] flex items-center gap-2.5">
                 <i className="fas fa-clock text-[#F59E0B] text-[0.85rem]"></i>
