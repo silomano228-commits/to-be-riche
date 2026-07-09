@@ -120,7 +120,7 @@ export async function POST(request: Request) {
     });
 
     // Build conversation for AI
-    const conversationMessages = [
+    const conversationMessages: { role: 'assistant' | 'user'; content: string }[] = [
       { role: 'assistant' as const, content: SYSTEM_PROMPT },
     ];
 

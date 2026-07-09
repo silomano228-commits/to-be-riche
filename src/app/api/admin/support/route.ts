@@ -28,20 +28,24 @@ export async function GET(request: Request) {
     const ticketId = searchParams.get('ticketId');
 
     if (ticketId) {
-      // Get specific ticket with messages
+      // Get specific ticket with user and chat messages
       const ticket = await db.supportTicket.findUnique({
         where: { id: ticketId },
-        include: {
-          user: { select: { name: true, email: true } },
-          messages: {
-            orderBy: { createdAt: 'asc' },
-          },
-        },
       });
 
       if (!ticket) {
         return NextResponse.json({ success: false, error: 'Ticket introuvable' });
       }
+
+      const ticketUser = await db.user.findUnique({
+        where: { id: ticket.userId },
+        select: { name: true, email: true },
+      });
+
+      const messages = await db.chatMessage.findMany({
+        where: { ticketId: ticket.id },
+        orderBy: { createdAt: 'asc' },
+      });
 
       return NextResponse.json({
         success: true,
@@ -50,8 +54,8 @@ export async function GET(request: Request) {
           reason: ticket.reason,
           status: ticket.status,
           createdAt: ticket.createdAt.toISOString(),
-          user: ticket.user,
-          messages: ticket.messages.map(m => ({
+          user: ticketUser,
+          messages: messages.map(m => ({
             id: m.id,
             content: m.content,
             isAdmin: m.isAdmin,
@@ -69,30 +73,39 @@ export async function GET(request: Request) {
 
     const tickets = await db.supportTicket.findMany({
       where,
-      include: {
-        user: { select: { name: true, email: true } },
-        messages: {
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-        },
-      },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
+
+    // Fetch users and last messages for each ticket
+    const ticketsWithMeta = await Promise.all(
+      tickets.map(async (t) => {
+        const ticketUser = await db.user.findUnique({
+          where: { id: t.userId },
+          select: { name: true, email: true },
+        });
+        const lastMsg = await db.chatMessage.findFirst({
+          where: { ticketId: t.id },
+          orderBy: { createdAt: 'desc' },
+          select: { content: true },
+        });
+        return {
+          id: t.id,
+          reason: t.reason,
+          status: t.status,
+          createdAt: t.createdAt.toISOString(),
+          user: ticketUser,
+          lastMessage: lastMsg?.content?.slice(0, 80) || '',
+        };
+      })
+    );
 
     const openCount = await db.supportTicket.count({ where: { status: 'open' } });
     const closedCount = await db.supportTicket.count({ where: { status: 'closed' } });
 
     return NextResponse.json({
       success: true,
-      tickets: tickets.map(t => ({
-        id: t.id,
-        reason: t.reason,
-        status: t.status,
-        createdAt: t.createdAt.toISOString(),
-        user: t.user,
-        lastMessage: t.messages[0]?.content?.slice(0, 80) || '',
-      })),
+      tickets: ticketsWithMeta,
       stats: { open: openCount, closed: closedCount, total: openCount + closedCount },
     });
   } catch (error) {

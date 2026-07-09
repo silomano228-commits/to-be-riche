@@ -72,7 +72,7 @@ const PROMOS: PromoItem[] = [
     gradientMid: '#8B5CF6',
     accentColor: '#A78BFA',
     actionPage: 'enterprise',
-    badge: undefined as string | undefined,
+    badge: undefined,
   })),
 ];
 

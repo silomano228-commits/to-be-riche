@@ -428,7 +428,7 @@ export default function DepositScreen() {
                   { s: 'send', label: '2' },
                   { s: 'success', label: '3' },
                 ].map((st, i) => {
-                  const thisIdx = stepOrder.indexOf(st.s);
+                  const thisIdx = stepOrder.indexOf(st.s as TrxStep);
                   const isActive = trxStep === st.s;
                   const isDone = currentIdx > thisIdx;
                   return (

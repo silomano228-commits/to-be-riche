@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAppStore, formatMoney, authFetch } from '@/lib/store';
-import { Header, PROJECTS } from '@/components/shared';
+import { Header, ENTERPRISE_TYPES } from '@/components/shared';
 
 interface InvestSummary {
   total: number;
@@ -301,14 +301,14 @@ export default function WalletScreen() {
         {/* Popular Projects */}
         <div className="flex justify-between items-center mb-2.5 mt-5">
           <h3 className="text-[0.9rem] font-bold text-[#1A2332]">Projets Populaires</h3>
-          <span className="text-[0.68rem] text-[#00C853] font-semibold cursor-pointer">Voir tout</span>
+          <span className="text-[0.68rem] text-[#00C853] font-semibold cursor-pointer" onClick={() => setPage('enterprise')}>Voir tout</span>
         </div>
-        {PROJECTS.map((p, i) => (
-          <div key={i} className="flex gap-3 p-3.5 bg-white rounded-xl mb-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)] items-center border border-[rgba(0,0,0,0.03)]">
-            <img src={p.img} className="w-[50px] h-[50px] rounded-lg object-cover shrink-0" loading="lazy" alt={p.n} />
+        {ENTERPRISE_TYPES.slice(0, 3).map((p) => (
+          <div key={p.type} className="flex gap-3 p-3.5 bg-white rounded-xl mb-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)] items-center border border-[rgba(0,0,0,0.03)]" onClick={() => setPage('enterprise')} style={{ cursor: 'pointer' }}>
+            <div className="w-[50px] h-[50px] rounded-lg flex items-center justify-center shrink-0" style={{ background: `linear-gradient(135deg, ${p.color}, ${p.color}dd)` }}><i className={`fas ${p.icon} text-white text-[1.2rem]`}></i></div>
             <div className="flex-1 min-w-0">
-              <div className="font-bold text-[0.85rem] mb-0.5 text-[#1A2332]">{p.n}</div>
-              <div className="text-[0.68rem] text-[#94A3B8] font-medium">{p.s}</div>
+              <div className="font-bold text-[0.85rem] mb-0.5 text-[#1A2332]">{p.name}</div>
+              <div className="text-[0.68rem] text-[#94A3B8] font-medium">+{p.maxRet}% en {p.days} jours</div>
             </div>
             <i className="fas fa-chevron-right text-gray-300 text-[0.65rem]"></i>
           </div>

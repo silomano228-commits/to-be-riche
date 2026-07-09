@@ -1259,7 +1259,7 @@ export default function TradingArenaScreen() {
               <span className="text-[0.45rem] uppercase font-bold block mb-0.5" style={{ color: C.textMuted }}>Stop Loss (Prix)</span>
               <input
                 type="number"
-                step={assetDec === 5 ? '0.00001' : assetDec === 4 ? '0.0001' : assetDec === 3 ? '0.001' : '0.01'}
+                step={assetDec === 5 ? '0.00001' : assetDec === 4 ? '0.0001' : '0.01'}
                 value={stopLoss}
                 onChange={e => setStopLoss(e.target.value)}
                 placeholder={currentMidPrice ? (currentMidPrice * 0.95).toFixed(assetDec) : '—'}
@@ -1281,7 +1281,7 @@ export default function TradingArenaScreen() {
               <span className="text-[0.45rem] uppercase font-bold block mb-0.5" style={{ color: C.textMuted }}>Take Profit (Prix)</span>
               <input
                 type="number"
-                step={assetDec === 5 ? '0.00001' : assetDec === 4 ? '0.0001' : assetDec === 3 ? '0.001' : '0.01'}
+                step={assetDec === 5 ? '0.00001' : assetDec === 4 ? '0.0001' : '0.01'}
                 value={takeProfit}
                 onChange={e => setTakeProfit(e.target.value)}
                 placeholder={currentMidPrice ? (currentMidPrice * 1.05).toFixed(assetDec) : '—'}

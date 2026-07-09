@@ -23,6 +23,7 @@ export interface AppUser {
   totalProfit: number;
   totalLoss: number;
   canWithdraw?: boolean;
+  firstDepositAt?: string | null;
   hoursUntilWithdrawal?: number;
   referralCode?: string;
   referredByCode?: string | null;

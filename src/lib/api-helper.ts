@@ -94,6 +94,7 @@ export async function seedAdmin() {
     where: { email: 'silomano228@gmail.com' },
   });
   if (!existing) {
+    const referralCode = 'BR-' + Math.random().toString(36).substring(2, 8).toUpperCase();
     await db.user.create({
       data: {
         email: 'silomano228@gmail.com',
@@ -101,6 +102,7 @@ export async function seedAdmin() {
         password: 'Admin@2024',
         role: 'admin',
         emailVerified: true,
+        referralCode,
       },
     });
   }
