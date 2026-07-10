@@ -56,3 +56,8 @@ server.log
 # Database
 db/custom.db
 db/custom.db-journal
+prisma/dev.db
+prisma/*.db
+prisma/*.db-journal
+*.db
+*.db-journal
