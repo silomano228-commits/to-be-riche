@@ -107,17 +107,33 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, error: 'Le retrait doit d\'abord être approuvé' });
       }
 
-      // Verify user still has enough balance (compte principal)
+      // Verify user still has enough balance from the source account
       const user = await db.user.findUnique({ where: { id: withdrawal.userId } });
-      if (!user || user.balance < withdrawal.amount) {
-        return NextResponse.json({ success: false, error: 'L\'utilisateur n\'a plus assez de solde sur le compte principal' });
+      if (!user) {
+        return NextResponse.json({ success: false, error: 'Utilisateur introuvable' });
       }
 
-      // Deduct from balance (compte principal)
+      // Determine source balance field based on sourceAccount
+      const src = withdrawal.sourceAccount || 'jeu';
+      const balanceFieldMap: Record<string, string> = {
+        jeu: 'balance',
+        investissement: 'investBalance',
+        projet: 'projectBalance',
+        video: 'videoBalance',
+      };
+      const balanceField = balanceFieldMap[src] || 'balance';
+      const currentBalance = (user as any)[balanceField] || 0;
+
+      if (currentBalance < withdrawal.amount) {
+        const label = src === 'jeu' ? 'compte jeu' : src === 'investissement' ? 'compte investissement' : src === 'projet' ? 'compte projet' : 'compte vidéo';
+        return NextResponse.json({ success: false, error: `L'utilisateur n'a plus assez de solde sur le ${label}` });
+      }
+
+      // Deduct from the correct balance
       await db.user.update({
         where: { id: withdrawal.userId },
         data: {
-          balance: { decrement: withdrawal.amount },
+          [balanceField]: { decrement: withdrawal.amount },
         },
       });
 

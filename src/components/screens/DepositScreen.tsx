@@ -26,7 +26,7 @@ type ActivePendingDeposit =
   | { type: 'yas'; amountCfa: number; amountUsd: number; amountTrx: number; yasAccount: string; createdAt?: string };
 
 export default function DepositScreen() {
-  const { user, setPage, addToast } = useAppStore();
+  const { user, setPage, addToast, depositTargetAccount, setDepositTarget } = useAppStore();
   const [method, setMethod] = useState<DepositMethod>('choose');
 
   // TRX deposit state
@@ -152,7 +152,7 @@ export default function DepositScreen() {
       const res = await authFetch('/api/deposit/trx', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amountUsd: amt, userAddress: userAddress.trim() }),
+        body: JSON.stringify({ amountUsd: amt, userAddress: userAddress.trim(), targetAccount: depositTargetAccount || undefined }),
       });
       const data = await res.json();
       if (data.success) {
@@ -185,7 +185,8 @@ export default function DepositScreen() {
         body: JSON.stringify({
           amountCfa: parseFloat(yasAmount),
           yasAccount: yasAccount.trim(),
-          destination: 'balance',
+          destination: depositTargetAccount || 'balance',
+          targetAccount: depositTargetAccount || undefined,
         }),
       });
       const data = await res.json();
@@ -207,7 +208,7 @@ export default function DepositScreen() {
 
   const backBtn = (
     <button onClick={() => {
-      if (method === 'choose') setPage('wallet');
+      if (method === 'choose') { setDepositTarget(null); setPage('deposit-choose'); }
       else setMethod('choose');
     }} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] cursor-pointer border-none mr-1">
       <i className="fas fa-arrow-left text-[0.8rem]"></i>
@@ -215,7 +216,7 @@ export default function DepositScreen() {
   );
 
   const walletBackBtn = (
-    <button onClick={() => setPage('wallet')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] cursor-pointer border-none mr-1">
+    <button onClick={() => { setDepositTarget(null); setPage('deposit-choose'); }} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] cursor-pointer border-none mr-1">
       <i className="fas fa-arrow-left text-[0.8rem]"></i>
     </button>
   );

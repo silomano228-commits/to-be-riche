@@ -2060,3 +2060,29 @@ Stage Summary:
 - Task D COMPLETE: Verified both deposits/route.ts (lines 109-163) and yas-deposits/route.ts (lines 108-159) — auto-invest logic is correct: Investment record is created with status='active', nextClaimAt = now+24h, totalCycles=0 (unlimited), finishesAt=null. No bug fix needed. Notification messages already updated in Task C to include the exact required phrasing about the 24h countdown.
 - Files modified (5): src/app/api/auth/register/route.ts, src/app/api/videos/list/route.ts, src/app/api/admin/deposits/route.ts, src/app/api/admin/yas-deposits/route.ts, src/app/api/admin/withdrawals/route.ts. No new files created.
 - All edits are backward-compatible: API response shapes unchanged (same `source` field with restricted values; same notification `type` values; same Prisma writes). Lint clean + TS clean on all 5 files.
+
+---
+Task ID: 11
+Agent: Main Developer
+Task: Multi-account deposit/withdrawal system overhaul
+
+Work Log:
+- Added `depositTargetAccount` and `withdrawSourceAccount` to Zustand store
+- Modified Home Screen: Déposer button → `deposit-choose` page, replaced Principal card with Solde Total (sum of all balances)
+- Rebuilt WalletScreen: Solde Total hero card (no buttons), individual account cards (Jeu, Investissement, Projet, Vidéo) each with Retirer button
+- Created new DepositChooseScreen with 3 cards (Investissement → InvestHubScreen, Jeu → deposit flow, Projet → deposit flow)
+- Modified DepositScreen to pass `targetAccount` in TRX and YAS deposit API calls
+- Modified WithdrawScreen to show correct source account balance and pass `sourceAccount` in withdrawal API calls
+- Updated deposit/trx/route.ts and deposit/yas/route.ts to accept `targetAccount` and map to `destination` field
+- Updated admin/deposits/route.ts and admin/yas-deposits/route.ts to credit correct balance field based on `destination`
+- Updated withdrawal/route.ts and withdrawal/yas/route.ts to support `sourceAccount` with proper balance validation
+- Updated admin/withdrawals/route.ts to deduct from correct balance on execution based on `sourceAccount`
+- Added `sourceAccount` field to Prisma Withdrawal model, pushed schema
+- Verified invest/claim already credits investBalance correctly
+- All changed files pass ESLint
+
+Stage Summary:
+- Users can now deposit to specific accounts (Jeu, Projet, Investissement) via deposit-choose flow
+- Users can withdraw from any account (Jeu, Investissement, Projet, Vidéo) via Retirer buttons
+- Admin approval respects the target destination/source account
+- Solde Total replaces Compte Principal on home and wallet screens

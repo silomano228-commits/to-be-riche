@@ -42,11 +42,17 @@ export async function POST(request: Request) {
     }
     if (!token) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
 
-    const { amountUsd, userAddress } = await request.json();
+    const { amountUsd, userAddress, targetAccount } = await request.json();
     const amt = parseFloat(amountUsd);
     if (isNaN(amt) || amt < 5) {
       return NextResponse.json({ success: false, error: 'Minimum 5 $' });
     }
+
+    // Determine destination based on targetAccount
+    const destination = targetAccount === 'jeu' ? 'balance'
+      : targetAccount === 'projet' ? 'projectBalance'
+      : targetAccount === 'invest' ? 'investBalance'
+      : 'balance';
 
     // Prix TRX
     let trxPrice = await getTrxPrice();
@@ -77,6 +83,7 @@ export async function POST(request: Request) {
         trxPrice,
         userAddress: (userAddress || '').trim() || 'Non renseigné',
         status: 'pending',
+        destination,
       },
     });
 

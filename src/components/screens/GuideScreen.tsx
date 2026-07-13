@@ -31,10 +31,10 @@ interface SectionDef {
 const SECTIONS: SectionDef[] = [
   { id: 'concept',  label: 'Le Concept',                     icon: 'fa-lightbulb',      color: '#14B8A6', summary: 'Be Rich vous paie pour regarder des vidéos, investir et jouer' },
   { id: 'videos',   label: 'La Plateforme Vidéo',            icon: 'fa-video',          color: '#14B8A6', summary: '5 vidéos/jour · J1 : $1.60-$1.80 · retrait dès $1' },
-  { id: 'invest',   label: "L'Investissement (Make Money)",  icon: 'fa-chart-line',     color: '#059669', summary: '3 niveaux · 5%/jour · dépôt direct dans les niveaux' },
+  { id: 'invest',   label: "L'Investissement (Make Money)",  icon: 'fa-chart-line',     color: '#059669', summary: '3 niveaux · 5%/jour · collecte sur compte investissement' },
   { id: 'game',     label: 'Le Jeu de Roue',                 icon: 'fa-dice',           color: '#F59E0B', summary: '10 tours/jour · 0,20 $/tour · jackpot 10 $' },
-  { id: 'accounts', label: 'Les Comptes',                    icon: 'fa-wallet',         color: '#22C55E', summary: 'Principal · Investissement · Jeu · Vidéo · Projet' },
-  { id: 'payments', label: 'Dépôts et Retraits',             icon: 'fa-credit-card',    color: '#EF4444', summary: 'YAS & TRX · approbation admin · actualisez la page' },
+  { id: 'accounts', label: 'Les Comptes',                    icon: 'fa-wallet',         color: '#22C55E', summary: 'Total · Jeu · Investissement · Projet · Vidéo · retrait depuis tous' },
+  { id: 'payments', label: 'Dépôts et Retraits',             icon: 'fa-credit-card',    color: '#EF4444', summary: 'YAS & TRX · choix du compte · retrait depuis tous les comptes' },
   { id: 'referral', label: 'Parrainage',                     icon: 'fa-gift',           color: '#EC4899', summary: 'Code BR-XXXXXX · 12 filleuls = 5 $ de cadeau' },
   { id: 'nav',      label: 'Navigation',                     icon: 'fa-compass',        color: '#64748B', summary: '4 onglets : Vidéos · Make Money · Guide · Profil' },
 ];
@@ -256,8 +256,9 @@ function InvestContent() {
     <>
       <Row icon="fa-chart-line" color={green} title="3 niveaux · 5% par jour">
         Tous les niveaux rapportent <strong>5%/jour</strong>,{' '}
-        <strong>collecte illimitée</strong>. <strong>Les dépôts se font directement dans
-        les niveaux</strong> (section Investir), pas sur le compte principal.
+        <strong>collecte illimitée</strong>. Investissez au <strong>niveau souhaité</strong>{' '}
+        et les <strong>collectes journalières sont créditées directement</strong> sur votre{' '}
+        <strong>compte Investissement</strong>.
       </Row>
 
       <div className="mt-2 space-y-2">
@@ -292,9 +293,9 @@ function InvestContent() {
       </Callout>
 
       <Callout icon="fa-right-left" color={green}>
-        <strong>Collecte quotidienne versée sur votre compte investissement</strong>, pas
-        sur le compte principal. Pour retirer, transférez{' '}
-        <strong>investissement → principal</strong>.
+        <strong>Collecte quotidienne versée sur votre compte Investissement</strong>.{' '}
+        Le <strong>retrait est possible directement</strong> depuis le compte Investissement
+        via <strong>YAS</strong> ou <strong>TRX</strong>.
       </Callout>
     </>
   );
@@ -305,26 +306,29 @@ function GameContent() {
   return (
     <>
       <Row icon="fa-dice" color={amber} title="Principe">
-        Tournez la roue et tentez de gagner de l&apos;argent réel.
+        Tournez la roue et tentez de gagner de l&apos;argent réel.{' '}
+        <strong>Jackpot de 10 $ possible !</strong>
       </Row>
       <Row icon="fa-clock" color="#22C55E" title="10 tours par jour">
-        <strong>10 tours/jour</strong>, réinitialisés à <strong>minuit</strong>.
+        <strong>10 tours maximum/jour</strong>, réinitialisés à <strong>minuit</strong>.
       </Row>
 
       <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-1 mt-2">
-        <StatRow label="Coût par tour" value="$0.20" valueColor="#EF4444" />
-        <StatRow label="Jackpot maximum" value="$10.00" valueColor={amber} />
-        <StatRow label="Gains versés sur" value="Compte Principal" valueColor="#1F2937" />
+        <StatRow label="Coût par tour" value="0,20 $" valueColor="#EF4444" />
+        <StatRow label="Jackpot maximum" value="10,00 $" valueColor={amber} />
+        <StatRow label="Tours max / jour" value="10" valueColor="#1F2937" />
       </div>
 
       <Callout icon="fa-coins" color="#EF4444">
-        <strong>Coût : 0,20 $/tour.</strong> Déduit du <strong>compte principal</strong>{' '}
-        (puis du compte investissement si solde insuffisant).
+        <strong>Coût : 0,20 $/tour.</strong> Prélevé automatiquement du{' '}
+        <strong>compte Jeu</strong> en premier, puis <strong>Investissement</strong>, puis{' '}
+        <strong>Vidéo</strong>, puis <strong>Projet</strong> si le solde est insuffisant.
       </Callout>
 
       <Callout icon="fa-hand-paper" color={amber}>
-        <strong>Vous contrôlez l&apos;arrêt.</strong> Bouton <strong>ARRÊTER</strong>, sinon
-        arrêt automatique après <strong>5 secondes</strong>.
+        <strong>Vous contrôlez l&apos;arrêt.</strong> Appuyez sur le bouton <strong>ARRÊTER</strong>{' '}
+        quand vous voulez, ou la roue s&apos;arrête automatiquement après{' '}
+        <strong>3 secondes</strong>.
       </Callout>
     </>
   );
@@ -333,11 +337,11 @@ function GameContent() {
 function AccountsContent() {
   const green = '#22C55E';
   const ACCOUNTS = [
-    { name: 'Compte Principal',      icon: 'fa-wallet',     color: '#22C55E', desc: 'Retraits uniquement · coûts du jeu déduits ici' },
-    { name: 'Compte Investissement', icon: 'fa-chart-line', color: '#059669', desc: 'Collectes journalières · transférez vers principal pour retirer' },
-    { name: 'Compte Jeu',            icon: 'fa-dice',       color: '#F59E0B', desc: 'Suivi de vos gains de la roue' },
-    { name: 'Compte Vidéo',          icon: 'fa-video',      color: '#14B8A6', desc: 'Gains vidéo · retrait dès $1' },
-    { name: 'Compte Projet',         icon: 'fa-building',   color: '#0F766E', desc: 'Pour les projets d&apos;entreprise' },
+    { name: 'Solde Total',           icon: 'fa-layer-group', color: '#6366F1', desc: 'Vue d\'ensemble · affiche la somme de tous vos comptes' },
+    { name: 'Compte Jeu',            icon: 'fa-dice',        color: '#F59E0B', desc: 'Roue de la fortune · les tours coûtent 0,20 $ prélevés ici en premier' },
+    { name: 'Compte Investissement', icon: 'fa-chart-line',  color: '#059669', desc: 'Investissements par niveau · collectes journalières créditées ici' },
+    { name: 'Compte Projet',         icon: 'fa-building',    color: '#0F766E', desc: 'Pour les projets d\'entreprise' },
+    { name: 'Compte Vidéo',          icon: 'fa-video',       color: '#14B8A6', desc: 'Gains de visionnage de vidéos' },
   ];
   return (
     <>
@@ -356,9 +360,8 @@ function AccountsContent() {
       </div>
 
       <Callout icon="fa-circle-info" color={green}>
-        <strong>Pas de dépôt sur le compte principal.</strong> Les dépôts se font{' '}
-        <strong>directement dans les niveaux d&apos;investissement</strong> (section
-        Investir).
+        <strong>Retrait possible depuis TOUS les comptes</strong> (Jeu, Investissement,
+        Projet, Vidéo) via <strong>YAS</strong> ou <strong>TRX</strong>.
       </Callout>
     </>
   );
@@ -368,7 +371,43 @@ function PaymentsContent() {
   const red = '#EF4444';
   return (
     <>
-      <div className="mt-2 grid grid-cols-2 gap-2.5">
+      {/* ---------- Dépôts ---------- */}
+      <Row icon="fa-plus-circle" color="#22C55E" title="Comment déposer">
+        Quand vous cliquez sur <strong>« Déposer »</strong>, vous choisissez{' '}
+        d&apos;abord le <strong>compte destinataire</strong> :
+      </Row>
+      <div className="mt-2 space-y-2">
+        <div className="flex items-center gap-2.5 rounded-xl p-2.5 border" style={{ borderColor: '#05966933', background: '#0596690A' }}>
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#05966926' }}>
+            <i className="fas fa-chart-line text-[0.85rem]" style={{ color: '#059669' }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[0.78rem] font-black text-[#1F2937]">Investissement</div>
+            <div className="text-[0.62rem] text-[#6B7280] leading-snug">Vous accédez directement à la page des <strong>niveaux d&apos;investissement</strong></div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 rounded-xl p-2.5 border" style={{ borderColor: '#F59E0B33', background: '#F59E0B0A' }}>
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#F59E0B26' }}>
+            <i className="fas fa-dice text-[0.85rem]" style={{ color: '#F59E0B' }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[0.78rem] font-black text-[#1F2937]">Jeu</div>
+            <div className="text-[0.62rem] text-[#6B7280] leading-snug">Le processus habituel avec <strong>YAS</strong> ou <strong>TRX</strong> s&apos;ouvre</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 rounded-xl p-2.5 border" style={{ borderColor: '#0F766E33', background: '#0F766E0A' }}>
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#0F766E26' }}>
+            <i className="fas fa-building text-[0.85rem]" style={{ color: '#0F766E' }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[0.78rem] font-black text-[#1F2937]">Projet</div>
+            <div className="text-[0.62rem] text-[#6B7280] leading-snug">Le processus habituel avec <strong>YAS</strong> ou <strong>TRX</strong> s&apos;ouvre</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ---------- Méthodes de paiement ---------- */}
+      <div className="mt-3 grid grid-cols-2 gap-2.5">
         <div className="rounded-xl p-3 border border-[#FECACA] bg-[#FEF2F2]">
           <div className="w-9 h-9 rounded-lg bg-[#FEE2E2] flex items-center justify-center mb-2">
             <i className="fas fa-mobile-screen text-[#EF4444] text-[0.85rem]" />
@@ -385,10 +424,19 @@ function PaymentsContent() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-1 mt-3">
+      {/* ---------- Retraits ---------- */}
+      <div className="mt-3">
+        <Row icon="fa-arrow-up-from-bracket" color="#14B8A6" title="Retrait depuis tous les comptes">
+          Le retrait est possible depuis <strong>tous vos comptes</strong> :{' '}
+          <strong>Jeu</strong>, <strong>Investissement</strong>, <strong>Projet</strong>{' '}
+          et <strong>Vidéo</strong>, via <strong>YAS</strong> ou <strong>TRX</strong>.
+        </Row>
+      </div>
+
+      <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-1 mt-2">
         <StatRow label="Disponibilité des fonds" value="6 heures" valueColor="#F59E0B" />
-        <StatRow label="Dépôts" value="Niveaux d&apos;investissement" valueColor="#22C55E" />
-        <StatRow label="Retraits" value="Compte Principal" valueColor="#14B8A6" />
+        <StatRow label="Dépôts" value="Investissement · Jeu · Projet" valueColor="#22C55E" />
+        <StatRow label="Retraits" value="Tous les comptes" valueColor="#14B8A6" />
       </div>
 
       <Callout icon="fa-rotate" color="#F59E0B">

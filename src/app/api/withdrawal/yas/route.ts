@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     if (!user) return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
 
     const body = await request.json();
-    const { amountUsd, yasAccount } = body;
+    const { amountUsd, yasAccount, sourceAccount } = body;
 
     // Validate amount
     const amt = parseFloat(amountUsd);
@@ -21,9 +21,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Minimum de retrait : 5 $' });
     }
 
-    // Check balance (can only withdraw from compte principal)
-    if (amt > user.balance) {
-      return NextResponse.json({ success: false, error: 'Solde insuffisant sur le compte principal.' });
+    // Determine source balance based on sourceAccount
+    const src = sourceAccount || 'jeu';
+    const balanceMap: Record<string, number> = {
+      jeu: user.balance || 0,
+      investissement: user.investBalance || 0,
+      projet: user.projectBalance || 0,
+      video: user.videoBalance || 0,
+    };
+    const srcBalance = balanceMap[src] ?? user.balance;
+    const srcLabel = src === 'jeu' ? 'compte jeu' : src === 'investissement' ? 'compte investissement' : src === 'projet' ? 'compte projet' : 'compte vidéo';
+
+    if (amt > srcBalance) {
+      return NextResponse.json({ success: false, error: `Solde insuffisant sur le ${srcLabel}.` });
     }
 
     // 48h cooldown after first deposit
@@ -90,6 +100,7 @@ export async function POST(request: Request) {
         type: 'yas',
         yasAccount: yasAccount.trim(),
         status: 'pending',
+        sourceAccount: src,
       },
     });
 
@@ -98,7 +109,7 @@ export async function POST(request: Request) {
       data: {
         type: 'withdrawal_pending',
         amount: -amt,
-        detail: `Retrait Yas en attente — ${amt} $ (${amountCfa.toLocaleString()} FCFA) vers ${yasAccount.trim()}`,
+        detail: `Retrait Yas en attente — ${amt} $ (${amountCfa.toLocaleString()} FCFA) vers ${yasAccount.trim()} (${srcLabel})`,
         userId: user.id,
       },
     });

@@ -51,6 +51,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Investissement inactif' }, { status: 400 });
     }
 
+    // Hidden rule (do NOT surface in UI): level >= 2 requires 12+ referrals
+    if (investment.level >= 2 && user.referralCount < 12) {
+      return NextResponse.json({
+        success: false,
+        error: 'Vous devez avoir au moins 12 parrainages pour récolter les gains de ce niveau d\'investissement',
+      }, { status: 400 });
+    }
+
     const now = new Date();
 
     // Check 24h cooldown

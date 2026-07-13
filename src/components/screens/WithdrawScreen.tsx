@@ -21,7 +21,7 @@ function validateYasAccount(account: string): string | null {
 }
 
 export default function WithdrawScreen() {
-  const { user, setUser, setPage, addToast } = useAppStore();
+  const { user, setUser, setPage, addToast, withdrawSourceAccount, setWithdrawSource } = useAppStore();
   const [method, setMethod] = useState<Method>('choose');
   const [loading, setLoading] = useState(true);
   const [pendingWithdrawal, setPendingWithdrawal] = useState<any>(null);
@@ -91,7 +91,7 @@ export default function WithdrawScreen() {
       const res = await authFetch('/api/withdrawal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: amt, trxAddress: trxAddress.trim() }),
+        body: JSON.stringify({ amount: amt, trxAddress: trxAddress.trim(), sourceAccount: withdrawSourceAccount || 'jeu' }),
       });
       const data = await res.json();
       if (data.success) {
@@ -118,7 +118,7 @@ export default function WithdrawScreen() {
       const res = await authFetch('/api/withdrawal/yas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amountUsd: amt, yasAccount: yasAccount.trim() }),
+        body: JSON.stringify({ amountUsd: amt, yasAccount: yasAccount.trim(), sourceAccount: withdrawSourceAccount || 'jeu' }),
       });
       const data = await res.json();
       if (data.success) {
@@ -136,9 +136,17 @@ export default function WithdrawScreen() {
 
   if (!user) return null;
 
+  // Determine source account label and balance
+  const sourceLabels: Record<string, string> = { jeu: 'Jeu', investissement: 'Investissement', projet: 'Projet', video: 'Vidéo' };
+  const sourceLabel = sourceLabels[withdrawSourceAccount || 'jeu'] || 'Jeu';
+  const sourceBalance = withdrawSourceAccount === 'investissement' ? (user.investBalance || 0)
+    : withdrawSourceAccount === 'projet' ? (user.projectBalance || 0)
+    : withdrawSourceAccount === 'video' ? (user.videoBalance || 0)
+    : (user.balance || 0);
+
   const backBtn = (
     <button onClick={() => {
-      if (method === 'choose') setPage('wallet');
+      if (method === 'choose') { setWithdrawSource(null); setPage('wallet'); }
       else setMethod('choose');
     }} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] cursor-pointer border-none mr-1">
       <i className="fas fa-arrow-left text-[0.8rem]"></i>
@@ -146,7 +154,7 @@ export default function WithdrawScreen() {
   );
 
   const walletBackBtn = (
-    <button onClick={() => setPage('wallet')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] cursor-pointer border-none mr-1">
+    <button onClick={() => { setWithdrawSource(null); setPage('wallet'); }} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] cursor-pointer border-none mr-1">
       <i className="fas fa-arrow-left text-[0.8rem]"></i>
     </button>
   );
@@ -232,8 +240,8 @@ export default function WithdrawScreen() {
             <>
               {/* Balance card */}
               <div className="bg-gradient-to-r from-[#22C55E] to-[#16A34A] rounded-2xl p-5 mb-5 text-white" style={{ boxShadow: '0 8px 24px rgba(34,197,94,0.25)' }}>
-                <div className="text-[0.7rem] uppercase font-semibold opacity-80 mb-1">Solde retirable (compte principal)</div>
-                <div className="text-[1.8rem] font-black">{formatMoney(user.balance)}</div>
+                <div className="text-[0.7rem] uppercase font-semibold opacity-80 mb-1">Solde retirable (compte {sourceLabel})</div>
+                <div className="text-[1.8rem] font-black">{formatMoney(sourceBalance)}</div>
               </div>
 
               <h2 className="text-[1.1rem] font-black text-[#1F2937] mb-1">Choisissez votre méthode</h2>
@@ -359,8 +367,8 @@ export default function WithdrawScreen() {
         <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
           {/* Balance card */}
           <div className="bg-gradient-to-r from-[#6366F1] to-[#4F46E5] rounded-2xl p-5 mb-5 text-white" style={{ boxShadow: '0 8px 24px rgba(99,102,241,0.25)' }}>
-            <div className="text-[0.7rem] uppercase font-semibold opacity-80 mb-1">Solde retirable</div>
-            <div className="text-[1.8rem] font-black">{formatMoney(user.balance)}</div>
+            <div className="text-[0.7rem] uppercase font-semibold opacity-80 mb-1">Solde retirable (compte {sourceLabel})</div>
+            <div className="text-[1.8rem] font-black">{formatMoney(sourceBalance)}</div>
           </div>
 
           {/* Auto-guide for Trust Wallet */}
@@ -483,8 +491,8 @@ export default function WithdrawScreen() {
         <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
           {/* Balance card */}
           <div className="bg-gradient-to-r from-[#22C55E] to-[#16A34A] rounded-2xl p-5 mb-5 text-white" style={{ boxShadow: '0 8px 24px rgba(34,197,94,0.25)' }}>
-            <div className="text-[0.7rem] uppercase font-semibold opacity-80 mb-1">Solde retirable</div>
-            <div className="text-[1.8rem] font-black">{formatMoney(user.balance)}</div>
+            <div className="text-[0.7rem] uppercase font-semibold opacity-80 mb-1">Solde retirable (compte {sourceLabel})</div>
+            <div className="text-[1.8rem] font-black">{formatMoney(sourceBalance)}</div>
           </div>
 
           {/* Step indicator */}

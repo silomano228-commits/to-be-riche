@@ -166,6 +166,14 @@ export async function POST(request: Request) {
     const depositUser = await db.user.findUnique({ where: { id: deposit.userId } });
     const isFirstDeposit = !depositUser?.hasInvested;
 
+    // Determine which balance to credit based on destination
+    const balanceField = deposit.destination === 'projectBalance' ? 'projectBalance'
+      : deposit.destination === 'investBalance' ? 'investBalance'
+      : 'balance';
+    const balanceLabel = deposit.destination === 'projectBalance' ? 'compte projet'
+      : deposit.destination === 'investBalance' ? 'compte investissement'
+      : 'compte principal';
+
     await db.$transaction(async (tx) => {
       await tx.pendingDeposit.update({
         where: { id: depositId },
@@ -174,7 +182,7 @@ export async function POST(request: Request) {
       await tx.user.update({
         where: { id: deposit.userId },
         data: {
-          balance: { increment: deposit.amountUsd },
+          [balanceField]: { increment: deposit.amountUsd },
           hasInvested: true,
           depositCount: { increment: 1 },
           firstDepositAt: isFirstDeposit ? new Date() : undefined,
@@ -184,7 +192,7 @@ export async function POST(request: Request) {
         data: {
           type: 'deposit',
           amount: deposit.amountUsd,
-          detail: `Deposit approved: $${deposit.amountUsd.toFixed(2)} credited to principal balance`,
+          detail: `Deposit approved: $${deposit.amountUsd.toFixed(2)} credited to ${balanceLabel}`,
           userId: deposit.userId,
         },
       });
@@ -224,7 +232,7 @@ export async function POST(request: Request) {
       link: 'wallet',
     });
 
-    return NextResponse.json({ success: true, message: 'Dépôt approuvé et crédité au solde principal' });
+    return NextResponse.json({ success: true, message: `Dépôt approuvé et crédité au ${balanceLabel}` });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
   }

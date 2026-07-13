@@ -62,11 +62,15 @@ interface AppState {
   showSplash: boolean;
   toasts: Toast[];
   notifications: Notification[];
+  depositTargetAccount: string | null;
+  withdrawSourceAccount: string | null;
   setUser: (user: AppUser | null) => void;
   clearUser: () => void;
   setPage: (page: string) => void;
   setLoading: (loading: boolean) => void;
   setShowSplash: (showSplash: boolean) => void;
+  setDepositTarget: (account: string | null) => void;
+  setWithdrawSource: (account: string | null) => void;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
   removeToast: (id: string) => void;
   addNotification: (id: string, text: string) => void;
@@ -80,9 +84,13 @@ export const useAppStore = create<AppState>((set) => ({
   showSplash: true,
   toasts: [],
   notifications: [],
+  depositTargetAccount: null,
+  withdrawSourceAccount: null,
   setUser: (user) => set({ user }),
   clearUser: () => set({ user: null, currentPage: 'auth', toasts: [] }),
   setPage: (page) => set({ currentPage: page }),
+  setDepositTarget: (account) => set({ depositTargetAccount: account }),
+  setWithdrawSource: (account) => set({ withdrawSourceAccount: account }),
   setLoading: (isLoading) => set({ isLoading }),
   setShowSplash: (showSplash) => set({ showSplash }),
   addToast: (message, type) => {

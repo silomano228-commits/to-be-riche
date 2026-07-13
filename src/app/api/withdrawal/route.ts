@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     if (!user) return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
 
     const body = await request.json();
-    const { amount, trxAddress } = body;
+    const { amount, trxAddress, sourceAccount } = body;
 
     // Validate amount
     const amt = parseFloat(amount);
@@ -38,9 +38,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Minimum de retrait : 5 $' });
     }
 
-    // Can only withdraw from main balance (compte principal)
-    if (amt > user.balance) {
-      return NextResponse.json({ success: false, error: 'Solde insuffisant sur le compte principal.' });
+    // Determine source balance based on sourceAccount
+    const src = sourceAccount || 'jeu';
+    const balanceMap: Record<string, number> = {
+      jeu: user.balance || 0,
+      investissement: user.investBalance || 0,
+      projet: user.projectBalance || 0,
+      video: user.videoBalance || 0,
+    };
+    const srcBalance = balanceMap[src] ?? user.balance;
+    const srcLabel = src === 'jeu' ? 'compte jeu' : src === 'investissement' ? 'compte investissement' : src === 'projet' ? 'compte projet' : 'compte vidéo';
+
+    if (amt > srcBalance) {
+      return NextResponse.json({ success: false, error: `Solde insuffisant sur le ${srcLabel}.` });
     }
 
     // 48h cooldown after first deposit
@@ -98,6 +108,7 @@ export async function POST(request: Request) {
         type: 'trx',
         trxAddress,
         status: 'pending',
+        sourceAccount: src,
       },
     });
 
@@ -106,7 +117,7 @@ export async function POST(request: Request) {
       data: {
         type: 'withdrawal_pending',
         amount: -amt,
-        detail: `Retrait TRX en attente — ${amt} $ vers ${trxAddress}`,
+        detail: `Retrait TRX en attente — ${amt} $ vers ${trxAddress} (${srcLabel})`,
         userId: user.id,
       },
     });

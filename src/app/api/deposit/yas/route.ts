@@ -42,10 +42,13 @@ export async function POST(request: Request) {
     }
     if (!token) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
 
-    const { amountCfa, yasAccount, trxAddress, destination } = await request.json();
+    const { amountCfa, yasAccount, trxAddress, destination: destParam, targetAccount } = await request.json();
     const amtCfa = parseFloat(amountCfa);
-    // Always deposit to balance — no more TRX destination
-    const safeDestination = 'balance';
+    // Determine destination based on targetAccount
+    const safeDestination = targetAccount === 'jeu' ? 'balance'
+      : targetAccount === 'projet' ? 'projectBalance'
+      : targetAccount === 'invest' ? 'investBalance'
+      : (destParam || 'balance');
 
     // Get CFA rate from config (auto-seeded if missing)
     const config = await ensureSiteConfig();

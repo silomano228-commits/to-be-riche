@@ -239,18 +239,19 @@ model PasswordResetToken {
 }
 
 model Withdrawal {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  amount      Float
-  amountCfa   Float    @default(0)
-  type        String   @default("trx")
-  trxAddress  String?
-  yasAccount  String?
-  status      String   @default("pending")
-  adminNote   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount        Float
+  amountCfa     Float    @default(0)
+  type          String   @default("trx")
+  trxAddress    String?
+  yasAccount    String?
+  status        String   @default("pending")
+  adminNote     String?
+  sourceAccount String?  // jeu | investissement | projet | video
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([userId])
   @@index([status])

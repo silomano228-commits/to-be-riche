@@ -158,19 +158,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, message: 'Investissement Yas approuvé — compte à rebours démarré' });
     }
 
-    // ---------- Standard principal-wallet Yas deposit (existing behavior) ----------
+    // ---------- Standard Yas deposit (existing behavior) ----------
     const depositUser = await db.user.findUnique({ where: { id: deposit.userId } });
     const isFirstDeposit = !depositUser?.hasInvested;
+
+    // Determine which balance to credit based on destination
+    const balanceField = deposit.destination === 'projectBalance' ? 'projectBalance'
+      : deposit.destination === 'investBalance' ? 'investBalance'
+      : 'balance';
+    const balanceLabel = deposit.destination === 'projectBalance' ? 'compte projet'
+      : deposit.destination === 'investBalance' ? 'compte investissement'
+      : 'compte principal';
 
     await db.$transaction(async (tx) => {
       await tx.yasDeposit.update({
         where: { id: depositId },
-        data: { status: 'approved', adminNote: adminNote || 'Dépôt validé. Solde principal crédité.', processedAt: now },
+        data: { status: 'approved', adminNote: adminNote || 'Dépôt validé. Solde crédité.', processedAt: now },
       });
       await tx.user.update({
         where: { id: deposit.userId },
         data: {
-          balance: { increment: deposit.amountUsd },
+          [balanceField]: { increment: deposit.amountUsd },
           hasInvested: true,
           depositCount: { increment: 1 },
           firstDepositAt: isFirstDeposit ? new Date() : undefined,
@@ -180,7 +188,7 @@ export async function POST(request: Request) {
         data: {
           type: 'deposit',
           amount: deposit.amountUsd,
-          detail: `Yas deposit approved: $${deposit.amountUsd.toFixed(2)} credited to balance`,
+          detail: `Yas deposit approved: $${deposit.amountUsd.toFixed(2)} credited to ${balanceLabel}`,
           userId: deposit.userId,
         },
       });

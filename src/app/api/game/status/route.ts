@@ -64,11 +64,12 @@ export async function GET(request: Request) {
 
     const today = new Date().toISOString().slice(0, 10);
 
-    // Reset spins if date changed
+    // Reset spins used if date changed (gameTotalWon is NOT reset — it's
+    // cumulative across days for the algorithm to track total spend vs won).
     if (user.gameSpinsDate !== today) {
       await db.user.update({
         where: { id: user.id },
-        data: { gameSpinsUsed: 0, gameSpinsDate: today, gameTotalWon: 0 },
+        data: { gameSpinsUsed: 0, gameSpinsDate: today },
       });
     }
 

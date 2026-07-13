@@ -51,7 +51,8 @@ const LONG_TRANSITION = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
 const SHORT_TRANSITION = 'transform 0.8s ease-out';
 
 export default function SpinGameScreen() {
-  const { user, addToast } = useAppStore();
+  const { user, addToast, setPage } = useAppStore();
+  const navigateBack = () => setPage('home');
   const [segments, setSegments] = useState<Segment[]>([]);
   const [loading, setLoading] = useState(true);
   const [spinning, setSpinning] = useState(false);
@@ -221,12 +222,12 @@ export default function SpinGameScreen() {
 
         setRotation(finalRotation);
 
-        // 5s auto-stop safety net — the user can stop earlier via the STOP
+        // 3s auto-stop safety net — the user can stop earlier via the STOP
         // button (which calls handleStopWheelRef.current() and clears this
         // timer). handleStopWheel sets up its own short 850ms finish timer.
         spinTimeoutRef.current = window.setTimeout(() => {
           handleStopWheelRef.current();
-        }, 5000);
+        }, 3000);
       } else {
         if (data.insufficientBalance) {
           addToast(data.error || 'Solde insuffisant (minimum 0,20 $)', 'error');
@@ -299,7 +300,7 @@ export default function SpinGameScreen() {
   if (loading) {
     return (
       <>
-        <Header title="Roue" />
+        <Header title="Roue" leftElement={<button onClick={() => navigateBack()} className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border-none cursor-pointer"><i className="fas fa-arrow-left text-white text-sm"></i></button>} />
         <div className="flex-1 flex items-center justify-center" style={{ background: 'linear-gradient(180deg, #1E1B4B 0%, #312E81 100%)' }}>
           <div className="w-8 h-8 border-[2.5px] border-white/20 border-t-[#F59E0B] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }}></div>
         </div>
@@ -309,7 +310,7 @@ export default function SpinGameScreen() {
 
   return (
     <>
-      <Header title="Roue de la Fortune" />
+      <Header title="Roue de la Fortune" leftElement={<button onClick={() => navigateBack()} className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border-none cursor-pointer"><i className="fas fa-arrow-left text-white text-sm"></i></button>} />
       <div className="flex-1 overflow-y-auto pb-6" style={{ background: 'linear-gradient(180deg, #1E1B4B 0%, #312E81 50%, #1E1B4B 100%)' }}>
         {/* Hero */}
         <div className="px-4 pt-4 pb-2 text-center">

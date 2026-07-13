@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Component } from 'react';
 import dynamic from 'next/dynamic';
 import { useAppStore, formatMoney, esc, authFetch, refreshUser } from '@/lib/store';
+
 import { LogoImg, ToastContainer, NotificationContainer, Header, AI_TIPS } from '@/components/shared';
 import { useTabChangeAd } from '@/lib/useTabChangeAd';
 
@@ -222,8 +223,6 @@ function AuthScreen() {
           <i className="fas fa-globe-asia text-[#14B8A6] text-[0.6rem]"></i>
           <span className="text-[0.58rem] font-bold text-[#0F766E] uppercase tracking-wide">Plateforme de communication des grandes entreprises</span>
         </div>
-        <p className="text-[0.6rem] text-[rgba(0,0,0,0.45)] mb-4">Regardez des vidéos d&rsquo;entreprises chinoises, japonaises et indiennes &mdash; soyez pay&eacute;s&nbsp;!</p>
-
         {/* OTP Verification Step — Registration only */}
         {otpStep ? (
           <>
@@ -346,6 +345,7 @@ function AuthScreen() {
                 </div>
                 <button type="submit" disabled={loading} className="w-full py-3 rounded-xl btn-gradient-green text-[0.85rem] cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">{loading ? <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <><i className="fas fa-arrow-right"></i> Se connecter</>}</button>
                 <div className="mt-3"><a href="/forgot-password" className="text-[0.7rem] text-[#22C55E] font-medium hover:underline">Mot de passe oublié ?</a></div>
+                <p className="text-[0.55rem] text-[rgba(0,0,0,0.3)] mt-4 leading-relaxed">Regardez des vidéos d'entreprises et d'industrie de tous horizons à travers le monde — soyez payé et investissez pour gagner beaucoup plus.</p>
               </form>
             ) : (
               <form onSubmit={handleRegister}>
@@ -473,25 +473,25 @@ function HomeScreen() {
             </div>
             <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.5px] font-semibold mb-0.5">Solde total</div>
             <div className="flex items-baseline gap-2 mb-3">
-              <div className="text-[1.8rem] font-black tracking-[-1px] text-[#000000]">{formatMoney(user.balance)}</div>
-              <button onClick={() => setPage('deposit')} className="ml-auto py-2 px-3.5 rounded-xl bg-[rgba(255,255,255,0.25)] hover:bg-[rgba(255,255,255,0.35)] text-[#000000] text-[0.68rem] font-semibold cursor-pointer border-none transition-all active:scale-95 flex items-center gap-1.5 backdrop-blur-sm">
+              <div className="text-[1.8rem] font-black tracking-[-1px] text-[#000000]">{formatMoney((user.balance || 0) + (user.investBalance || 0) + (user.projectBalance || 0) + (user.videoBalance || 0))}</div>
+              <button onClick={() => setPage('deposit-choose')} className="ml-auto py-2 px-3.5 rounded-xl bg-[rgba(255,255,255,0.25)] hover:bg-[rgba(255,255,255,0.35)] text-[#000000] text-[0.68rem] font-semibold cursor-pointer border-none transition-all active:scale-95 flex items-center gap-1.5 backdrop-blur-sm">
                 <i className="fas fa-arrow-down text-[0.6rem]"></i> Déposer
               </button>
             </div>
             {/* Compact 2x2 Account Grid — Glass Cards */}
             <div className="grid grid-cols-2 gap-1.5">
               <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
-                <div className="w-8 h-8 icon-box bg-[rgba(34,197,94,0.15)] shrink-0"><i className="fas fa-wallet text-[0.65rem] text-[#22C55E]"></i></div>
-                <div className="min-w-0">
-                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Principal</div>
-                  <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.balance)}</div>
-                </div>
-              </div>
-              <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
                 <div className="w-8 h-8 icon-box bg-[rgba(245,158,11,0.15)] shrink-0"><i className="fas fa-dice text-[0.65rem] text-[#F59E0B]"></i></div>
                 <div className="min-w-0">
                   <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Jeu</div>
                   <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.gameTotalWon || 0)}</div>
+                </div>
+              </div>
+              <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
+                <div className="w-8 h-8 icon-box bg-[rgba(20,184,166,0.15)] shrink-0"><i className="fas fa-seedling text-[0.65rem] text-[#14B8A6]"></i></div>
+                <div className="min-w-0">
+                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Investissement</div>
+                  <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.investBalance || 0)}</div>
                 </div>
               </div>
               <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
@@ -585,7 +585,7 @@ function HomeScreen() {
 type TransferTarget = { from: string; to: string; label: string; fee: boolean; fromColor: string; toColor: string; fromIcon: string; toIcon: string };
 
 function WalletScreen() {
-  const { user, setUser, setPage, addToast } = useAppStore();
+  const { user, setUser, setPage, addToast, setWithdrawSource } = useAppStore();
   const [transferTarget, setTransferTarget] = useState<TransferTarget | null>(null);
   const [transferAmt, setTransferAmt] = useState('');
   const [transferring, setTransferring] = useState(false);
@@ -657,7 +657,7 @@ function WalletScreen() {
   // so it's a display-only card. Project is transferable to/from Principal.
   const accounts = [
     { key: 'video', label: 'Compte Vidéo', balance: user.videoBalance || 0, icon: 'fa-video', iconColor: '#14B8A6', iconBg: 'bg-[rgba(20,184,166,0.12)]', borderColor: '#14B8A6', transferable: false },
-    { key: 'project', label: 'Compte de Projet', balance: user.projectBalance, icon: 'fa-building', iconColor: '#8B5CF6', iconBg: 'bg-[rgba(139,92,246,0.12)]', borderColor: '#8B5CF6', transferable: true },
+    { key: 'project', label: 'Compte Projet', balance: user.projectBalance, icon: 'fa-building', iconColor: '#8B5CF6', iconBg: 'bg-[rgba(139,92,246,0.12)]', borderColor: '#8B5CF6', transferable: true },
   ] as const;
 
   // Label helper for the transfer modal — 'trade' intentionally absent (trading account removed).
@@ -675,18 +675,17 @@ function WalletScreen() {
     <>
       <Header title="Portefeuille" icon="fa-wallet" iconColor="#22C55E" leftElement={<button onClick={() => setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(255,255,255,0.6)] backdrop-blur-sm text-[rgba(0,0,0,0.55)] cursor-pointer border-none mr-1"><i className="fas fa-arrow-left text-[0.8rem]"></i></button>} rightElement={<button onClick={refresh} className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.6)] backdrop-blur-sm text-[rgba(0,0,0,0.55)] cursor-pointer border-none"><i className={`fas fa-sync-alt text-[0.7rem] ${refreshing ? 'animate-spin' : ''}`} /></button>} />
       <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
-        {/* Principal Balance — Gradient Card */}
+        {/* Solde Total — Gradient Card (no buttons, display only) */}
         <div className="gradient-card rounded-2xl p-5 mb-3 relative overflow-hidden">
           <div className="absolute -top-20 -right-20 w-[200px] h-[200px] bg-[radial-gradient(circle,rgba(255,255,255,0.15),transparent_60%)]" style={{ animation: 'orbFloat 8s ease-in-out infinite' }} />
           <div className="absolute -bottom-10 -left-10 w-[140px] h-[140px] bg-[radial-gradient(circle,rgba(255,255,255,0.1),transparent_60%)]" style={{ animation: 'orbFloat 8s ease-in-out infinite 4s reverse' }} />
           <div className="relative z-[1]">
             <div className="flex items-center gap-2 mb-1">
-              <div className="w-9 h-9 icon-box bg-white/20"><i className="fas fa-wallet text-[0.85rem] text-white"></i></div>
-              <div className="text-[0.7rem] text-white/70 font-semibold uppercase tracking-[1.5px]">Compte Principal</div>
+              <div className="w-9 h-9 icon-box bg-white/20"><i className="fas fa-layer-group text-[0.85rem] text-white"></i></div>
+              <div className="text-[0.7rem] text-white/70 font-semibold uppercase tracking-[1.5px]">Solde Total</div>
+              <div className="ml-auto"><button onClick={() => setPage('deposit-choose')} className="py-2 px-3.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-[0.65rem] font-semibold cursor-pointer border-none transition-all active:scale-95 flex items-center gap-1.5"><i className="fas fa-arrow-down text-[0.6rem]"></i> Déposer</button></div>
             </div>
-            <div className="text-[2rem] font-black tracking-[-1px] text-white mb-3">{formatMoney(user.balance)}</div>
-            <button onClick={() => setPage('withdraw')} className="w-full py-[11px] rounded-xl text-[0.78rem] font-semibold cursor-pointer flex items-center justify-center gap-1.5 border-none bg-white/15 text-white hover:bg-white/25 transition-colors"><i className="fas fa-arrow-up"></i> Retirer</button>
-            <button onClick={() => setPage('invest')} className="mt-2 w-full text-[0.66rem] text-white/70 hover:text-white underline-offset-2 hover:underline transition-colors border-none bg-transparent cursor-pointer"><i className="fas fa-info-circle mr-1"></i>Les dépôts se font directement dans les niveaux d&apos;investissement</button>
+            <div className="text-[2rem] font-black tracking-[-1px] text-white">{formatMoney((user.balance || 0) + (user.investBalance || 0) + (user.projectBalance || 0) + (user.videoBalance || 0))}</div>
           </div>
         </div>
 
@@ -709,11 +708,14 @@ function WalletScreen() {
               </div>
             </div>
             <div className="text-right">
-              <div className="text-[1.3rem] font-black text-[#1F2937]">{formatMoney(user.gameTotalWon || 0)}</div>
+              <div className="text-[1.3rem] font-black text-[#1F2937]">{formatMoney(user.balance)}</div>
               <div className="text-[0.55rem] text-[rgba(0,0,0,0.45)] font-medium">{spinsRemaining} tours restants · {formatMoney(totalWonToday)} aujourd&apos;hui</div>
             </div>
           </div>
-          <button onClick={() => setPage('game')} className="w-full py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none text-white transition-transform active:scale-95" style={{ background: 'linear-gradient(90deg, #F59E0B 0%, #FBBF24 100%)' }}><i className="fas fa-play text-[0.65rem]"></i> Jouer maintenant</button>
+          <div className="flex gap-2">
+            <button onClick={() => setPage('game')} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none text-white transition-transform active:scale-95" style={{ background: 'linear-gradient(90deg, #F59E0B 0%, #FBBF24 100%)' }}><i className="fas fa-play text-[0.65rem]"></i> Jouer</button>
+            <button onClick={() => { setWithdrawSource('jeu'); setPage('withdraw'); }} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(0,0,0,0.04)] text-[rgba(0,0,0,0.7)] transition-transform active:scale-95"><i className="fas fa-arrow-up text-[0.65rem]"></i> Retirer</button>
+          </div>
         </div>
 
         {/* Compte Investissement — Teal card with seedling icon */}
@@ -726,38 +728,49 @@ function WalletScreen() {
                 <div className="text-[0.55rem] text-[#0F766E] font-semibold mt-0.5">+{formatMoney(totalEarned)} gagnés · {activeInvestments} actif{activeInvestments > 1 ? 's' : ''}</div>
               </div>
             </div>
-            <div className="text-[1.3rem] font-black text-[#1F2937]">{formatMoney(totalInvested)}</div>
+            <div className="text-[1.3rem] font-black text-[#1F2937]">{formatMoney(user.investBalance || 0)}</div>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setTransferTarget({ from: 'invest', to: 'principal', label: 'Retirer vers Principal', fee: false, fromColor: '#14B8A6', toColor: '#22C55E', fromIcon: 'fa-seedling', toIcon: 'fa-wallet' })} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none text-white transition-transform active:scale-95" style={{ background: 'linear-gradient(90deg, #14B8A6 0%, #0F766E 100%)' }}><i className="fas fa-arrow-left text-[0.65rem]"></i> Retirer vers Principal</button>
-            <button onClick={() => setPage('invest')} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border border-[rgba(20,184,166,0.25)] bg-transparent text-[#0F766E] transition-transform active:scale-95"><i className="fas fa-list text-[0.65rem]"></i> Voir mes investissements</button>
+            <button onClick={() => setPage('invest')} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none text-white transition-transform active:scale-95" style={{ background: 'linear-gradient(90deg, #14B8A6 0%, #0F766E 100%)' }}><i className="fas fa-list text-[0.65rem]"></i> Voir investissements</button>
+            <button onClick={() => { setWithdrawSource('investissement'); setPage('withdraw'); }} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(0,0,0,0.04)] text-[rgba(0,0,0,0.7)] transition-transform active:scale-95"><i className="fas fa-arrow-up text-[0.65rem]"></i> Retirer</button>
           </div>
-          <p className="mt-2 text-[0.6rem] text-[rgba(0,0,0,0.45)] flex items-center gap-1"><i className="fas fa-info-circle text-[#0F766E]"></i>Pour retirer, transférez vers le compte principal.</p>
         </div>
 
-        {/* Autres comptes — Vidéo et Projet (Glass Cards with colored left border) */}
-        {accounts.map((acc) => (
-          <div key={acc.key} className="glass-card rounded-2xl p-4 mb-3" style={{ borderLeft: `4px solid ${acc.borderColor}` }}>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2.5">
-                <div className={`w-10 h-10 icon-box ${acc.iconBg}`}><i className={`fas ${acc.icon} text-[0.9rem]`} style={{ color: acc.iconColor }}></i></div>
-                <div>
-                  <div className="text-[0.7rem] text-[rgba(0,0,0,0.5)] font-semibold uppercase tracking-[1.5px]">{acc.label}</div>
-                  {acc.key === 'video' && <div className="text-[0.55rem] text-[#14B8A6] font-semibold mt-0.5">Alimenté par les vidéos regardées</div>}
-                </div>
+        {/* Compte Projet — Purple card with building icon */}
+        <div className="glass-card rounded-2xl p-4 mb-3" style={{ borderLeft: '4px solid #8B5CF6' }}>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 icon-box bg-[rgba(139,92,246,0.12)]"><i className="fas fa-building text-[0.9rem]" style={{ color: '#8B5CF6' }}></i></div>
+              <div>
+                <div className="text-[0.7rem] text-[rgba(0,0,0,0.5)] font-semibold uppercase tracking-[1.5px]">Compte Projet</div>
+                <div className="text-[0.55rem] text-[#8B5CF6] font-semibold mt-0.5">Projets entrepreneuriaux</div>
               </div>
-              <div className="text-[1.3rem] font-black text-[#1F2937]">{formatMoney(acc.balance)}</div>
             </div>
-            {acc.transferable ? (
-              <div className="flex gap-2">
-                <button onClick={() => setTransferTarget({ from: 'principal', to: acc.key, label: `Verser vers ${acc.label}`, fee: true, fromColor: '#22C55E', toColor: acc.iconColor, fromIcon: 'fa-wallet', toIcon: acc.icon })} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(34,197,94,0.12)] text-[#22C55E] hover:bg-[rgba(34,197,94,0.18)] transition-colors"><i className="fas fa-arrow-right text-[0.65rem]"></i> Verser</button>
-                <button onClick={() => setTransferTarget({ from: acc.key, to: 'principal', label: `Retirer vers Principal`, fee: false, fromColor: acc.iconColor, toColor: '#22C55E', fromIcon: acc.icon, toIcon: 'fa-wallet' })} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(0,0,0,0.04)] text-[rgba(0,0,0,0.7)]"><i className="fas fa-arrow-left text-[0.65rem]"></i> Retirer</button>
-              </div>
-            ) : (
-              <button onClick={() => setPage('videos')} className="w-full py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(20,184,166,0.10)] text-[#0F766E] hover:bg-[rgba(20,184,166,0.16)] transition-colors"><i className="fas fa-play text-[0.65rem]"></i> Regarder des vidéos</button>
-            )}
+            <div className="text-[1.3rem] font-black text-[#1F2937]">{formatMoney(user.projectBalance)}</div>
           </div>
-        ))}
+          <div className="flex gap-2">
+            <button onClick={() => setPage('enterprise')} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none text-white transition-transform active:scale-95" style={{ background: 'linear-gradient(90deg, #8B5CF6 0%, #7C3AED 100%)' }}><i className="fas fa-list text-[0.65rem]"></i> Voir projets</button>
+            <button onClick={() => { setWithdrawSource('projet'); setPage('withdraw'); }} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(0,0,0,0.04)] text-[rgba(0,0,0,0.7)] transition-transform active:scale-95"><i className="fas fa-arrow-up text-[0.65rem]"></i> Retirer</button>
+          </div>
+        </div>
+
+        {/* Compte Vidéo — Teal card with video icon */}
+        <div className="glass-card rounded-2xl p-4 mb-3" style={{ borderLeft: '4px solid #14B8A6' }}>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 icon-box bg-[rgba(20,184,166,0.12)]"><i className="fas fa-video text-[0.9rem]" style={{ color: '#14B8A6' }}></i></div>
+              <div>
+                <div className="text-[0.7rem] text-[rgba(0,0,0,0.5)] font-semibold uppercase tracking-[1.5px]">Compte Vidéo</div>
+                <div className="text-[0.55rem] text-[#14B8A6] font-semibold mt-0.5">Alimenté par les vidéos regardées</div>
+              </div>
+            </div>
+            <div className="text-[1.3rem] font-black text-[#1F2937]">{formatMoney(user.videoBalance || 0)}</div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setPage('videos')} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none text-white transition-transform active:scale-95" style={{ background: 'linear-gradient(90deg, #14B8A6 0%, #0D9488 100%)' }}><i className="fas fa-play text-[0.65rem]"></i> Vidéos</button>
+            <button onClick={() => { setWithdrawSource('video'); setPage('withdraw'); }} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(0,0,0,0.04)] text-[rgba(0,0,0,0.7)] transition-transform active:scale-95"><i className="fas fa-arrow-up text-[0.65rem]"></i> Retirer</button>
+          </div>
+        </div>
 
         {/* Transfer Modal — Frosted Glass */}
         {transferTarget && (
@@ -831,6 +844,90 @@ function WalletScreen() {
   );
 }
 
+// ==================== DEPOSIT CHOOSE SCREEN ====================
+function DepositChooseScreen() {
+  const { setPage, setDepositTarget } = useAppStore();
+
+  return (
+    <>
+      <Header
+        title="Choisir un compte"
+        icon="fa-arrow-down"
+        iconColor="#22C55E"
+        leftElement={
+          <button onClick={() => setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.06)] text-[rgba(0,0,0,0.55)] cursor-pointer border-none mr-1">
+            <i className="fas fa-arrow-left text-[0.8rem]"></i>
+          </button>
+        }
+      />
+      <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
+        <h2 className="text-[1.1rem] font-black text-[#1F2937] mb-1">Choisir un compte</h2>
+        <p className="text-[0.78rem] text-[rgba(0,0,0,0.55)] mb-5">Sélectionnez le compte dans lequel vous souhaitez déposer.</p>
+
+        {/* Investissement card */}
+        <button
+          onClick={() => { setDepositTarget('invest'); setPage('invest'); }}
+          className="w-full text-left rounded-2xl p-5 mb-3 border border-[rgba(0,0,0,0.08)] bg-[#FFFFFF] hover:border-[rgba(20,184,166,0.3)] active:scale-[0.98] transition-all cursor-pointer"
+        >
+          <div className="flex items-start gap-3.5">
+            <div className="w-12 h-12 rounded-xl bg-[rgba(20,184,166,0.12)] flex items-center justify-center shrink-0">
+              <i className="fas fa-seedling text-[#0F766E] text-[1.2rem]"></i>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-[0.95rem] font-bold text-[#1F2937] mb-0.5">Investissement</h3>
+              <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)] leading-relaxed mb-2">Déposez dans vos niveaux d&apos;investissement et gagnez 5% par jour.</p>
+              <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#0F766E] bg-[rgba(20,184,166,0.12)] px-2 py-1 rounded-full">
+                <i className="fas fa-chart-line"></i> 5% / jour
+              </span>
+            </div>
+            <i className="fas fa-chevron-right text-[rgba(0,0,0,0.35)] mt-3"></i>
+          </div>
+        </button>
+
+        {/* Jeu card */}
+        <button
+          onClick={() => { setDepositTarget('jeu'); setPage('deposit'); }}
+          className="w-full text-left rounded-2xl p-5 mb-3 border border-[rgba(0,0,0,0.08)] bg-[#FFFFFF] hover:border-[rgba(245,158,11,0.3)] active:scale-[0.98] transition-all cursor-pointer"
+        >
+          <div className="flex items-start gap-3.5">
+            <div className="w-12 h-12 rounded-xl bg-[rgba(245,158,11,0.12)] flex items-center justify-center shrink-0">
+              <i className="fas fa-dice text-[#F59E0B] text-[1.2rem]"></i>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-[0.95rem] font-bold text-[#1F2937] mb-0.5">Jeu</h3>
+              <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)] leading-relaxed mb-2">Déposez dans votre compte jeu pour la roue de la fortune.</p>
+              <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#F59E0B] bg-[rgba(245,158,11,0.12)] px-2 py-1 rounded-full">
+                <i className="fas fa-dice"></i> YAS ou TRX
+              </span>
+            </div>
+            <i className="fas fa-chevron-right text-[rgba(0,0,0,0.35)] mt-3"></i>
+          </div>
+        </button>
+
+        {/* Projet card */}
+        <button
+          onClick={() => { setDepositTarget('projet'); setPage('deposit'); }}
+          className="w-full text-left rounded-2xl p-5 mb-3 border border-[rgba(0,0,0,0.08)] bg-[#FFFFFF] hover:border-[rgba(139,92,246,0.3)] active:scale-[0.98] transition-all cursor-pointer"
+        >
+          <div className="flex items-start gap-3.5">
+            <div className="w-12 h-12 rounded-xl bg-[rgba(139,92,246,0.12)] flex items-center justify-center shrink-0">
+              <i className="fas fa-building text-[#8B5CF6] text-[1.2rem]"></i>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-[0.95rem] font-bold text-[#1F2937] mb-0.5">Projet</h3>
+              <p className="text-[0.72rem] text-[rgba(0,0,0,0.55)] leading-relaxed mb-2">Déposez dans votre compte projet pour les entreprises.</p>
+              <span className="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-[#8B5CF6] bg-[rgba(139,92,246,0.12)] px-2 py-1 rounded-full">
+                <i className="fas fa-building"></i> YAS ou TRX
+              </span>
+            </div>
+            <i className="fas fa-chevron-right text-[rgba(0,0,0,0.35)] mt-3"></i>
+          </div>
+        </button>
+      </div>
+    </>
+  );
+}
+
 // ==================== FINANCE SCREEN ====================
 function FinanceScreen() {
   const [subTab, setSubTab] = useState<'invest' | 'game' | 'projects'>('invest');
@@ -878,7 +975,7 @@ function BottomNav() {
     { id: 'profile', icon: 'fa-user', label: 'Profil' },
   ];
   const isActive = (tabId: string) => {
-    if (tabId === 'home') return ['home', 'finance', 'invest', 'game', 'enterprise', 'wallet', 'deposit', 'withdraw'].includes(currentPage);
+    if (tabId === 'home') return ['home', 'finance', 'invest', 'game', 'enterprise', 'wallet', 'deposit', 'deposit-choose', 'withdraw'].includes(currentPage);
     if (tabId === 'guide') return currentPage === 'guide';
     return currentPage === tabId;
   };
@@ -971,6 +1068,7 @@ export default function BeRichApp() {
           {user && currentPage === 'admin' && <AdminScreen />}
           {user && currentPage === 'chat' && <ChatScreen />}
           {user && currentPage === 'deposit' && <DepositScreen />}
+          {user && currentPage === 'deposit-choose' && <DepositChooseScreen />}
           {user && currentPage === 'guide' && <GuideScreen />}
           {showNav && <BottomNav />}
           {user && (currentPage === 'home' || currentPage === 'videos') && <FloatingGift />}
