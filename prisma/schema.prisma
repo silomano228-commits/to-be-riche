@@ -399,7 +399,7 @@ model AdminVideoLink {
   youtubeId   String   // YouTube video ID (real, embeddable)
   title       String   // Title that conforms to the video content
   sponsor     String   // Company / sponsor name
-  category    String   @default("entreprise") // chinois | japonais | indien | entreprise
+  category    String   @default("entreprise") // Theme: technologie | finance | sante | education | commerce | industrie | agriculture | immobilier | tourisme | restauration | mode | sport | entreprise
   durationMin Int      @default(5)
   reward      Float    @default(0.20) // 0.15 - 0.30 USD
   active      Boolean  @default(true)

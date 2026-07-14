@@ -9,7 +9,7 @@ import PaymentDetails from '@/components/PaymentDetails';
 interface VideoItem {
   id: string;
   title: string;
-  category: 'chinois' | 'japonais' | 'indien' | 'coréen' | 'américain' | 'européen' | 'entreprise' | string;
+  category: string;
   sponsor: string;
   durationMin: number;
   reward: number;
@@ -17,34 +17,164 @@ interface VideoItem {
   watchedAt?: string | null;
 }
 
-const CATEGORY_LABEL: Record<string, string> = {
-  chinois: 'Entreprise Chinoise',
-  japonais: 'Entreprise Japonaise',
-  indien: 'Entreprise Indienne',
-  coréen: 'Entreprise Coréenne',
-  américain: 'Entreprise Américaine',
-  européen: 'Entreprise Européenne',
+// Map old category values to new theme values for backward compatibility
+const resolveTheme = (category: string): string => {
+  const oldMapping: Record<string, string> = {
+    chinois: 'industrie',
+    japonais: 'technologie',
+    indien: 'commerce',
+  };
+  return oldMapping[category] || category;
+};
+
+const THEME_LABEL: Record<string, string> = {
+  technologie: 'Technologie',
+  finance: 'Finance',
+  sante: 'Santé',
+  education: 'Éducation',
+  commerce: 'Commerce',
+  industrie: 'Industrie',
+  agriculture: 'Agriculture',
+  immobilier: 'Immobilier',
+  tourisme: 'Tourisme',
+  restauration: 'Restauration',
+  mode: 'Mode',
+  sport: 'Sport',
   entreprise: 'Entreprise',
+  // Fallback for old categories
+  chinois: 'Industrie',
+  japonais: 'Technologie',
+  indien: 'Commerce',
 };
 
-const CATEGORY_COLOR: Record<string, string> = {
-  chinois: '#DC2626',
-  japonais: '#BC002D',
-  indien: '#FF9933',
-  coréen: '#003478',
-  américain: '#3C3B6E',
-  européen: '#003399',
+const THEME_COLOR: Record<string, string> = {
+  technologie: '#06B6D4',
+  finance: '#22C55E',
+  sante: '#EF4444',
+  education: '#A855F7',
+  commerce: '#FB923C',
+  industrie: '#6B7280',
+  agriculture: '#4ADE80',
+  immobilier: '#6366F1',
+  tourisme: '#3B82F6',
+  restauration: '#F472B6',
+  mode: '#EC4899',
+  sport: '#EAB308',
   entreprise: '#14B8A6',
+  // Fallback for old categories
+  chinois: '#6B7280',
+  japonais: '#06B6D4',
+  indien: '#FB923C',
 };
 
-const CATEGORY_FLAG: Record<string, string> = {
-  chinois: '🇨🇳',
-  japonais: '🇯🇵',
-  indien: '🇮🇳',
-  coréen: '🇰🇷',
-  américain: '🇺🇸',
-  européen: '🇪🇺',
-  entreprise: '🏢',
+const THEME_ICON: Record<string, string> = {
+  technologie: 'fas fa-microchip',
+  finance: 'fas fa-chart-line',
+  sante: 'fas fa-heartbeat',
+  education: 'fas fa-graduation-cap',
+  commerce: 'fas fa-shopping-cart',
+  industrie: 'fas fa-industry',
+  agriculture: 'fas fa-seedling',
+  immobilier: 'fas fa-building',
+  tourisme: 'fas fa-plane',
+  restauration: 'fas fa-utensils',
+  mode: 'fas fa-tshirt',
+  sport: 'fas fa-futbol',
+  entreprise: 'fas fa-briefcase',
+};
+
+const THEME_COMMENTS: Record<string, string[]> = {
+  technologie: [
+    "Incroyable cette innovation ! La technologie avance à une vitesse fulgurante 🔥",
+    "Merci pour cette explication claire, j'ai enfin compris le concept !",
+    "Le futur est maintenant, ces entreprises vont changer le monde 🚀",
+    "Très instructif, je partage avec mes collègues",
+    "La technologie africaine est en pleine émergence, félicitations !",
+  ],
+  finance: [
+    "Excellente analyse ! Les perspectives de croissance sont prometteuses 💹",
+    "Merci pour ces conseils financiers, très utiles pour investir",
+    "L'économie mondiale évolue vite, il faut rester informé",
+    "Des données claires et précises, bravo à l'équipe !",
+    "J'investis dans ce secteur depuis 2 ans, c'est vraiment rentable",
+  ],
+  sante: [
+    "La santé est la vraie richesse, merci pour cette sensibilisation 💚",
+    "Très important ce sujet, tout le monde devrait regarder",
+    "Des solutions concrètes pour améliorer la santé au quotidien",
+    "Je partage avec ma famille, c'est essentiel",
+    "Bravo pour cette initiative, la santé doit être une priorité !",
+  ],
+  education: [
+    "L'éducation est la clé du développement, merci pour ce contenu 📚",
+    "Très enrichissant, j'apprends quelque chose de nouveau à chaque vidéo",
+    "Partagé avec mes étudiants, c'est exactement ce qu'il nous fallait",
+    "La qualité de l'enseignement fait toute la différence",
+    "Formidable initiative pour l'éducation accessible à tous !",
+  ],
+  commerce: [
+    "Le e-commerce transforme l'économie africaine, c'est impressionnant 🛒",
+    "Des astuces très pratiques pour développer son business",
+    "J'applique ces conseils et mes ventes ont augmenté de 40% !",
+    "Le commerce international offre tellement d'opportunités",
+    "Merci pour ce partage, le commerce est l'avenir de l'Afrique !",
+  ],
+  industrie: [
+    "L'industrialisation est cruciale pour le développement 🏭",
+    "Des infrastructures impressionnantes, le secteur industriel se transforme",
+    "L'industrie 4.0 révolutionne la production, incroyable !",
+    "Merci pour ce reportage, très inspirant pour les entrepreneurs",
+    "La transformation industrielle crée des milliers d'emplois, bravo !",
+  ],
+  agriculture: [
+    "L'agriculture moderne nourrit le monde, respect aux agriculteurs 🌾",
+    "Des techniques innovantes pour une agriculture durable",
+    "L'agribusiness africain a un énorme potentiel de croissance",
+    "Merci pour ces conseils agricoles, très applicables sur le terrain",
+    "L'agriculture est le pilier de l'économie, félicitations !",
+  ],
+  immobilier: [
+    "Le marché immobilier offre de belles opportunités d'investissement 🏢",
+    "Des projets architecturaux impressionnants, le secteur bouge !",
+    "L'immobilier reste l'un des meilleurs placements à long terme",
+    "Merci pour ces analyses de marché, très pertinentes",
+    "Investir dans l'immobilier en Afrique, c'est le moment !",
+  ],
+  tourisme: [
+    "Des destinations magnifiques ! Le tourisme africain a tant à offrir ✈️",
+    "Merci pour ce découpage, j'ai ajouté à ma liste de voyage",
+    "Le tourisme durable est l'avenir, bravo pour cette approche",
+    "Des paysages à couper le souffle, l'Afrique est magnifique",
+    "Le secteur touristique crée des emplois et développe les régions !",
+  ],
+  restauration: [
+    "La gastronomie africaine est riche et diversifiée, merci pour ce partage 🍽️",
+    "Des recettes et des concepts innovants, j'adore !",
+    "Le secteur de la restauration porte bien en ce moment",
+    "L'entrepreneuriat dans la restauration, c'est un pari gagnant",
+    "Merci pour ces inspirations culinaires, mon restaurant en bénéficie !",
+  ],
+  mode: [
+    "Le style africain s'exporte dans le monde entier, félicitations ! 👗",
+    "La mode durable est l'avenir, bravo pour cette vision",
+    "Des créations magnifiques, le talent africain est immense",
+    "L'industrie de la mode crée tellement d'emplois pour les jeunes",
+    "Merci pour mettre en valeur les créateurs africains !",
+  ],
+  sport: [
+    "Le sport africain est en pleine explosion, félicitations ! ⚽",
+    "Des athlètes exceptionnels qui représentent le continent fièrement",
+    "Le sport comme vecteur de développement social, c'est inspirant",
+    "Merci pour ce contenu sportif, très motivant !",
+    "Les infrastructures sportives se développent, c'est génial !",
+  ],
+  entreprise: [
+    "Excellente présentation de cette entreprise, très professionnel ! 🏢",
+    "Un modèle inspirant pour les jeunes entrepreneurs africains",
+    "Merci pour mettre en valeur les entreprises du continent",
+    "Des résultats impressionnants, cette entreprise va loin !",
+    "L'entrepreneuriat africain est en pleine ascension, bravo !",
+  ],
 };
 
 // Approximate daily maximum a user can earn from 5 videos (5 × ~$0.22)
@@ -344,15 +474,16 @@ export default function VideoPlatformScreen() {
                 {/* Body */}
                 <div className="p-2.5 flex-1 flex flex-col">
                   <div className="flex items-center gap-1 mb-1 flex-wrap">
-                    <span className="text-[0.5rem] font-bold px-1.5 py-0.5 rounded text-white" style={{ background: CATEGORY_COLOR[v.category] || '#14B8A6' }}>
-                      {CATEGORY_FLAG[v.category]} {CATEGORY_LABEL[v.category]}
+                    <span className="text-[0.5rem] font-bold px-1.5 py-0.5 rounded text-white flex items-center gap-1" style={{ background: THEME_COLOR[v.category] || '#14B8A6' }}>
+                      <i className={`${THEME_ICON[v.category] || 'fas fa-briefcase'} text-[0.4rem]`}></i>
+                      {THEME_LABEL[v.category] || v.category}
                     </span>
                   </div>
                   <div className="text-[0.78rem] font-bold text-[#1F2937] leading-snug mb-1" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {v.title}
                   </div>
                   <div className="text-[0.6rem] text-[#6B7280] flex items-center gap-1 mb-2 truncate">
-                    <i className="fas fa-bullhorn text-[0.5rem]" style={{ color: CATEGORY_COLOR[v.category] || '#14B8A6' }}></i>
+                    <i className="fas fa-bullhorn text-[0.5rem]" style={{ color: THEME_COLOR[v.category] || '#14B8A6' }}></i>
                     <span className="truncate">{v.sponsor}</span>
                   </div>
                   {/* Reward / status */}
@@ -432,7 +563,7 @@ export default function VideoPlatformScreen() {
 // ===== Video thumbnail with YouTube image + onError fallback =====
 function VideoThumbnail({ videoId, category, durationMin }: { videoId: string; category: string; durationMin: number }) {
   const [failed, setFailed] = useState(false);
-  const bg = CATEGORY_COLOR[category] || '#14B8A6';
+  const bg = THEME_COLOR[category] || '#14B8A6';
   if (failed) {
     return (
       <div className="w-full h-full flex items-center justify-center relative" style={{ background: bg }}>
@@ -459,6 +590,29 @@ function VideoThumbnail({ videoId, category, durationMin }: { videoId: string; c
   );
 }
 
+// ===== Copy comment card =====
+function CopyCommentCard({ comment, onCopy }: { comment: string; onCopy: (comment: string) => Promise<void> }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    await onCopy(comment);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <div className="rounded-xl p-2.5 flex items-start gap-2" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+      <div className="flex-1 text-[0.7rem] text-white/80 leading-relaxed pt-0.5">{comment}</div>
+      <button
+        onClick={handleCopy}
+        className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer transition-all active:scale-90 border-none"
+        style={{ background: copied ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.08)' }}
+        title={copied ? 'Copié !' : 'Copier le commentaire'}
+      >
+        <i className={`text-[0.7rem] ${copied ? 'fas fa-check text-[#22C55E]' : 'fas fa-copy text-white/50'}`}></i>
+      </button>
+    </div>
+  );
+}
+
 // ===== Video player modal — simple iframe + time-based progress (robust, no YT API dependency) =====
 const MIN_WATCH_PCT = 30; // must match /api/videos/reward threshold
 
@@ -470,8 +624,10 @@ function VideoPlayerModal({ video, onClose, onReward }: {
   const [watchedPercent, setWatchedPercent] = useState(0);
   const [canClaim, setCanClaim] = useState(false);
   const [claiming, setClaiming] = useState(false);
+  const [claimed, setClaimed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [suggestedComments, setSuggestedComments] = useState<string[]>([]);
   const startTimeRef = useRef<number>(Date.now());
   const claimedRef = useRef(false);
 
@@ -521,7 +677,12 @@ function VideoPlayerModal({ video, onClose, onReward }: {
       });
       const data = await res.json();
       if (data.success) {
-        await onReward(video.reward);
+        // Pick 2-3 random comments for this theme
+        const theme = resolveTheme(video.category);
+        const pool = THEME_COMMENTS[theme] || THEME_COMMENTS.entreprise;
+        const shuffled = [...pool].sort(() => Math.random() - 0.5);
+        setSuggestedComments(shuffled.slice(0, 3));
+        setClaimed(true);
       } else {
         setError(data.error || 'Erreur lors de la réclamation.');
         claimedRef.current = false;
@@ -531,6 +692,31 @@ function VideoPlayerModal({ video, onClose, onReward }: {
       claimedRef.current = false;
     }
     setClaiming(false);
+  };
+
+  const handleClose = async () => {
+    if (claimed) {
+      await onReward(video.reward);
+    } else {
+      onClose();
+    }
+  };
+
+  const handleCopyComment = async (comment: string) => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(comment);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = comment;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+    } catch { /* ignore */ }
   };
 
   const remainingPct = Math.max(0, Math.ceil(MIN_WATCH_PCT - watchedPercent));
@@ -546,13 +732,14 @@ function VideoPlayerModal({ video, onClose, onReward }: {
         {/* Header — Quit (X) button ALWAYS visible */}
         <div className="flex items-center justify-between mb-3 gap-2">
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <span className="text-[0.55rem] font-bold px-1.5 py-0.5 rounded text-white flex-shrink-0" style={{ background: CATEGORY_COLOR[video.category] || '#14B8A6' }}>
-              {CATEGORY_FLAG[video.category]} {CATEGORY_LABEL[video.category]}
+            <span className="text-[0.55rem] font-bold px-1.5 py-0.5 rounded text-white flex-shrink-0 flex items-center gap-1" style={{ background: THEME_COLOR[video.category] || '#14B8A6' }}>
+              <i className={`${THEME_ICON[video.category] || 'fas fa-briefcase'} text-[0.45rem]`}></i>
+              {THEME_LABEL[video.category] || video.category}
             </span>
             <span className="text-[0.6rem] text-white/60 truncate">Sponsorisé par {video.sponsor}</span>
           </div>
           <button
-            onClick={onClose}
+            onClick={claimed ? handleClose : onClose}
             aria-label="Quitter la vidéo"
             title="Quitter la vidéo"
             className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center cursor-pointer transition-all active:scale-95 border-none"
@@ -636,25 +823,59 @@ function VideoPlayerModal({ video, onClose, onReward }: {
           </div>
         )}
 
-        {/* Claim button */}
-        <button
-          onClick={handleClaim}
-          disabled={!canClaim || claiming || !!error}
-          className="w-full mt-3 py-3 rounded-xl font-bold text-[0.85rem] border-none cursor-pointer disabled:opacity-40 transition-all active:scale-95"
-          style={{ background: canClaim ? 'linear-gradient(135deg, #22C55E, #14B8A6)' : '#4B5563', color: '#FFFFFF' }}
-        >
-          {claiming ? 'Réclamation...' : canClaim ? `Réclamer $${video.reward.toFixed(2)}` : `Regardez encore ${remainingSec}s (${remainingPct}%)`}
-        </button>
+        {claimed ? (
+          /* ===== Claimed: show success + comments to copy ===== */
+          <div className="mt-3">
+            {/* Success banner */}
+            <div className="rounded-xl p-3 mb-3 text-center" style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)' }}>
+              <i className="fas fa-check-circle text-[#22C55E] text-[1.1rem] mb-1"></i>
+              <div className="text-[0.82rem] font-bold text-[#22C55E]">+$${video.reward.toFixed(2)} réclamés !</div>
+              <div className="text-[0.6rem] text-white/50 mt-0.5">Copiez un commentaire ci-dessous et collez-le sous la vidéo YouTube</div>
+            </div>
 
-        {/* Always-available Quit button */}
-        <button
-          onClick={onClose}
-          className="w-full mt-2 py-3 rounded-xl font-bold text-[0.8rem] cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-2"
-          style={{ background: 'rgba(239,68,68,0.12)', color: '#FCA5A5', border: '1px solid rgba(239,68,68,0.4)' }}
-        >
-          <i className="fas fa-times-circle text-[0.9rem]"></i>
-          Quitter la vidéo
-        </button>
+            {/* Comments to copy */}
+            <div className="space-y-2 mb-3">
+              <div className="text-[0.65rem] font-semibold text-white/50 flex items-center gap-1 mb-1">
+                <i className="fas fa-comments text-[0.6rem]"></i>
+                Commentaires à copier
+              </div>
+              {suggestedComments.map((comment, idx) => (
+                <CopyCommentCard key={idx} comment={comment} onCopy={handleCopyComment} />
+              ))}
+            </div>
+
+            {/* Close button */}
+            <button
+              onClick={handleClose}
+              className="w-full py-3 rounded-xl font-bold text-[0.85rem] border-none cursor-pointer transition-all active:scale-95"
+              style={{ background: 'linear-gradient(135deg, #22C55E, #14B8A6)', color: '#FFFFFF' }}
+            >
+              <i className="fas fa-check mr-1.5"></i>Fermer
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Claim button */}
+            <button
+              onClick={handleClaim}
+              disabled={!canClaim || claiming || !!error}
+              className="w-full mt-3 py-3 rounded-xl font-bold text-[0.85rem] border-none cursor-pointer disabled:opacity-40 transition-all active:scale-95"
+              style={{ background: canClaim ? 'linear-gradient(135deg, #22C55E, #14B8A6)' : '#4B5563', color: '#FFFFFF' }}
+            >
+              {claiming ? 'Réclamation...' : canClaim ? `Réclamer $${video.reward.toFixed(2)}` : `Regardez encore ${remainingSec}s (${remainingPct}%)`}
+            </button>
+
+            {/* Always-available Quit button */}
+            <button
+              onClick={onClose}
+              className="w-full mt-2 py-3 rounded-xl font-bold text-[0.8rem] cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-2"
+              style={{ background: 'rgba(239,68,68,0.12)', color: '#FCA5A5', border: '1px solid rgba(239,68,68,0.4)' }}
+            >
+              <i className="fas fa-times-circle text-[0.9rem]"></i>
+              Quitter la vidéo
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

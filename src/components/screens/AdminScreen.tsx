@@ -82,7 +82,7 @@ export default function AdminScreen() {
   const [videoUrlOrId, setVideoUrlOrId] = useState('');
   const [videoTitle, setVideoTitle] = useState('');
   const [videoSponsor, setVideoSponsor] = useState('');
-  const [videoCategory, setVideoCategory] = useState<'chinois' | 'japonais' | 'indien' | 'entreprise'>('entreprise');
+  const [videoTheme, setVideoTheme] = useState<string>('entreprise');
   const [videoDuration, setVideoDuration] = useState('5');
   const [videoReward, setVideoReward] = useState('0.20');
   const [addingVideo, setAddingVideo] = useState(false);
@@ -601,7 +601,7 @@ export default function AdminScreen() {
           youtubeIdOrUrl: videoUrlOrId.trim(),
           title: videoTitle.trim(),
           sponsor: videoSponsor.trim(),
-          category: videoCategory,
+          category: videoTheme,
           durationMin: Number(videoDuration) || 5,
           reward: Number(videoReward) || 0,
           active: true,
@@ -613,7 +613,7 @@ export default function AdminScreen() {
         setVideoUrlOrId('');
         setVideoTitle('');
         setVideoSponsor('');
-        setVideoCategory('entreprise');
+        setVideoTheme('entreprise');
         setVideoDuration('5');
         setVideoReward('0.20');
         loadAdminVideos();
@@ -1941,23 +1941,32 @@ export default function AdminScreen() {
                     </div>
 
                     <div className="mb-2.5">
-                      <label className="block mb-1 text-[0.65rem] font-semibold text-[rgba(255,255,255,0.45)]">Catégorie</label>
-                      <div className="grid grid-cols-4 gap-1.5">
+                      <label className="block mb-1 text-[0.65rem] font-semibold text-[rgba(255,255,255,0.45)]">Thème de la vidéo</label>
+                      <div className="grid grid-cols-3 gap-1.5">
                         {([
-                          { v: 'chinois', l: 'Chinois' },
-                          { v: 'japonais', l: 'Japonais' },
-                          { v: 'indien', l: 'Indien' },
-                          { v: 'entreprise', l: 'Entreprise' },
+                          { v: 'technologie', l: 'Technologie', icon: 'fas fa-microchip' },
+                          { v: 'finance', l: 'Finance', icon: 'fas fa-chart-line' },
+                          { v: 'sante', l: 'Santé', icon: 'fas fa-heartbeat' },
+                          { v: 'education', l: 'Éducation', icon: 'fas fa-graduation-cap' },
+                          { v: 'commerce', l: 'Commerce', icon: 'fas fa-shopping-cart' },
+                          { v: 'industrie', l: 'Industrie', icon: 'fas fa-industry' },
+                          { v: 'agriculture', l: 'Agriculture', icon: 'fas fa-seedling' },
+                          { v: 'immobilier', l: 'Immobilier', icon: 'fas fa-building' },
+                          { v: 'tourisme', l: 'Tourisme', icon: 'fas fa-plane' },
+                          { v: 'restauration', l: 'Restauration', icon: 'fas fa-utensils' },
+                          { v: 'mode', l: 'Mode', icon: 'fas fa-tshirt' },
+                          { v: 'sport', l: 'Sport', icon: 'fas fa-futbol' },
                         ] as const).map(c => (
                           <button
                             key={c.v}
-                            onClick={() => setVideoCategory(c.v)}
-                            className={`py-2 rounded-lg text-[0.6rem] font-semibold border-none cursor-pointer transition-all ${
-                              videoCategory === c.v
+                            onClick={() => setVideoTheme(c.v)}
+                            className={`py-2 rounded-lg text-[0.58rem] font-semibold border-none cursor-pointer transition-all flex items-center justify-center gap-1 ${
+                              videoTheme === c.v
                                 ? 'bg-[#6366F1] text-white'
                                 : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)]'
                             }`}
                           >
+                            <i className={`${c.icon} text-[0.5rem]`}></i>
                             {c.l}
                           </button>
                         ))}
@@ -2034,13 +2043,26 @@ export default function AdminScreen() {
                   ) : (
                     <div className="max-h-[520px] overflow-y-auto pr-0.5 space-y-2.5 [scrollbar-width:thin]">
                       {adminVideos.map(v => {
-                        const catBadge: Record<string, { bg: string; color: string; label: string }> = {
-                          chinois: { bg: 'rgba(239,68,68,0.12)', color: '#F87171', label: 'Chinois' },
-                          japonais: { bg: 'rgba(244,114,182,0.12)', color: '#F472B6', label: 'Japonais' },
-                          indien: { bg: 'rgba(251,146,60,0.12)', color: '#FB923C', label: 'Indien' },
+                        const themeBadge: Record<string, { bg: string; color: string; label: string }> = {
+                          technologie: { bg: 'rgba(6,182,212,0.12)', color: '#22D3EE', label: 'Technologie' },
+                          finance: { bg: 'rgba(34,197,94,0.12)', color: '#4ADE80', label: 'Finance' },
+                          sante: { bg: 'rgba(239,68,68,0.12)', color: '#F87171', label: 'Santé' },
+                          education: { bg: 'rgba(168,85,247,0.12)', color: '#C084FC', label: 'Éducation' },
+                          commerce: { bg: 'rgba(251,146,60,0.12)', color: '#FB923C', label: 'Commerce' },
+                          industrie: { bg: 'rgba(156,163,175,0.12)', color: '#9CA3AF', label: 'Industrie' },
+                          agriculture: { bg: 'rgba(34,197,94,0.12)', color: '#86EFAC', label: 'Agriculture' },
+                          immobilier: { bg: 'rgba(99,102,241,0.12)', color: '#818CF8', label: 'Immobilier' },
+                          tourisme: { bg: 'rgba(59,130,246,0.12)', color: '#60A5FA', label: 'Tourisme' },
+                          restauration: { bg: 'rgba(244,114,182,0.12)', color: '#F472B6', label: 'Restauration' },
+                          mode: { bg: 'rgba(236,72,153,0.12)', color: '#F472B6', label: 'Mode' },
+                          sport: { bg: 'rgba(234,179,8,0.12)', color: '#FACC15', label: 'Sport' },
                           entreprise: { bg: 'rgba(99,102,241,0.12)', color: '#818CF8', label: 'Entreprise' },
+                          // Fallback for old categories
+                          chinois: { bg: 'rgba(156,163,175,0.12)', color: '#9CA3AF', label: 'Industrie' },
+                          japonais: { bg: 'rgba(6,182,212,0.12)', color: '#22D3EE', label: 'Technologie' },
+                          indien: { bg: 'rgba(251,146,60,0.12)', color: '#FB923C', label: 'Commerce' },
                         };
-                        const cat = catBadge[v.category] || catBadge.entreprise;
+                        const cat = themeBadge[v.category] || themeBadge.entreprise;
                         return (
                           <div key={v.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl overflow-hidden">
                             <div className="flex">
