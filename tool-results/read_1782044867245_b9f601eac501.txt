@@ -1,0 +1,997 @@
+     1→'use client';
+     2→
+     3→import { useState, useEffect, useCallback } from 'react';
+     4→import { useAppStore, formatMoney, authFetch, refreshUser as globalRefreshUser } from '@/lib/store';
+     5→import { Header, INVEST_LEVELS } from '@/components/shared';
+     6→import { CongratulationsModal, type CongratulationsData } from '@/components/CongratulationsModal';
+     7→
+     8→// ---------- helpers ----------
+     9→const hexToRgba = (hex: string, alpha: number) => {
+    10→  const r = parseInt(hex.slice(1, 3), 16);
+    11→  const g = parseInt(hex.slice(3, 5), 16);
+    12→  const b = parseInt(hex.slice(5, 7), 16);
+    13→  return `rgba(${r},${g},${b},${alpha})`;
+    14→};
+    15→
+    16→type PaymentMethod = 'yas' | 'trx';
+    17→type PayoutMethod = 'main' | 'yas_trx';
+    18→
+    19→interface InvestSummary {
+    20→  total: number;
+    21→  active: number;
+    22→  completed: number;
+    23→  totalEarned: number;
+    24→  totalInvested: number;
+    25→}
+    26→
+    27→export default function InvestHubScreen() {
+    28→  const { user, addToast } = useAppStore();
+    29→  const [investments, setInvestments] = useState<any[]>([]);
+    30→  const [summary, setSummary] = useState<InvestSummary | null>(null);
+    31→  const [loading, setLoading] = useState(true);
+    32→  const [now, setNow] = useState(Date.now());
+    33→
+    34→  // Create-investment modal state
+    35→  const [showCreate, setShowCreate] = useState<number | null>(null);
+    36→  const [createAmt, setCreateAmt] = useState('');
+    37→  const [createPayment, setCreatePayment] = useState<PaymentMethod>('yas');
+    38→  const [createAddress, setCreateAddress] = useState('');
+    39→  const [creating, setCreating] = useState(false);
+    40→
+    41→  // Unlock modal state
+    42→  const [unlockLevel, setUnlockLevel] = useState<number | null>(null);
+    43→  const [unlocking, setUnlocking] = useState(false);
+    44→
+    45→  // Claim payout modal state
+    46→  const [claimTarget, setClaimTarget] = useState<{ id: string; level: number; amount: number; rate: number; gain: number } | null>(null);
+    47→  const [payoutChoice, setPayoutChoice] = useState<PayoutMethod>('main');
+    48→  const [claimPaymentType, setClaimPaymentType] = useState<PaymentMethod>('yas');
+    49→  const [claimAddress, setClaimAddress] = useState('');
+    50→  const [claiming, setClaiming] = useState(false);
+    51→
+    52→  // Congratulations modal
+    53→  const [congrats, setCongrats] = useState<CongratulationsData>({ show: false, type: 'collect' });
+    54→
+    55→  // ---------- data loading ----------
+    56→  useEffect(() => {
+    57→    const t = setInterval(() => setNow(Date.now()), 1000);
+    58→    return () => clearInterval(t);
+    59→  }, []);
+    60→
+    61→  const loadInvestments = useCallback(async () => {
+    62→    try {
+    63→      const res = await authFetch('/api/invest/list');
+    64→      const data = await res.json();
+    65→      if (data.success) {
+    66→        setInvestments(data.investments || []);
+    67→        setSummary(data.summary || null);
+    68→      }
+    69→    } catch { /* */ }
+    70→    setLoading(false);
+    71→  }, []);
+    72→
+    73→  useEffect(() => {
+    74→    const t = setTimeout(() => { loadInvestments(); }, 0);
+    75→    return () => clearTimeout(t);
+    76→  }, [loadInvestments]);
+    77→
+    78→  const refreshUser = async () => { await globalRefreshUser(); };
+    79→
+    80→  // ---------- create investment ----------
+    81→  const openCreate = (level: number) => {
+    82→    setShowCreate(level);
+    83→    setCreateAmt('');
+    84→    setCreatePayment('yas');
+    85→    setCreateAddress('');
+    86→  };
+    87→
+    88→  const handleCreate = async () => {
+    89→    if (showCreate == null) return;
+    90→    const level = showCreate;
+    91→    const lvl = INVEST_LEVELS[level - 1];
+    92→    if (!lvl) return;
+    93→    const amt = parseFloat(createAmt);
+    94→    if (!amt || amt < lvl.min || amt > lvl.max) {
+    95→      addToast(`Montant: $${lvl.min} - $${lvl.max}`, 'error');
+    96→      return;
+    97→    }
+    98→    if (!createAddress.trim()) {
+    99→      addToast('Adresse requise', 'error');
+   100→      return;
+   101→    }
+   102→    setCreating(true);
+   103→    try {
+   104→      const res = await authFetch('/api/invest/create', {
+   105→        method: 'POST',
+   106→        headers: { 'Content-Type': 'application/json' },
+   107→        body: JSON.stringify({
+   108→          level,
+   109→          amount: amt,
+   110→          paymentMethod: createPayment,
+   111→          userAddress: createAddress.trim(),
+   112→        }),
+   113→      });
+   114→      const data = await res.json();
+   115→      if (data.success) {
+   116→        setShowCreate(null);
+   117→        loadInvestments();
+   118→        refreshUser();
+   119→        setCongrats({
+   120→          show: true,
+   121→          type: 'generic',
+   122→          title: 'Investissement créé !',
+   123→          amount: amt,
+   124→          message: data.message || `Votre investissement Niveau ${level} (${lvl.name}) de ${formatMoney(amt)} est actif. Paiement ${createPayment.toUpperCase()} en cours — fonds disponibles dans les 6 heures. Collecte quotidienne illimitée !`,
+   125→          onClose: () => setCongrats(c => ({ ...c, show: false })),
+   126→        });
+   127→      } else {
+   128→        addToast(data.error || 'Erreur', 'error');
+   129→      }
+   130→    } catch {
+   131→      addToast('Erreur réseau', 'error');
+   132→    }
+   133→    setCreating(false);
+   134→  };
+   135→
+   136→  // ---------- unlock level ----------
+   137→  const handleUnlock = async (level: number) => {
+   138→    if (unlocking) return;
+   139→    setUnlocking(true);
+   140→    try {
+   141→      const res = await authFetch('/api/invest/unlock', {
+   142→        method: 'POST',
+   143→        headers: { 'Content-Type': 'application/json' },
+   144→        body: JSON.stringify({ level }),
+   145→      });
+   146→      const data = await res.json();
+   147→      if (data.success) {
+   148→        addToast(data.message || 'Niveau débloqué !', 'success');
+   149→        setUnlockLevel(null);
+   150→        refreshUser();
+   151→      } else {
+   152→        addToast(data.error || 'Erreur', 'error');
+   153→      }
+   154→    } catch {
+   155→      addToast('Erreur réseau', 'error');
+   156→    }
+   157→    setUnlocking(false);
+   158→  };
+   159→
+   160→  // ---------- claim payout ----------
+   161→  const openClaim = (inv: any) => {
+   162→    const lvl = INVEST_LEVELS[inv.level - 1];
+   163→    const gain = Math.round(inv.amount * inv.rate / 100 * 100) / 100;
+   164→    setClaimTarget({ id: inv.id, level: inv.level, amount: inv.amount, rate: inv.rate, gain });
+   165→    setPayoutChoice(gain >= 5 ? 'main' : 'main'); // default to main; YAS/TRX only enabled if gain >= 5
+   166→    setClaimPaymentType('yas');
+   167→    setClaimAddress('');
+   168→  };
+   169→
+   170→  const handleClaim = async () => {
+   171→    if (!claimTarget) return;
+   172→    const method: PayoutMethod = payoutChoice;
+   173→    if (method === 'yas_trx') {
+   174→      if (claimTarget.gain < 5) {
+   175→        addToast('Gain insuffisant pour YAS/TRX (min $5)', 'error');
+   176→        return;
+   177→      }
+   178→      if (!claimAddress.trim()) {
+   179→        addToast('Adresse de retrait requise', 'error');
+   180→        return;
+   181→      }
+   182→    }
+   183→    setClaiming(true);
+   184→    try {
+   185→      const res = await authFetch('/api/invest/claim', {
+   186→        method: 'POST',
+   187→        headers: { 'Content-Type': 'application/json' },
+   188→        body: JSON.stringify({
+   189→          investmentId: claimTarget.id,
+   190→          payoutMethod: method,
+   191→          userAddress: method === 'yas_trx' ? claimAddress.trim() : undefined,
+   192→          paymentType: method === 'yas_trx' ? claimPaymentType : undefined,
+   193→        }),
+   194→      });
+   195→      const data = await res.json();
+   196→      if (data.success) {
+   197→        const target = claimTarget;
+   198→        setClaimTarget(null);
+   199→        loadInvestments();
+   200→        refreshUser();
+   201→        setCongrats({
+   202→          show: true,
+   203→          type: 'collect',
+   204→          amount: data.gain,
+   205→          title: 'Collecte réussie !',
+   206→          message: data.message || `Vous avez réclamé ${formatMoney(data.gain)} ${method === 'main' ? 'versé sur votre compte principal.' : '— retrait demandé, fonds dans les 6h.'}`,
+   207→          onClose: () => setCongrats(c => ({ ...c, show: false })),
+   208→        });
+   209→        void target;
+   210→      } else {
+   211→        addToast(data.error || 'Erreur', 'error');
+   212→      }
+   213→    } catch {
+   214→      addToast('Erreur réseau', 'error');
+   215→    }
+   216→    setClaiming(false);
+   217→  };
+   218→
+   219→  if (!user) return null;
+   220→
+   221→  const unlockedLevel = (user as any).unlockedLevel || 1;
+   222→  const referralCount = (user as any).referralCount || 0;
+   223→  const activeInv = investments.filter(i => i.status === 'active');
+   224→  const completedInv = investments.filter(i => i.status === 'completed');
+   225→  const investedLevels = new Set(investments.map(i => i.level));
+   226→
+   227→  // Has the user invested in the previous level? (required to unlock/invest higher)
+   228→  const hasPrevLevel = (level: number) => level === 1 || investedLevels.has(level - 1);
+   229→
+   230→  // Referral info per locked level
+   231→  const getUnlockInfo = (level: number) => {
+   232→    const lvl = INVEST_LEVELS[level - 1];
+   233→    if (!lvl) return null;
+   234→    const required = lvl.requiredReferrals;
+   235→    const missing = Math.max(0, required - referralCount);
+   236→    return { required, missing, canUnlock: missing === 0 };
+   237→  };
+   238→
+   239→  // ---------- render ----------
+   240→  return (
+   241→    <>
+   242→      <style>{`
+   243→        @keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+   244→        @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+   245→        @keyframes claimPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.45); transform: scale(1); } 50% { box-shadow: 0 0 0 10px rgba(34,197,94,0); transform: scale(1.03); } }
+   246→        @keyframes timerColon { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+   247→        @keyframes heroGlow { 0%,100% { box-shadow: 0 0 24px rgba(34,197,94,0.12); } 50% { box-shadow: 0 0 40px rgba(20,184,166,0.18); } }
+   248→        .claim-pulse { animation: claimPulse 1.6s ease-in-out infinite; }
+   249→        .timer-colon { animation: timerColon 1s step-end infinite; }
+   250→        .hero-glow { animation: heroGlow 3.5s ease-in-out infinite; }
+   251→        .pm-card { transition: transform .15s ease, box-shadow .15s ease; }
+   252→        .pm-card:active { transform: scale(0.98); }
+   253→      `}</style>
+   254→
+   255→      <Header
+   256→        title="Investir"
+   257→        icon="fa-chart-line"
+   258→        iconColor="#22C55E"
+   259→        leftElement={
+   260→          <button
+   261→            onClick={() => useAppStore.getState().setPage('home')}
+   262→            className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer border-none mr-1"
+   263→            style={{ background: 'rgba(0,0,0,0.06)', color: 'rgba(0,0,0,0.55)' }}
+   264→            aria-label="Retour"
+   265→          >
+   266→            <i className="fas fa-arrow-left text-[0.8rem]"></i>
+   267→          </button>
+   268→        }
+   269→      />
+   270→
+   271→      <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0" style={{ background: '#F6F8F7' }}>
+   272→
+   273→        {/* Hero summary card (replaces investBalance) */}
+   274→        <div
+   275→          className="hero-glow rounded-2xl p-5 mb-4 relative overflow-hidden"
+   276→          style={{
+   277→            background: 'linear-gradient(135deg, #16A34A 0%, #14B8A6 100%)',
+   278→            color: '#FFFFFF',
+   279→          }}
+   280→        >
+   281→          <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }}></div>
+   282→          <div className="absolute -bottom-8 -left-8 w-24 h-24 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}></div>
+   283→          <div className="absolute top-3 right-4 text-[0.6rem] font-mono opacity-50">INVEST·HUB</div>
+   284→
+   285→          <div className="flex items-center gap-2 mb-1">
+   286→            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.18)' }}>
+   287→              <i className="fas fa-seedling text-[0.85rem] text-white"></i>
+   288→            </div>
+   289→            <div className="text-[0.7rem] font-semibold uppercase tracking-[1.5px] opacity-90">Vos gains investis</div>
+   290→          </div>
+   291→
+   292→          <div className="text-[2.1rem] font-black mb-3 tracking-tight leading-none">
+   293→            +{formatMoney(summary?.totalEarned ?? 0)}
+   294→          </div>
+   295→
+   296→          <div className="grid grid-cols-2 gap-3 text-[0.7rem]">
+   297→            <div className="rounded-xl p-2.5" style={{ background: 'rgba(255,255,255,0.12)' }}>
+   298→              <div className="opacity-80 uppercase tracking-wide text-[0.6rem]">Investi</div>
+   299→              <div className="font-bold text-[0.95rem]">{formatMoney(summary?.totalInvested ?? 0)}</div>
+   300→            </div>
+   301→            <div className="rounded-xl p-2.5" style={{ background: 'rgba(255,255,255,0.12)' }}>
+   302→              <div className="opacity-80 uppercase tracking-wide text-[0.6rem]">Actifs</div>
+   303→              <div className="font-bold text-[0.95rem]">{summary?.active ?? 0}</div>
+   304→            </div>
+   305→          </div>
+   306→        </div>
+   307→
+   308→        {/* Info banner: unlimited collection */}
+   309→        <div
+   310→          className="rounded-xl p-3 mb-4 flex items-start gap-2.5"
+   311→          style={{ background: 'rgba(20,184,166,0.08)', border: '1px solid rgba(20,184,166,0.18)' }}
+   312→        >
+   313→          <i className="fas fa-infinity text-[0.85rem] mt-0.5" style={{ color: '#14B8A6' }}></i>
+   314→          <div>
+   315→            <div className="text-[0.78rem] font-bold" style={{ color: '#0F766E' }}>Collecte quotidienne illimitée</div>
+   316→            <div className="text-[0.7rem] mt-0.5" style={{ color: 'rgba(15,118,110,0.85)' }}>
+   317→              Tous les niveaux rapportent 10%/jour. Le dépôt se fait directement par YAS ou TRX.
+   318→            </div>
+   319→          </div>
+   320→        </div>
+   321→
+   322→        {/* Claimable alert */}
+   323→        {activeInv.some(i => i.canClaim) && (
+   324→          <div
+   325→            className="rounded-xl p-3.5 mb-4 flex items-center gap-3"
+   326→            style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.18)', animation: 'slideUp 0.3s ease-out' }}
+   327→          >
+   328→            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(34,197,94,0.15)' }}>
+   329→              <i className="fas fa-gift text-[0.95rem]" style={{ color: '#22C55E' }}></i>
+   330→            </div>
+   331→            <div className="flex-1">
+   332→              <div className="text-[0.82rem] font-bold" style={{ color: '#15803D' }}>Gains à réclamer !</div>
+   333→              <div className="text-[0.7rem]" style={{ color: 'rgba(0,0,0,0.55)' }}>Faites défiler jusqu'à vos investissements actifs.</div>
+   334→            </div>
+   335→          </div>
+   336→        )}
+   337→
+   338→        {/* ---------- Investment levels ---------- */}
+   339→        <h3 className="text-[0.88rem] font-bold mb-2.5 flex items-center gap-1.5" style={{ color: '#1F2937' }}>
+   340→          <i className="fas fa-layer-group text-[0.75rem]" style={{ color: '#14B8A6' }}></i>
+   341→          Niveaux d'investissement
+   342→        </h3>
+   343→        <div className="space-y-3 mb-5">
+   344→          {INVEST_LEVELS.map((lvl) => {
+   345→            const isUnlocked = lvl.level <= unlockedLevel;
+   346→            const prevOk = hasPrevLevel(lvl.level);
+   347→            const canInvest = isUnlocked && prevOk;
+   348→            const info = getUnlockInfo(lvl.level);
+   349→
+   350→            return (
+   351→              <div
+   352→                key={lvl.level}
+   353→                className="rounded-2xl overflow-hidden relative"
+   354→                style={{
+   355→                  background: canInvest ? '#FFFFFF' : '#F3F4F6',
+   356→                  border: `1px solid ${canInvest ? hexToRgba(lvl.color, 0.22) : 'rgba(0,0,0,0.06)'}`,
+   357→                  animation: 'slideUp 0.3s ease-out',
+   358→                }}
+   359→              >
+   360→                <div className="p-4">
+   361→                  {/* Header row */}
+   362→                  <div className="flex items-center gap-3 mb-3">
+   363→                    <div
+   364→                      className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+   365→                      style={{ background: canInvest ? hexToRgba(lvl.color, 0.14) : 'rgba(0,0,0,0.06)' }}
+   366→                    >
+   367→                      <i
+   368→                        className={`fas ${isUnlocked ? lvl.icon : 'fa-lock'} text-[1rem]`}
+   369→                        style={{ color: canInvest ? lvl.color : 'rgba(0,0,0,0.3)' }}
+   370→                      ></i>
+   371→                    </div>
+   372→                    <div className="flex-1 min-w-0">
+   373→                      <div className="text-[0.92rem] font-bold truncate" style={{ color: canInvest ? '#1F2937' : 'rgba(0,0,0,0.5)' }}>
+   374→                        Niv. {lvl.level} — {lvl.name}
+   375→                      </div>
+   376→                      <div className="text-[0.68rem] mt-0.5 flex items-center gap-1.5 flex-wrap" style={{ color: 'rgba(0,0,0,0.55)' }}>
+   377→                        <span><i className="fas fa-coins text-[0.55rem] mr-0.5"></i>${lvl.min}-${lvl.max}</span>
+   378→                        <span style={{ color: '#16A34A' }}><i className="fas fa-arrow-trend-up text-[0.55rem] mr-0.5"></i>{lvl.rate}%/jour</span>
+   379→                      </div>
+   380→                    </div>
+   381→                  </div>
+   382→
+   383→                  {/* Badges row */}
+   384→                  <div className="flex items-center gap-1.5 flex-wrap mb-3">
+   385→                    <span
+   386→                      className="text-[0.62rem] font-semibold px-2 py-1 rounded-md flex items-center gap-1"
+   387→                      style={{ background: 'rgba(20,184,166,0.1)', color: '#0F766E' }}
+   388→                    >
+   389→                      <i className="fas fa-infinity text-[0.5rem]"></i>Collecte illimitée
+   390→                    </span>
+   391→                    {lvl.requiredReferrals > 0 && (
+   392→                      <span
+   393→                        className="text-[0.62rem] font-semibold px-2 py-1 rounded-md flex items-center gap-1"
+   394→                        style={{
+   395→                          background: isUnlocked ? 'rgba(34,197,94,0.1)' : 'rgba(0,0,0,0.05)',
+   396→                          color: isUnlocked ? '#16A34A' : 'rgba(0,0,0,0.5)',
+   397→                        }}
+   398→                      >
+   399→                        <i className="fas fa-users text-[0.5rem]"></i>{lvl.requiredReferrals} parrainés
+   400→                        {isUnlocked && <i className="fas fa-check text-[0.5rem] ml-0.5"></i>}
+   401→                      </span>
+   402→                    )}
+   403→                    {lvl.level === 1 && (
+   404→                      <span className="text-[0.62rem] font-semibold px-2 py-1 rounded-md flex items-center gap-1" style={{ background: 'rgba(34,197,94,0.1)', color: '#16A34A' }}>
+   405→                        <i className="fas fa-unlock text-[0.5rem]"></i>Libre
+   406→                      </span>
+   407→                    )}
+   408→                  </div>
+   409→
+   410→                  {/* Action button */}
+   411→                  {canInvest ? (
+   412→                    <button
+   413→                      onClick={() => openCreate(lvl.level)}
+   414→                      className="w-full py-2.5 rounded-xl text-[0.82rem] font-bold border-none cursor-pointer transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+   415→                      style={{ background: lvl.color, color: '#FFFFFF', boxShadow: `0 3px 12px ${hexToRgba(lvl.color, 0.28)}` }}
+   416→                    >
+   417→                      <i className="fas fa-hand-holding-dollar text-[0.7rem]"></i>Investir
+   418→                    </button>
+   419→                  ) : !isUnlocked ? (
+   420→                    <button
+   421→                      onClick={() => setUnlockLevel(lvl.level)}
+   422→                      className="w-full py-2.5 rounded-xl text-[0.78rem] font-semibold border-none cursor-pointer transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+   423→                      style={{ background: hexToRgba(lvl.color, 0.1), color: lvl.color, border: `1px solid ${hexToRgba(lvl.color, 0.22)}` }}
+   424→                    >
+   425→                      <i className="fas fa-lock-open text-[0.7rem]"></i>Débloquer
+   426→                      {info && info.missing > 0 && (
+   427→                        <span className="opacity-80 text-[0.7rem]">· {referralCount}/{info.required}</span>
+   428→                      )}
+   429→                    </button>
+   430→                  ) : (
+   431→                    <div
+   432→                      className="w-full py-2.5 rounded-xl text-[0.72rem] font-semibold text-center flex items-center justify-center gap-1.5"
+   433→                      style={{ background: 'rgba(0,0,0,0.04)', color: 'rgba(0,0,0,0.45)' }}
+   434→                    >
+   435→                      <i className="fas fa-arrow-up text-[0.6rem]"></i>Investissez d'abord au Niv. {lvl.level - 1}
+   436→                    </div>
+   437→                  )}
+   438→                </div>
+   439→              </div>
+   440→            );
+   441→          })}
+   442→        </div>
+   443→
+   444→        {/* ---------- Active investments (vertical cards) ---------- */}
+   445→        {activeInv.length > 0 && (
+   446→          <>
+   447→            <h3 className="text-[0.88rem] font-bold mb-2.5 flex items-center gap-1.5" style={{ color: '#1F2937' }}>
+   448→              <i className="fas fa-bolt text-[0.75rem]" style={{ color: '#F59E0B' }}></i>
+   449→              Investissements actifs
+   450→            </h3>
+   451→            <div className="space-y-3 mb-5">
+   452→              {activeInv.map((inv) => {
+   453→                const lvl = INVEST_LEVELS[inv.level - 1];
+   454→                const nextMs = inv.nextClaimAt ? new Date(inv.nextClaimAt).getTime() - now : (inv.nextClaimInMs ?? 0);
+   455→                const canClaim = inv.canClaim || nextMs <= 0;
+   456→                const hours = Math.max(0, Math.floor(nextMs / 3600000));
+   457→                const mins = Math.max(0, Math.floor((nextMs % 3600000) / 60000));
+   458→                const secs = Math.max(0, Math.floor((nextMs % 60000) / 1000));
+   459→                const gain = Math.round(inv.amount * inv.rate / 100 * 100) / 100;
+   460→
+   461→                return (
+   462→                  <div
+   463→                    key={inv.id}
+   464→                    className="rounded-2xl p-4 relative overflow-hidden"
+   465→                    style={{
+   466→                      background: '#FFFFFF',
+   467→                      border: `1px solid ${hexToRgba(lvl.color, 0.18)}`,
+   468→                      animation: 'slideUp 0.3s ease-out',
+   469→                    }}
+   470→                  >
+   471→                    {/* Top: level icon + name + unlimited badge */}
+   472→                    <div className="flex items-start justify-between gap-2 mb-3">
+   473→                      <div className="flex items-center gap-2.5 min-w-0">
+   474→                        <div
+   475→                          className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+   476→                          style={{ background: hexToRgba(lvl.color, 0.14) }}
+   477→                        >
+   478→                          <i className={`fas ${lvl.icon} text-[1rem]`} style={{ color: lvl.color }}></i>
+   479→                        </div>
+   480→                        <div className="min-w-0">
+   481→                          <div className="text-[0.9rem] font-bold truncate" style={{ color: '#1F2937' }}>
+   482→                            Niv. {inv.level} — {lvl.name}
+   483→                          </div>
+   484→                          <div className="text-[0.7rem] mt-0.5" style={{ color: 'rgba(0,0,0,0.55)' }}>
+   485→                            {formatMoney(inv.amount)} · {inv.rate}%/jour
+   486→                          </div>
+   487→                        </div>
+   488→                      </div>
+   489→                      <span
+   490→                        className="text-[0.6rem] font-semibold px-2 py-1 rounded-md flex items-center gap-1 shrink-0"
+   491→                        style={{ background: 'rgba(20,184,166,0.1)', color: '#0F766E' }}
+   492→                      >
+   493→                        <i className="fas fa-infinity text-[0.5rem]"></i>Illimité
+   494→                      </span>
+   495→                    </div>
+   496→
+   497→                    {/* Stats grid */}
+   498→                    <div className="grid grid-cols-2 gap-2 mb-3">
+   499→                      <div className="rounded-xl p-2.5" style={{ background: 'rgba(0,0,0,0.03)' }}>
+   500→                        <div className="text-[0.6rem] uppercase tracking-wide" style={{ color: 'rgba(0,0,0,0.45)' }}>Collectes</div>
+   501→                        <div className="text-[0.9rem] font-bold" style={{ color: '#1F2937' }}>
+   502→                          {inv.doneCycles || 0}
+   503→                          <span className="text-[0.65rem] font-medium ml-1" style={{ color: 'rgba(0,0,0,0.4)' }}>jours</span>
+   504→                        </div>
+   505→                      </div>
+   506→                      <div className="rounded-xl p-2.5" style={{ background: 'rgba(34,197,94,0.06)' }}>
+   507→                        <div className="text-[0.6rem] uppercase tracking-wide" style={{ color: 'rgba(15,118,110,0.7)' }}>Gagné</div>
+   508→                        <div className="text-[0.9rem] font-black" style={{ color: '#16A34A' }}>+{formatMoney(inv.earned || 0)}</div>
+   509→                      </div>
+   510→                    </div>
+   511→
+   512→                    {/* Action row: countdown or claim button */}
+   513→                    {canClaim ? (
+   514→                      <button
+   515→                        onClick={() => openClaim(inv)}
+   516→                        className="claim-pulse w-full py-3 rounded-xl text-[0.88rem] font-bold border-none cursor-pointer flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+   517→                        style={{ background: '#22C55E', color: '#FFFFFF', boxShadow: '0 4px 16px rgba(34,197,94,0.32)' }}
+   518→                      >
+   519→                        <i className="fas fa-hand-holding-dollar text-[0.8rem]"></i>
+   520→                        Collecter +{formatMoney(gain)}
+   521→                      </button>
+   522→                    ) : (
+   523→                      <div
+   524→                        className="w-full py-2.5 rounded-xl flex items-center justify-center gap-2"
+   525→                        style={{ background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.06)' }}
+   526→                      >
+   527→                        <i className="fas fa-clock text-[0.65rem]" style={{ color: 'rgba(0,0,0,0.4)' }}></i>
+   528→                        <span className="text-[0.65rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>Prochaine dans</span>
+   529→                        <span className="text-[0.85rem] font-mono font-bold" style={{ color: 'rgba(0,0,0,0.7)' }}>
+   530→                          {hours}<span className="timer-colon">:</span>{mins.toString().padStart(2, '0')}<span className="timer-colon">:</span>{secs.toString().padStart(2, '0')}
+   531→                        </span>
+   532→                      </div>
+   533→                    )}
+   534→                  </div>
+   535→                );
+   536→              })}
+   537→            </div>
+   538→          </>
+   539→        )}
+   540→
+   541→        {/* ---------- Completed investments ---------- */}
+   542→        {completedInv.length > 0 && (
+   543→          <>
+   544→            <h3 className="text-[0.88rem] font-bold mb-2.5 mt-2 flex items-center gap-1.5" style={{ color: '#1F2937' }}>
+   545→              <i className="fas fa-check-circle text-[0.75rem]" style={{ color: '#6B7280' }}></i>
+   546→              Terminés
+   547→            </h3>
+   548→            <div className="space-y-2 mb-5">
+   549→              {completedInv.map((inv) => {
+   550→                const lvl = INVEST_LEVELS[inv.level - 1];
+   551→                return (
+   552→                  <div key={inv.id} className="rounded-xl p-3 flex items-center justify-between" style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.06)' }}>
+   553→                    <div className="flex items-center gap-2.5 min-w-0">
+   554→                      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: hexToRgba(lvl.color, 0.12) }}>
+   555→                        <i className={`fas ${lvl.icon} text-[0.7rem]`} style={{ color: lvl.color }}></i>
+   556→                      </div>
+   557→                      <div className="min-w-0">
+   558→                        <div className="text-[0.8rem] font-semibold truncate" style={{ color: '#1F2937' }}>Niv. {inv.level} — {lvl.name}</div>
+   559→                        <div className="text-[0.62rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>
+   560→                          {formatMoney(inv.amount)} · {inv.doneCycles || 0} collectes
+   561→                        </div>
+   562→                      </div>
+   563→                    </div>
+   564→                    <div className="text-[0.85rem] font-bold" style={{ color: '#16A34A' }}>+{formatMoney(inv.earned)}</div>
+   565→                  </div>
+   566→                );
+   567→              })}
+   568→            </div>
+   569→          </>
+   570→        )}
+   571→
+   572→        {/* Empty state */}
+   573→        {investments.length === 0 && !loading && (
+   574→          <div className="text-center py-10">
+   575→            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(34,197,94,0.08)' }}>
+   576→              <i className="fas fa-seedling text-[1.6rem]" style={{ color: '#22C55E' }}></i>
+   577→            </div>
+   578→            <p className="text-[0.88rem] font-bold" style={{ color: '#1F2937' }}>Aucun investissement</p>
+   579→            <p className="text-[0.72rem] mt-1" style={{ color: 'rgba(0,0,0,0.45)' }}>Choisissez un niveau ci-dessus pour commencer !</p>
+   580→          </div>
+   581→        )}
+   582→      </div>
+   583→
+   584→      {/* ---------- Create investment modal ---------- */}
+   585→      {showCreate && (() => {
+   586→        const lvl = INVEST_LEVELS[showCreate - 1];
+   587→        if (!lvl) return null;
+   588→        const amtNum = parseFloat(createAmt);
+   589→        const validAmt = createAmt && !isNaN(amtNum) && amtNum >= lvl.min && amtNum <= lvl.max;
+   590→        const dailyGain = validAmt ? (amtNum * lvl.rate / 100) : 0;
+   591→
+   592→        return (
+   593→          <div
+   594→            className="fixed inset-0 z-[6000] flex items-end sm:items-center justify-center"
+   595→            style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)', animation: 'modalIn 0.2s ease-out' }}
+   596→            onClick={() => setShowCreate(null)}
+   597→          >
+   598→            <div
+   599→              className="rounded-t-3xl sm:rounded-3xl p-5 w-full sm:w-[88%] max-w-[380px] max-h-[92vh] overflow-y-auto"
+   600→              style={{ background: '#FFFFFF', boxShadow: '0 -8px 24px rgba(0,0,0,0.12)' }}
+   601→              onClick={(e) => e.stopPropagation()}
+   602→            >
+   603→              {/* Header */}
+   604→              <div className="flex items-center gap-3 mb-3">
+   605→                <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: hexToRgba(lvl.color, 0.14) }}>
+   606→                  <i className={`fas ${lvl.icon} text-[1rem]`} style={{ color: lvl.color }}></i>
+   607→                </div>
+   608→                <div className="flex-1">
+   609→                  <h3 className="text-[1rem] font-bold" style={{ color: '#1F2937' }}>Niv. {lvl.level} — {lvl.name}</h3>
+   610→                  <p className="text-[0.7rem]" style={{ color: 'rgba(0,0,0,0.5)' }}>
+   611→                    {lvl.rate}%/jour · Collecte illimitée · ${lvl.min}-${lvl.max}
+   612→                  </p>
+   613→                </div>
+   614→                <button onClick={() => setShowCreate(null)} className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer border-none" style={{ background: 'rgba(0,0,0,0.05)' }}>
+   615→                  <i className="fas fa-times text-[0.7rem]" style={{ color: 'rgba(0,0,0,0.5)' }}></i>
+   616→                </button>
+   617→              </div>
+   618→
+   619→              {/* Amount input */}
+   620→              <label className="text-[0.7rem] font-semibold mb-1.5 block" style={{ color: '#374151' }}>Montant à investir ($)</label>
+   621→              <input
+   622→                type="number"
+   623→                step="0.01"
+   624→                value={createAmt}
+   625→                onChange={(e) => setCreateAmt(e.target.value)}
+   626→                placeholder={`$${lvl.min} - $${lvl.max}`}
+   627→                className="w-full py-3 px-4 rounded-xl text-[1rem] font-bold outline-none mb-2"
+   628→                style={{ background: 'rgba(0,0,0,0.04)', border: `1.5px solid ${createAmt ? (validAmt ? hexToRgba(lvl.color, 0.4) : 'rgba(239,68,68,0.4)') : 'rgba(0,0,0,0.08)'}`, color: '#1F2937' }}
+   629→              />
+   630→              {createAmt && !validAmt && (
+   631→                <div className="text-[0.65rem] mb-2" style={{ color: '#EF4444' }}>
+   632→                  <i className="fas fa-circle-exclamation mr-1"></i>Doit être entre ${lvl.min} et ${lvl.max}
+   633→                </div>
+   634→              )}
+   635→
+   636→              {/* Daily gain preview */}
+   637→              {validAmt && (
+   638→                <div className="rounded-xl p-3 mb-3 flex items-center justify-between" style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)' }}>
+   639→                  <span className="text-[0.72rem] font-semibold" style={{ color: '#15803D' }}>
+   640→                    <i className="fas fa-arrow-trend-up mr-1"></i>Gain quotidien
+   641→                  </span>
+   642→                  <span className="text-[0.95rem] font-black" style={{ color: '#16A34A' }}>+{formatMoney(dailyGain)}</span>
+   643→                </div>
+   644→              )}
+   645→
+   646→              {/* Payment method selector */}
+   647→              <label className="text-[0.7rem] font-semibold mb-1.5 block" style={{ color: '#374151' }}>Méthode de paiement</label>
+   648→              <div className="grid grid-cols-2 gap-2 mb-3">
+   649→                {(['yas', 'trx'] as PaymentMethod[]).map((m) => {
+   650→                  const active = createPayment === m;
+   651→                  const color = m === 'yas' ? '#14B8A6' : '#EF4444';
+   652→                  return (
+   653→                    <button
+   654→                      key={m}
+   655→                      onClick={() => setCreatePayment(m)}
+   656→                      className="pm-card rounded-xl p-3 border-2 cursor-pointer flex flex-col items-center gap-1"
+   657→                      style={{
+   658→                        background: active ? hexToRgba(color, 0.08) : '#FFFFFF',
+   659→                        borderColor: active ? color : 'rgba(0,0,0,0.08)',
+   660→                      }}
+   661→                    >
+   662→                      <i className={`fas ${m === 'yas' ? 'fa-money-bill-wave' : 'fa-coins'} text-[1rem]`} style={{ color: active ? color : 'rgba(0,0,0,0.4)' }}></i>
+   663→                      <span className="text-[0.78rem] font-bold" style={{ color: active ? color : 'rgba(0,0,0,0.55)' }}>{m.toUpperCase()}</span>
+   664→                    </button>
+   665→                  );
+   666→                })}
+   667→              </div>
+   668→
+   669→              {/* Address input */}
+   670→              <label className="text-[0.7rem] font-semibold mb-1.5 block" style={{ color: '#374151' }}>
+   671→                {createPayment === 'trx' ? 'Adresse portefeuille TRX' : 'Numéro de compte YAS'}
+   672→              </label>
+   673→              <input
+   674→                type="text"
+   675→                value={createAddress}
+   676→                onChange={(e) => setCreateAddress(e.target.value)}
+   677→                placeholder={createPayment === 'trx' ? 'T...' : 'Numéro YAS'}
+   678→                className="w-full py-3 px-4 rounded-xl text-[0.85rem] outline-none mb-2"
+   679→                style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid rgba(0,0,0,0.08)', color: '#1F2937' }}
+   680→              />
+   681→
+   682→              {/* 6h note */}
+   683→              <div className="rounded-xl p-2.5 mb-3 flex items-start gap-2" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.18)' }}>
+   684→                <i className="fas fa-clock text-[0.7rem] mt-0.5" style={{ color: '#F59E0B' }}></i>
+   685→                <span className="text-[0.66rem]" style={{ color: 'rgba(180,83,9,0.95)' }}>
+   686→                  Le dépôt se fait directement par {createPayment.toUpperCase()}. Les fonds seront disponibles dans les 6 heures.
+   687→                </span>
+   688→              </div>
+   689→
+   690→              {/* Actions */}
+   691→              <div className="flex gap-2">
+   692→                <button
+   693→                  onClick={() => setShowCreate(null)}
+   694→                  className="flex-1 py-3 rounded-xl font-semibold text-[0.82rem] cursor-pointer"
+   695→                  style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.08)', color: 'rgba(0,0,0,0.55)' }}
+   696→                >
+   697→                  Annuler
+   698→                </button>
+   699→                <button
+   700→                  onClick={handleCreate}
+   701→                  disabled={creating || !validAmt || !createAddress.trim()}
+   702→                  className="flex-1 py-3 rounded-xl font-bold text-[0.82rem] border-none cursor-pointer disabled:opacity-50 transition-all active:scale-[0.98]"
+   703→                  style={{ background: lvl.color, color: '#FFFFFF', boxShadow: `0 4px 16px ${hexToRgba(lvl.color, 0.28)}` }}
+   704→                >
+   705→                  {creating ? <i className="fas fa-spinner fa-spin"></i> : 'Confirmer'}
+   706→                </button>
+   707→              </div>
+   708→            </div>
+   709→          </div>
+   710→        );
+   711→      })()}
+   712→
+   713→      {/* ---------- Unlock level modal ---------- */}
+   714→      {unlockLevel && (() => {
+   715→        const lvl = INVEST_LEVELS[unlockLevel - 1];
+   716→        if (!lvl) return null;
+   717→        const info = getUnlockInfo(unlockLevel);
+   718→        if (!info) return null;
+   719→
+   720→        return (
+   721→          <div
+   722→            className="fixed inset-0 z-[6000] flex items-end sm:items-center justify-center"
+   723→            style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)', animation: 'modalIn 0.2s ease-out' }}
+   724→            onClick={() => setUnlockLevel(null)}
+   725→          >
+   726→            <div
+   727→              className="rounded-t-3xl sm:rounded-3xl p-5 w-full sm:w-[88%] max-w-[380px]"
+   728→              style={{ background: '#FFFFFF', boxShadow: '0 -8px 24px rgba(0,0,0,0.12)' }}
+   729→              onClick={(e) => e.stopPropagation()}
+   730→            >
+   731→              {/* Header */}
+   732→              <div className="flex items-center gap-3 mb-3">
+   733→                <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: hexToRgba(lvl.color, 0.14) }}>
+   734→                  <i className="fas fa-lock-open text-[1rem]" style={{ color: lvl.color }}></i>
+   735→                </div>
+   736→                <div className="flex-1">
+   737→                  <h3 className="text-[1rem] font-bold" style={{ color: '#1F2937' }}>Débloquer Niv. {lvl.level}</h3>
+   738→                  <p className="text-[0.7rem]" style={{ color: 'rgba(0,0,0,0.5)' }}>{lvl.name} · {lvl.rate}%/jour · Illimité</p>
+   739→                </div>
+   740→                <button onClick={() => setUnlockLevel(null)} className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer border-none" style={{ background: 'rgba(0,0,0,0.05)' }}>
+   741→                  <i className="fas fa-times text-[0.7rem]" style={{ color: 'rgba(0,0,0,0.5)' }}></i>
+   742→                </button>
+   743→              </div>
+   744→
+   745→              {/* Referral requirement card */}
+   746→              <div className="rounded-xl p-4 mb-3" style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.06)' }}>
+   747→                <div className="flex items-center justify-between mb-2">
+   748→                  <span className="text-[0.78rem] font-semibold" style={{ color: '#1F2937' }}>Parrainés requis</span>
+   749→                  <span className="text-[0.85rem] font-black" style={{ color: info.canUnlock ? '#16A34A' : '#F59E0B' }}>
+   750→                    {referralCount}/{info.required}
+   751→                    {info.canUnlock && <i className="fas fa-check ml-1.5 text-[0.7rem]"></i>}
+   752→                  </span>
+   753→                </div>
+   754→                {/* Progress bar */}
+   755→                <div className="w-full h-2 rounded-full overflow-hidden mb-2" style={{ background: 'rgba(0,0,0,0.06)' }}>
+   756→                  <div
+   757→                    className="h-full rounded-full transition-all duration-500"
+   758→                    style={{
+   759→                      width: `${Math.min(100, (referralCount / info.required) * 100)}%`,
+   760→                      background: info.canUnlock ? '#22C55E' : '#F59E0B',
+   761→                    }}
+   762→                  ></div>
+   763→                </div>
+   764→                {info.canUnlock ? (
+   765→                  <div className="text-[0.66rem]" style={{ color: '#16A34A' }}>
+   766→                    <i className="fas fa-circle-check mr-1"></i>Vous avez assez de parrainés pour débloquer gratuitement !
+   767→                  </div>
+   768→                ) : (
+   769→                  <div className="text-[0.66rem]" style={{ color: 'rgba(0,0,0,0.55)' }}>
+   770→                    <i className="fas fa-users mr-1"></i>Il vous manque <b style={{ color: '#F59E0B' }}>{info.missing}</b> parrainé(s).
+   771→                  </div>
+   772→                )}
+   773→              </div>
+   774→
+   775→              {/* Level info */}
+   776→              <div className="rounded-xl p-2.5 mb-4" style={{ background: hexToRgba(lvl.color, 0.06), border: `1px solid ${hexToRgba(lvl.color, 0.12)}` }}>
+   777→                <div className="text-[0.65rem]" style={{ color: 'rgba(0,0,0,0.55)' }}>
+   778→                  <i className="fas fa-info-circle mr-1"></i>
+   779→                  Niv. {lvl.level}: ${lvl.min}-${lvl.max} · {lvl.rate}%/jour · Collecte illimitée
+   780→                </div>
+   781→              </div>
+   782→
+   783→              {/* Actions */}
+   784→              <div className="flex gap-2">
+   785→                <button
+   786→                  onClick={() => setUnlockLevel(null)}
+   787→                  className="flex-1 py-3 rounded-xl font-semibold text-[0.82rem] cursor-pointer"
+   788→                  style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.08)', color: 'rgba(0,0,0,0.55)' }}
+   789→                >
+   790→                  Annuler
+   791→                </button>
+   792→                {info.canUnlock ? (
+   793→                  <button
+   794→                    onClick={() => handleUnlock(unlockLevel)}
+   795→                    disabled={unlocking}
+   796→                    className="flex-1 py-3 rounded-xl font-bold text-[0.82rem] border-none cursor-pointer disabled:opacity-50 transition-all active:scale-[0.98]"
+   797→                    style={{ background: lvl.color, color: '#FFFFFF', boxShadow: `0 4px 16px ${hexToRgba(lvl.color, 0.28)}` }}
+   798→                  >
+   799→                    {unlocking ? <i className="fas fa-spinner fa-spin"></i> : 'Débloquer gratuitement'}
+   800→                  </button>
+   801→                ) : (
+   802→                  <div
+   803→                    className="flex-1 py-3 rounded-xl text-[0.78rem] font-semibold text-center flex items-center justify-center gap-1.5"
+   804→                    style={{ background: 'rgba(0,0,0,0.04)', color: 'rgba(0,0,0,0.4)' }}
+   805→                  >
+   806→                    <i className="fas fa-users"></i>Parrainés insuffisants
+   807→                  </div>
+   808→                )}
+   809→              </div>
+   810→            </div>
+   811→          </div>
+   812→        );
+   813→      })()}
+   814→
+   815→      {/* ---------- Claim payout modal ---------- */}
+   816→      {claimTarget && (() => {
+   817→        const lvl = INVEST_LEVELS[claimTarget.level - 1];
+   818→        if (!lvl) return null;
+   819→        const canWithdraw = claimTarget.gain >= 5;
+   820→        const method = claimPaymentType;
+   821→        const color = method === 'yas' ? '#14B8A6' : '#EF4444';
+   822→
+   823→        return (
+   824→          <div
+   825→            className="fixed inset-0 z-[6000] flex items-end sm:items-center justify-center"
+   826→            style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)', animation: 'modalIn 0.2s ease-out' }}
+   827→            onClick={() => setClaimTarget(null)}
+   828→          >
+   829→            <div
+   830→              className="rounded-t-3xl sm:rounded-3xl p-5 w-full sm:w-[88%] max-w-[380px] max-h-[92vh] overflow-y-auto"
+   831→              style={{ background: '#FFFFFF', boxShadow: '0 -8px 24px rgba(0,0,0,0.12)' }}
+   832→              onClick={(e) => e.stopPropagation()}
+   833→            >
+   834→              {/* Header */}
+   835→              <div className="flex items-center gap-3 mb-3">
+   836→                <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: hexToRgba(lvl.color, 0.14) }}>
+   837→                  <i className={`fas ${lvl.icon} text-[1rem]`} style={{ color: lvl.color }}></i>
+   838→                </div>
+   839→                <div className="flex-1">
+   840→                  <h3 className="text-[1rem] font-bold" style={{ color: '#1F2937' }}>Collecter le gain</h3>
+   841→                  <p className="text-[0.7rem]" style={{ color: 'rgba(0,0,0,0.5)' }}>Niv. {claimTarget.level} — {lvl.name}</p>
+   842→                </div>
+   843→                <button onClick={() => setClaimTarget(null)} className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer border-none" style={{ background: 'rgba(0,0,0,0.05)' }}>
+   844→                  <i className="fas fa-times text-[0.7rem]" style={{ color: 'rgba(0,0,0,0.5)' }}></i>
+   845→                </button>
+   846→              </div>
+   847→
+   848→              {/* Gain display */}
+   849→              <div
+   850→                className="rounded-2xl p-4 mb-4 text-center"
+   851→                style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.08), rgba(20,184,166,0.08))', border: '1px solid rgba(34,197,94,0.18)' }}
+   852→              >
+   853→                <div className="text-[0.65rem] uppercase tracking-widest font-bold mb-1" style={{ color: 'rgba(0,0,0,0.45)' }}>Gain à collecter</div>
+   854→                <div
+   855→                  className="text-[2.2rem] font-black leading-none"
+   856→                  style={{ background: 'linear-gradient(135deg, #22C55E, #14B8A6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
+   857→                >
+   858→                  +${claimTarget.gain.toFixed(2)}
+   859→                </div>
+   860→              </div>
+   861→
+   862→              {/* Payout options */}
+   863→              <div className="space-y-2.5 mb-3">
+   864→                {/* Option A: main account */}
+   865→                <button
+   866→                  onClick={() => setPayoutChoice('main')}
+   867→                  className="pm-card w-full rounded-2xl p-3.5 border-2 cursor-pointer text-left flex items-start gap-3"
+   868→                  style={{
+   869→                    background: payoutChoice === 'main' ? 'rgba(34,197,94,0.06)' : '#FFFFFF',
+   870→                    borderColor: payoutChoice === 'main' ? '#22C55E' : 'rgba(0,0,0,0.08)',
+   871→                  }}
+   872→                >
+   873→                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(34,197,94,0.14)' }}>
+   874→                    <i className="fas fa-wallet text-[0.85rem]" style={{ color: '#22C55E' }}></i>
+   875→                  </div>
+   876→                  <div className="flex-1 min-w-0">
+   877→                    <div className="text-[0.82rem] font-bold" style={{ color: '#1F2937' }}>Verser sur le compte principal</div>
+   878→                    <div className="text-[0.65rem] mt-0.5" style={{ color: 'rgba(0,0,0,0.55)' }}>Crédité immédiatement · Aucun minimum</div>
+   879→                  </div>
+   880→                  {payoutChoice === 'main' && (
+   881→                    <i className="fas fa-circle-check text-[0.9rem]" style={{ color: '#22C55E' }}></i>
+   882→                  )}
+   883→                </button>
+   884→
+   885→                {/* Option B: YAS/TRX withdrawal */}
+   886→                <button
+   887→                  onClick={() => canWithdraw && setPayoutChoice('yas_trx')}
+   888→                  disabled={!canWithdraw}
+   889→                  className="pm-card w-full rounded-2xl p-3.5 border-2 cursor-pointer text-left flex items-start gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+   890→                  style={{
+   891→                    background: payoutChoice === 'yas_trx' ? 'rgba(20,184,166,0.06)' : '#FFFFFF',
+   892→                    borderColor: payoutChoice === 'yas_trx' ? '#14B8A6' : 'rgba(0,0,0,0.08)',
+   893→                  }}
+   894→                >
+   895→                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(20,184,166,0.14)' }}>
+   896→                    <i className="fas fa-money-bill-transfer text-[0.85rem]" style={{ color: '#14B8A6' }}></i>
+   897→                  </div>
+   898→                  <div className="flex-1 min-w-0">
+   899→                    <div className="text-[0.82rem] font-bold flex items-center gap-1.5" style={{ color: '#1F2937' }}>
+   900→                      Retirer par YAS / TRX
+   901→                      {!canWithdraw && (
+   902→                        <span className="text-[0.55rem] font-semibold px-1.5 py-0.5 rounded" style={{ background: 'rgba(239,68,68,0.12)', color: '#EF4444' }}>MIN $5</span>
+   903→                      )}
+   904→                    </div>
+   905→                    <div className="text-[0.65rem] mt-0.5" style={{ color: 'rgba(0,0,0,0.55)' }}>Retrait direct · Fonds dans les 6 heures</div>
+   906→                  </div>
+   907→                  {payoutChoice === 'yas_trx' && (
+   908→                    <i className="fas fa-circle-check text-[0.9rem]" style={{ color: '#14B8A6' }}></i>
+   909→                  )}
+   910→                </button>
+   911→              </div>
+   912→
+   913→              {/* YAS/TRX sub-selector + address (only if option B selected) */}
+   914→              {payoutChoice === 'yas_trx' && canWithdraw && (
+   915→                <div className="rounded-xl p-3 mb-3" style={{ background: 'rgba(20,184,166,0.04)', border: '1px solid rgba(20,184,166,0.12)', animation: 'slideUp 0.2s ease-out' }}>
+   916→                  <label className="text-[0.68rem] font-semibold mb-1.5 block" style={{ color: '#374151' }}>Méthode de retrait</label>
+   917→                  <div className="grid grid-cols-2 gap-2 mb-3">
+   918→                    {(['yas', 'trx'] as PaymentMethod[]).map((m) => {
+   919→                      const active = claimPaymentType === m;
+   920→                      const c = m === 'yas' ? '#14B8A6' : '#EF4444';
+   921→                      return (
+   922→                        <button
+   923→                          key={m}
+   924→                          onClick={() => setClaimPaymentType(m)}
+   925→                          className="pm-card rounded-xl p-2.5 border-2 cursor-pointer flex items-center justify-center gap-1.5"
+   926→                          style={{
+   927→                            background: active ? hexToRgba(c, 0.08) : '#FFFFFF',
+   928→                            borderColor: active ? c : 'rgba(0,0,0,0.08)',
+   929→                          }}
+   930→                        >
+   931→                          <i className={`fas ${m === 'yas' ? 'fa-money-bill-wave' : 'fa-coins'} text-[0.7rem]`} style={{ color: active ? c : 'rgba(0,0,0,0.4)' }}></i>
+   932→                          <span className="text-[0.72rem] font-bold" style={{ color: active ? c : 'rgba(0,0,0,0.55)' }}>{m.toUpperCase()}</span>
+   933→                        </button>
+   934→                      );
+   935→                    })}
+   936→                  </div>
+   937→
+   938→                  <label className="text-[0.68rem] font-semibold mb-1.5 block" style={{ color: '#374151' }}>
+   939→                    {method === 'trx' ? 'Adresse portefeuille TRX' : 'Numéro de compte YAS'}
+   940→                  </label>
+   941→                  <input
+   942→                    type="text"
+   943→                    value={claimAddress}
+   944→                    onChange={(e) => setClaimAddress(e.target.value)}
+   945→                    placeholder={method === 'trx' ? 'T...' : 'Numéro YAS'}
+   946→                    className="w-full py-2.5 px-3 rounded-xl text-[0.8rem] outline-none"
+   947→                    style={{ background: 'rgba(0,0,0,0.04)', border: `1.5px solid ${hexToRgba(color, 0.25)}`, color: '#1F2937' }}
+   948→                  />
+   949→                  <div className="text-[0.6rem] mt-1.5 flex items-start gap-1" style={{ color: 'rgba(245,158,11,0.95)' }}>
+   950→                    <i className="fas fa-clock mt-0.5"></i>
+   951→                    <span>Les fonds seront disponibles dans les 6 heures après confirmation.</span>
+   952→                  </div>
+   953→                </div>
+   954→              )}
+   955→
+   956→              {/* Note when gain too small */}
+   957→              {payoutChoice === 'main' && !canWithdraw && (
+   958→                <div className="rounded-xl p-2.5 mb-3 flex items-start gap-2" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.18)' }}>
+   959→                  <i className="fas fa-circle-info text-[0.7rem] mt-0.5" style={{ color: '#F59E0B' }}></i>
+   960→                  <span className="text-[0.65rem]" style={{ color: 'rgba(180,83,9,0.95)' }}>
+   961→                    Le retrait direct par YAS/TRX nécessite un gain minimum de $5. Votre gain actuel est de ${claimTarget.gain.toFixed(2)}. Vous pouvez le verser sur votre compte principal sans minimum.
+   962→                  </span>
+   963→                </div>
+   964→              )}
+   965→
+   966→              {/* Actions */}
+   967→              <div className="flex gap-2">
+   968→                <button
+   969→                  onClick={() => setClaimTarget(null)}
+   970→                  className="flex-1 py-3 rounded-xl font-semibold text-[0.82rem] cursor-pointer"
+   971→                  style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.08)', color: 'rgba(0,0,0,0.55)' }}
+   972→                >
+   973→                  Annuler
+   974→                </button>
+   975→                <button
+   976→                  onClick={handleClaim}
+   977→                  disabled={claiming || (payoutChoice === 'yas_trx' && !claimAddress.trim())}
+   978→                  className="flex-1 py-3 rounded-xl font-bold text-[0.82rem] border-none cursor-pointer disabled:opacity-50 transition-all active:scale-[0.98]"
+   979→                  style={{
+   980→                    background: payoutChoice === 'main' ? 'linear-gradient(135deg, #22C55E, #16A34A)' : 'linear-gradient(135deg, #14B8A6, #0F766E)',
+   981→                    color: '#FFFFFF',
+   982→                    boxShadow: `0 4px 16px ${payoutChoice === 'main' ? 'rgba(34,197,94,0.3)' : 'rgba(20,184,166,0.3)'}`,
+   983→                  }}
+   984→                >
+   985→                  {claiming ? <i className="fas fa-spinner fa-spin"></i> : `Collecter +$${claimTarget.gain.toFixed(2)}`}
+   986→                </button>
+   987→              </div>
+   988→            </div>
+   989→          </div>
+   990→        );
+   991→      })()}
+   992→
+   993→      <CongratulationsModal data={congrats} />
+   994→    </>
+   995→  );
+   996→}
+   997→

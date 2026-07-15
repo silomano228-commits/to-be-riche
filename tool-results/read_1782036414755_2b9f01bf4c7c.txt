@@ -1,0 +1,637 @@
+     1→     1→     1→'use client';
+     2→     2→     2→
+     3→     3→     3→import { useState, useEffect, useCallback } from 'react';
+     4→     4→     4→import { useAppStore, formatMoney, esc, authFetch, type AppUser } from '@/lib/store';
+     5→     5→     5→import { Header, LogoImg, Modal, INVEST_LEVELS, ENTERPRISE_TYPES, ENTERPRISE_NAMES } from '@/components/shared';
+     6→     6→     6→
+     7→     7→     7→// Trading level definitions
+     8→     8→     8→const TRADING_LEVELS = [
+     9→     9→     9→  { level: 1, name: 'Débutant', color: '#22C55E', minTrades: 0, icon: 'fa-seedling' },
+    10→    10→    10→  { level: 2, name: 'Apprenti', color: '#3B82F6', minTrades: 5, icon: 'fa-chart-line' },
+    11→    11→    11→  { level: 3, name: 'Intermédiaire', color: '#F59E0B', minTrades: 15, icon: 'fa-bolt' },
+    12→    12→    12→  { level: 4, name: 'Expert', color: '#8B5CF6', minTrades: 30, icon: 'fa-crown' },
+    13→    13→    13→  { level: 5, name: 'Maître', color: '#EF4444', minTrades: 50, icon: 'fa-gem' },
+    14→    14→    14→];
+    15→    15→    15→
+    16→    16→    16→const REQUIRED_REFERRALS = 10;
+    17→    17→    17→
+    18→    18→    18→export default function ProfileScreen() {
+    19→    19→    19→  const { user, clearUser, setPage, addToast } = useAppStore();
+    20→    20→    20→  const [modalOpen, setModalOpen] = useState(false);
+    21→    21→    21→  const [referrals, setReferrals] = useState<any[]>([]);
+    22→    22→    22→  const [showReferrals, setShowReferrals] = useState(false);
+    23→    23→    23→  const [copied, setCopied] = useState(false);
+    24→    24→    24→  const [shared, setShared] = useState(false);
+    25→    25→    25→  const [worldLink, setWorldLink] = useState<string | null>(null);
+    26→    26→    26→  const [worldLinkSeen, setWorldLinkSeen] = useState(false);
+    27→    27→    27→
+    28→    28→    28→  const loadReferrals = async () => {
+    29→    29→    29→    try {
+    30→    30→    30→      const res = await authFetch('/api/referral/list');
+    31→    31→    31→      const data = await res.json();
+    32→    32→    32→      if (data.success) { setReferrals(data.referrals || []); setShowReferrals(true); }
+    33→    33→    33→    } catch { /* */ }
+    34→    34→    34→  };
+    35→    35→    35→
+    36→    36→    36→  // Fetch world link if user has 10+ referrals
+    37→    37→    37→  useEffect(() => {
+    38→    38→    38→    if (!user) return;
+    39→    39→    39→    const referralCount = user.referralCount || 0;
+    40→    40→    40→    if (referralCount < REQUIRED_REFERRALS) return;
+    41→    41→    41→
+    42→    42→    42→    authFetch('/api/user/world-link')
+    43→    43→    43→      .then(res => res.json())
+    44→    44→    44→      .then(data => {
+    45→    45→    45→        if (data.success && data.data?.link) {
+    46→    46→    46→          setWorldLink(data.data.link);
+    47→    47→    47→          setWorldLinkSeen(data.data.seen || false);
+    48→    48→    48→        }
+    49→    49→    49→      })
+    50→    50→    50→      .catch(() => { /* */ });
+    51→    51→    51→  }, [user]);
+    52→    52→    52→
+    53→    53→    53→  const referralLink = `https://beriche.duckdns.org/?ref=${user?.referralCode || ''}`;
+    54→    54→    54→
+    55→    55→    55→  const handleCopyCode = async () => {
+    56→    56→    56→    if (!user?.referralCode) return;
+    57→    57→    57→    try {
+    58→    58→    58→      await navigator.clipboard.writeText(user.referralCode);
+    59→    59→    59→      setCopied(true);
+    60→    60→    60→      addToast('Code copié !', 'success');
+    61→    61→    61→      setTimeout(() => setCopied(false), 2000);
+    62→    62→    62→    } catch {
+    63→    63→    63→      const ta = document.createElement('textarea');
+    64→    64→    64→      ta.value = user.referralCode;
+    65→    65→    65→      document.body.appendChild(ta);
+    66→    66→    66→      ta.select();
+    67→    67→    67→      document.execCommand('copy');
+    68→    68→    68→      document.body.removeChild(ta);
+    69→    69→    69→      setCopied(true);
+    70→    70→    70→      addToast('Code copié !', 'success');
+    71→    71→    71→      setTimeout(() => setCopied(false), 2000);
+    72→    72→    72→    }
+    73→    73→    73→  };
+    74→    74→    74→
+    75→    75→    75→  const handleShare = async () => {
+    76→    76→    76→    if (!user?.referralCode) return;
+    77→    77→    77→    const shareData = {
+    78→    78→    78→      title: 'Be Rich - Investissement & Trading',
+    79→    79→    79→      text: `Rejoins Be Rich avec mon code de parrainage ${user.referralCode} et commence à investir ! 💰`,
+    80→    80→    80→      url: referralLink,
+    81→    81→    81→    };
+    82→    82→    82→    try {
+    83→    83→    83→      if (navigator.share) {
+    84→    84→    84→        await navigator.share(shareData);
+    85→    85→    85→        addToast('Lien partagé !', 'success');
+    86→    86→    86→      } else {
+    87→    87→    87→        await navigator.clipboard.writeText(referralLink);
+    88→    88→    88→        setShared(true);
+    89→    89→    89→        addToast('Lien copié !', 'success');
+    90→    90→    90→        setTimeout(() => setShared(false), 2000);
+    91→    91→    91→      }
+    92→    92→    92→    } catch {
+    93→    93→    93→      await navigator.clipboard.writeText(referralLink);
+    94→    94→    94→      setShared(true);
+    95→    95→    95→      addToast('Lien copié !', 'success');
+    96→    96→    96→      setTimeout(() => setShared(false), 2000);
+    97→    97→    97→    }
+    98→    98→    98→  };
+    99→    99→    99→
+   100→   100→   100→  const handleWorldLinkClick = async () => {
+   101→   101→   101→    if (!worldLink) return;
+   102→   102→   102→    try {
+   103→   103→   103→      await authFetch('/api/user/world-link', { method: 'POST' });
+   104→   104→   104→      setWorldLinkSeen(true);
+   105→   105→   105→    } catch { /* */ }
+   106→   106→   106→    window.open(worldLink, '_blank', 'noopener');
+   107→   107→   107→  };
+   108→   108→   108→
+   109→   109→   109→  const handleLogout = async () => {
+   110→   110→   110→    try { await fetch('/api/auth/logout'); } catch { /* */ }
+   111→   111→   111→    clearUser();
+   112→   112→   112→    addToast('Déconnecté', 'info');
+   113→   113→   113→  };
+   114→   114→   114→
+   115→   115→   115→  if (!user) return null;
+   116→   116→   116→
+   117→   117→   117→  const requiredReferrals = user.requiredReferrals || 0;
+   118→   118→   118→  const currentReferrals = user.referralCount || 0;
+   119→   119→   119→  const needsMore = Math.max(0, requiredReferrals - currentReferrals);
+   120→   120→   120→  const referralProgress = requiredReferrals > 0 ? Math.min(100, (currentReferrals / requiredReferrals) * 100) : 100;
+   121→   121→   121→
+   122→   122→   122→  // Determine investment level based on unlockedLevel
+   123→   123→   123→  const investLevelIdx = Math.max(0, Math.min(INVEST_LEVELS.length - 1, (user.unlockedLevel || 1) - 1));
+   124→   124→   124→  const currentInvestLevel = INVEST_LEVELS[investLevelIdx];
+   125→   125→   125→  const nextInvestLevel = investLevelIdx < INVEST_LEVELS.length - 1 ? INVEST_LEVELS[investLevelIdx + 1] : null;
+   126→   126→   126→
+   127→   127→   127→  // Determine trading level based on completedWithdrawals as proxy for trades
+   128→   128→   128→  const tradeCount = user.completedWithdrawals || 0;
+   129→   129→   129→  const tradeLevelIdx = TRADING_LEVELS.reduce((acc, lvl, i) => tradeCount >= lvl.minTrades ? i : acc, 0);
+   130→   130→   130→  const currentTradeLevel = TRADING_LEVELS[tradeLevelIdx];
+   131→   131→   131→  const nextTradeLevel = tradeLevelIdx < TRADING_LEVELS.length - 1 ? TRADING_LEVELS[tradeLevelIdx + 1] : null;
+   132→   132→   132→
+   133→   133→   133→  // Referral next level
+   134→   134→   134→  const referralNextLevel = INVEST_LEVELS.find(l => (user.referralCount || 0) < l.requiredReferrals);
+   135→   135→   135→  const referralRemaining = referralNextLevel ? referralNextLevel.requiredReferrals - (user.referralCount || 0) : 0;
+   136→   136→   136→
+   137→   137→   137→  return (
+   138→   138→   138→    <>
+   139→   139→   139→      <style>{`
+   140→   140→   140→        @keyframes avatarBreathe {
+   141→   141→   141→          0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.3); }
+   142→   142→   142→          50% { box-shadow: 0 0 25px 6px rgba(34,197,94,0.18); }
+   143→   143→   143→        }
+   144→   144→   144→        @keyframes slideUp {
+   145→   145→   145→          from { opacity: 0; transform: translateY(8px); }
+   146→   146→   146→          to { opacity: 1; transform: translateY(0); }
+   147→   147→   147→        }
+   148→   148→   148→        @keyframes progressShine {
+   149→   149→   149→          from { background-position: -200% center; }
+   150→   150→   150→          to { background-position: 200% center; }
+   151→   151→   151→        }
+   152→   152→   152→      `}</style>
+   153→   153→   153→
+   154→   154→   154→      <Header title="Profil" icon="fa-user" iconColor="#22C55E" leftElement={<button onClick={() => setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer border-none mr-1" style={{ background: 'rgba(0,0,0,0.06)', color: 'rgba(0,0,0,0.55)' }}><i className="fas fa-arrow-left text-[0.8rem]"></i></button>} />
+   155→   155→   155→      <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0" style={{ background: '#F8F9FA' }}>
+   156→   156→   156→
+   157→   157→   157→        {/* User Card — impressive gradient header */}
+   158→   158→   158→        <div
+   159→   159→   159→          className="relative overflow-hidden rounded-2xl p-6 mb-4"
+   160→   160→   160→          style={{
+   161→   161→   161→            background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 40%, #15803D 100%)',
+   162→   162→   162→          }}
+   163→   163→   163→        >
+   164→   164→   164→          {/* Decorative elements */}
+   165→   165→   165→          <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }}></div>
+   166→   166→   166→          <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full" style={{ background: 'rgba(255,255,255,0.05)' }}></div>
+   167→   167→   167→          <div className="absolute top-2 right-2 w-20 h-20 rounded-full" style={{ background: 'rgba(255,255,255,0.04)' }}></div>
+   168→   168→   168→
+   169→   169→   169→          <div className="flex items-center gap-4 mb-5 relative">
+   170→   170→   170→            {/* Larger avatar with stronger glow */}
+   171→   171→   171→            <div className="relative">
+   172→   172→   172→              <div
+   173→   173→   173→                className="w-20 h-20 rounded-full flex items-center justify-center font-bold text-[1.6rem]"
+   174→   174→   174→                style={{
+   175→   175→   175→                  background: 'rgba(255,255,255,0.2)',
+   176→   176→   176→                  color: '#FFFFFF',
+   177→   177→   177→                  border: '3px solid rgba(255,255,255,0.3)',
+   178→   178→   178→                  boxShadow: '0 0 30px rgba(255,255,255,0.15)',
+   179→   179→   179→                  animation: 'avatarBreathe 3s ease-in-out infinite',
+   180→   180→   180→                }}
+   181→   181→   181→              >
+   182→   182→   182→                {esc(user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2))}
+   183→   183→   183→              </div>
+   184→   184→   184→              {/* Online indicator */}
+   185→   185→   185→              <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full" style={{ background: '#4ADE80', border: '3px solid #22C55E' }}></div>
+   186→   186→   186→            </div>
+   187→   187→   187→            <div className="flex-1 min-w-0">
+   188→   188→   188→              <div className="text-[1.2rem] font-black text-white truncate">{esc(user.name)}</div>
+   189→   189→   189→              <div className="text-[0.78rem] text-white/70">{esc(user.email)}</div>
+   190→   190→   190→              <div className="flex items-center gap-2 mt-1.5">
+   191→   191→   191→                {user.role === 'admin' && (
+   192→   192→   192→                  <span className="inline-flex items-center gap-1 text-[0.6rem] px-2 py-0.5 rounded-full font-semibold bg-white/20 text-white">
+   193→   193→   193→                    <i className="fas fa-shield-alt text-[0.5rem]"></i>Admin
+   194→   194→   194→                  </span>
+   195→   195→   195→                )}
+   196→   196→   196→                <span className="inline-flex items-center gap-1 text-[0.6rem] px-2 py-0.5 rounded-full font-semibold bg-white/20 text-white">
+   197→   197→   197→                  <i className="fas fa-star text-[0.5rem]"></i>{currentInvestLevel.name}
+   198→   198→   198→                </span>
+   199→   199→   199→              </div>
+   200→   200→   200→            </div>
+   201→   201→   201→          </div>
+   202→   202→   202→
+   203→   203→   203→          {/* Account grid on gradient background */}
+   204→   204→   204→          <div className="grid grid-cols-2 gap-2">
+   205→   205→   205→            <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)' }}>
+   206→   206→   206→              <div className="text-[0.6rem] uppercase text-white/60">Principal</div>
+   207→   207→   207→              <div className="text-[0.95rem] font-black text-white">{formatMoney(user.balance)}</div>
+   208→   208→   208→            </div>
+   209→   209→   209→            <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)' }}>
+   210→   210→   210→              <div className="text-[0.6rem] uppercase text-white/60">Investissement</div>
+   211→   211→   211→              <div className="text-[0.95rem] font-black text-white">{formatMoney(user.investBalance)}</div>
+   212→   212→   212→            </div>
+   213→   213→   213→            <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)' }}>
+   214→   214→   214→              <div className="text-[0.6rem] uppercase text-white/60">Trading</div>
+   215→   215→   215→              <div className="text-[0.95rem] font-black text-white">{formatMoney(user.tradeBalance)}</div>
+   216→   216→   216→            </div>
+   217→   217→   217→            <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)' }}>
+   218→   218→   218→              <div className="text-[0.6rem] uppercase text-white/60">Projet</div>
+   219→   219→   219→              <div className="text-[0.95rem] font-black text-white">{formatMoney(user.projectBalance)}</div>
+   220→   220→   220→            </div>
+   221→   221→   221→          </div>
+   222→   222→   222→        </div>
+   223→   223→   223→
+   224→   224→   224→        {/* Niveau d'Investissement Section */}
+   225→   225→   225→        <div
+   226→   226→   226→          className="rounded-2xl p-4 mb-4"
+   227→   227→   227→          style={{
+   228→   228→   228→            background: '#FFFFFF',
+   229→   229→   229→            border: '1px solid rgba(0,0,0,0.08)',
+   230→   230→   230→          }}
+   231→   231→   231→        >
+   232→   232→   232→          <div className="flex items-center gap-2.5 mb-3">
+   233→   233→   233→            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.12)' }}>
+   234→   234→   234→              <i className={`fas ${currentInvestLevel.icon} text-[0.75rem]`} style={{ color: currentInvestLevel.color }}></i>
+   235→   235→   235→            </div>
+   236→   236→   236→            <div className="flex-1">
+   237→   237→   237→              <h4 className="text-[0.88rem] font-bold" style={{ color: '#1F2937' }}>Niveau d'Investissement</h4>
+   238→   238→   238→              <div className="text-[0.65rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>Votre niveau actuel de placement</div>
+   239→   239→   239→            </div>
+   240→   240→   240→            <span
+   241→   241→   241→              className="text-[0.75rem] font-bold px-3 py-1 rounded-full"
+   242→   242→   242→              style={{ background: `${currentInvestLevel.color}20`, color: currentInvestLevel.color }}
+   243→   243→   243→            >
+   244→   244→   244→              {currentInvestLevel.name}
+   245→   245→   245→            </span>
+   246→   246→   246→          </div>
+   247→   247→   247→
+   248→   248→   248→          {/* Progress bar to next level */}
+   249→   249→   249→          <div className="relative">
+   250→   250→   250→            <div className="flex items-center justify-between mb-1.5">
+   251→   251→   251→              <span className="text-[0.68rem]" style={{ color: 'rgba(0,0,0,0.4)' }}>Niveau {currentInvestLevel.level}/{INVEST_LEVELS.length}</span>
+   252→   252→   252→              {nextInvestLevel && (
+   253→   253→   253→                <span className="text-[0.68rem] font-semibold" style={{ color: nextInvestLevel.color }}>→ {nextInvestLevel.name}</span>
+   254→   254→   254→              )}
+   255→   255→   255→            </div>
+   256→   256→   256→            <div className="w-full h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.08)' }}>
+   257→   257→   257→              <div
+   258→   258→   258→                className="h-full rounded-full transition-all duration-500"
+   259→   259→   259→                style={{
+   260→   260→   260→                  width: `${(currentInvestLevel.level / INVEST_LEVELS.length) * 100}%`,
+   261→   261→   261→                  background: `linear-gradient(90deg, ${currentInvestLevel.color}, ${nextInvestLevel?.color || currentInvestLevel.color})`,
+   262→   262→   262→                }}
+   263→   263→   263→              ></div>
+   264→   264→   264→            </div>
+   265→   265→   265→            <div className="flex justify-between mt-1.5">
+   266→   266→   266→              {INVEST_LEVELS.map((lvl, i) => (
+   267→   267→   267→                <div key={i} className="flex flex-col items-center">
+   268→   268→   268→                  <div
+   269→   269→   269→                    className="w-2 h-2 rounded-full"
+   270→   270→   270→                    style={{
+   271→   271→   271→                      background: i <= investLevelIdx ? lvl.color : 'rgba(0,0,0,0.15)',
+   272→   272→   272→                      boxShadow: i <= investLevelIdx ? `0 0 4px ${lvl.color}40` : 'none',
+   273→   273→   273→                    }}
+   274→   274→   274→                  />
+   275→   275→   275→                </div>
+   276→   276→   276→              ))}
+   277→   277→   277→            </div>
+   278→   278→   278→          </div>
+   279→   279→   279→
+   280→   280→   280→          {nextInvestLevel && nextInvestLevel.requiredReferrals > (user.referralCount || 0) && (
+   281→   281→   281→            <div className="mt-3 rounded-lg p-2.5 flex items-center gap-2" style={{ background: 'rgba(0,0,0,0.03)' }}>
+   282→   282→   282→              <i className="fas fa-info-circle text-[0.6rem]" style={{ color: nextInvestLevel.color }}></i>
+   283→   283→   283→              <span className="text-[0.62rem]" style={{ color: 'rgba(0,0,0,0.5)' }}>
+   284→   284→   284→                Encore <strong>{nextInvestLevel.requiredReferrals - (user.referralCount || 0)}</strong> parrainé{nextInvestLevel.requiredReferrals - (user.referralCount || 0) > 1 ? 's' : ''} ou frais de {nextInvestLevel.unlockFee}$ pour débloquer {nextInvestLevel.name}
+   285→   285→   285→              </span>
+   286→   286→   286→            </div>
+   287→   287→   287→          )}
+   288→   288→   288→        </div>
+   289→   289→   289→
+   290→   290→   290→        {/* Niveau de Trading Section */}
+   291→   291→   291→        <div
+   292→   292→   292→          className="rounded-2xl p-4 mb-4"
+   293→   293→   293→          style={{
+   294→   294→   294→            background: '#FFFFFF',
+   295→   295→   295→            border: '1px solid rgba(0,0,0,0.08)',
+   296→   296→   296→          }}
+   297→   297→   297→        >
+   298→   298→   298→          <div className="flex items-center gap-2.5 mb-3">
+   299→   299→   299→            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.12)' }}>
+   300→   300→   300→              <i className={`fas ${currentTradeLevel.icon} text-[0.75rem]`} style={{ color: currentTradeLevel.color }}></i>
+   301→   301→   301→            </div>
+   302→   302→   302→            <div className="flex-1">
+   303→   303→   303→              <h4 className="text-[0.88rem] font-bold" style={{ color: '#1F2937' }}>Niveau de Trading</h4>
+   304→   304→   304→              <div className="text-[0.65rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>Votre expérience en trading</div>
+   305→   305→   305→            </div>
+   306→   306→   306→            <span
+   307→   307→   307→              className="text-[0.75rem] font-bold px-3 py-1 rounded-full"
+   308→   308→   308→              style={{ background: `${currentTradeLevel.color}20`, color: currentTradeLevel.color }}
+   309→   309→   309→            >
+   310→   310→   310→              {currentTradeLevel.name}
+   311→   311→   311→            </span>
+   312→   312→   312→          </div>
+   313→   313→   313→
+   314→   314→   314→          {/* Progress bar to next level */}
+   315→   315→   315→          <div className="relative">
+   316→   316→   316→            <div className="flex items-center justify-between mb-1.5">
+   317→   317→   317→              <span className="text-[0.68rem]" style={{ color: 'rgba(0,0,0,0.4)' }}>Niveau {currentTradeLevel.level}/{TRADING_LEVELS.length}</span>
+   318→   318→   318→              {nextTradeLevel && (
+   319→   319→   319→                <span className="text-[0.68rem] font-semibold" style={{ color: nextTradeLevel.color }}>→ {nextTradeLevel.name} ({nextTradeLevel.minTrades} trades)</span>
+   320→   320→   320→              )}
+   321→   321→   321→            </div>
+   322→   322→   322→            <div className="w-full h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.08)' }}>
+   323→   323→   323→              <div
+   324→   324→   324→                className="h-full rounded-full transition-all duration-500"
+   325→   325→   325→                style={{
+   326→   326→   326→                  width: nextTradeLevel ? `${(tradeCount / nextTradeLevel.minTrades) * 100}%` : '100%',
+   327→   327→   327→                  background: `linear-gradient(90deg, ${currentTradeLevel.color}, ${nextTradeLevel?.color || currentTradeLevel.color})`,
+   328→   328→   328→                  maxWidth: '100%',
+   329→   329→   329→                }}
+   330→   330→   330→              ></div>
+   331→   331→   331→            </div>
+   332→   332→   332→          </div>
+   333→   333→   333→
+   334→   334→   334→          {nextTradeLevel && (
+   335→   335→   335→            <div className="mt-2 text-[0.62rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>
+   336→   336→   336→              <i className="fas fa-chart-bar mr-1"></i>{tradeCount}/{nextTradeLevel.minTrades} transactions pour le prochain niveau
+   337→   337→   337→            </div>
+   338→   338→   338→          )}
+   339→   339→   339→        </div>
+   340→   340→   340→
+   341→   341→   341→        {/* Referral Stats — prominent section */}
+   342→   342→   342→        <div
+   343→   343→   343→          className="rounded-2xl p-4 mb-4"
+   344→   344→   344→          style={{
+   345→   345→   345→            background: '#FFFFFF',
+   346→   346→   346→            border: '1px solid rgba(0,0,0,0.08)',
+   347→   347→   347→          }}
+   348→   348→   348→        >
+   349→   349→   349→          <div className="flex items-center gap-2.5 mb-3">
+   350→   350→   350→            <i className="fas fa-gift" style={{ color: '#F59E0B' }}></i>
+   351→   351→   351→            <h4 className="text-[0.88rem] font-bold" style={{ color: '#1F2937' }}>Parrainage</h4>
+   352→   352→   352→            <span
+   353→   353→   353→              className="ml-auto text-[0.7rem] font-bold px-2.5 py-1 rounded-full"
+   354→   354→   354→              style={{
+   355→   355→   355→                background: (user.referralCount || 0) >= REQUIRED_REFERRALS ? 'rgba(34,197,94,0.12)' : 'rgba(245,158,11,0.12)',
+   356→   356→   356→                color: (user.referralCount || 0) >= REQUIRED_REFERRALS ? '#22C55E' : '#F59E0B',
+   357→   357→   357→              }}
+   358→   358→   358→            >
+   359→   359→   359→              {user.referralCount || 0}/{REQUIRED_REFERRALS}
+   360→   360→   360→            </span>
+   361→   361→   361→          </div>
+   362→   362→   362→
+   363→   363→   363→          {/* Referral Code — light bg, gold accent */}
+   364→   364→   364→          <div
+   365→   365→   365→            className="rounded-xl p-3 mb-3 flex items-center justify-between"
+   366→   366→   366→            style={{
+   367→   367→   367→              background: 'rgba(245,158,11,0.08)',
+   368→   368→   368→              border: '1px solid rgba(245,158,11,0.1)',
+   369→   369→   369→            }}
+   370→   370→   370→          >
+   371→   371→   371→            <div>
+   372→   372→   372→              <div className="text-[0.68rem] mb-0.5" style={{ color: 'rgba(0,0,0,0.45)' }}>Votre code</div>
+   373→   373→   373→              <div className="text-[1.1rem] font-mono font-black" style={{ color: '#F59E0B' }}>{user.referralCode}</div>
+   374→   374→   374→            </div>
+   375→   375→   375→            <div className="flex items-center gap-2">
+   376→   376→   376→              <button
+   377→   377→   377→                onClick={handleShare}
+   378→   378→   378→                className="w-10 h-10 rounded-xl flex items-center justify-center border-none cursor-pointer transition-all"
+   379→   379→   379→                style={{
+   380→   380→   380→                  background: shared ? 'rgba(34,197,94,0.3)' : 'rgba(34,197,94,0.15)',
+   381→   381→   381→                  color: shared ? '#22C55E' : '#22C55E',
+   382→   382→   382→                  boxShadow: shared ? 'none' : '0 2px 12px rgba(34,197,94,0.15)',
+   383→   383→   383→                }}
+   384→   384→   384→                title="Partager le lien"
+   385→   385→   385→              >
+   386→   386→   386→                <i className={`fas ${shared ? 'fa-check' : 'fa-share-alt'} text-[0.85rem]`}></i>
+   387→   387→   387→              </button>
+   388→   388→   388→              <button
+   389→   389→   389→                onClick={handleCopyCode}
+   390→   390→   390→                className="w-10 h-10 rounded-xl flex items-center justify-center border-none cursor-pointer transition-all"
+   391→   391→   391→                style={{
+   392→   392→   392→                  background: copied ? 'rgba(245,158,11,0.3)' : '#F59E0B',
+   393→   393→   393→                  color: copied ? '#F59E0B' : '#050506',
+   394→   394→   394→                  boxShadow: copied ? 'none' : '0 2px 12px rgba(245,158,11,0.25)',
+   395→   395→   395→                }}
+   396→   396→   396→                title="Copier le code"
+   397→   397→   397→              >
+   398→   398→   398→                <i className={`fas ${copied ? 'fa-check' : 'fa-copy'} text-[0.85rem]`}></i>
+   399→   399→   399→              </button>
+   400→   400→   400→            </div>
+   401→   401→   401→          </div>
+   402→   402→   402→
+   403→   403→   403→          {/* Referral Progress — prominent */}
+   404→   404→   404→          {requiredReferrals > 0 && (
+   405→   405→   405→            <div
+   406→   406→   406→              className="rounded-xl p-3 mb-3"
+   407→   407→   407→              style={{
+   408→   408→   408→                background: 'rgba(0,0,0,0.04)',
+   409→   409→   409→                border: '1px solid rgba(0,0,0,0.05)',
+   410→   410→   410→              }}
+   411→   411→   411→            >
+   412→   412→   412→              <div className="flex items-center justify-between mb-1.5">
+   413→   413→   413→                <span className="text-[0.72rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>Progrès pour retrait</span>
+   414→   414→   414→                <span className="text-[0.72rem] font-bold" style={{ color: '#F59E0B' }}>{currentReferrals}/{requiredReferrals}</span>
+   415→   415→   415→              </div>
+   416→   416→   416→              <div className="w-full h-2.5 rounded-full overflow-hidden mb-1.5" style={{ background: 'rgba(0,0,0,0.08)' }}>
+   417→   417→   417→                <div
+   418→   418→   418→                  className="h-full rounded-full transition-all duration-500"
+   419→   419→   419→                  style={{
+   420→   420→   420→                    width: `${referralProgress}%`,
+   421→   421→   421→                    background: referralProgress >= 100
+   422→   422→   422→                      ? 'linear-gradient(90deg, #22C55E, #4ADE80)'
+   423→   423→   423→                      : 'linear-gradient(90deg, #F59E0B, #FBBF24)',
+   424→   424→   424→                  }}
+   425→   425→   425→                ></div>
+   426→   426→   426→              </div>
+   427→   427→   427→              {needsMore > 0 ? (
+   428→   428→   428→                <p className="text-[0.65rem]" style={{ color: 'rgba(34,197,94,0.7)' }}>
+   429→   429→   429→                  <i className="fas fa-info-circle mr-1"></i>Encore <strong>{needsMore}</strong> parrainé{needsMore > 1 ? 's' : ''} requis pour le retrait
+   430→   430→   430→                </p>
+   431→   431→   431→              ) : (
+   432→   432→   432→                <p className="text-[0.65rem]" style={{ color: '#22C55E' }}>
+   433→   433→   433→                  <i className="fas fa-check-circle mr-1"></i>Condition de parrainage remplie !
+   434→   434→   434→                </p>
+   435→   435→   435→              )}
+   436→   436→   436→            </div>
+   437→   437→   437→          )}
+   438→   438→   438→
+   439→   439→   439→          {/* Referral stats row */}
+   440→   440→   440→          <div className="grid grid-cols-2 gap-2 mb-3">
+   441→   441→   441→            <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.08)' }}>
+   442→   442→   442→              <div className="text-[0.6rem]" style={{ color: 'rgba(0,0,0,0.35)' }}>Parrainés actifs</div>
+   443→   443→   443→              <div className="text-[1rem] font-black" style={{ color: '#F59E0B' }}>{user.referralCount || 0}</div>
+   444→   444→   444→            </div>
+   445→   445→   445→            <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.08)' }}>
+   446→   446→   446→              <div className="text-[0.6rem]" style={{ color: 'rgba(0,0,0,0.35)' }}>Prochain niveau</div>
+   447→   447→   447→              <div className="text-[1rem] font-black" style={{ color: referralNextLevel ? '#8B5CF6' : '#22C55E' }}>
+   448→   448→   448→                {referralNextLevel ? `+${referralRemaining}` : '✓'}
+   449→   449→   449→              </div>
+   450→   450→   450→            </div>
+   451→   451→   451→          </div>
+   452→   452→   452→
+   453→   453→   453→          <button
+   454→   454→   454→            onClick={loadReferrals}
+   455→   455→   455→            className="w-full py-2.5 rounded-xl font-semibold text-[0.82rem] border-none cursor-pointer transition-all active:scale-[0.98]"
+   456→   456→   456→            style={{
+   457→   457→   457→              background: 'rgba(245,158,11,0.1)',
+   458→   458→   458→              color: '#F59E0B',
+   459→   459→   459→              border: '1px solid rgba(245,158,11,0.15)',
+   460→   460→   460→            }}
+   461→   461→   461→          >
+   462→   462→   462→            <i className="fas fa-list mr-1"></i>Voir mes parrainés
+   463→   463→   463→          </button>
+   464→   464→   464→        </div>
+   465→   465→   465→
+   466→   466→   466→        {/* World Link Section — shown when 10+ referrals */}
+   467→   467→   467→        {(user.referralCount || 0) >= REQUIRED_REFERRALS && worldLink && (
+   468→   468→   468→          <div
+   469→   469→   469→            className="rounded-2xl p-4 mb-4 relative overflow-hidden"
+   470→   470→   470→            style={{
+   471→   471→   471→              background: 'linear-gradient(135deg, rgba(139,92,246,0.06), rgba(59,130,246,0.06))',
+   472→   472→   472→              border: '1px solid rgba(139,92,246,0.12)',
+   473→   473→   473→            }}
+   474→   474→   474→          >
+   475→   475→   475→            <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full" style={{ background: 'rgba(139,92,246,0.05)' }} />
+   476→   476→   476→            <div className="flex items-center gap-2.5 mb-2">
+   477→   477→   477→              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(139,92,246,0.12)' }}>
+   478→   478→   478→                <i className="fas fa-globe text-[0.75rem]" style={{ color: '#8B5CF6' }}></i>
+   479→   479→   479→              </div>
+   480→   480→   480→              <div className="flex-1">
+   481→   481→   481→                <h4 className="text-[0.85rem] font-bold" style={{ color: '#8B5CF6' }}>Un nouvel horizon</h4>
+   482→   482→   482→                <div className="text-[0.6rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>Accès exclusif pour les membres fidèles</div>
+   483→   483→   483→              </div>
+   484→   484→   484→            </div>
+   485→   485→   485→            <p className="text-[0.65rem] mb-3" style={{ color: 'rgba(0,0,0,0.5)' }}>
+   486→   486→   486→              Découvrez des opportunités étendues réservées aux parrains les plus actifs.
+   487→   487→   487→            </p>
+   488→   488→   488→            <button
+   489→   489→   489→              onClick={handleWorldLinkClick}
+   490→   490→   490→              className="w-full py-2.5 rounded-xl font-semibold text-[0.82rem] border-none cursor-pointer flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
+   491→   491→   491→              style={{
+   492→   492→   492→                background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
+   493→   493→   493→                color: '#FFFFFF',
+   494→   494→   494→                boxShadow: '0 2px 12px rgba(139,92,246,0.3)',
+   495→   495→   495→              }}
+   496→   496→   496→            >
+   497→   497→   497→              <i className="fas fa-external-link-alt text-[0.6rem]"></i>
+   498→   498→   498→              Découvrir
+   499→   499→   499→            </button>
+   500→   500→   500→          </div>
+   501→   501→   501→        )}
+   502→   502→   502→
+   503→   503→   503→        {/* Referral List — white cards */}
+   504→   504→   504→        {showReferrals && (
+   505→   505→   505→          <div
+   506→   506→   506→            className="rounded-2xl p-4 mb-4"
+   507→   507→   507→            style={{
+   508→   508→   508→              background: '#FFFFFF',
+   509→   509→   509→              border: '1px solid rgba(0,0,0,0.08)',
+   510→   510→   510→            }}
+   511→   511→   511→          >
+   512→   512→   512→            <h4 className="text-[0.82rem] font-bold mb-2" style={{ color: '#1F2937' }}>Mes parrainés ({referrals.length})</h4>
+   513→   513→   513→            {referrals.length === 0 ? (
+   514→   514→   514→              <p className="text-[0.75rem]" style={{ color: 'rgba(0,0,0,0.35)' }}>Aucun parrainé pour le moment.</p>
+   515→   515→   515→            ) : referrals.map((r, i) => (
+   516→   516→   516→              <div
+   517→   517→   517→                key={i}
+   518→   518→   518→                className="flex items-center justify-between py-2"
+   519→   519→   519→                style={{ borderBottom: i < referrals.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}
+   520→   520→   520→              >
+   521→   521→   521→                <div>
+   522→   522→   522→                  <div className="text-[0.78rem] font-semibold" style={{ color: '#1F2937' }}>{esc(r.name)}</div>
+   523→   523→   523→                  <div className="text-[0.65rem]" style={{ color: 'rgba(0,0,0,0.35)' }}>{esc(r.email)}</div>
+   524→   524→   524→                </div>
+   525→   525→   525→                <span
+   526→   526→   526→                  className="text-[0.65rem] font-semibold px-2 py-0.5 rounded-full"
+   527→   527→   527→                  style={{
+   528→   528→   528→                    background: r.hasInvested ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.08)',
+   529→   529→   529→                    color: r.hasInvested ? '#22C55E' : 'rgba(239,68,68,0.6)',
+   530→   530→   530→                  }}
+   531→   531→   531→                >
+   532→   532→   532→                  {r.hasInvested ? 'Actif' : 'Inactif'}
+   533→   533→   533→                </span>
+   534→   534→   534→              </div>
+   535→   535→   535→            ))}
+   536→   536→   536→          </div>
+   537→   537→   537→        )}
+   538→   538→   538→
+   539→   539→   539→        {/* Analytics Button — white bg with gold icon */}
+   540→   540→   540→        <button
+   541→   541→   541→          onClick={() => setPage('analytics')}
+   542→   542→   542→          className="w-full py-3.5 rounded-xl font-bold text-[0.88rem] border-none cursor-pointer mb-3 flex items-center justify-center gap-2.5 transition-all active:scale-[0.98]"
+   543→   543→   543→          style={{
+   544→   544→   544→            background: '#FFFFFF',
+   545→   545→   545→            color: '#1F2937',
+   546→   546→   546→            border: '1px solid rgba(0,0,0,0.08)',
+   547→   547→   547→            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+   548→   548→   548→          }}
+   549→   549→   549→        >
+   550→   550→   550→          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.12)' }}>
+   551→   551→   551→            <i className="fas fa-chart-bar text-[0.75rem]" style={{ color: '#6366F1' }}></i>
+   552→   552→   552→          </div>
+   553→   553→   553→          Analyses
+   554→   554→   554→        </button>
+   555→   555→   555→
+   556→   556→   556→        {/* Admin Button — white bg with gold icon */}
+   557→   557→   557→        {user.role === 'admin' && (
+   558→   558→   558→          <button
+   559→   559→   559→            onClick={() => setPage('admin')}
+   560→   560→   560→            className="w-full py-3.5 rounded-xl font-bold text-[0.88rem] border-none cursor-pointer mb-3 flex items-center justify-center gap-2.5 transition-all active:scale-[0.98]"
+   561→   561→   561→            style={{
+   562→   562→   562→              background: '#FFFFFF',
+   563→   563→   563→              color: '#1F2937',
+   564→   564→   564→              border: '1px solid rgba(0,0,0,0.08)',
+   565→   565→   565→              boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+   566→   566→   566→            }}
+   567→   567→   567→          >
+   568→   568→   568→            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.12)' }}>
+   569→   569→   569→              <i className="fas fa-shield-alt text-[0.75rem]" style={{ color: '#6366F1' }}></i>
+   570→   570→   570→            </div>
+   571→   571→   571→            Panneau Admin
+   572→   572→   572→          </button>
+   573→   573→   573→        )}
+   574→   574→   574→
+   575→   575→   575→        {/* Logout — light bg with subtle red text */}
+   576→   576→   576→        <button
+   577→   577→   577→          onClick={() => setModalOpen(true)}
+   578→   578→   578→          className="w-full py-3.5 rounded-xl font-semibold text-[0.88rem] cursor-pointer flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+   579→   579→   579→          style={{
+   580→   580→   580→            background: 'rgba(0,0,0,0.04)',
+   581→   581→   581→            border: '1.5px solid rgba(239,68,68,0.12)',
+   582→   582→   582→            color: 'rgba(239,68,68,0.6)',
+   583→   583→   583→          }}
+   584→   584→   584→        >
+   585→   585→   585→          <i className="fas fa-sign-out-alt"></i> Déconnexion
+   586→   586→   586→        </button>
+   587→   587→   587→      </div>
+   588→   588→   588→
+   589→   589→   589→      {modalOpen && (
+   590→   590→   590→        <div
+   591→   591→   591→          className="fixed inset-0 backdrop-blur-sm z-[6000] flex items-center justify-center"
+   592→   592→   592→          style={{ background: 'rgba(0,0,0,0.3)' }}
+   593→   593→   593→          onClick={() => setModalOpen(false)}
+   594→   594→   594→        >
+   595→   595→   595→          <div
+   596→   596→   596→            className="rounded-2xl p-7 w-[88%] max-w-[320px] text-center"
+   597→   597→   597→            style={{
+   598→   598→   598→              background: '#FFFFFF',
+   599→   599→   599→              border: '1px solid rgba(0,0,0,0.08)',
+   600→   600→   600→              boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+   601→   601→   601→              animation: 'modalIn 0.25s ease-out',
+   602→   602→   602→            }}
+   603→   603→   603→            onClick={(e) => e.stopPropagation()}
+   604→   604→   604→          >
+   605→   605→   605→            <h3 className="mb-2 text-[1.05rem] font-extrabold" style={{ color: '#1F2937' }}>Déconnexion</h3>
+   606→   606→   606→            <p className="text-[0.82rem] mb-5 leading-relaxed" style={{ color: 'rgba(0,0,0,0.55)' }}>Voulez-vous vous déconnecter ?</p>
+   607→   607→   607→            <div className="flex gap-2">
+   608→   608→   608→              <button
+   609→   609→   609→                onClick={() => setModalOpen(false)}
+   610→   610→   610→                className="flex-1 py-3 rounded-xl font-semibold text-[0.82rem] cursor-pointer transition-all active:scale-95"
+   611→   611→   611→                style={{
+   612→   612→   612→                  background: 'rgba(0,0,0,0.05)',
+   613→   613→   613→                  border: '1.5px solid rgba(0,0,0,0.1)',
+   614→   614→   614→                  color: 'rgba(0,0,0,0.55)',
+   615→   615→   615→                }}
+   616→   616→   616→              >
+   617→   617→   617→                Annuler
+   618→   618→   618→              </button>
+   619→   619→   619→              <button
+   620→   620→   620→                onClick={handleLogout}
+   621→   621→   621→                className="flex-1 py-3 rounded-xl text-white font-semibold text-[0.82rem] cursor-pointer transition-all active:scale-95"
+   622→   622→   622→                style={{
+   623→   623→   623→                  background: 'rgba(239,68,68,0.2)',
+   624→   624→   624→                  border: '1px solid rgba(239,68,68,0.2)',
+   625→   625→   625→                  color: '#F87171',
+   626→   626→   626→                }}
+   627→   627→   627→              >
+   628→   628→   628→                Se déconnecter
+   629→   629→   629→              </button>
+   630→   630→   630→            </div>
+   631→   631→   631→          </div>
+   632→   632→   632→        </div>
+   633→   633→   633→      )}
+   634→   634→   634→    </>
+   635→   635→   635→  );
+   636→   636→   636→}
+   637→   637→   637→

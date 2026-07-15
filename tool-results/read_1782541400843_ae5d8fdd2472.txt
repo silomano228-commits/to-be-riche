@@ -1,0 +1,402 @@
+     1→   747→        iconColor="#6366F1"
+     2→   748→        leftElement={
+     3→   749→          <button
+     4→   750→            onClick={() => useAppStore.getState().setPage('profile')}
+     5→   751→            className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] cursor-pointer border-none mr-1"
+     6→   752→          >
+     7→   753→            <i className="fas fa-arrow-left text-[0.8rem]"></i>
+     8→   754→          </button>
+     9→   755→        }
+    10→   756→      />
+    11→   757→      {/* Top-bar controls — split into separate boxes for clarity (was a cramped right cluster). */}
+    12→   758→      <div
+    13→   759→        className="flex gap-2 px-[18px] py-2 bg-[#0E0F11] border-b border-[rgba(255,255,255,0.06)]"
+    14→   760→      >
+    15→   761→        {/* Box 1 — User notifications */}
+    16→   762→        <div
+    17→   763→          className="flex-1 min-w-0 flex flex-col items-center rounded-xl p-2.5"
+    18→   764→          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+    19→   765→        >
+    20→   766→          <NotificationBell dark />
+    21→   767→          <span className="text-[0.52rem] font-medium text-[rgba(255,255,255,0.55)] mt-1 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
+    22→   768→            Notifs utilisateur
+    23→   769→          </span>
+    24→   770→        </div>
+    25→   771→
+    26→   772→        {/* Box 2 — Admin notifications */}
+    27→   773→        <div
+    28→   774→          className="flex-1 min-w-0 flex flex-col items-center rounded-xl p-2.5"
+    29→   775→          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+    30→   776→        >
+    31→   777→          <AdminNotificationBell dark />
+    32→   778→          <span className="text-[0.52rem] font-medium text-[rgba(255,255,255,0.55)] mt-1 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
+    33→   779→            Notifs admin
+    34→   780→          </span>
+    35→   781→        </div>
+    36→   782→
+    37→   783→        {/* Box 3 — Refresh */}
+    38→   784→        <button
+    39→   785→          onClick={refreshAll}
+    40→   786→          className="flex-1 min-w-0 flex flex-col items-center rounded-xl p-2.5 bg-transparent cursor-pointer transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+    41→   787→          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+    42→   788→        >
+    43→   789→          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center text-[rgba(255,255,255,0.55)] text-[0.85rem]">
+    44→   790→            <i className="fas fa-sync-alt text-[0.8rem]"></i>
+    45→   791→          </div>
+    46→   792→          <span className="text-[0.52rem] font-medium text-[rgba(255,255,255,0.55)] mt-1 text-center whitespace-nowrap">
+    47→   793→            Actualiser
+    48→   794→          </span>
+    49→   795→        </button>
+    50→   796→      </div>
+    51→   797→      <div className="flex-1 w-full overflow-y-auto min-h-0">
+    52→   798→        {/* Tabs */}
+    53→   799→        <div className="flex bg-[#0E0F11] border-b border-[rgba(255,255,255,0.06)] px-1 overflow-x-auto">
+    54→   800→          {([
+    55→   801→            { k: 'users', l: 'Users', icon: '' },
+    56→   802→            { k: 'deposits', l: 'Dépôts TRX', icon: '' },
+    57→   803→            { k: 'yas', l: 'Yas 🇹🇬', icon: '' },
+    58→   804→            { k: 'withdrawals', l: 'Retraits', icon: '' },
+    59→   805→            { k: 'messages', l: `Messages${totalUnread > 0 ? ` (${totalUnread})` : ''}`, icon: '' },
+    60→   806→            { k: 'notif', l: 'Notifs', icon: '' },
+    61→   807→            { k: 'videos', l: 'Vidéos', icon: 'fas fa-video' },
+    62→   808→            { k: 'config', l: 'Config', icon: '' },
+    63→   809→          ] as { k: string; l: string; icon: string }[]).map(t => (
+    64→   810→            <button
+    65→   811→              key={t.k}
+    66→   812→              onClick={() => setTab(t.k as any)}
+    67→   813→              className={`flex-1 min-w-0 py-3 text-[0.65rem] font-semibold border-none cursor-pointer transition-all whitespace-nowrap px-1 rounded-none ${
+    68→   814→                tab === t.k
+    69→   815→                  ? 'text-[#6366F1] border-b-2 border-[#6366F1]'
+    70→   816→                  : 'text-[rgba(255,255,255,0.45)]'
+    71→   817→              }`}
+    72→   818→            >
+    73→   819→              {t.icon && <i className={`${t.icon} mr-1 text-[0.6rem]`}></i>}
+    74→   820→              {t.l}
+    75→   821→            </button>
+    76→   822→          ))}
+    77→   823→        </div>
+    78→   824→
+    79→   825→        <div className="px-[18px] py-4">
+    80→   826→          {loading ? (
+    81→   827→            <div className="flex justify-center py-8">
+    82→   828→              <div className="w-8 h-8 border-3 border-[rgba(255,255,255,0.1)] border-t-[#6366F1] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
+    83→   829→            </div>
+    84→   830→          ) : (
+    85→   831→            <>
+    86→   832→              {/* Users Tab */}
+    87→   833→              {tab === 'users' && (
+    88→   834→                <>
+    89→   835→                  <div className="grid grid-cols-2 gap-2 mb-4">
+    90→   836→                    {[
+    91→   837→                      { label: 'Utilisateurs', value: stats.total_users || 0, color: '#818CF8' },
+    92→   838→                      { label: 'Total solde', value: formatMoney(stats.total_balance || 0), color: '#4ADE80' },
+    93→   839→                    ].map((s, i) => (
+    94→   840→                      <div key={i} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 text-center">
+    95→   841→                        <div className="text-[0.9rem] font-bold" style={{ color: s.color }}>{s.value}</div>
+    96→   842→                        <div className="text-[0.6rem] text-[rgba(255,255,255,0.25)] uppercase">{s.label}</div>
+    97→   843→                      </div>
+    98→   844→                    ))}
+    99→   845→                  </div>
+   100→   846→                  {usersList.map((u: any) => {
+   101→   847→                    const levelLabel = u.unlockedLevel >= 3 ? 'Niv. 3 — Elite' : u.unlockedLevel === 2 ? 'Niv. 2 — Business' : 'Niv. 1 — Débutant';
+   102→   848→                    const levelColor = u.unlockedLevel >= 3 ? '#F59E0B' : u.unlockedLevel === 2 ? '#14B8A6' : '#22C55E';
+   103→   849→                    const created = u.createdAt ? new Date(u.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+   104→   850→                    return (
+   105→   851→                    <div key={u.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 mb-2">
+   106→   852→                      {/* Header: name + email + actions */}
+   107→   853→                      <div className="flex items-start justify-between gap-2">
+   108→   854→                        <div className="flex-1 min-w-0">
+   109→   855→                          <div className="text-[0.82rem] font-bold text-[#EDEDEF] flex items-center flex-wrap gap-1.5">
+   110→   856→                            {esc(u.name)}
+   111→   857→                            {u.role === 'admin' && (
+   112→   858→                              <span className="text-[0.55rem] bg-[rgba(99,102,241,0.12)] text-[#6366F1] px-1.5 py-0.5 rounded-full">Admin</span>
+   113→   859→                            )}
+   114→   860→                            <span className="text-[0.55rem] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: `${levelColor}1A`, color: levelColor }}>
+   115→   861→                              <i className="fas fa-medal text-[0.45rem] mr-0.5"></i>{levelLabel}
+   116→   862→                            </span>
+   117→   863→                          </div>
+   118→   864→                          <div className="text-[0.66rem] text-[rgba(255,255,255,0.4)] truncate">{esc(u.email)}</div>
+   119→   865→                          <div className="text-[0.55rem] text-[rgba(255,255,255,0.3)] mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+   120→   866→                            <span title="Code de parrainage"><i className="fas fa-key text-[0.45rem] mr-0.5 text-[#818CF8]"></i><span className="font-mono">{esc(u.referralCode || '—')}</span></span>
+   121→   867→                            <span><i className="fas fa-users text-[0.45rem] mr-0.5 text-[#818CF8]"></i>{u.referralCount || 0} parrainé{(u.referralCount || 0) > 1 ? 's' : ''}</span>
+   122→   868→                            <span><i className="fas fa-calendar text-[0.45rem] mr-0.5 text-[#818CF8]"></i>{created}</span>
+   123→   869→                          </div>
+   124→   870→                        </div>
+   125→   871→                        <div className="flex items-center gap-1.5 shrink-0">
+   126→   872→                            <button
+   127→   873→                              onClick={() => {
+   128→   874→                                if (editBalanceUserId === u.id) {
+   129→   875→                                  setEditBalanceUserId(null); setEditBalanceDraft(null);
+   130→   876→                                } else {
+   131→   877→                                  setEditBalanceUserId(u.id);
+   132→   878→                                  setEditBalanceDraft({
+   133→   879→                                    balance: String(u.balance ?? 0),
+   134→   880→                                    videoBalance: String(u.videoBalance ?? 0),
+   135→   881→                                    tradeBalance: String(u.tradeBalance ?? 0),
+   136→   882→                                    projectBalance: String(u.projectBalance ?? 0),
+   137→   883→                                    investBalance: String(u.investBalance ?? 0),
+   138→   884→                                    gameTotalWon: String(u.gameTotalWon ?? 0),
+   139→   885→                                    videoTotalEarned: String(u.videoTotalEarned ?? 0),
+   140→   886→                                    totalProfit: String(u.totalProfit ?? 0),
+   141→   887→                                    totalLoss: String(u.totalLoss ?? 0),
+   142→   888→                                    referralCount: String(u.referralCount ?? 0),
+   143→   889→                                  });
+   144→   890→                                }
+   145→   891→                                setTransferUserId(null);
+   146→   892→                                setMessageUserId(null);
+   147→   893→                              }}
+   148→   894→                              className="w-7 h-7 rounded-lg bg-[rgba(251,191,36,0.12)] flex items-center justify-center text-[#FBBF24] cursor-pointer border-none shrink-0 hover:bg-[rgba(251,191,36,0.2)] transition-colors"
+   149→   895→                              title="Modifier les soldes"
+   150→   896→                            >
+   151→   897→                              <i className="fas fa-pen text-[0.55rem]"></i>
+   152→   898→                            </button>
+   153→   899→                            {u.role !== 'admin' && (
+   154→   900→                              <>
+   155→   901→                                <button
+   156→   902→                                  onClick={() => { setTransferUserId(transferUserId === u.id ? null : u.id); setMessageUserId(null); setEditBalanceUserId(null); setEditBalanceDraft(null); }}
+   157→   903→                                  className="w-7 h-7 rounded-lg bg-[rgba(34,197,94,0.12)] flex items-center justify-center text-[#4ADE80] cursor-pointer border-none shrink-0 hover:bg-[rgba(34,197,94,0.2)] transition-colors"
+   158→   904→                                  title="Transférer vers Principal"
+   159→   905→                                >
+   160→   906→                                  <i className="fas fa-exchange-alt text-[0.55rem]"></i>
+   161→   907→                                </button>
+   162→   908→                                <button
+   163→   909→                                  onClick={() => { setMessageUserId(messageUserId === u.id ? null : u.id); setTransferUserId(null); setEditBalanceUserId(null); setEditBalanceDraft(null); }}
+   164→   910→                                  className="w-7 h-7 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center text-[#6366F1] cursor-pointer border-none shrink-0 hover:bg-[rgba(99,102,241,0.2)] transition-colors"
+   165→   911→                                  title="Envoyer un message"
+   166→   912→                                >
+   167→   913→                                  <i className="fas fa-comment text-[0.6rem]"></i>
+   168→   914→                                </button>
+   169→   915→                                <button
+   170→   916→                                  onClick={() => { setDeleteUserId(u.id); setDeleteUserName(u.name); }}
+   171→   917→                                  className="w-7 h-7 rounded-lg bg-[rgba(248,113,113,0.12)] flex items-center justify-center text-[#F87171] cursor-pointer border-none shrink-0 hover:bg-[rgba(248,113,113,0.2)] transition-colors"
+   172→   918→                                  title="Supprimer cet utilisateur"
+   173→   919→                                >
+   174→   920→                                  <i className="fas fa-trash text-[0.55rem]"></i>
+   175→   921→                                </button>
+   176→   922→                              </>
+   177→   923→                            )}
+   178→   924→                          </div>
+   179→   925→                      </div>
+   180→   926→                      {/* Balances grid — 4 wallet accounts in a clean 2x2 layout */}
+   181→   927→                      <div className="grid grid-cols-2 gap-1.5 mt-2.5">
+   182→   928→                        {([
+   183→   929→                          { label: 'Solde principal', val: u.balance ?? 0, color: '#22C55E', icon: 'fa-wallet' },
+   184→   930→                          { label: 'Vidéo', val: u.videoBalance ?? 0, color: '#14B8A6', icon: 'fa-video' },
+   185→   931→                          { label: 'Trading', val: u.tradeBalance ?? 0, color: '#F59E0B', icon: 'fa-bolt' },
+   186→   932→                          { label: 'Projet', val: u.projectBalance ?? 0, color: '#8B5CF6', icon: 'fa-building' },
+   187→   933→                        ]).map((b) => (
+   188→   934→                          <div key={b.label} className="bg-[#161719] rounded-lg p-2 border-l-[3px]" style={{ borderLeftColor: b.color }}>
+   189→   935→                            <div className="flex items-center gap-1 mb-0.5">
+   190→   936→                              <i className={`fas ${b.icon} text-[0.5rem]`} style={{ color: b.color }}></i>
+   191→   937→                              <span className="text-[0.5rem] text-[rgba(255,255,255,0.4)] uppercase tracking-[0.3px] font-semibold">{b.label}</span>
+   192→   938→                            </div>
+   193→   939→                            <div className="text-[0.78rem] font-bold text-[#EDEDEF]">{formatMoney(b.val)}</div>
+   194→   940→                          </div>
+   195→   941→                        ))}
+   196→   942→                      </div>
+   197→   943→                      {/* Secondary amounts row — investBalance, gameTotalWon, totalProfit, totalLoss, referralCount */}
+   198→   944→                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 px-1">
+   199→   945→                        {([
+   200→   946→                          { label: 'Invest.', val: formatMoney(u.investBalance ?? 0), color: '#3B82F6', icon: 'fa-chart-line' },
+   201→   947→                          { label: 'Jeu', val: formatMoney(u.gameTotalWon ?? 0), color: '#EC4899', icon: 'fa-dice' },
+   202→   948→                          { label: 'Vidéo tot.', val: formatMoney(u.videoTotalEarned ?? 0), color: '#06B6D4', icon: 'fa-film' },
+   203→   949→                          { label: 'Profit', val: formatMoney(u.totalProfit ?? 0), color: '#10B981', icon: 'fa-arrow-trend-up' },
+   204→   950→                          { label: 'Perte', val: formatMoney(u.totalLoss ?? 0), color: '#EF4444', icon: 'fa-arrow-trend-down' },
+   205→   951→                          { label: 'Parrainages', val: String(u.referralCount ?? 0), color: '#818CF8', icon: 'fa-users' },
+   206→   952→                        ]).map((s) => (
+   207→   953→                          <div key={s.label} className="flex items-center gap-1">
+   208→   954→                            <i className={`fas ${s.icon} text-[0.45rem]`} style={{ color: s.color }}></i>
+   209→   955→                            <span className="text-[0.5rem] text-[rgba(255,255,255,0.4)] uppercase tracking-[0.3px] font-semibold">{s.label}:</span>
+   210→   956→                            <span className="text-[0.62rem] font-bold text-[#EDEDEF]">{s.val}</span>
+   211→   957→                          </div>
+   212→   958→                        ))}
+   213→   959→                      </div>
+   214→   960→                      {/* Inline fund transfer */}
+   215→   961→                      {transferUserId === u.id && (
+   216→   962→                        <div className="mt-2.5 pt-2.5 border-t border-[rgba(255,255,255,0.06)]">
+   217→   963→                          <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)] mb-2 font-semibold">Transférer vers le solde principal</div>
+   218→   964→                          <div className="flex gap-2 mb-2">
+   219→   965→                            {([
+   220→   966→                              { key: 'tradeBalance' as const, label: 'Trading', bal: u.tradeBalance || 0, color: '#F59E0B' },
+   221→   967→                              { key: 'projectBalance' as const, label: 'Projet', bal: u.projectBalance || 0, color: '#8B5CF6' },
+   222→   968→                            ]).map(acc => (
+   223→   969→                              <button key={acc.key} onClick={() => setTransferAccount(acc.key)}
+   224→   970→                                className={`flex-1 py-1.5 rounded-lg text-[0.6rem] font-semibold border-none cursor-pointer transition-all ${
+   225→   971→                                  transferAccount === acc.key ? 'bg-[#6366F1] text-white' : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)]'
+   226→   972→                                }`}
+   227→   973→                              >
+   228→   974→                                {acc.label}<br/><span className="text-[0.5rem]">{formatMoney(acc.bal)}</span>
+   229→   975→                              </button>
+   230→   976→                            ))}
+   231→   977→                          </div>
+   232→   978→                          <div className="flex gap-2">
+   233→   979→                            <input
+   234→   980→                              type="number" step="0.01" value={transferAmount}
+   235→   981→                              onChange={(e) => setTransferAmount(e.target.value)}
+   236→   982→                              placeholder="Montant $"
+   237→   983→                              className="flex-1 py-2 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.75rem] text-white outline-none focus:border-[#4ADE80]"
+   238→   984→                            />
+   239→   985→                            <button
+   240→   986→                              onClick={() => handleAdminTransfer(u.id)}
+   241→   987→                              disabled={transferSending || !transferAmount || parseFloat(transferAmount) <= 0}
+   242→   988→                              className="px-3 py-2 rounded-lg bg-[#22C55E] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer flex items-center justify-center gap-1 disabled:opacity-50"
+   243→   989→                            >
+   244→   990→                              {transferSending ? (
+   245→   991→                                <div className="w-3.5 h-3.5 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
+   246→   992→                              ) : (
+   247→   993→                                <i className="fas fa-arrow-right text-[0.6rem]"></i>
+   248→   994→                              )}
+   249→   995→                            </button>
+   250→   996→                            <button
+   251→   997→                              onClick={() => { setTransferUserId(null); setTransferAmount(''); }}
+   252→   998→                              className="px-2 py-2 rounded-lg bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] text-[0.72rem] border-none cursor-pointer"
+   253→   999→                            >
+   254→  1000→                              <i className="fas fa-times text-[0.6rem]"></i>
+   255→  1001→                            </button>
+   256→  1002→                          </div>
+   257→  1003→                        </div>
+   258→  1004→                      )}
+   259→  1005→                      {/* Inline message input */}
+   260→  1006→                      {messageUserId === u.id && (
+   261→  1007→                        <div className="mt-2.5 pt-2.5 border-t border-[rgba(255,255,255,0.06)]">
+   262→  1008→                          <div className="flex gap-2">
+   263→  1009→                            <input
+   264→  1010→                              type="text"
+   265→  1011→                              value={messageInput}
+   266→  1012→                              onChange={(e) => setMessageInput(e.target.value)}
+   267→  1013→                              onKeyDown={(e) => { if (e.key === 'Enter') handleQuickMessage(u.id); }}
+   268→  1014→                              placeholder="Tapez votre message..."
+   269→  1015→                              className="flex-1 py-2 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.75rem] text-white outline-none focus:border-[#6366F1]"
+   270→  1016→                              autoFocus
+   271→  1017→                            />
+   272→  1018→                            <button
+   273→  1019→                              onClick={() => handleQuickMessage(u.id)}
+   274→  1020→                              disabled={messageSending || !messageInput.trim()}
+   275→  1021→                              className="px-3 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer flex items-center justify-center gap-1 disabled:opacity-50"
+   276→  1022→                            >
+   277→  1023→                              {messageSending ? (
+   278→  1024→                                <div className="w-3.5 h-3.5 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
+   279→  1025→                              ) : (
+   280→  1026→                                <i className="fas fa-paper-plane text-[0.6rem]"></i>
+   281→  1027→                              )}
+   282→  1028→                            </button>
+   283→  1029→                            <button
+   284→  1030→                              onClick={() => { setMessageUserId(null); setMessageInput(''); }}
+   285→  1031→                              className="px-2 py-2 rounded-lg bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] text-[0.72rem] border-none cursor-pointer"
+   286→  1032→                            >
+   287→  1033→                              <i className="fas fa-times text-[0.6rem]"></i>
+   288→  1034→                            </button>
+   289→  1035→                          </div>
+   290→  1036→                        </div>
+   291→  1037→                      )}
+   292→  1038→                      {/* Inline edit balance — full draft editor (ALL amounts) */}
+   293→  1039→                      {editBalanceUserId === u.id && editBalanceDraft && (
+   294→  1040→                        <div className="mt-2.5 pt-2.5 border-t border-[rgba(255,255,255,0.06)]">
+   295→  1041→                          <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)] mb-2 font-semibold flex items-center gap-1">
+   296→  1042→                            <i className="fas fa-pen text-[0.5rem] text-[#FBBF24]"></i>
+   297→  1043→                            Modifier les soldes — modifiez chaque champ puis enregistrez
+   298→  1044→                          </div>
+   299→  1045→                          <div className="grid grid-cols-2 gap-2 mb-3">
+   300→  1046→                            {([
+   301→  1047→                              { key: 'balance' as const, label: 'Solde principal', color: '#22C55E', icon: 'fa-wallet' },
+   302→  1048→                              { key: 'videoBalance' as const, label: 'Vidéo', color: '#14B8A6', icon: 'fa-video' },
+   303→  1049→                              { key: 'tradeBalance' as const, label: 'Trading', color: '#F59E0B', icon: 'fa-bolt' },
+   304→  1050→                              { key: 'projectBalance' as const, label: 'Projet', color: '#8B5CF6', icon: 'fa-building' },
+   305→  1051→                              { key: 'investBalance' as const, label: 'Investissement', color: '#3B82F6', icon: 'fa-chart-line' },
+   306→  1052→                              { key: 'gameTotalWon' as const, label: 'Gains jeu', color: '#EC4899', icon: 'fa-dice' },
+   307→  1053→                              { key: 'videoTotalEarned' as const, label: 'Gains vidéo totaux', color: '#06B6D4', icon: 'fa-film' },
+   308→  1054→                              { key: 'totalProfit' as const, label: 'Profit total', color: '#10B981', icon: 'fa-arrow-trend-up' },
+   309→  1055→                              { key: 'totalLoss' as const, label: 'Perte totale', color: '#EF4444', icon: 'fa-arrow-trend-down' },
+   310→  1056→                              { key: 'referralCount' as const, label: 'Parrainages', color: '#818CF8', icon: 'fa-users' },
+   311→  1057→                            ]).map(acc => (
+   312→  1058→                              <div key={acc.key} className="bg-[#161719] rounded-lg p-2 border-l-[3px]" style={{ borderLeftColor: acc.color }}>
+   313→  1059→                                <div className="flex items-center gap-1 mb-1">
+   314→  1060→                                  <i className={`fas ${acc.icon} text-[0.5rem]`} style={{ color: acc.color }}></i>
+   315→  1061→                                  <span className="text-[0.55rem] text-[rgba(255,255,255,0.55)] font-semibold uppercase tracking-[0.3px]">{acc.label}</span>
+   316→  1062→                                </div>
+   317→  1063→                                <input
+   318→  1064→                                  type="number" step={acc.key === 'referralCount' ? '1' : '0.01'} min="0"
+   319→  1065→                                  value={editBalanceDraft[acc.key]}
+   320→  1066→                                  onChange={(e) => setEditBalanceDraft(prev => prev ? { ...prev, [acc.key]: e.target.value } : prev)}
+   321→  1067→                                  placeholder="0.00"
+   322→  1068→                                  className="w-full py-1.5 px-2 bg-[#0E0F11] border-[1px] border-[rgba(255,255,255,0.06)] rounded-md text-[0.78rem] text-white outline-none focus:border-[#FBBF24]"
+   323→  1069→                                />
+   324→  1070→                              </div>
+   325→  1071→                            ))}
+   326→  1072→                          </div>
+   327→  1073→                          <div className="flex gap-2">
+   328→  1074→                            <button
+   329→  1075→                              onClick={() => handleEditBalance(u.id)}
+   330→  1076→                              disabled={editBalanceSending}
+   331→  1077→                              className="flex-1 py-2.5 rounded-lg bg-[#FBBF24] text-[#050506] text-[0.78rem] font-bold border-none cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+   332→  1078→                            >
+   333→  1079→                              {editBalanceSending ? (
+   334→  1080→                                <>
+   335→  1081→                                  <div className="w-3.5 h-3.5 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
+   336→  1082→                                  Enregistrement...
+   337→  1083→                                </>
+   338→  1084→                              ) : (
+   339→  1085→                                <><i className="fas fa-check text-[0.65rem]"></i> Enregistrer les modifications</>
+   340→  1086→                              )}
+   341→  1087→                            </button>
+   342→  1088→                            <button
+   343→  1089→                              onClick={() => { setEditBalanceUserId(null); setEditBalanceDraft(null); }}
+   344→  1090→                              className="px-3 py-2.5 rounded-lg bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] text-[0.72rem] border-none cursor-pointer"
+   345→  1091→                            >
+   346→  1092→                              <i className="fas fa-times text-[0.65rem]"></i>
+   347→  1093→                            </button>
+   348→  1094→                          </div>
+   349→  1095→                        </div>
+   350→  1096→                      )}
+   351→  1097→                    </div>
+   352→  1098→                    );
+   353→  1099→                  })}
+   354→  1100→                </>
+   355→  1101→              )}
+   356→  1102→
+   357→  1103→              {/* Deposits Tab (TRX) */}
+   358→  1104→              {tab === 'deposits' && (
+   359→  1105→                <>
+   360→  1106→                  <div className="grid grid-cols-3 gap-2 mb-4">
+   361→  1107→                    {[
+   362→  1108→                      { label: 'En attente', value: depositStats.pending || 0, color: '#818CF8' },
+   363→  1109→                      { label: 'Approuvés', value: depositStats.approved || 0, color: '#4ADE80' },
+   364→  1110→                      { label: 'Rejetés', value: depositStats.rejected || 0, color: '#F87171' },
+   365→  1111→                    ].map((s, i) => (
+   366→  1112→                      <div key={i} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-2.5 text-center">
+   367→  1113→                        <div className="text-[0.85rem] font-bold" style={{ color: s.color }}>{s.value}</div>
+   368→  1114→                        <div className="text-[0.55rem] text-[rgba(255,255,255,0.25)] uppercase">{s.label}</div>
+   369→  1115→                      </div>
+   370→  1116→                    ))}
+   371→  1117→                  </div>
+   372→  1118→                  {pendingDeposits.filter(d => d.status === 'pending').map((d: any) => {
+   373→  1119→                    const isInvestment = d.type === 'investment';
+   374→  1120→                    const invLevel = d.investmentLevel;
+   375→  1121→                    const invAmount = d.investmentAmount ?? d.amountUsd;
+   376→  1122→                    return (
+   377→  1123→                    <div key={d.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] border-l-[3px] rounded-2xl p-3 mb-2" style={{ borderLeftColor: isInvestment ? '#22C55E' : '#6366F1' }}>
+   378→  1124→                      <div className="flex items-center justify-between mb-2">
+   379→  1125→                        <div>
+   380→  1126→                          <div className="text-[0.78rem] font-bold text-[#EDEDEF] flex items-center gap-1.5 flex-wrap">
+   381→  1127→                            {esc(d.user?.name || '?')}
+   382→  1128→                            {isInvestment && (
+   383→  1129→                              <span className="text-[0.55rem] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-1" style={{ background: 'rgba(34,197,94,0.14)', color: '#22C55E' }}>
+   384→  1130→                                <i className="fas fa-chart-line text-[0.45rem]"></i>Investissement{invLevel ? ` Niv. ${invLevel}` : ''}
+   385→  1131→                              </span>
+   386→  1132→                            )}
+   387→  1133→                          </div>
+   388→  1134→                          <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">{formatMoney(invAmount)}{isInvestment ? ' (investi)' : ''} → {d.amountTrx?.toFixed(2)} TRX</div>
+   389→  1135→                        </div>
+   390→  1136→                        <span className="text-[0.6rem] bg-[rgba(99,102,241,0.12)] text-[#6366F1] px-2 py-0.5 rounded-full">TRX</span>
+   391→  1137→                      </div>
+   392→  1138→                      <div className="bg-[#161719] rounded-lg p-2.5 mb-2">
+   393→  1139→                        <div className="flex justify-between items-center">
+   394→  1140→                          <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Adresse TRX client</span>
+   395→  1141→                          <button
+   396→  1142→                            onClick={async () => {
+   397→  1143→                              try { await navigator.clipboard.writeText(d.userAddress || ''); addToast('Adresse copiée !', 'success'); } catch { addToast('Erreur de copie', 'error'); }
+   398→  1144→                            }}
+   399→  1145→                            className="text-[0.6rem] text-[#6366F1] hover:text-[#818CF8] cursor-pointer bg-transparent border-none flex items-center gap-1"
+   400→  1146→                          >
+   401→
+   402→[showing lines 747-1146 of 2247; use offset=1147 with limit to continue reading]

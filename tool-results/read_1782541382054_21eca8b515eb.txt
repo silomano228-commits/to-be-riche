@@ -1,0 +1,2002 @@
+     1→     1→'use client';
+     2→     2→
+     3→     3→import { useState, useEffect, useCallback, useRef } from 'react';
+     4→     4→import { io, Socket } from 'socket.io-client';
+     5→     5→import { useAppStore, formatMoney, esc, authFetch, type AppUser } from '@/lib/store';
+     6→     6→import { Header, LogoImg, Modal, INVEST_LEVELS, ENTERPRISE_TYPES, ENTERPRISE_NAMES } from '@/components/shared';
+     7→     7→import NotificationBell from '@/components/NotificationBell';
+     8→     8→import AdminNotificationBell from '@/components/AdminNotificationBell';
+     9→     9→
+    10→    10→interface AdminChatMsg {
+    11→    11→  id: string;
+    12→    12→  text: string;
+    13→    13→  me: boolean;
+    14→    14→  isAdmin: boolean;
+    15→    15→  isAdminMsg: boolean;
+    16→    16→  t: string;
+    17→    17→  date?: string;
+    18→    18→}
+    19→    19→
+    20→    20→interface Conversation {
+    21→    21→  user_id: string;
+    22→    22→  user_name: string | null;
+    23→    23→  user_email: string;
+    24→    24→  user_balance: number;
+    25→    25→  user_has_invested: boolean;
+    26→    26→  messages: {
+    27→    27→    id: string;
+    28→    28→    content: string;
+    29→    29→    is_admin: boolean;
+    30→    30→    time: string;
+    31→    31→    date: string;
+    32→    32→    timestamp: number;
+    33→    33→  }[];
+    34→    34→  last_ts: number;
+    35→    35→  last_message: {
+    36→    36→    id: string;
+    37→    37→    content: string;
+    38→    38→    is_admin: boolean;
+    39→    39→    time: string;
+    40→    40→    date: string;
+    41→    41→    timestamp: number;
+    42→    42→  } | null;
+    43→    43→  unread_count: number;
+    44→    44→  total_messages: number;
+    45→    45→}
+    46→    46→
+    47→    47→export default function AdminScreen() {
+    48→    48→  const { user, addToast } = useAppStore();
+    49→    49→  const [tab, setTab] = useState<'users' | 'deposits' | 'yas' | 'withdrawals' | 'messages' | 'notif' | 'videos' | 'config'>('users');
+    50→    50→  const [adminData, setAdminData] = useState<any>(null);
+    51→    51→  const [pendingDeposits, setPendingDeposits] = useState<any[]>([]);
+    52→    52→  const [depositStats, setDepositStats] = useState<any>({});
+    53→    53→  const [yasDeposits, setYasDeposits] = useState<any[]>([]);
+    54→    54→  const [yasStats, setYasStats] = useState<any>({});
+    55→    55→  const [withdrawals, setWithdrawals] = useState<any[]>([]);
+    56→    56→  const [withdrawalStats, setWithdrawalStats] = useState<any>({});
+    57→    57→  const [siteConfig, setSiteConfig] = useState<any>(null);
+    58→    58→  const [configAddr, setConfigAddr] = useState('');
+    59→    59→  const [configPrice, setConfigPrice] = useState('');
+    60→    60→  const [configYasAddr, setConfigYasAddr] = useState('');
+    61→    61→  const [configCfaRate, setConfigCfaRate] = useState('');
+    62→    62→  const [configWorldLink, setConfigWorldLink] = useState('');
+    63→    63→  const [loading, setLoading] = useState(true);
+    64→    64→  const [yasNote, setYasNote] = useState<Record<string, string>>({});
+    65→    65→  const [savingYas, setSavingYas] = useState(false);
+    66→    66→  const [savingConfig, setSavingConfig] = useState(false);
+    67→    67→
+    68→    68→  // Admin video links state (Videos tab)
+    69→    69→  type AdminVideoLink = {
+    70→    70→    id: string;
+    71→    71→    youtubeId: string;
+    72→    72→    title: string;
+    73→    73→    sponsor: string;
+    74→    74→    category: string;
+    75→    75→    durationMin: number;
+    76→    76→    reward: number;
+    77→    77→    active: boolean;
+    78→    78→    createdAt: string;
+    79→    79→  };
+    80→    80→  const [adminVideos, setAdminVideos] = useState<AdminVideoLink[]>([]);
+    81→    81→  const [videosLoading, setVideosLoading] = useState(false);
+    82→    82→  const [videoUrlOrId, setVideoUrlOrId] = useState('');
+    83→    83→  const [videoTitle, setVideoTitle] = useState('');
+    84→    84→  const [videoSponsor, setVideoSponsor] = useState('');
+    85→    85→  const [videoCategory, setVideoCategory] = useState<'chinois' | 'japonais' | 'indien' | 'entreprise'>('entreprise');
+    86→    86→  const [videoDuration, setVideoDuration] = useState('5');
+    87→    87→  const [videoReward, setVideoReward] = useState('0.20');
+    88→    88→  const [addingVideo, setAddingVideo] = useState(false);
+    89→    89→  const [togglingVideoId, setTogglingVideoId] = useState<string | null>(null);
+    90→    90→  const [deleteVideoId, setDeleteVideoId] = useState<string | null>(null);
+    91→    91→  const [deleteVideoTitle, setDeleteVideoTitle] = useState('');
+    92→    92→  const [deletingVideo, setDeletingVideo] = useState(false);
+    93→    93→
+    94→    94→  // Quick message state (Users tab)
+    95→    95→  const [messageUserId, setMessageUserId] = useState<string | null>(null);
+    96→    96→  const [messageInput, setMessageInput] = useState('');
+    97→    97→  const [messageSending, setMessageSending] = useState(false);
+    98→    98→
+    99→    99→  // Fund transfer state (Users tab)
+   100→   100→  const [transferUserId, setTransferUserId] = useState<string | null>(null);
+   101→   101→  const [transferAccount, setTransferAccount] = useState<'tradeBalance' | 'projectBalance'>('tradeBalance');
+   102→   102→  const [transferAmount, setTransferAmount] = useState('');
+   103→   103→  const [transferSending, setTransferSending] = useState(false);
+   104→   104→
+   105→   105→  // Edit balance state (Users tab) — full draft editor covering ALL user
+   106→   106→  // amounts: balance (Solde principal), videoBalance (Vidéo), tradeBalance
+   107→   107→  // (Trading), projectBalance (Projet), investBalance (Investissement),
+   108→   108→  // gameTotalWon (Gains jeu), videoTotalEarned (Gains vidéo totaux),
+   109→   109→  // totalProfit (Profit total), totalLoss (Perte totale), referralCount
+   110→   110→  // (Parrainages). On save we POST one update-balance call per changed field.
+   111→   111→  type BalanceDraft = {
+   112→   112→    balance: string;
+   113→   113→    videoBalance: string;
+   114→   114→    tradeBalance: string;
+   115→   115→    projectBalance: string;
+   116→   116→    investBalance: string;
+   117→   117→    gameTotalWon: string;
+   118→   118→    videoTotalEarned: string;
+   119→   119→    totalProfit: string;
+   120→   120→    totalLoss: string;
+   121→   121→    referralCount: string;
+   122→   122→  };
+   123→   123→  const [editBalanceUserId, setEditBalanceUserId] = useState<string | null>(null);
+   124→   124→  const [editBalanceDraft, setEditBalanceDraft] = useState<BalanceDraft | null>(null);
+   125→   125→  const [editBalanceSending, setEditBalanceSending] = useState(false);
+   126→   126→
+   127→   127→  // Broadcasts history state (Notif tab)
+   128→   128→  const [broadcasts, setBroadcasts] = useState<any[]>([]);
+   129→   129→  const [broadcastsLoading, setBroadcastsLoading] = useState(false);
+   130→   130→
+   131→   131→  // Delete user state (Users tab)
+   132→   132→  const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
+   133→   133→  const [deleteUserName, setDeleteUserName] = useState('');
+   134→   134→  const [deletingUser, setDeletingUser] = useState(false);
+   135→   135→
+   136→   136→  // Notification state (Notif tab)
+   137→   137→  const [notifTarget, setNotifTarget] = useState<'all' | 'individual'>('all');
+   138→   138→  const [notifUserId, setNotifUserId] = useState('');
+   139→   139→  const [notifTitle, setNotifTitle] = useState('');
+   140→   140→  const [notifMessage, setNotifMessage] = useState('');
+   141→   141→  const [notifSending, setNotifSending] = useState(false);
+   142→   142→  const [notifSearch, setNotifSearch] = useState('');
+   143→   143→
+   144→   144→  // Chat state
+   145→   145→  const [conversations, setConversations] = useState<Conversation[]>([]);
+   146→   146→  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+   147→   147→  const [chatMessages, setChatMessages] = useState<AdminChatMsg[]>([]);
+   148→   148→  const [chatInput, setChatInput] = useState('');
+   149→   149→  const [chatSending, setChatSending] = useState(false);
+   150→   150→  const [chatLoading, setChatLoading] = useState(false);
+   151→   151→  const chatScrollRef = useRef<HTMLDivElement>(null);
+   152→   152→  const chatInputRef = useRef<HTMLInputElement>(null);
+   153→   153→  const lastChatFetchId = useRef<string>('0');
+   154→   154→  const socketRef = useRef<Socket | null>(null);
+   155→   155→  const selectedUserIdRef = useRef<string | null>(null);
+   156→   156→  // New-conversation picker — lets the admin start a chat with ANY user
+   157→   157→  // (not just those who already messaged). The admin can search by name/email.
+   158→   158→  const [showNewConversation, setShowNewConversation] = useState(false);
+   159→   159→  const [newConvSearch, setNewConvSearch] = useState('');
+   160→   160→  // Search filter for the existing conversations list.
+   161→   161→  const [convSearch, setConvSearch] = useState('');
+   162→   162→
+   163→   163→  // Keep selectedUserIdRef in sync with selectedUserId
+   164→   164→  useEffect(() => {
+   165→   165→    selectedUserIdRef.current = selectedUserId;
+   166→   166→  }, [selectedUserId]);
+   167→   167→
+   168→   168→  // Ensure spin animation is available
+   169→   169→  useEffect(() => {
+   170→   170→    if (!document.getElementById('admin-spin-style')) {
+   171→   171→      const style = document.createElement('style');
+   172→   172→      style.id = 'admin-spin-style';
+   173→   173→      style.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`;
+   174→   174→      document.head.appendChild(style);
+   175→   175→    }
+   176→   176→  }, []);
+   177→   177→
+   178→   178→  const loadData = useCallback(async () => {
+   179→   179→    try { const r = await authFetch('/api/admin/data'); const d = await r.json(); if (d.success) setAdminData(d); } catch { /* */ }
+   180→   180→    setLoading(false);
+   181→   181→  }, []);
+   182→   182→
+   183→   183→  const loadDeposits = useCallback(async () => {
+   184→   184→    try { const r = await authFetch('/api/admin/deposits'); const d = await r.json(); if (d.success) { setPendingDeposits(d.data || []); setDepositStats(d.stats || {}); } } catch { /* */ }
+   185→   185→  }, []);
+   186→   186→
+   187→   187→  const loadYasDeposits = useCallback(async () => {
+   188→   188→    try { const r = await authFetch('/api/admin/yas-deposits'); const d = await r.json(); if (d.success) { setYasDeposits(d.data || []); setYasStats(d.stats || {}); } } catch { /* */ }
+   189→   189→  }, []);
+   190→   190→
+   191→   191→  const loadWithdrawals = useCallback(async () => {
+   192→   192→    try { const r = await authFetch('/api/admin/withdrawals'); const d = await r.json(); if (d.success) { setWithdrawals(d.data || []); setWithdrawalStats(d.stats || {}); } } catch { /* */ }
+   193→   193→  }, []);
+   194→   194→
+   195→   195→  const loadConfig = useCallback(async () => {
+   196→   196→    try { const r = await authFetch('/api/admin/config'); const d = await r.json(); if (d.success) { setSiteConfig(d.data); setConfigAddr(d.data.adminTrxAddress || ''); setConfigPrice(String(d.data.trxUsdPrice || '')); setConfigYasAddr(d.data.adminYasAccount || ''); setConfigCfaRate(String(d.data.cfaUsdRate || '600')); setConfigWorldLink(d.data.worldLink || ''); } } catch { /* */ }
+   197→   197→  }, []);
+   198→   198→
+   199→   199→  const loadAdminVideos = useCallback(async () => {
+   200→   200→    setVideosLoading(true);
+   201→   201→    try {
+   202→   202→      const r = await authFetch('/api/admin/videos');
+   203→   203→      const d = await r.json();
+   204→   204→      if (d.success) setAdminVideos(d.data || []);
+   205→   205→    } catch { /* */ }
+   206→   206→    setVideosLoading(false);
+   207→   207→  }, []);
+   208→   208→
+   209→   209→  const loadConversations = useCallback(async () => {
+   210→   210→    try {
+   211→   211→      const r = await authFetch('/api/admin/chats');
+   212→   212→      const d = await r.json();
+   213→   213→      if (d.success) setConversations(d.conversations || []);
+   214→   214→    } catch { /* */ }
+   215→   215→  }, []);
+   216→   216→
+   217→   217→  const loadBroadcasts = useCallback(async () => {
+   218→   218→    setBroadcastsLoading(true);
+   219→   219→    try {
+   220→   220→      const r = await authFetch('/api/admin/broadcasts');
+   221→   221→      const d = await r.json();
+   222→   222→      if (d.success) setBroadcasts(d.broadcasts || []);
+   223→   223→    } catch { /* */ }
+   224→   224→    setBroadcastsLoading(false);
+   225→   225→  }, []);
+   226→   226→
+   227→   227→  // Connect to Socket.io for real-time messaging
+   228→   228→  useEffect(() => {
+   229→   229→    if (!user || user.role !== 'admin') return;
+   230→   230→
+   231→   231→    const socket = io('/', {
+   232→   232→      transports: ['websocket', 'polling'],
+   233→   233→      auth: {
+   234→   234→        userId: user.id,
+   235→   235→        userRole: user.role,
+   236→   236→        userName: user.name,
+   237→   237→      },
+   238→   238→      query: { XTransformPort: '3003' },
+   239→   239→    });
+   240→   240→
+   241→   241→    socket.on('connect', () => {
+   242→   242→      console.log('[ADMIN-CHAT] Socket connected:', socket.id);
+   243→   243→    });
+   244→   244→
+   245→   245→    socket.on('disconnect', () => {
+   246→   246→      console.log('[ADMIN-CHAT] Socket disconnected');
+   247→   247→    });
+   248→   248→
+   249→   249→    // Real-time: receive new user messages — uses real DB ID for dedup
+   250→   250→    socket.on('new-user-message', (msgData: {
+   251→   251→      id: string;
+   252→   252→      content: string;
+   253→   253→      userId: string;
+   254→   254→      userName: string;
+   255→   255→      isAdmin: boolean;
+   256→   256→      t: string;
+   257→   257→      date: string;
+   258→   258→    }) => {
+   259→   259→      // If we have this conversation open, add the message
+   260→   260→      if (selectedUserIdRef.current === msgData.userId) {
+   261→   261→        setChatMessages(prev => {
+   262→   262→          const existingIds = new Set(prev.map(m => m.id));
+   263→   263→          if (existingIds.has(msgData.id)) return prev;
+   264→   264→          // Also dedup by content+time for robustness
+   265→   265→          if (prev.some(m => m.text === msgData.content && m.t === msgData.t)) return prev;
+   266→   266→          return [...prev, {
+   267→   267→            id: msgData.id,
+   268→   268→            text: msgData.content,
+   269→   269→            me: false,
+   270→   270→            isAdmin: false,
+   271→   271→            isAdminMsg: false,
+   272→   272→            t: msgData.t,
+   273→   273→            date: msgData.date,
+   274→   274→          }];
+   275→   275→        });
+   276→   276→      }
+   277→   277→      // Refresh conversations list to update unread count
+   278→   278→      loadConversations();
+   279→   279→    });
+   280→   280→
+   281→   281→    // Real-time: see admin messages sent from other admin tabs — uses real DB ID
+   282→   282→    socket.on('admin-message-sent', (msgData: {
+   283→   283→      id: string;
+   284→   284→      content: string;
+   285→   285→      userId: string;
+   286→   286→      isAdmin: boolean;
+   287→   287→      t: string;
+   288→   288→      date: string;
+   289→   289→    }) => {
+   290→   290→      if (selectedUserIdRef.current === msgData.userId) {
+   291→   291→        setChatMessages(prev => {
+   292→   292→          const existingIds = new Set(prev.map(m => m.id));
+   293→   293→          if (existingIds.has(msgData.id)) return prev;
+   294→   294→          // Also dedup by content+time
+   295→   295→          if (prev.some(m => m.text === msgData.content && m.t === msgData.t)) return prev;
+   296→   296→          return [...prev, {
+   297→   297→            id: msgData.id,
+   298→   298→            text: msgData.content,
+   299→   299→            me: true,
+   300→   300→            isAdmin: true,
+   301→   301→            isAdminMsg: true,
+   302→   302→            t: msgData.t,
+   303→   303→            date: msgData.date,
+   304→   304→          }];
+   305→   305→        });
+   306→   306→      }
+   307→   307→      loadConversations();
+   308→   308→    });
+   309→   309→
+   310→   310→    socketRef.current = socket;
+   311→   311→
+   312→   312→    return () => {
+   313→   313→      socket.disconnect();
+   314→   314→      socketRef.current = null;
+   315→   315→    };
+   316→   316→  }, [user?.id]);
+   317→   317→
+   318→   318→  const loadChatMessages = useCallback(async (userId: string) => {
+   319→   319→    try {
+   320→   320→      const r = await authFetch(`/api/chat/messages?userId=${userId}&lastId=${lastChatFetchId.current}`);
+   321→   321→      const d = await r.json();
+   322→   322→      if (d.success && d.messages?.length > 0) {
+   323→   323→        setChatMessages(prev => {
+   324→   324→          const existingIds = new Set(prev.map(m => m.id));
+   325→   325→          // Dedup by both ID and content+time for robustness
+   326→   326→          const newMsgs = d.messages.filter((m: AdminChatMsg) => {
+   327→   327→            if (existingIds.has(m.id)) return false;
+   328→   328→            if (prev.some(p => p.text === m.text && p.t === m.t)) return false;
+   329→   329→            return true;
+   330→   330→          });
+   331→   331→          if (newMsgs.length > 0) {
+   332→   332→            lastChatFetchId.current = newMsgs[newMsgs.length - 1].id;
+   333→   333→            return [...prev, ...newMsgs];
+   334→   334→          }
+   335→   335→          return prev;
+   336→   336→        });
+   337→   337→      }
+   338→   338→    } catch { /* */ }
+   339→   339→    setChatLoading(false);
+   340→   340→  }, []);
+   341→   341→
+   342→   342→  // Poll chat messages as backup (Socket.io is primary)
+   343→   343→  useEffect(() => {
+   344→   344→    if (tab === 'messages' && selectedUserId) {
+   345→   345→      loadChatMessages(selectedUserId);
+   346→   346→      // Reduced polling: every 15 seconds as backup (Socket.io handles real-time)
+   347→   347→      const interval = setInterval(() => loadChatMessages(selectedUserId), 15000);
+   348→   348→      return () => clearInterval(interval);
+   349→   349→    }
+   350→   350→  }, [tab, selectedUserId, loadChatMessages]);
+   351→   351→
+   352→   352→  // Load conversations when messages tab is selected (reduced polling)
+   353→   353→  useEffect(() => {
+   354→   354→    if (tab === 'messages') {
+   355→   355→      const load = () => { loadConversations(); };
+   356→   356→      load();
+   357→   357→      // Reduced polling: every 20 seconds as backup (Socket.io handles real-time)
+   358→   358→      const interval = setInterval(load, 20000);
+   359→   359→      return () => clearInterval(interval);
+   360→   360→    }
+   361→   361→  }, [tab, loadConversations]);
+   362→   362→
+   363→   363→  // Auto-scroll chat
+   364→   364→  useEffect(() => {
+   365→   365→    if (chatScrollRef.current) {
+   366→   366→      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+   367→   367→    }
+   368→   368→  }, [chatMessages]);
+   369→   369→
+   370→   370→  const handleAdminReply = async () => {
+   371→   371→    const content = chatInput.trim();
+   372→   372→    if (!content || !selectedUserId || chatSending) return;
+   373→   373→    setChatSending(true);
+   374→   374→    setChatInput('');
+   375→   375→    try {
+   376→   376→      const res = await authFetch('/api/admin/reply', {
+   377→   377→        method: 'POST',
+   378→   378→        headers: { 'Content-Type': 'application/json' },
+   379→   379→        body: JSON.stringify({ targetUserId: selectedUserId, content }),
+   380→   380→      });
+   381→   381→      const data = await res.json();
+   382→   382→      if (data.success) {
+   383→   383→        // Add message from server response directly (instant, with real DB ID)
+   384→   384→        if (data.message) {
+   385→   385→          setChatMessages(prev => {
+   386→   386→            const existingIds = new Set(prev.map(m => m.id));
+   387→   387→            if (existingIds.has(data.message.id)) return prev;
+   388→   388→            return [...prev, data.message];
+   389→   389→          });
+   390→   390→          lastChatFetchId.current = data.message.id;
+   391→   391→        }
+   392→   392→        // Emit via Socket.io with real DB ID for real-time delivery to user
+   393→   393→        if (socketRef.current?.connected) {
+   394→   394→          socketRef.current.emit('admin-reply', {
+   395→   395→            id: data.message?.id,
+   396→   396→            targetUserId: selectedUserId,
+   397→   397→            content,
+   398→   398→            adminId: user?.id,
+   399→   399→            adminName: user?.name,
+   400→   400→            t: data.message?.t,
+   401→   401→            date: data.message?.date,
+   402→   402→          });
+   403→   403→        }
+   404→   404→        loadConversations(); // Refresh conversation list
+   405→   405→      } else {
+   406→   406→        addToast(data.error || 'Erreur', 'error');
+   407→   407→      }
+   408→   408→    } catch {
+   409→   409→      addToast('Erreur réseau', 'error');
+   410→   410→    }
+   411→   411→    setChatSending(false);
+   412→   412→    chatInputRef.current?.focus();
+   413→   413→  };
+   414→   414→
+   415→   415→  const handleDeleteMessage = async (messageId: string) => {
+   416→   416→    try {
+   417→   417→      const res = await authFetch('/api/admin/messages/delete', {
+   418→   418→        method: 'POST',
+   419→   419→        headers: { 'Content-Type': 'application/json' },
+   420→   420→        body: JSON.stringify({ messageId }),
+   421→   421→      });
+   422→   422→      const data = await res.json();
+   423→   423→      if (data.success) {
+   424→   424→        setChatMessages(prev => prev.filter(m => m.id !== messageId));
+   425→   425→        addToast('Message supprimé', 'info');
+   426→   426→      } else {
+   427→   427→        addToast(data.error || 'Erreur', 'error');
+   428→   428→      }
+   429→   429→    } catch {
+   430→   430→      addToast('Erreur', 'error');
+   431→   431→    }
+   432→   432→  };
+   433→   433→
+   434→   434→  const handleQuickMessage = async (targetUserId: string) => {
+   435→   435→    const content = messageInput.trim();
+   436→   436→    if (!content || messageSending) return;
+   437→   437→    setMessageSending(true);
+   438→   438→    try {
+   439→   439→      const res = await authFetch('/api/admin/reply', {
+   440→   440→        method: 'POST',
+   441→   441→        headers: { 'Content-Type': 'application/json' },
+   442→   442→        body: JSON.stringify({ targetUserId, content }),
+   443→   443→      });
+   444→   444→      const data = await res.json();
+   445→   445→      if (data.success) {
+   446→   446→        // Emit via Socket.io for real-time delivery to user
+   447→   447→        if (socketRef.current?.connected) {
+   448→   448→          socketRef.current.emit('admin-reply', {
+   449→   449→            id: data.message?.id,
+   450→   450→            targetUserId,
+   451→   451→            content,
+   452→   452→            adminId: user?.id,
+   453→   453→            adminName: user?.name,
+   454→   454→            t: data.message?.t,
+   455→   455→            date: data.message?.date,
+   456→   456→          });
+   457→   457→        }
+   458→   458→        addToast('Message envoyé !', 'success');
+   459→   459→        setMessageInput('');
+   460→   460→        setMessageUserId(null);
+   461→   461→        loadConversations();
+   462→   462→      } else {
+   463→   463→        addToast(data.error || 'Erreur', 'error');
+   464→   464→      }
+   465→   465→    } catch {
+   466→   466→      addToast('Erreur réseau', 'error');
+   467→   467→    }
+   468→   468→    setMessageSending(false);
+   469→   469→  };
+   470→   470→
+   471→   471→  const handleAdminTransfer = async (targetUserId: string) => {
+   472→   472→    const amt = parseFloat(transferAmount);
+   473→   473→    if (!amt || amt <= 0) { addToast('Montant invalide', 'error'); return; }
+   474→   474→    if (transferSending) return;
+   475→   475→    setTransferSending(true);
+   476→   476→    try {
+   477→   477→      const res = await authFetch('/api/admin/transfer-funds', {
+   478→   478→        method: 'POST',
+   479→   479→        headers: { 'Content-Type': 'application/json' },
+   480→   480→        body: JSON.stringify({ userId: targetUserId, fromAccount: transferAccount, amount: amt }),
+   481→   481→      });
+   482→   482→      const data = await res.json();
+   483→   483→      if (data.success) {
+   484→   484→        addToast(`Transféré $${amt.toFixed(2)} vers le solde principal`, 'success');
+   485→   485→        setTransferAmount('');
+   486→   486→        setTransferUserId(null);
+   487→   487→        loadData();
+   488→   488→      } else {
+   489→   489→        addToast(data.error || 'Erreur', 'error');
+   490→   490→      }
+   491→   491→    } catch {
+   492→   492→      addToast('Erreur réseau', 'error');
+   493→   493→    }
+   494→   494→    setTransferSending(false);
+   495→   495→  };
+   496→   496→
+   497→   497→  const handleEditBalance = async (targetUserId: string) => {
+   498→   498→    if (editBalanceSending || !editBalanceDraft) return;
+   499→   499→    const fieldLabels: Record<string, string> = {
+   500→   500→      balance: 'Solde principal',
+   501→   501→      videoBalance: 'Vidéo',
+   502→   502→      tradeBalance: 'Trading',
+   503→   503→      projectBalance: 'Projet',
+   504→   504→      investBalance: 'Investissement',
+   505→   505→      gameTotalWon: 'Gains jeu',
+   506→   506→      videoTotalEarned: 'Gains vidéo totaux',
+   507→   507→      totalProfit: 'Profit total',
+   508→   508→      totalLoss: 'Perte totale',
+   509→   509→      referralCount: 'Parrainages',
+   510→   510→    };
+   511→   511→    // Detect changed fields and validate every input (must parse to >=0 numbers).
+   512→   512→    type FieldKey = keyof BalanceDraft;
+   513→   513→    const changes: { field: FieldKey; amount: number }[] = [];
+   514→   514→    for (const k of Object.keys(editBalanceDraft) as FieldKey[]) {
+   515→   515→      const raw = editBalanceDraft[k];
+   516→   516→      const parsed = parseFloat(raw);
+   517→   517→      if (isNaN(parsed) || parsed < 0) {
+   518→   518→        addToast(`${fieldLabels[k]} : montant invalide`, 'error');
+   519→   519→        return;
+   520→   520→      }
+   521→   521→      // Compare against the user's current value (from adminData). We treat
+   522→   522→      // any numeric difference as a change so trailing zeros don't cause
+   523→   523→      // spurious no-op API calls.
+   524→   524→      const current = Number((adminData?.users || []).find((u: any) => u.id === targetUserId)?.[k] ?? 0);
+   525→   525→      if (Math.abs(parsed - current) > 0.0001) {
+   526→   526→        changes.push({ field: k, amount: parsed });
+   527→   527→      }
+   528→   528→    }
+   529→   529→    if (changes.length === 0) {
+   530→   530→      addToast('Aucune modification', 'info');
+   531→   531→      setEditBalanceUserId(null);
+   532→   532→      setEditBalanceDraft(null);
+   533→   533→      return;
+   534→   534→    }
+   535→   535→    setEditBalanceSending(true);
+   536→   536→    let failures = 0;
+   537→   537→    for (const c of changes) {
+   538→   538→      try {
+   539→   539→        const res = await authFetch('/api/admin/update-balance', {
+   540→   540→          method: 'POST',
+   541→   541→          headers: { 'Content-Type': 'application/json' },
+   542→   542→          body: JSON.stringify({ userId: targetUserId, field: c.field, amount: c.amount }),
+   543→   543→        });
+   544→   544→        const data = await res.json();
+   545→   545→        if (!data.success) {
+   546→   546→          failures++;
+   547→   547→          addToast(`${fieldLabels[c.field]} : ${data.error || 'Erreur'}`, 'error');
+   548→   548→        }
+   549→   549→      } catch {
+   550→   550→        failures++;
+   551→   551→        addToast(`${fieldLabels[c.field]} : erreur réseau`, 'error');
+   552→   552→      }
+   553→   553→    }
+   554→   554→    if (failures === 0) {
+   555→   555→      addToast(`${changes.length} solde(s) mis à jour`, 'success');
+   556→   556→    } else if (failures < changes.length) {
+   557→   557→      addToast(`${changes.length - failures}/${changes.length} mis à jour`, 'info');
+   558→   558→    }
+   559→   559→    setEditBalanceSending(false);
+   560→   560→    setEditBalanceUserId(null);
+   561→   561→    setEditBalanceDraft(null);
+   562→   562→    loadData();
+   563→   563→  };
+   564→   564→
+   565→   565→  const handleDeleteUser = async (userId: string) => {
+   566→   566→    if (deletingUser) return;
+   567→   567→    setDeletingUser(true);
+   568→   568→    try {
+   569→   569→      const res = await authFetch('/api/admin/delete-user', {
+   570→   570→        method: 'POST',
+   571→   571→        headers: { 'Content-Type': 'application/json' },
+   572→   572→        body: JSON.stringify({ userId }),
+   573→   573→      });
+   574→   574→      const data = await res.json();
+   575→   575→      if (data.success) {
+   576→   576→        addToast(`Utilisateur ${deleteUserName} supprimé`, 'success');
+   577→   577→        setDeleteUserId(null);
+   578→   578→        setDeleteUserName('');
+   579→   579→        loadData();
+   580→   580→      } else {
+   581→   581→        addToast(data.error || 'Erreur', 'error');
+   582→   582→      }
+   583→   583→    } catch {
+   584→   584→      addToast('Erreur réseau', 'error');
+   585→   585→    }
+   586→   586→    setDeletingUser(false);
+   587→   587→  };
+   588→   588→
+   589→   589→  const handleAddVideo = async () => {
+   590→   590→    if (!videoUrlOrId.trim() || !videoTitle.trim() || !videoSponsor.trim()) {
+   591→   591→      addToast('Lien/ID, titre et entreprise sont requis', 'error');
+   592→   592→      return;
+   593→   593→    }
+   594→   594→    if (addingVideo) return;
+   595→   595→    setAddingVideo(true);
+   596→   596→    try {
+   597→   597→      const res = await authFetch('/api/admin/videos', {
+   598→   598→        method: 'POST',
+   599→   599→        headers: { 'Content-Type': 'application/json' },
+   600→   600→        body: JSON.stringify({
+   601→   601→          youtubeIdOrUrl: videoUrlOrId.trim(),
+   602→   602→          title: videoTitle.trim(),
+   603→   603→          sponsor: videoSponsor.trim(),
+   604→   604→          category: videoCategory,
+   605→   605→          durationMin: Number(videoDuration) || 5,
+   606→   606→          reward: Number(videoReward) || 0,
+   607→   607→          active: true,
+   608→   608→        }),
+   609→   609→      });
+   610→   610→      const data = await res.json();
+   611→   611→      if (data.success) {
+   612→   612→        addToast(data.message || 'Vidéo ajoutée', 'success');
+   613→   613→        setVideoUrlOrId('');
+   614→   614→        setVideoTitle('');
+   615→   615→        setVideoSponsor('');
+   616→   616→        setVideoCategory('entreprise');
+   617→   617→        setVideoDuration('5');
+   618→   618→        setVideoReward('0.20');
+   619→   619→        loadAdminVideos();
+   620→   620→      } else {
+   621→   621→        addToast(data.error || data.message || 'Erreur', 'error');
+   622→   622→      }
+   623→   623→    } catch {
+   624→   624→      addToast('Erreur réseau', 'error');
+   625→   625→    }
+   626→   626→    setAddingVideo(false);
+   627→   627→  };
+   628→   628→
+   629→   629→  const handleToggleVideoActive = async (v: AdminVideoLink) => {
+   630→   630→    if (togglingVideoId) return;
+   631→   631→    setTogglingVideoId(v.id);
+   632→   632→    // Optimistic UI update
+   633→   633→    setAdminVideos(prev => prev.map(x => x.id === v.id ? { ...x, active: !x.active } : x));
+   634→   634→    try {
+   635→   635→      const res = await authFetch(`/api/admin/videos/${v.id}`, {
+   636→   636→        method: 'PATCH',
+   637→   637→        headers: { 'Content-Type': 'application/json' },
+   638→   638→        body: JSON.stringify({ active: !v.active }),
+   639→   639→      });
+   640→   640→      const data = await res.json();
+   641→   641→      if (data.success) {
+   642→   642→        addToast(v.active ? 'Vidéo désactivée' : 'Vidéo activée', 'info');
+   643→   643→      } else {
+   644→   644→        // Roll back
+   645→   645→        setAdminVideos(prev => prev.map(x => x.id === v.id ? { ...x, active: v.active } : x));
+   646→   646→        addToast(data.error || 'Erreur', 'error');
+   647→   647→      }
+   648→   648→    } catch {
+   649→   649→      setAdminVideos(prev => prev.map(x => x.id === v.id ? { ...x, active: v.active } : x));
+   650→   650→      addToast('Erreur réseau', 'error');
+   651→   651→    }
+   652→   652→    setTogglingVideoId(null);
+   653→   653→  };
+   654→   654→
+   655→   655→  const handleDeleteVideo = async () => {
+   656→   656→    if (!deleteVideoId || deletingVideo) return;
+   657→   657→    setDeletingVideo(true);
+   658→   658→    try {
+   659→   659→      const res = await authFetch(`/api/admin/videos/${deleteVideoId}`, { method: 'DELETE' });
+   660→   660→      const data = await res.json();
+   661→   661→      if (data.success) {
+   662→   662→        addToast(data.message || 'Vidéo supprimée', 'success');
+   663→   663→        setDeleteVideoId(null);
+   664→   664→        setDeleteVideoTitle('');
+   665→   665→        loadAdminVideos();
+   666→   666→      } else {
+   667→   667→        addToast(data.error || 'Erreur', 'error');
+   668→   668→      }
+   669→   669→    } catch {
+   670→   670→      addToast('Erreur réseau', 'error');
+   671→   671→    }
+   672→   672→    setDeletingVideo(false);
+   673→   673→  };
+   674→   674→
+   675→   675→  const handleSendNotification = async () => {
+   676→   676→    if (!notifTitle.trim() || !notifMessage.trim()) {
+   677→   677→      addToast('Titre et message requis', 'error');
+   678→   678→      return;
+   679→   679→    }
+   680→   680→    if (notifTarget === 'individual' && !notifUserId) {
+   681→   681→      addToast('Sélectionnez un utilisateur', 'error');
+   682→   682→      return;
+   683→   683→    }
+   684→   684→    if (notifSending) return;
+   685→   685→    setNotifSending(true);
+   686→   686→    try {
+   687→   687→      const res = await authFetch('/api/admin/send-notification', {
+   688→   688→        method: 'POST',
+   689→   689→        headers: { 'Content-Type': 'application/json' },
+   690→   690→        body: JSON.stringify({
+   691→   691→          target: notifTarget,
+   692→   692→          userId: notifTarget === 'individual' ? notifUserId : undefined,
+   693→   693→          title: notifTitle.trim(),
+   694→   694→          message: notifMessage.trim(),
+   695→   695→          type: notifTarget === 'all' ? 'admin_broadcast' : 'admin_individual',
+   696→   696→        }),
+   697→   697→      });
+   698→   698→      const data = await res.json();
+   699→   699→      if (data.success) {
+   700→   700→        addToast(data.message || 'Notification envoyée !', 'success');
+   701→   701→        setNotifTitle('');
+   702→   702→        setNotifMessage('');
+   703→   703→        if (notifTarget === 'all') {
+   704→   704→          setNotifTarget('all');
+   705→   705→          setNotifUserId('');
+   706→   706→        }
+   707→   707→      } else {
+   708→   708→        addToast(data.error || 'Erreur', 'error');
+   709→   709→      }
+   710→   710→    } catch {
+   711→   711→      addToast('Erreur réseau', 'error');
+   712→   712→    }
+   713→   713→    setNotifSending(false);
+   714→   714→  };
+   715→   715→
+   716→   716→  const openConversation = (userId: string) => {
+   717→   717→    setSelectedUserId(userId);
+   718→   718→    setChatMessages([]);
+   719→   719→    lastChatFetchId.current = '0';
+   720→   720→    setChatLoading(true);
+   721→   721→    loadChatMessages(userId);
+   722→   722→  };
+   723→   723→
+   724→   724→  const closeConversation = () => {
+   725→   725→    setSelectedUserId(null);
+   726→   726→    setChatMessages([]);
+   727→   727→    lastChatFetchId.current = '0';
+   728→   728→    loadConversations();
+   729→   729→  };
+   730→   730→
+   731→   731→  useEffect(() => { const t = setTimeout(() => { loadData(); loadDeposits(); loadYasDeposits(); loadWithdrawals(); loadConfig(); loadAdminVideos(); loadBroadcasts(); }, 0); return () => clearTimeout(t); }, [loadData, loadDeposits, loadYasDeposits, loadWithdrawals, loadConfig, loadAdminVideos, loadBroadcasts]);
+   732→   732→
+   733→   733→  if (!user || user.role !== 'admin') return null;
+   734→   734→  const stats = adminData?.stats || {};
+   735→   735→  const usersList = adminData?.users || [];
+   736→   736→
+   737→   737→  const refreshAll = () => { loadData(); loadDeposits(); loadYasDeposits(); loadWithdrawals(); loadConfig(); loadAdminVideos(); loadBroadcasts(); };
+   738→   738→
+   739→   739→  // Total unread messages
+   740→   740→  const totalUnread = conversations.reduce((sum, c) => sum + c.unread_count, 0);
+   741→   741→
+   742→   742→  return (
+   743→   743→    <>
+   744→   744→      <Header
+   745→   745→        title="Admin"
+   746→   746→        icon="fa-shield-alt"
+   747→   747→        iconColor="#6366F1"
+   748→   748→        leftElement={
+   749→   749→          <button
+   750→   750→            onClick={() => useAppStore.getState().setPage('profile')}
+   751→   751→            className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] cursor-pointer border-none mr-1"
+   752→   752→          >
+   753→   753→            <i className="fas fa-arrow-left text-[0.8rem]"></i>
+   754→   754→          </button>
+   755→   755→        }
+   756→   756→      />
+   757→   757→      {/* Top-bar controls — split into separate boxes for clarity (was a cramped right cluster). */}
+   758→   758→      <div
+   759→   759→        className="flex gap-2 px-[18px] py-2 bg-[#0E0F11] border-b border-[rgba(255,255,255,0.06)]"
+   760→   760→      >
+   761→   761→        {/* Box 1 — User notifications */}
+   762→   762→        <div
+   763→   763→          className="flex-1 min-w-0 flex flex-col items-center rounded-xl p-2.5"
+   764→   764→          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+   765→   765→        >
+   766→   766→          <NotificationBell dark />
+   767→   767→          <span className="text-[0.52rem] font-medium text-[rgba(255,255,255,0.55)] mt-1 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
+   768→   768→            Notifs utilisateur
+   769→   769→          </span>
+   770→   770→        </div>
+   771→   771→
+   772→   772→        {/* Box 2 — Admin notifications */}
+   773→   773→        <div
+   774→   774→          className="flex-1 min-w-0 flex flex-col items-center rounded-xl p-2.5"
+   775→   775→          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+   776→   776→        >
+   777→   777→          <AdminNotificationBell dark />
+   778→   778→          <span className="text-[0.52rem] font-medium text-[rgba(255,255,255,0.55)] mt-1 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
+   779→   779→            Notifs admin
+   780→   780→          </span>
+   781→   781→        </div>
+   782→   782→
+   783→   783→        {/* Box 3 — Refresh */}
+   784→   784→        <button
+   785→   785→          onClick={refreshAll}
+   786→   786→          className="flex-1 min-w-0 flex flex-col items-center rounded-xl p-2.5 bg-transparent cursor-pointer transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+   787→   787→          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+   788→   788→        >
+   789→   789→          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center text-[rgba(255,255,255,0.55)] text-[0.85rem]">
+   790→   790→            <i className="fas fa-sync-alt text-[0.8rem]"></i>
+   791→   791→          </div>
+   792→   792→          <span className="text-[0.52rem] font-medium text-[rgba(255,255,255,0.55)] mt-1 text-center whitespace-nowrap">
+   793→   793→            Actualiser
+   794→   794→          </span>
+   795→   795→        </button>
+   796→   796→      </div>
+   797→   797→      <div className="flex-1 w-full overflow-y-auto min-h-0">
+   798→   798→        {/* Tabs */}
+   799→   799→        <div className="flex bg-[#0E0F11] border-b border-[rgba(255,255,255,0.06)] px-1 overflow-x-auto">
+   800→   800→          {([
+   801→   801→            { k: 'users', l: 'Users', icon: '' },
+   802→   802→            { k: 'deposits', l: 'Dépôts TRX', icon: '' },
+   803→   803→            { k: 'yas', l: 'Yas 🇹🇬', icon: '' },
+   804→   804→            { k: 'withdrawals', l: 'Retraits', icon: '' },
+   805→   805→            { k: 'messages', l: `Messages${totalUnread > 0 ? ` (${totalUnread})` : ''}`, icon: '' },
+   806→   806→            { k: 'notif', l: 'Notifs', icon: '' },
+   807→   807→            { k: 'videos', l: 'Vidéos', icon: 'fas fa-video' },
+   808→   808→            { k: 'config', l: 'Config', icon: '' },
+   809→   809→          ] as { k: string; l: string; icon: string }[]).map(t => (
+   810→   810→            <button
+   811→   811→              key={t.k}
+   812→   812→              onClick={() => setTab(t.k as any)}
+   813→   813→              className={`flex-1 min-w-0 py-3 text-[0.65rem] font-semibold border-none cursor-pointer transition-all whitespace-nowrap px-1 rounded-none ${
+   814→   814→                tab === t.k
+   815→   815→                  ? 'text-[#6366F1] border-b-2 border-[#6366F1]'
+   816→   816→                  : 'text-[rgba(255,255,255,0.45)]'
+   817→   817→              }`}
+   818→   818→            >
+   819→   819→              {t.icon && <i className={`${t.icon} mr-1 text-[0.6rem]`}></i>}
+   820→   820→              {t.l}
+   821→   821→            </button>
+   822→   822→          ))}
+   823→   823→        </div>
+   824→   824→
+   825→   825→        <div className="px-[18px] py-4">
+   826→   826→          {loading ? (
+   827→   827→            <div className="flex justify-center py-8">
+   828→   828→              <div className="w-8 h-8 border-3 border-[rgba(255,255,255,0.1)] border-t-[#6366F1] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
+   829→   829→            </div>
+   830→   830→          ) : (
+   831→   831→            <>
+   832→   832→              {/* Users Tab */}
+   833→   833→              {tab === 'users' && (
+   834→   834→                <>
+   835→   835→                  <div className="grid grid-cols-2 gap-2 mb-4">
+   836→   836→                    {[
+   837→   837→                      { label: 'Utilisateurs', value: stats.total_users || 0, color: '#818CF8' },
+   838→   838→                      { label: 'Total solde', value: formatMoney(stats.total_balance || 0), color: '#4ADE80' },
+   839→   839→                    ].map((s, i) => (
+   840→   840→                      <div key={i} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 text-center">
+   841→   841→                        <div className="text-[0.9rem] font-bold" style={{ color: s.color }}>{s.value}</div>
+   842→   842→                        <div className="text-[0.6rem] text-[rgba(255,255,255,0.25)] uppercase">{s.label}</div>
+   843→   843→                      </div>
+   844→   844→                    ))}
+   845→   845→                  </div>
+   846→   846→                  {usersList.map((u: any) => {
+   847→   847→                    const levelLabel = u.unlockedLevel >= 3 ? 'Niv. 3 — Elite' : u.unlockedLevel === 2 ? 'Niv. 2 — Business' : 'Niv. 1 — Débutant';
+   848→   848→                    const levelColor = u.unlockedLevel >= 3 ? '#F59E0B' : u.unlockedLevel === 2 ? '#14B8A6' : '#22C55E';
+   849→   849→                    const created = u.createdAt ? new Date(u.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+   850→   850→                    return (
+   851→   851→                    <div key={u.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 mb-2">
+   852→   852→                      {/* Header: name + email + actions */}
+   853→   853→                      <div className="flex items-start justify-between gap-2">
+   854→   854→                        <div className="flex-1 min-w-0">
+   855→   855→                          <div className="text-[0.82rem] font-bold text-[#EDEDEF] flex items-center flex-wrap gap-1.5">
+   856→   856→                            {esc(u.name)}
+   857→   857→                            {u.role === 'admin' && (
+   858→   858→                              <span className="text-[0.55rem] bg-[rgba(99,102,241,0.12)] text-[#6366F1] px-1.5 py-0.5 rounded-full">Admin</span>
+   859→   859→                            )}
+   860→   860→                            <span className="text-[0.55rem] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: `${levelColor}1A`, color: levelColor }}>
+   861→   861→                              <i className="fas fa-medal text-[0.45rem] mr-0.5"></i>{levelLabel}
+   862→   862→                            </span>
+   863→   863→                          </div>
+   864→   864→                          <div className="text-[0.66rem] text-[rgba(255,255,255,0.4)] truncate">{esc(u.email)}</div>
+   865→   865→                          <div className="text-[0.55rem] text-[rgba(255,255,255,0.3)] mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+   866→   866→                            <span title="Code de parrainage"><i className="fas fa-key text-[0.45rem] mr-0.5 text-[#818CF8]"></i><span className="font-mono">{esc(u.referralCode || '—')}</span></span>
+   867→   867→                            <span><i className="fas fa-users text-[0.45rem] mr-0.5 text-[#818CF8]"></i>{u.referralCount || 0} parrainé{(u.referralCount || 0) > 1 ? 's' : ''}</span>
+   868→   868→                            <span><i className="fas fa-calendar text-[0.45rem] mr-0.5 text-[#818CF8]"></i>{created}</span>
+   869→   869→                          </div>
+   870→   870→                        </div>
+   871→   871→                        <div className="flex items-center gap-1.5 shrink-0">
+   872→   872→                            <button
+   873→   873→                              onClick={() => {
+   874→   874→                                if (editBalanceUserId === u.id) {
+   875→   875→                                  setEditBalanceUserId(null); setEditBalanceDraft(null);
+   876→   876→                                } else {
+   877→   877→                                  setEditBalanceUserId(u.id);
+   878→   878→                                  setEditBalanceDraft({
+   879→   879→                                    balance: String(u.balance ?? 0),
+   880→   880→                                    videoBalance: String(u.videoBalance ?? 0),
+   881→   881→                                    tradeBalance: String(u.tradeBalance ?? 0),
+   882→   882→                                    projectBalance: String(u.projectBalance ?? 0),
+   883→   883→                                    investBalance: String(u.investBalance ?? 0),
+   884→   884→                                    gameTotalWon: String(u.gameTotalWon ?? 0),
+   885→   885→                                    videoTotalEarned: String(u.videoTotalEarned ?? 0),
+   886→   886→                                    totalProfit: String(u.totalProfit ?? 0),
+   887→   887→                                    totalLoss: String(u.totalLoss ?? 0),
+   888→   888→                                    referralCount: String(u.referralCount ?? 0),
+   889→   889→                                  });
+   890→   890→                                }
+   891→   891→                                setTransferUserId(null);
+   892→   892→                                setMessageUserId(null);
+   893→   893→                              }}
+   894→   894→                              className="w-7 h-7 rounded-lg bg-[rgba(251,191,36,0.12)] flex items-center justify-center text-[#FBBF24] cursor-pointer border-none shrink-0 hover:bg-[rgba(251,191,36,0.2)] transition-colors"
+   895→   895→                              title="Modifier les soldes"
+   896→   896→                            >
+   897→   897→                              <i className="fas fa-pen text-[0.55rem]"></i>
+   898→   898→                            </button>
+   899→   899→                            {u.role !== 'admin' && (
+   900→   900→                              <>
+   901→   901→                                <button
+   902→   902→                                  onClick={() => { setTransferUserId(transferUserId === u.id ? null : u.id); setMessageUserId(null); setEditBalanceUserId(null); setEditBalanceDraft(null); }}
+   903→   903→                                  className="w-7 h-7 rounded-lg bg-[rgba(34,197,94,0.12)] flex items-center justify-center text-[#4ADE80] cursor-pointer border-none shrink-0 hover:bg-[rgba(34,197,94,0.2)] transition-colors"
+   904→   904→                                  title="Transférer vers Principal"
+   905→   905→                                >
+   906→   906→                                  <i className="fas fa-exchange-alt text-[0.55rem]"></i>
+   907→   907→                                </button>
+   908→   908→                                <button
+   909→   909→                                  onClick={() => { setMessageUserId(messageUserId === u.id ? null : u.id); setTransferUserId(null); setEditBalanceUserId(null); setEditBalanceDraft(null); }}
+   910→   910→                                  className="w-7 h-7 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center text-[#6366F1] cursor-pointer border-none shrink-0 hover:bg-[rgba(99,102,241,0.2)] transition-colors"
+   911→   911→                                  title="Envoyer un message"
+   912→   912→                                >
+   913→   913→                                  <i className="fas fa-comment text-[0.6rem]"></i>
+   914→   914→                                </button>
+   915→   915→                                <button
+   916→   916→                                  onClick={() => { setDeleteUserId(u.id); setDeleteUserName(u.name); }}
+   917→   917→                                  className="w-7 h-7 rounded-lg bg-[rgba(248,113,113,0.12)] flex items-center justify-center text-[#F87171] cursor-pointer border-none shrink-0 hover:bg-[rgba(248,113,113,0.2)] transition-colors"
+   918→   918→                                  title="Supprimer cet utilisateur"
+   919→   919→                                >
+   920→   920→                                  <i className="fas fa-trash text-[0.55rem]"></i>
+   921→   921→                                </button>
+   922→   922→                              </>
+   923→   923→                            )}
+   924→   924→                          </div>
+   925→   925→                      </div>
+   926→   926→                      {/* Balances grid — 4 wallet accounts in a clean 2x2 layout */}
+   927→   927→                      <div className="grid grid-cols-2 gap-1.5 mt-2.5">
+   928→   928→                        {([
+   929→   929→                          { label: 'Solde principal', val: u.balance ?? 0, color: '#22C55E', icon: 'fa-wallet' },
+   930→   930→                          { label: 'Vidéo', val: u.videoBalance ?? 0, color: '#14B8A6', icon: 'fa-video' },
+   931→   931→                          { label: 'Trading', val: u.tradeBalance ?? 0, color: '#F59E0B', icon: 'fa-bolt' },
+   932→   932→                          { label: 'Projet', val: u.projectBalance ?? 0, color: '#8B5CF6', icon: 'fa-building' },
+   933→   933→                        ]).map((b) => (
+   934→   934→                          <div key={b.label} className="bg-[#161719] rounded-lg p-2 border-l-[3px]" style={{ borderLeftColor: b.color }}>
+   935→   935→                            <div className="flex items-center gap-1 mb-0.5">
+   936→   936→                              <i className={`fas ${b.icon} text-[0.5rem]`} style={{ color: b.color }}></i>
+   937→   937→                              <span className="text-[0.5rem] text-[rgba(255,255,255,0.4)] uppercase tracking-[0.3px] font-semibold">{b.label}</span>
+   938→   938→                            </div>
+   939→   939→                            <div className="text-[0.78rem] font-bold text-[#EDEDEF]">{formatMoney(b.val)}</div>
+   940→   940→                          </div>
+   941→   941→                        ))}
+   942→   942→                      </div>
+   943→   943→                      {/* Secondary amounts row — investBalance, gameTotalWon, totalProfit, totalLoss, referralCount */}
+   944→   944→                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 px-1">
+   945→   945→                        {([
+   946→   946→                          { label: 'Invest.', val: formatMoney(u.investBalance ?? 0), color: '#3B82F6', icon: 'fa-chart-line' },
+   947→   947→                          { label: 'Jeu', val: formatMoney(u.gameTotalWon ?? 0), color: '#EC4899', icon: 'fa-dice' },
+   948→   948→                          { label: 'Vidéo tot.', val: formatMoney(u.videoTotalEarned ?? 0), color: '#06B6D4', icon: 'fa-film' },
+   949→   949→                          { label: 'Profit', val: formatMoney(u.totalProfit ?? 0), color: '#10B981', icon: 'fa-arrow-trend-up' },
+   950→   950→                          { label: 'Perte', val: formatMoney(u.totalLoss ?? 0), color: '#EF4444', icon: 'fa-arrow-trend-down' },
+   951→   951→                          { label: 'Parrainages', val: String(u.referralCount ?? 0), color: '#818CF8', icon: 'fa-users' },
+   952→   952→                        ]).map((s) => (
+   953→   953→                          <div key={s.label} className="flex items-center gap-1">
+   954→   954→                            <i className={`fas ${s.icon} text-[0.45rem]`} style={{ color: s.color }}></i>
+   955→   955→                            <span className="text-[0.5rem] text-[rgba(255,255,255,0.4)] uppercase tracking-[0.3px] font-semibold">{s.label}:</span>
+   956→   956→                            <span className="text-[0.62rem] font-bold text-[#EDEDEF]">{s.val}</span>
+   957→   957→                          </div>
+   958→   958→                        ))}
+   959→   959→                      </div>
+   960→   960→                      {/* Inline fund transfer */}
+   961→   961→                      {transferUserId === u.id && (
+   962→   962→                        <div className="mt-2.5 pt-2.5 border-t border-[rgba(255,255,255,0.06)]">
+   963→   963→                          <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)] mb-2 font-semibold">Transférer vers le solde principal</div>
+   964→   964→                          <div className="flex gap-2 mb-2">
+   965→   965→                            {([
+   966→   966→                              { key: 'tradeBalance' as const, label: 'Trading', bal: u.tradeBalance || 0, color: '#F59E0B' },
+   967→   967→                              { key: 'projectBalance' as const, label: 'Projet', bal: u.projectBalance || 0, color: '#8B5CF6' },
+   968→   968→                            ]).map(acc => (
+   969→   969→                              <button key={acc.key} onClick={() => setTransferAccount(acc.key)}
+   970→   970→                                className={`flex-1 py-1.5 rounded-lg text-[0.6rem] font-semibold border-none cursor-pointer transition-all ${
+   971→   971→                                  transferAccount === acc.key ? 'bg-[#6366F1] text-white' : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)]'
+   972→   972→                                }`}
+   973→   973→                              >
+   974→   974→                                {acc.label}<br/><span className="text-[0.5rem]">{formatMoney(acc.bal)}</span>
+   975→   975→                              </button>
+   976→   976→                            ))}
+   977→   977→                          </div>
+   978→   978→                          <div className="flex gap-2">
+   979→   979→                            <input
+   980→   980→                              type="number" step="0.01" value={transferAmount}
+   981→   981→                              onChange={(e) => setTransferAmount(e.target.value)}
+   982→   982→                              placeholder="Montant $"
+   983→   983→                              className="flex-1 py-2 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.75rem] text-white outline-none focus:border-[#4ADE80]"
+   984→   984→                            />
+   985→   985→                            <button
+   986→   986→                              onClick={() => handleAdminTransfer(u.id)}
+   987→   987→                              disabled={transferSending || !transferAmount || parseFloat(transferAmount) <= 0}
+   988→   988→                              className="px-3 py-2 rounded-lg bg-[#22C55E] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer flex items-center justify-center gap-1 disabled:opacity-50"
+   989→   989→                            >
+   990→   990→                              {transferSending ? (
+   991→   991→                                <div className="w-3.5 h-3.5 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
+   992→   992→                              ) : (
+   993→   993→                                <i className="fas fa-arrow-right text-[0.6rem]"></i>
+   994→   994→                              )}
+   995→   995→                            </button>
+   996→   996→                            <button
+   997→   997→                              onClick={() => { setTransferUserId(null); setTransferAmount(''); }}
+   998→   998→                              className="px-2 py-2 rounded-lg bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] text-[0.72rem] border-none cursor-pointer"
+   999→   999→                            >
+  1000→  1000→                              <i className="fas fa-times text-[0.6rem]"></i>
+  1001→  1001→                            </button>
+  1002→  1002→                          </div>
+  1003→  1003→                        </div>
+  1004→  1004→                      )}
+  1005→  1005→                      {/* Inline message input */}
+  1006→  1006→                      {messageUserId === u.id && (
+  1007→  1007→                        <div className="mt-2.5 pt-2.5 border-t border-[rgba(255,255,255,0.06)]">
+  1008→  1008→                          <div className="flex gap-2">
+  1009→  1009→                            <input
+  1010→  1010→                              type="text"
+  1011→  1011→                              value={messageInput}
+  1012→  1012→                              onChange={(e) => setMessageInput(e.target.value)}
+  1013→  1013→                              onKeyDown={(e) => { if (e.key === 'Enter') handleQuickMessage(u.id); }}
+  1014→  1014→                              placeholder="Tapez votre message..."
+  1015→  1015→                              className="flex-1 py-2 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.75rem] text-white outline-none focus:border-[#6366F1]"
+  1016→  1016→                              autoFocus
+  1017→  1017→                            />
+  1018→  1018→                            <button
+  1019→  1019→                              onClick={() => handleQuickMessage(u.id)}
+  1020→  1020→                              disabled={messageSending || !messageInput.trim()}
+  1021→  1021→                              className="px-3 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer flex items-center justify-center gap-1 disabled:opacity-50"
+  1022→  1022→                            >
+  1023→  1023→                              {messageSending ? (
+  1024→  1024→                                <div className="w-3.5 h-3.5 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
+  1025→  1025→                              ) : (
+  1026→  1026→                                <i className="fas fa-paper-plane text-[0.6rem]"></i>
+  1027→  1027→                              )}
+  1028→  1028→                            </button>
+  1029→  1029→                            <button
+  1030→  1030→                              onClick={() => { setMessageUserId(null); setMessageInput(''); }}
+  1031→  1031→                              className="px-2 py-2 rounded-lg bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] text-[0.72rem] border-none cursor-pointer"
+  1032→  1032→                            >
+  1033→  1033→                              <i className="fas fa-times text-[0.6rem]"></i>
+  1034→  1034→                            </button>
+  1035→  1035→                          </div>
+  1036→  1036→                        </div>
+  1037→  1037→                      )}
+  1038→  1038→                      {/* Inline edit balance — full draft editor (ALL amounts) */}
+  1039→  1039→                      {editBalanceUserId === u.id && editBalanceDraft && (
+  1040→  1040→                        <div className="mt-2.5 pt-2.5 border-t border-[rgba(255,255,255,0.06)]">
+  1041→  1041→                          <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)] mb-2 font-semibold flex items-center gap-1">
+  1042→  1042→                            <i className="fas fa-pen text-[0.5rem] text-[#FBBF24]"></i>
+  1043→  1043→                            Modifier les soldes — modifiez chaque champ puis enregistrez
+  1044→  1044→                          </div>
+  1045→  1045→                          <div className="grid grid-cols-2 gap-2 mb-3">
+  1046→  1046→                            {([
+  1047→  1047→                              { key: 'balance' as const, label: 'Solde principal', color: '#22C55E', icon: 'fa-wallet' },
+  1048→  1048→                              { key: 'videoBalance' as const, label: 'Vidéo', color: '#14B8A6', icon: 'fa-video' },
+  1049→  1049→                              { key: 'tradeBalance' as const, label: 'Trading', color: '#F59E0B', icon: 'fa-bolt' },
+  1050→  1050→                              { key: 'projectBalance' as const, label: 'Projet', color: '#8B5CF6', icon: 'fa-building' },
+  1051→  1051→                              { key: 'investBalance' as const, label: 'Investissement', color: '#3B82F6', icon: 'fa-chart-line' },
+  1052→  1052→                              { key: 'gameTotalWon' as const, label: 'Gains jeu', color: '#EC4899', icon: 'fa-dice' },
+  1053→  1053→                              { key: 'videoTotalEarned' as const, label: 'Gains vidéo totaux', color: '#06B6D4', icon: 'fa-film' },
+  1054→  1054→                              { key: 'totalProfit' as const, label: 'Profit total', color: '#10B981', icon: 'fa-arrow-trend-up' },
+  1055→  1055→                              { key: 'totalLoss' as const, label: 'Perte totale', color: '#EF4444', icon: 'fa-arrow-trend-down' },
+  1056→  1056→                              { key: 'referralCount' as const, label: 'Parrainages', color: '#818CF8', icon: 'fa-users' },
+  1057→  1057→                            ]).map(acc => (
+  1058→  1058→                              <div key={acc.key} className="bg-[#161719] rounded-lg p-2 border-l-[3px]" style={{ borderLeftColor: acc.color }}>
+  1059→  1059→                                <div className="flex items-center gap-1 mb-1">
+  1060→  1060→                                  <i className={`fas ${acc.icon} text-[0.5rem]`} style={{ color: acc.color }}></i>
+  1061→  1061→                                  <span className="text-[0.55rem] text-[rgba(255,255,255,0.55)] font-semibold uppercase tracking-[0.3px]">{acc.label}</span>
+  1062→  1062→                                </div>
+  1063→  1063→                                <input
+  1064→  1064→                                  type="number" step={acc.key === 'referralCount' ? '1' : '0.01'} min="0"
+  1065→  1065→                                  value={editBalanceDraft[acc.key]}
+  1066→  1066→                                  onChange={(e) => setEditBalanceDraft(prev => prev ? { ...prev, [acc.key]: e.target.value } : prev)}
+  1067→  1067→                                  placeholder="0.00"
+  1068→  1068→                                  className="w-full py-1.5 px-2 bg-[#0E0F11] border-[1px] border-[rgba(255,255,255,0.06)] rounded-md text-[0.78rem] text-white outline-none focus:border-[#FBBF24]"
+  1069→  1069→                                />
+  1070→  1070→                              </div>
+  1071→  1071→                            ))}
+  1072→  1072→                          </div>
+  1073→  1073→                          <div className="flex gap-2">
+  1074→  1074→                            <button
+  1075→  1075→                              onClick={() => handleEditBalance(u.id)}
+  1076→  1076→                              disabled={editBalanceSending}
+  1077→  1077→                              className="flex-1 py-2.5 rounded-lg bg-[#FBBF24] text-[#050506] text-[0.78rem] font-bold border-none cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+  1078→  1078→                            >
+  1079→  1079→                              {editBalanceSending ? (
+  1080→  1080→                                <>
+  1081→  1081→                                  <div className="w-3.5 h-3.5 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
+  1082→  1082→                                  Enregistrement...
+  1083→  1083→                                </>
+  1084→  1084→                              ) : (
+  1085→  1085→                                <><i className="fas fa-check text-[0.65rem]"></i> Enregistrer les modifications</>
+  1086→  1086→                              )}
+  1087→  1087→                            </button>
+  1088→  1088→                            <button
+  1089→  1089→                              onClick={() => { setEditBalanceUserId(null); setEditBalanceDraft(null); }}
+  1090→  1090→                              className="px-3 py-2.5 rounded-lg bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] text-[0.72rem] border-none cursor-pointer"
+  1091→  1091→                            >
+  1092→  1092→                              <i className="fas fa-times text-[0.65rem]"></i>
+  1093→  1093→                            </button>
+  1094→  1094→                          </div>
+  1095→  1095→                        </div>
+  1096→  1096→                      )}
+  1097→  1097→                    </div>
+  1098→  1098→                    );
+  1099→  1099→                  })}
+  1100→  1100→                </>
+  1101→  1101→              )}
+  1102→  1102→
+  1103→  1103→              {/* Deposits Tab (TRX) */}
+  1104→  1104→              {tab === 'deposits' && (
+  1105→  1105→                <>
+  1106→  1106→                  <div className="grid grid-cols-3 gap-2 mb-4">
+  1107→  1107→                    {[
+  1108→  1108→                      { label: 'En attente', value: depositStats.pending || 0, color: '#818CF8' },
+  1109→  1109→                      { label: 'Approuvés', value: depositStats.approved || 0, color: '#4ADE80' },
+  1110→  1110→                      { label: 'Rejetés', value: depositStats.rejected || 0, color: '#F87171' },
+  1111→  1111→                    ].map((s, i) => (
+  1112→  1112→                      <div key={i} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-2.5 text-center">
+  1113→  1113→                        <div className="text-[0.85rem] font-bold" style={{ color: s.color }}>{s.value}</div>
+  1114→  1114→                        <div className="text-[0.55rem] text-[rgba(255,255,255,0.25)] uppercase">{s.label}</div>
+  1115→  1115→                      </div>
+  1116→  1116→                    ))}
+  1117→  1117→                  </div>
+  1118→  1118→                  {pendingDeposits.filter(d => d.status === 'pending').map((d: any) => {
+  1119→  1119→                    const isInvestment = d.type === 'investment';
+  1120→  1120→                    const invLevel = d.investmentLevel;
+  1121→  1121→                    const invAmount = d.investmentAmount ?? d.amountUsd;
+  1122→  1122→                    return (
+  1123→  1123→                    <div key={d.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] border-l-[3px] rounded-2xl p-3 mb-2" style={{ borderLeftColor: isInvestment ? '#22C55E' : '#6366F1' }}>
+  1124→  1124→                      <div className="flex items-center justify-between mb-2">
+  1125→  1125→                        <div>
+  1126→  1126→                          <div className="text-[0.78rem] font-bold text-[#EDEDEF] flex items-center gap-1.5 flex-wrap">
+  1127→  1127→                            {esc(d.user?.name || '?')}
+  1128→  1128→                            {isInvestment && (
+  1129→  1129→                              <span className="text-[0.55rem] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-1" style={{ background: 'rgba(34,197,94,0.14)', color: '#22C55E' }}>
+  1130→  1130→                                <i className="fas fa-chart-line text-[0.45rem]"></i>Investissement{invLevel ? ` Niv. ${invLevel}` : ''}
+  1131→  1131→                              </span>
+  1132→  1132→                            )}
+  1133→  1133→                          </div>
+  1134→  1134→                          <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">{formatMoney(invAmount)}{isInvestment ? ' (investi)' : ''} → {d.amountTrx?.toFixed(2)} TRX</div>
+  1135→  1135→                        </div>
+  1136→  1136→                        <span className="text-[0.6rem] bg-[rgba(99,102,241,0.12)] text-[#6366F1] px-2 py-0.5 rounded-full">TRX</span>
+  1137→  1137→                      </div>
+  1138→  1138→                      <div className="bg-[#161719] rounded-lg p-2.5 mb-2">
+  1139→  1139→                        <div className="flex justify-between items-center">
+  1140→  1140→                          <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Adresse TRX client</span>
+  1141→  1141→                          <button
+  1142→  1142→                            onClick={async () => {
+  1143→  1143→                              try { await navigator.clipboard.writeText(d.userAddress || ''); addToast('Adresse copiée !', 'success'); } catch { addToast('Erreur de copie', 'error'); }
+  1144→  1144→                            }}
+  1145→  1145→                            className="text-[0.6rem] text-[#6366F1] hover:text-[#818CF8] cursor-pointer bg-transparent border-none flex items-center gap-1"
+  1146→  1146→                          >
+  1147→  1147→                            <i className="fas fa-copy text-[0.55rem]"></i> Copier
+  1148→  1148→                          </button>
+  1149→  1149→                        </div>
+  1150→  1150→                        <div className="text-[0.72rem] font-mono font-bold text-[#818CF8] break-all leading-relaxed mt-1">{esc(d.userAddress || 'Non renseigné')}</div>
+  1151→  1151→                      </div>
+  1152→  1152→                      {isInvestment && (
+  1153→  1153→                        <div className="bg-[rgba(34,197,94,0.08)] rounded-lg p-2 mb-2 border border-[rgba(34,197,94,0.15)]">
+  1154→  1154→                          <p className="text-[0.6rem] text-[rgba(34,197,94,0.85)]">
+  1155→  1155→                            <i className="fas fa-info-circle mr-1"></i>
+  1156→  1156→                            L'approbation crée l'investissement <strong>Niv. {invLevel ?? 1}</strong> de <strong>{formatMoney(invAmount)}</strong> et démarre le compte à rebours (24h → première collecte).
+  1157→  1157→                          </p>
+  1158→  1158→                        </div>
+  1159→  1159→                      )}
+  1160→  1160→                      <div className="flex gap-2">
+  1161→  1161→                        <button
+  1162→  1162→                          onClick={async () => {
+  1163→  1163→                            const r = await authFetch('/api/admin/deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId: d.id, action: 'approve' }) });
+  1164→  1164→                            const data = await r.json(); if (data.success) { addToast(data.message || 'Approuvé', 'success'); loadDeposits(); } else addToast(data.error, 'error');
+  1165→  1165→                          }}
+  1166→  1166→                          className="flex-1 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer"
+  1167→  1167→                        >Approuver</button>
+  1168→  1168→                        <button
+  1169→  1169→                          onClick={async () => {
+  1170→  1170→                            const r = await authFetch('/api/admin/deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId: d.id, action: 'reject' }) });
+  1171→  1171→                            const data = await r.json(); if (data.success) { addToast('Rejeté', 'info'); loadDeposits(); } else addToast(data.error, 'error');
+  1172→  1172→                          }}
+  1173→  1173→                          className="flex-1 py-2 rounded-lg bg-[rgba(248,113,113,0.15)] text-[#F87171] text-[0.72rem] font-semibold border-none cursor-pointer"
+  1174→  1174→                        >Rejeter</button>
+  1175→  1175→                      </div>
+  1176→  1176→                    </div>
+  1177→  1177→                    );
+  1178→  1178→                  })}
+  1179→  1179→                  {pendingDeposits.filter(d => d.status === 'pending').length === 0 && (
+  1180→  1180→                    <p className="text-center text-[0.82rem] text-[rgba(255,255,255,0.25)] py-4">Aucun dépôt TRX en attente</p>
+  1181→  1181→                  )}
+  1182→  1182→                </>
+  1183→  1183→              )}
+  1184→  1184→
+  1185→  1185→              {/* Yas du Togo Tab */}
+  1186→  1186→              {tab === 'yas' && (
+  1187→  1187→                <>
+  1188→  1188→                  <div className="bg-[#0E0F11] border border-[rgba(99,102,241,0.15)] rounded-2xl p-3 mb-4 flex items-center gap-2">
+  1189→  1189→                    <div className="w-8 h-8 rounded-lg bg-[rgba(34,197,94,0.12)] flex items-center justify-center shrink-0">
+  1190→  1190→                      <i className="fas fa-mobile-alt text-[#22C55E] text-[0.9rem]"></i>
+  1191→  1191→                    </div>
+  1192→  1192→                    <div>
+  1193→  1193→                      <div className="text-[#EDEDEF] text-[0.85rem] font-bold">Dépôts Yas</div>
+  1194→  1194→                      <div className="text-[rgba(255,255,255,0.45)] text-[0.65rem]">Approuvez pour créditer le solde principal</div>
+  1195→  1195→                    </div>
+  1196→  1196→                  </div>
+  1197→  1197→                  <div className="bg-[#0E0F11] border border-[rgba(99,102,241,0.12)] rounded-2xl p-3.5 mb-4">
+  1198→  1198→                    <div className="flex items-center gap-2 mb-3">
+  1199→  1199→                      <div className="w-7 h-7 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center shrink-0"><i className="fas fa-cog text-[#6366F1] text-[0.65rem]"></i></div>
+  1200→  1200→                      <div className="text-[0.78rem] font-bold text-[#EDEDEF]">Configuration Yas</div>
+  1201→  1201→                    </div>
+  1202→  1202→                    <div className="mb-2.5">
+  1203→  1203→                      <label className="block mb-1 text-[0.7rem] font-semibold text-[rgba(255,255,255,0.45)]">Votre numéro Yas (affiché aux utilisateurs)</label>
+  1204→  1204→                      <input type="text" value={configYasAddr} onChange={(e) => setConfigYasAddr(e.target.value)} placeholder="90XXXXXX ou 70XXXXXX" maxLength={8} className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.82rem] text-white outline-none focus:border-[#6366F1]" />
+  1205→  1205→                      {configYasAddr && !/^(9[0-3]|7[0-3])\d{6}$/.test(configYasAddr.trim()) && (<p className="text-[0.6rem] text-[#F87171] mt-1">Format: 8 chiffres, commence par 90-93 ou 70-73</p>)}
+  1206→  1206→                    </div>
+  1207→  1207→                    <div className="mb-3">
+  1208→  1208→                      <label className="block mb-1 text-[0.7rem] font-semibold text-[rgba(255,255,255,0.45)]">Taux CFA/USD (1 USD = ? CFA)</label>
+  1209→  1209→                      <input type="number" step="1" value={configCfaRate} onChange={(e) => setConfigCfaRate(e.target.value)} className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.82rem] text-white outline-none focus:border-[#6366F1]" />
+  1210→  1210→                    </div>
+  1211→  1211→                    <button onClick={async () => { setSavingYas(true); try { const r = await authFetch('/api/admin/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminYasAccount: configYasAddr, cfaUsdRate: configCfaRate }) }); const d = await r.json(); if (d.success) { addToast('Config Yas sauvegardée !', 'success'); await loadConfig(); } else addToast(d.error || 'Erreur de sauvegarde', 'error'); } catch { addToast('Erreur réseau', 'error'); } setSavingYas(false); }} disabled={savingYas} className="w-full py-2.5 rounded-lg bg-[#6366F1] text-[#050506] text-[0.78rem] font-bold border-none cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-60">
+  1212→  1212→                      {savingYas ? <div className="w-4 h-4 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <i className="fas fa-save text-[0.7rem]"></i>}
+  1213→  1213→                      {savingYas ? 'Sauvegarde...' : 'Sauvegarder la config Yas'}
+  1214→  1214→                    </button>
+  1215→  1215→                  </div>
+  1216→  1216→                  <div className="grid grid-cols-3 gap-2 mb-4">
+  1217→  1217→                    {[
+  1218→  1218→                      { label: 'En attente', value: yasStats.pending || 0, color: '#818CF8' },
+  1219→  1219→                      { label: 'Approuvées', value: yasStats.approved || 0, color: '#4ADE80' },
+  1220→  1220→                      { label: 'Rejetées', value: yasStats.rejected || 0, color: '#F87171' },
+  1221→  1221→                    ].map((s, i) => (
+  1222→  1222→                      <div key={i} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-2.5 text-center">
+  1223→  1223→                        <div className="text-[0.85rem] font-bold" style={{ color: s.color }}>{s.value}</div>
+  1224→  1224→                        <div className="text-[0.55rem] text-[rgba(255,255,255,0.25)] uppercase">{s.label}</div>
+  1225→  1225→                      </div>
+  1226→  1226→                    ))}
+  1227→  1227→                  </div>
+  1228→  1228→                  {yasDeposits.filter(d => d.status === 'pending').map((d: any) => {
+  1229→  1229→                    const isInvestment = d.type === 'investment';
+  1230→  1230→                    const invLevel = d.investmentLevel;
+  1231→  1231→                    const invAmount = d.investmentAmount ?? d.amountUsd;
+  1232→  1232→                    return (
+  1233→  1233→                    <div key={d.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] border-l-[3px] rounded-2xl p-3 mb-2" style={{ borderLeftColor: isInvestment ? '#22C55E' : '#818CF8' }}>
+  1234→  1234→                      <div className="flex items-center justify-between mb-2">
+  1235→  1235→                        <div>
+  1236→  1236→                          <div className="text-[0.78rem] font-bold text-[#EDEDEF] flex items-center gap-1.5 flex-wrap">
+  1237→  1237→                            {esc(d.user?.name || '?')}
+  1238→  1238→                            {isInvestment && (
+  1239→  1239→                              <span className="text-[0.55rem] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-1" style={{ background: 'rgba(34,197,94,0.14)', color: '#22C55E' }}>
+  1240→  1240→                                <i className="fas fa-chart-line text-[0.45rem]"></i>Investissement{invLevel ? ` Niv. ${invLevel}` : ''}
+  1241→  1241→                              </span>
+  1242→  1242→                            )}
+  1243→  1243→                          </div>
+  1244→  1244→                          <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">{d.amountCfa ? `${d.amountCfa.toLocaleString()} FCFA` : formatMoney(d.amountUsd)} → {d.amountTrx?.toFixed(2)} TRX</div>
+  1245→  1245→                          {d.amountCfa > 0 && <div className="text-[0.6rem] text-[#818CF8]">{formatMoney(d.amountUsd)} USD{isInvestment ? ' (investi)' : ''}</div>}
+  1246→  1246→                        </div>
+  1247→  1247→                        <div className="flex items-center gap-1.5">
+  1248→  1248→                          <span className="text-[0.6rem] px-2 py-0.5 rounded-full font-semibold" style={{ background: isInvestment ? 'rgba(34,197,94,0.14)' : 'rgba(34,197,94,0.12)', color: '#22C55E' }}>
+  1249→  1249→                            {isInvestment ? '→ Invest.' : '→ Solde'}
+  1250→  1250→                          </span>
+  1251→  1251→                          <span className="text-[0.6rem] bg-[rgba(99,102,241,0.12)] text-[#6366F1] px-2 py-0.5 rounded-full font-semibold">Yas 🇹🇬</span>
+  1252→  1252→                        </div>
+  1253→  1253→                      </div>
+  1254→  1254→                      <div className="bg-[#161719] rounded-lg p-2.5 mb-2 space-y-1">
+  1255→  1255→                        <div className="flex justify-between items-center"><span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Compte Yas client</span><span className="text-[0.7rem] font-bold text-[#EDEDEF]">{esc(d.yasAccount)}</span></div>
+  1256→  1256→                      </div>
+  1257→  1257→                      {isInvestment && (
+  1258→  1258→                        <div className="bg-[rgba(34,197,94,0.08)] rounded-lg p-2 mb-2 border border-[rgba(34,197,94,0.15)]">
+  1259→  1259→                          <p className="text-[0.6rem] text-[rgba(34,197,94,0.85)]">
+  1260→  1260→                            <i className="fas fa-info-circle mr-1"></i>
+  1261→  1261→                            L'approbation crée l'investissement <strong>Niv. {invLevel ?? 1}</strong> de <strong>{formatMoney(invAmount)}</strong> et démarre le compte à rebours (24h → première collecte).
+  1262→  1262→                          </p>
+  1263→  1263→                        </div>
+  1264→  1264→                      )}
+  1265→  1265→                      <div className="mb-2"><input type="text" value={yasNote[d.id] || ''} onChange={(e) => setYasNote(prev => ({ ...prev, [d.id]: e.target.value }))} placeholder="Note admin (optionnel)" className="w-full py-2 px-3 bg-[#161719] border-[1px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.72rem] text-white outline-none focus:border-[#6366F1]" /></div>
+  1266→  1266→                      <div className="flex gap-2">
+  1267→  1267→                        <button onClick={async () => { const r = await authFetch('/api/admin/yas-deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId: d.id, action: 'approve', adminNote: yasNote[d.id] || (isInvestment ? 'Investissement approuvé. Compte à rebours démarré.' : 'Dépôt validé. Solde principal crédité.') }) }); const data = await r.json(); if (data.success) { addToast(data.message || 'Approuvé', 'success'); loadYasDeposits(); } else addToast(data.error, 'error'); }} className="flex-1 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer"><i className="fas fa-check mr-1"></i>Approuver</button>
+  1268→  1268→                        <button onClick={async () => { const r = await authFetch('/api/admin/yas-deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId: d.id, action: 'reject', adminNote: yasNote[d.id] || undefined }) }); const data = await r.json(); if (data.success) { addToast('Rejeté', 'info'); loadYasDeposits(); } else addToast(data.error, 'error'); }} className="flex-1 py-2 rounded-lg bg-[rgba(248,113,113,0.15)] text-[#F87171] text-[0.72rem] font-semibold border-none cursor-pointer">Rejeter</button>
+  1269→  1269→                      </div>
+  1270→  1270→                    </div>
+  1271→  1271→                    );
+  1272→  1272→                  })}
+  1273→  1273→                  {yasDeposits.filter(d => d.status === 'pending').length === 0 && (
+  1274→  1274→                    <div className="text-center py-6"><div className="w-12 h-12 rounded-full bg-[rgba(34,197,94,0.12)] flex items-center justify-center mx-auto mb-2"><i className="fas fa-check-circle text-[#22C55E] text-[1.2rem]"></i></div><p className="text-[0.82rem] text-[rgba(255,255,255,0.25)]">Aucun dépôt Yas en attente</p></div>
+  1275→  1275→                  )}
+  1276→  1276→                </>
+  1277→  1277→              )}
+  1278→  1278→
+  1279→  1279→              {/* Withdrawals Tab */}
+  1280→  1280→              {tab === 'withdrawals' && (
+  1281→  1281→                <>
+  1282→  1282→                  <div className="grid grid-cols-3 gap-2 mb-4">
+  1283→  1283→                    {[
+  1284→  1284→                      { label: 'En attente', value: withdrawalStats.pending || 0, color: '#818CF8' },
+  1285→  1285→                      { label: 'Approuvés', value: withdrawalStats.approved || 0, color: '#4ADE80' },
+  1286→  1286→                      { label: 'Rejetés', value: withdrawalStats.rejected || 0, color: '#F87171' },
+  1287→  1287→                    ].map((s, i) => (
+  1288→  1288→                      <div key={i} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-2.5 text-center">
+  1289→  1289→                        <div className="text-[0.85rem] font-bold" style={{ color: s.color }}>{s.value}</div>
+  1290→  1290→                        <div className="text-[0.55rem] text-[rgba(255,255,255,0.25)] uppercase">{s.label}</div>
+  1291→  1291→                      </div>
+  1292→  1292→                    ))}
+  1293→  1293→                  </div>
+  1294→  1294→                  {withdrawals.filter(w => w.status === 'pending').map((w: any) => {
+  1295→  1295→                    const isYas = w.type === 'yas' || w.type === 'invest_yas';
+  1296→  1296→                    const isInvestment = w.type === 'invest_yas' || w.type === 'invest_trx';
+  1297→  1297→                    const badgeText = isYas ? 'Yas 🇹🇬' : 'TRX';
+  1298→  1298→                    const badgeColor = isYas ? '#22C55E' : '#818CF8';
+  1299→  1299→                    return (
+  1300→  1300→                      <div key={w.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] border-l-[3px] rounded-2xl p-3 mb-2" style={{ borderLeftColor: isInvestment ? '#22C55E' : badgeColor }}>
+  1301→  1301→                        <div className="flex items-center justify-between mb-2">
+  1302→  1302→                          <div>
+  1303→  1303→                            <div className="text-[0.78rem] font-bold text-[#EDEDEF] flex items-center gap-1.5 flex-wrap">
+  1304→  1304→                              {esc(w.user?.name || '?')}
+  1305→  1305→                              {isInvestment && (
+  1306→  1306→                                <span className="text-[0.55rem] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-1" style={{ background: 'rgba(34,197,94,0.14)', color: '#22C55E' }}>
+  1307→  1307→                                  <i className="fas fa-chart-line text-[0.45rem]"></i>Investissement
+  1308→  1308→                                </span>
+  1309→  1309→                              )}
+  1310→  1310→                            </div>
+  1311→  1311→                            <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">{formatMoney(w.amount)}</div>
+  1312→  1312→                            {isYas && w.amountCfa > 0 && (
+  1313→  1313→                              <div className="text-[0.6rem]" style={{ color: badgeColor }}>{(w.amountCfa || 0).toLocaleString('fr-FR')} FCFA</div>
+  1314→  1314→                            )}
+  1315→  1315→                          </div>
+  1316→  1316→                          <span className="text-[0.6rem] px-2 py-0.5 rounded-full font-semibold" style={{ color: badgeColor, background: `${badgeColor}20` }}>
+  1317→  1317→                            {badgeText}
+  1318→  1318→                          </span>
+  1319→  1319→                        </div>
+  1320→  1320→                        <div className="bg-[#161719] rounded-lg p-2.5 mb-2 space-y-1.5">
+  1321→  1321→                          {/* TRX address - shown for TRX type */}
+  1322→  1322→                          {!isYas && w.trxAddress && (
+  1323→  1323→                            <div>
+  1324→  1324→                              <div className="flex justify-between items-center">
+  1325→  1325→                                <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Adresse TRX retrait</span>
+  1326→  1326→                                <button onClick={async () => { try { await navigator.clipboard.writeText(w.trxAddress || ''); addToast('Adresse copiée !', 'success'); } catch { addToast('Erreur de copie', 'error'); } }} className="text-[0.6rem] text-[#6366F1] hover:text-[#818CF8] cursor-pointer bg-transparent border-none flex items-center gap-1"><i className="fas fa-copy text-[0.55rem]"></i> Copier</button>
+  1327→  1327→                              </div>
+  1328→  1328→                              <div className="text-[0.72rem] font-mono font-bold text-[#818CF8] break-all leading-relaxed mt-0.5">{esc(w.trxAddress)}</div>
+  1329→  1329→                            </div>
+  1330→  1330→                          )}
+  1331→  1331→                          {/* Yas account - shown for yas type */}
+  1332→  1332→                          {isYas && w.yasAccount && (
+  1333→  1333→                            <div>
+  1334→  1334→                              <div className="flex justify-between items-center">
+  1335→  1335→                                <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Numéro Yas</span>
+  1336→  1336→                                <button onClick={async () => { try { await navigator.clipboard.writeText(w.yasAccount || ''); addToast('Numéro copié !', 'success'); } catch { addToast('Erreur de copie', 'error'); } }} className="text-[0.6rem] text-[#22C55E] hover:text-[#4ADE80] cursor-pointer bg-transparent border-none flex items-center gap-1"><i className="fas fa-copy text-[0.55rem]"></i> Copier</button>
+  1337→  1337→                              </div>
+  1338→  1338→                              <div className="text-[0.82rem] font-bold text-[#22C55E] mt-0.5">{esc(w.yasAccount)}</div>
+  1339→  1339→                            </div>
+  1340→  1340→                          )}
+  1341→  1341→                          {isYas && (
+  1342→  1342→                            <div className="bg-[rgba(34,197,94,0.08)] rounded-lg p-2 border border-[rgba(34,197,94,0.15)]">
+  1343→  1343→                              <p className="text-[0.6rem] text-[rgba(255,255,255,0.55)]">
+  1344→  1344→                                <i className="fas fa-info-circle mr-1 text-[#22C55E]"></i>
+  1345→  1345→                                Envoyez <strong className="text-[#22C55E]">{(w.amountCfa || 0).toLocaleString('fr-FR')} FCFA</strong> sur le compte Yas du client.
+  1346→  1346→                              </p>
+  1347→  1347→                            </div>
+  1348→  1348→                          )}
+  1349→  1349→                        </div>
+  1350→  1350→                        <div className="flex gap-2">
+  1351→  1351→                          <button onClick={async () => { const r = await authFetch('/api/admin/withdrawals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ withdrawalId: w.id, action: 'approve' }) }); const data = await r.json(); if (data.success) { addToast('Approuvé', 'success'); loadWithdrawals(); } else addToast(data.error, 'error'); }} className="flex-1 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer">Approuver</button>
+  1352→  1352→                          <button onClick={async () => { const r = await authFetch('/api/admin/withdrawals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ withdrawalId: w.id, action: 'reject' }) }); const data = await r.json(); if (data.success) { addToast('Rejeté', 'info'); loadWithdrawals(); } else addToast(data.error, 'error'); }} className="flex-1 py-2 rounded-lg bg-[rgba(248,113,113,0.15)] text-[#F87171] text-[0.72rem] font-semibold border-none cursor-pointer">Rejeter</button>
+  1353→  1353→                        </div>
+  1354→  1354→                      </div>
+  1355→  1355→                    );
+  1356→  1356→                  })}
+  1357→  1357→                  {withdrawals.filter(w => w.status === 'pending').length === 0 && (
+  1358→  1358→                    <p className="text-center text-[0.82rem] text-[rgba(255,255,255,0.25)] py-4">Aucun retrait en attente</p>
+  1359→  1359→                  )}
+  1360→  1360→                </>
+  1361→  1361→              )}
+  1362→  1362→
+  1363→  1363→              {/* ============ MESSAGES TAB ============ */}
+  1364→  1364→              {tab === 'messages' && (
+  1365→  1365→                <>
+  1366→  1366→                  {selectedUserId ? (
+  1367→  1367→                    /* ========== CHAT VIEW ========== */
+  1368→  1368→                    <div className="flex flex-col" style={{ minHeight: 'calc(100vh - 180px)' }}>
+  1369→  1369→                      {/* Chat Header - User info (falls back to usersList when starting a brand new conversation) */}
+  1370→  1370→                      {(() => {
+  1371→  1371→                        const conv = conversations.find(c => c.user_id === selectedUserId);
+  1372→  1372→                        const uInfo = conv
+  1373→  1373→                          ? { name: conv.user_name, email: conv.user_email, balance: conv.user_balance }
+  1374→  1374→                          : (() => {
+  1375→  1375→                              const u = usersList.find((x: any) => x.id === selectedUserId);
+  1376→  1376→                              return u ? { name: u.name, email: u.email, balance: u.balance ?? 0 } : { name: null, email: null, balance: 0 };
+  1377→  1377→                            })();
+  1378→  1378→                        const initials = (uInfo.name || '?').split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
+  1379→  1379→                        return (
+  1380→  1380→                      <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 mb-3 flex items-center gap-3">
+  1381→  1381→                        <button onClick={closeConversation} className="w-8 h-8 rounded-lg bg-[rgba(255,255,255,0.06)] flex items-center justify-center text-[rgba(255,255,255,0.45)] cursor-pointer border-none shrink-0">
+  1382→  1382→                          <i className="fas fa-arrow-left text-[0.7rem]"></i>
+  1383→  1383→                        </button>
+  1384→  1384→                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#6366F1] to-[#4F46E5] flex items-center justify-center text-white text-[0.7rem] font-bold shrink-0">
+  1385→  1385→                          {initials}
+  1386→  1386→                        </div>
+  1387→  1387→                        <div className="flex-1 min-w-0">
+  1388→  1388→                          <div className="text-[0.85rem] font-bold text-[#EDEDEF] truncate">{esc(uInfo.name || 'Utilisateur')}</div>
+  1389→  1389→                          <div className="text-[0.6rem] text-[rgba(255,255,255,0.35)] truncate">{esc(uInfo.email || '')}</div>
+  1390→  1390→                        </div>
+  1391→  1391→                        <div className="text-right shrink-0">
+  1392→  1392→                          <div className="text-[0.75rem] font-bold text-[#4ADE80]">{formatMoney(uInfo.balance || 0)}</div>
+  1393→  1393→                        </div>
+  1394→  1394→                      </div>
+  1395→  1395→                        );
+  1396→  1396→                      })()}
+  1397→  1397→
+  1398→  1398→                      {/* Messages Area */}
+  1399→  1399→                      <div ref={chatScrollRef} className="flex-1 overflow-y-auto min-h-0 mb-3 space-y-1" style={{ maxHeight: 'calc(100vh - 340px)' }}>
+  1400→  1400→                        {chatLoading && chatMessages.length === 0 && (
+  1401→  1401→                          <div className="flex justify-center py-8">
+  1402→  1402→                            <div className="w-6 h-6 border-2 border-[rgba(255,255,255,0.1)] border-t-[#6366F1] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
+  1403→  1403→                          </div>
+  1404→  1404→                        )}
+  1405→  1405→                        {!chatLoading && chatMessages.length === 0 && (
+  1406→  1406→                          <p className="text-center text-[0.75rem] text-[rgba(255,255,255,0.25)] py-6">Aucun message</p>
+  1407→  1407→                        )}
+  1408→  1408→                        {chatMessages.map((msg) => (
+  1409→  1409→                          <div key={msg.id} className={`flex ${msg.me ? 'justify-end' : 'justify-start'} mt-1 group`}>
+  1410→  1410→                            <div className={`max-w-[80%] relative ${msg.me ? 'order-2' : 'order-1'}`}>
+  1411→  1411→                              <div className={`${
+  1412→  1412→                                msg.me
+  1413→  1413→                                  ? 'bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white rounded-2xl rounded-br-md'
+  1414→  1414→                                  : 'bg-[#161719] border border-[rgba(255,255,255,0.06)] text-[#EDEDEF] rounded-2xl rounded-bl-md'
+  1415→  1415→                              } px-3.5 py-2.5`}>
+  1416→  1416→                                <p className="text-[0.8rem] leading-relaxed whitespace-pre-wrap break-words">{esc(msg.text)}</p>
+  1417→  1417→                              </div>
+  1418→  1418→                              <div className={`flex items-center gap-1 mt-0.5 ${msg.me ? 'justify-end mr-1' : 'justify-start ml-1'}`}>
+  1419→  1419→                                <span className="text-[0.5rem] text-[rgba(255,255,255,0.2)]">{msg.t}</span>
+  1420→  1420→                                {msg.me && <i className="fas fa-check-double text-[0.4rem] text-[rgba(99,102,241,0.5)]"></i>}
+  1421→  1421→                              </div>
+  1422→  1422→                              {/* Delete button on hover */}
+  1423→  1423→                              <button
+  1424→  1424→                                onClick={() => handleDeleteMessage(msg.id)}
+  1425→  1425→                                className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[rgba(239,68,68,0.15)] text-[#F87171] text-[0.45rem] flex items-center justify-center border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity z-10"
+  1426→  1426→                                title="Supprimer"
+  1427→  1427→                              >
+  1428→  1428→                                <i className="fas fa-trash"></i>
+  1429→  1429→                              </button>
+  1430→  1430→                            </div>
+  1431→  1431→                          </div>
+  1432→  1432→                        ))}
+  1433→  1433→                        {chatSending && (
+  1434→  1434→                          <div className="flex justify-end mt-1">
+  1435→  1435→                            <div className="bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white rounded-2xl rounded-br-md px-3.5 py-2.5 opacity-60">
+  1436→  1436→                              <div className="flex items-center gap-1.5">
+  1437→  1437→                                <div className="w-1 h-1 rounded-full bg-white" style={{ animation: 'pulse 0.8s infinite' }} />
+  1438→  1438→                                <div className="w-1 h-1 rounded-full bg-white" style={{ animation: 'pulse 0.8s infinite 0.2s' }} />
+  1439→  1439→                                <div className="w-1 h-1 rounded-full bg-white" style={{ animation: 'pulse 0.8s infinite 0.4s' }} />
+  1440→  1440→                              </div>
+  1441→  1441→                            </div>
+  1442→  1442→                          </div>
+  1443→  1443→                        )}
+  1444→  1444→                      </div>
+  1445→  1445→
+  1446→  1446→                      {/* Input Bar */}
+  1447→  1447→                      <div className="flex items-end gap-2 shrink-0 bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-2">
+  1448→  1448→                        <input
+  1449→  1449→                          ref={chatInputRef}
+  1450→  1450→                          type="text"
+  1451→  1451→                          value={chatInput}
+  1452→  1452→                          onChange={(e) => setChatInput(e.target.value)}
+  1453→  1453→                          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAdminReply(); } }}
+  1454→  1454→                          placeholder="Répondre..."
+  1455→  1455→                          className="flex-1 py-2.5 px-3 bg-[#161719] border-[1px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.82rem] text-white outline-none focus:border-[#6366F1] placeholder:text-[rgba(255,255,255,0.2)]"
+  1456→  1456→                          disabled={chatSending}
+  1457→  1457→                        />
+  1458→  1458→                        <button
+  1459→  1459→                          onClick={handleAdminReply}
+  1460→  1460→                          disabled={chatSending || !chatInput.trim()}
+  1461→  1461→                          className="w-10 h-10 rounded-xl bg-[#6366F1] text-[#050506] flex items-center justify-center border-none cursor-pointer disabled:opacity-30 shrink-0 transition-all active:scale-90"
+  1462→  1462→                        >
+  1463→  1463→                          <i className="fas fa-paper-plane text-[0.75rem]"></i>
+  1464→  1464→                        </button>
+  1465→  1465→                      </div>
+  1466→  1466→                    </div>
+  1467→  1467→                  ) : (
+  1468→  1468→                    /* ========== CONVERSATION LIST ========== */
+  1469→  1469→                    <>
+  1470→  1470→                      <div className="bg-[#0E0F11] border border-[rgba(99,102,241,0.15)] rounded-2xl p-3 mb-4 flex items-center gap-2">
+  1471→  1471→                        <div className="w-8 h-8 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center shrink-0">
+  1472→  1472→                          <i className="fas fa-comments text-[#6366F1] text-[0.85rem]"></i>
+  1473→  1473→                        </div>
+  1474→  1474→                        <div className="flex-1">
+  1475→  1475→                          <div className="text-[#EDEDEF] text-[0.85rem] font-bold">Messagerie</div>
+  1476→  1476→                          <div className="text-[rgba(255,255,255,0.45)] text-[0.65rem]">Choisissez un utilisateur à qui écrire</div>
+  1477→  1477→                        </div>
+  1478→  1478→                        <button
+  1479→  1479→                          onClick={() => { setShowNewConversation(v => !v); setNewConvSearch(''); }}
+  1480→  1480→                          className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-[0.7rem] font-bold border-none cursor-pointer transition-all ${
+  1481→  1481→                            showNewConversation
+  1482→  1482→                              ? 'bg-[rgba(255,255,255,0.08)] text-[rgba(255,255,255,0.65)]'
+  1483→  1483→                              : 'bg-[#6366F1] text-white'
+  1484→  1484→                          }`}
+  1485→  1485→                          title="Démarrer une nouvelle conversation"
+  1486→  1486→                        >
+  1487→  1487→                          <i className="fas fa-plus text-[0.6rem]"></i>
+  1488→  1488→                          {showNewConversation ? 'Annuler' : 'Nouvelle'}
+  1489→  1489→                        </button>
+  1490→  1490→                      </div>
+  1491→  1491→
+  1492→  1492→                      {/* New conversation picker — admin chooses any user */}
+  1493→  1493→                      {showNewConversation && (
+  1494→  1494→                        <div className="bg-[#0E0F11] border border-[rgba(99,102,241,0.2)] rounded-2xl p-3 mb-4">
+  1495→  1495→                          <div className="text-[0.7rem] font-bold text-[#EDEDEF] mb-2 flex items-center gap-1.5">
+  1496→  1496→                            <i className="fas fa-user-plus text-[#6366F1] text-[0.65rem]"></i>
+  1497→  1497→                            Sélectionner un utilisateur
+  1498→  1498→                          </div>
+  1499→  1499→                          <input
+  1500→  1500→                            type="text"
+  1501→  1501→                            value={newConvSearch}
+  1502→  1502→                            onChange={(e) => setNewConvSearch(e.target.value)}
+  1503→  1503→                            placeholder="Rechercher par nom ou email..."
+  1504→  1504→                            autoFocus
+  1505→  1505→                            className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.78rem] text-white outline-none focus:border-[#6366F1] mb-2"
+  1506→  1506→                          />
+  1507→  1507→                          <div className="max-h-64 overflow-y-auto space-y-1">
+  1508→  1508→                            {usersList
+  1509→  1509→                              .filter((u: any) => u.role !== 'admin')
+  1510→  1510→                              .filter((u: any) => {
+  1511→  1511→                                if (!newConvSearch.trim()) return true;
+  1512→  1512→                                const s = newConvSearch.toLowerCase();
+  1513→  1513→                                return u.name?.toLowerCase().includes(s) || u.email?.toLowerCase().includes(s);
+  1514→  1514→                              })
+  1515→  1515→                              .slice(0, 30)
+  1516→  1516→                              .map((u: any) => {
+  1517→  1517→                                const hasConv = conversations.some((c) => c.user_id === u.id);
+  1518→  1518→                                return (
+  1519→  1519→                                  <button
+  1520→  1520→                                    key={u.id}
+  1521→  1521→                                    onClick={() => {
+  1522→  1522→                                      setShowNewConversation(false);
+  1523→  1523→                                      setNewConvSearch('');
+  1524→  1524→                                      setConvSearch('');
+  1525→  1525→                                      openConversation(u.id);
+  1526→  1526→                                    }}
+  1527→  1527→                                    className="w-full flex items-center gap-2.5 py-2 px-3 rounded-lg text-left border-none cursor-pointer transition-all bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(99,102,241,0.12)]"
+  1528→  1528→                                  >
+  1529→  1529→                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#6366F1] to-[#4F46E5] flex items-center justify-center text-white text-[0.6rem] font-bold shrink-0">
+  1530→  1530→                                      {u.name?.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || '?'}
+  1531→  1531→                                    </div>
+  1532→  1532→                                    <div className="flex-1 min-w-0">
+  1533→  1533→                                      <div className="text-[0.75rem] font-bold text-[#EDEDEF] truncate">{esc(u.name)}</div>
+  1534→  1534→                                      <div className="text-[0.62rem] text-[rgba(255,255,255,0.35)] truncate">{esc(u.email)}</div>
+  1535→  1535→                                    </div>
+  1536→  1536→                                    <div className="text-right shrink-0">
+  1537→  1537→                                      <div className="text-[0.65rem] font-bold text-[#4ADE80]">{formatMoney(u.balance || 0)}</div>
+  1538→  1538→                                      {hasConv && <div className="text-[0.5rem] text-[rgba(255,255,255,0.3)]">Conversation existante</div>}
+  1539→  1539→                                    </div>
+  1540→  1540→                                  </button>
+  1541→  1541→                                );
+  1542→  1542→                              })}
+  1543→  1543→                            {usersList
+  1544→  1544→                              .filter((u: any) => u.role !== 'admin')
+  1545→  1545→                              .filter((u: any) => {
+  1546→  1546→                                if (!newConvSearch.trim()) return true;
+  1547→  1547→                                const s = newConvSearch.toLowerCase();
+  1548→  1548→                                return u.name?.toLowerCase().includes(s) || u.email?.toLowerCase().includes(s);
+  1549→  1549→                              }).length === 0 && (
+  1550→  1550→                              <p className="text-center text-[0.72rem] text-[rgba(255,255,255,0.3)] py-3">Aucun utilisateur trouvé</p>
+  1551→  1551→                            )}
+  1552→  1552→                          </div>
+  1553→  1553→                        </div>
+  1554→  1554→                      )}
+  1555→  1555→
+  1556→  1556→                      {/* Search filter for existing conversations */}
+  1557→  1557→                      {!showNewConversation && conversations.length > 0 && (
+  1558→  1558→                        <div className="mb-3">
+  1559→  1559→                          <input
+  1560→  1560→                            type="text"
+  1561→  1561→                            value={convSearch}
+  1562→  1562→                            onChange={(e) => setConvSearch(e.target.value)}
+  1563→  1563→                            placeholder="Rechercher une conversation..."
+  1564→  1564→                            className="w-full py-2 px-3 bg-[#0E0F11] border-[1px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.72rem] text-white outline-none focus:border-[#6366F1]"
+  1565→  1565→                          />
+  1566→  1566→                        </div>
+  1567→  1567→                      )}
+  1568→  1568→
+  1569→  1569→                      {!showNewConversation && conversations.length === 0 && (
+  1570→  1570→                        <div className="text-center py-8">
+  1571→  1571→                          <div className="w-12 h-12 rounded-full bg-[rgba(99,102,241,0.12)] flex items-center justify-center mx-auto mb-3">
+  1572→  1572→                            <i className="fas fa-inbox text-[#6366F1] text-[1.2rem]"></i>
+  1573→  1573→                          </div>
+  1574→  1574→                          <p className="text-[0.82rem] text-[rgba(255,255,255,0.25)]">Aucune conversation pour le moment</p>
+  1575→  1575→                          <p className="text-[0.65rem] text-[rgba(255,255,255,0.15)] mt-1">Cliquez sur « Nouvelle » pour démarrer une conversation</p>
+  1576→  1576→                        </div>
+  1577→  1577→                      )}
+  1578→  1578→
+  1579→  1579→                      {!showNewConversation && conversations
+  1580→  1580→                        .filter((conv) => {
+  1581→  1581→                          if (!convSearch.trim()) return true;
+  1582→  1582→                          const s = convSearch.toLowerCase();
+  1583→  1583→                          return conv.user_name?.toLowerCase().includes(s) || conv.user_email?.toLowerCase().includes(s);
+  1584→  1584→                        })
+  1585→  1585→                        .map((conv) => (
+  1586→  1586→                        <button
+  1587→  1587→                          key={conv.user_id}
+  1588→  1588→                          onClick={() => openConversation(conv.user_id)}
+  1589→  1589→                          className="w-full bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 mb-2 cursor-pointer transition-all hover:border-[rgba(99,102,241,0.2)] text-left"
+  1590→  1590→                        >
+  1591→  1591→                          <div className="flex items-center gap-3">
+  1592→  1592→                            {/* Avatar */}
+  1593→  1593→                            <div className="relative shrink-0">
+  1594→  1594→                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#6366F1] to-[#4F46E5] flex items-center justify-center text-white text-[0.7rem] font-bold">
+  1595→  1595→                                {conv.user_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?'}
+  1596→  1596→                              </div>
+  1597→  1597→                              {conv.unread_count > 0 && (
+  1598→  1598→                                <div className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-[#EF4444] text-white text-[0.55rem] font-bold flex items-center justify-center px-1">
+  1599→  1599→                                  {conv.unread_count}
+  1600→  1600→                                </div>
+  1601→  1601→                              )}
+  1602→  1602→                            </div>
+  1603→  1603→                            {/* Content */}
+  1604→  1604→                            <div className="flex-1 min-w-0">
+  1605→  1605→                              <div className="flex items-center justify-between mb-0.5">
+  1606→  1606→                                <span className="text-[0.82rem] font-bold text-[#EDEDEF] truncate">{esc(conv.user_name || 'Utilisateur')}</span>
+  1607→  1607→                                <span className="text-[0.55rem] text-[rgba(255,255,255,0.2)] shrink-0 ml-2">
+  1608→  1608→                                  {conv.last_message?.time || ''}
+  1609→  1609→                                </span>
+  1610→  1610→                              </div>
+  1611→  1611→                              <div className="flex items-center justify-between">
+  1612→  1612→                                <p className="text-[0.68rem] text-[rgba(255,255,255,0.35)] truncate pr-2">
+  1613→  1613→                                  {conv.last_message
+  1614→  1614→                                    ? (conv.last_message.is_admin ? <span className="text-[rgba(99,102,241,0.6)]">Vous : </span> : null)
+  1615→  1615→                                    : null}
+  1616→  1616→                                  {conv.last_message?.content || ''}
+  1617→  1617→                                </p>
+  1618→  1618→                                <span className="text-[0.55rem] text-[rgba(255,255,255,0.15)] shrink-0">{conv.total_messages} msg</span>
+  1619→  1619→                              </div>
+  1620→  1620→                            </div>
+  1621→  1621→                          </div>
+  1622→  1622→                        </button>
+  1623→  1623→                      ))}
+  1624→  1624→                    </>
+  1625→  1625→                  )}
+  1626→  1626→                </>
+  1627→  1627→              )}
+  1628→  1628→
+  1629→  1629→              {/* Notifications Tab */}
+  1630→  1630→              {tab === 'notif' && (
+  1631→  1631→                <>
+  1632→  1632→                  {/* Header card */}
+  1633→  1633→                  <div className="bg-[#0E0F11] border border-[rgba(99,102,241,0.15)] rounded-2xl p-3 mb-4 flex items-center gap-2">
+  1634→  1634→                    <div className="w-8 h-8 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center shrink-0">
+  1635→  1635→                      <i className="fas fa-bell text-[#6366F1] text-[0.9rem]"></i>
+  1636→  1636→                    </div>
+  1637→  1637→                    <div>
+  1638→  1638→                      <div className="text-[#EDEDEF] text-[0.85rem] font-bold">Envoyer des notifications</div>
+  1639→  1639→                      <div className="text-[rgba(255,255,255,0.45)] text-[0.65rem]">Envoyez des notifications aux utilisateurs</div>
+  1640→  1640→                    </div>
+  1641→  1641→                  </div>
+  1642→  1642→
+  1643→  1643→                  {/* Target selector */}
+  1644→  1644→                  <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 mb-3">
+  1645→  1645→                    <div className="text-[0.72rem] font-bold text-[#EDEDEF] mb-2.5">Destinataire</div>
+  1646→  1646→                    <div className="flex gap-2">
+  1647→  1647→                      <button
+  1648→  1648→                        onClick={() => setNotifTarget('all')}
+  1649→  1649→                        className={`flex-1 py-2.5 rounded-xl text-[0.72rem] font-semibold border-none cursor-pointer transition-all ${
+  1650→  1650→                          notifTarget === 'all'
+  1651→  1651→                            ? 'bg-[#6366F1] text-white'
+  1652→  1652→                            : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)]'
+  1653→  1653→                        }`}
+  1654→  1654→                      >
+  1655→  1655→                        <i className="fas fa-users mr-1 text-[0.6rem]"></i> Tous les utilisateurs
+  1656→  1656→                      </button>
+  1657→  1657→                      <button
+  1658→  1658→                        onClick={() => setNotifTarget('individual')}
+  1659→  1659→                        className={`flex-1 py-2.5 rounded-xl text-[0.72rem] font-semibold border-none cursor-pointer transition-all ${
+  1660→  1660→                          notifTarget === 'individual'
+  1661→  1661→                            ? 'bg-[#6366F1] text-white'
+  1662→  1662→                            : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)]'
+  1663→  1663→                        }`}
+  1664→  1664→                      >
+  1665→  1665→                        <i className="fas fa-user mr-1 text-[0.6rem]"></i> Un utilisateur
+  1666→  1666→                      </button>
+  1667→  1667→                    </div>
+  1668→  1668→                  </div>
+  1669→  1669→
+  1670→  1670→                  {/* Individual user selector */}
+  1671→  1671→                  {notifTarget === 'individual' && (
+  1672→  1672→                    <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 mb-3">
+  1673→  1673→                      <div className="text-[0.72rem] font-bold text-[#EDEDEF] mb-2">Sélectionner l&apos;utilisateur</div>
+  1674→  1674→                      <input
+  1675→  1675→                        type="text"
+  1676→  1676→                        value={notifSearch}
+  1677→  1677→                        onChange={(e) => setNotifSearch(e.target.value)}
+  1678→  1678→                        placeholder="Rechercher par nom ou email..."
+  1679→  1679→                        className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.78rem] text-white outline-none focus:border-[#6366F1] mb-2"
+  1680→  1680→                      />
+  1681→  1681→                      <div className="max-h-40 overflow-y-auto space-y-1">
+  1682→  1682→                        {usersList
+  1683→  1683→                          .filter((u: any) => u.role !== 'admin')
+  1684→  1684→                          .filter((u: any) => {
+  1685→  1685→                            if (!notifSearch.trim()) return true;
+  1686→  1686→                            const search = notifSearch.toLowerCase();
+  1687→  1687→                            return u.name?.toLowerCase().includes(search) || u.email?.toLowerCase().includes(search);
+  1688→  1688→                          })
+  1689→  1689→                          .slice(0, 20)
+  1690→  1690→                          .map((u: any) => (
+  1691→  1691→                            <button
+  1692→  1692→                              key={u.id}
+  1693→  1693→                              onClick={() => { setNotifUserId(u.id); setNotifSearch(''); }}
+  1694→  1694→                              className={`w-full text-left py-2 px-3 rounded-lg text-[0.72rem] border-none cursor-pointer transition-all ${
+  1695→  1695→                                notifUserId === u.id
+  1696→  1696→                                  ? 'bg-[#6366F1] text-white'
+  1697→  1697→                                  : 'bg-[rgba(255,255,255,0.04)] text-[rgba(255,255,255,0.65)] hover:bg-[rgba(255,255,255,0.08)]'
+  1698→  1698→                              }`}
+  1699→  1699→                            >
+  1700→  1700→                              <span className="font-semibold">{esc(u.name)}</span>
+  1701→  1701→                              <span className="text-[rgba(255,255,255,0.35)] ml-2">{esc(u.email)}</span>
+  1702→  1702→                            </button>
+  1703→  1703→                          ))}
+  1704→  1704→                      </div>
+  1705→  1705→                      {notifUserId && (
+  1706→  1706→                        <div className="mt-2 flex items-center gap-2 bg-[rgba(99,102,241,0.08)] rounded-lg px-3 py-2">
+  1707→  1707→                          <i className="fas fa-check-circle text-[#6366F1] text-[0.7rem]"></i>
+  1708→  1708→                          <span className="text-[0.72rem] text-[#818CF8] font-semibold">
+  1709→  1709→                            {esc(usersList.find((u: any) => u.id === notifUserId)?.name || 'Utilisateur sélectionné')}
+  1710→  1710→                          </span>
+  1711→  1711→                          <button
+  1712→  1712→                            onClick={() => setNotifUserId('')}
+  1713→  1713→                            className="ml-auto text-[rgba(255,255,255,0.35)] hover:text-[#F87171] cursor-pointer bg-transparent border-none"
+  1714→  1714→                          >
+  1715→  1715→                            <i className="fas fa-times text-[0.6rem]"></i>
+  1716→  1716→                          </button>
+  1717→  1717→                        </div>
+  1718→  1718→                      )}
+  1719→  1719→                    </div>
+  1720→  1720→                  )}
+  1721→  1721→
+  1722→  1722→                  {/* Notification form */}
+  1723→  1723→                  <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 mb-3">
+  1724→  1724→                    <div className="text-[0.72rem] font-bold text-[#EDEDEF] mb-2.5">Contenu de la notification</div>
+  1725→  1725→                    <div className="mb-2.5">
+  1726→  1726→                      <label className="block mb-1 text-[0.65rem] font-semibold text-[rgba(255,255,255,0.45)]">Titre</label>
+  1727→  1727→                      <input
+  1728→  1728→                        type="text"
+  1729→  1729→                        value={notifTitle}
+  1730→  1730→                        onChange={(e) => setNotifTitle(e.target.value)}
+  1731→  1731→                        placeholder="Ex: Mise à jour importante"
+  1732→  1732→                        maxLength={100}
+  1733→  1733→                        className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.82rem] text-white outline-none focus:border-[#6366F1]"
+  1734→  1734→                      />
+  1735→  1735→                    </div>
+  1736→  1736→                    <div className="mb-3">
+  1737→  1737→                      <label className="block mb-1 text-[0.65rem] font-semibold text-[rgba(255,255,255,0.45)]">Message</label>
+  1738→  1738→                      <textarea
+  1739→  1739→                        value={notifMessage}
+  1740→  1740→                        onChange={(e) => setNotifMessage(e.target.value)}
+  1741→  1741→                        placeholder="Tapez votre message ici..."
+  1742→  1742→                        maxLength={500}
+  1743→  1743→                        rows={3}
+  1744→  1744→                        className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.82rem] text-white outline-none focus:border-[#6366F1] resize-none"
+  1745→  1745→                      />
+  1746→  1746→                      <div className="text-right text-[0.55rem] text-[rgba(255,255,255,0.2)] mt-0.5">{notifMessage.length}/500</div>
+  1747→  1747→                    </div>
+  1748→  1748→
+  1749→  1749→                    {/* Preview */}
+  1750→  1750→                    {(notifTitle || notifMessage) && (
+  1751→  1751→                      <div className="mb-3 bg-[#161719] rounded-xl p-3 border border-[rgba(255,255,255,0.04)]">
+  1752→  1752→                        <div className="text-[0.55rem] text-[rgba(255,255,255,0.3)] mb-1.5 uppercase font-semibold">Aperçu</div>
+  1753→  1753→                        <div className="flex items-start gap-2.5">
+  1754→  1754→                          <div className="w-8 h-8 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center shrink-0 mt-0.5">
+  1755→  1755→                            <i className="fas fa-bell text-[#6366F1] text-[0.65rem]"></i>
+  1756→  1756→                          </div>
+  1757→  1757→                          <div className="min-w-0">
+  1758→  1758→                            <div className="text-[0.75rem] font-bold text-[#EDEDEF]">{notifTitle || 'Titre...'}</div>
+  1759→  1759→                            <div className="text-[0.68rem] text-[rgba(255,255,255,0.5)] mt-0.5 leading-relaxed">{notifMessage || 'Message...'}</div>
+  1760→  1760→                          </div>
+  1761→  1761→                        </div>
+  1762→  1762→                      </div>
+  1763→  1763→                    )}
+  1764→  1764→
+  1765→  1765→                    <button
+  1766→  1766→                      onClick={handleSendNotification}
+  1767→  1767→                      disabled={notifSending || !notifTitle.trim() || !notifMessage.trim() || (notifTarget === 'individual' && !notifUserId)}
+  1768→  1768→                      className="w-full py-3 rounded-xl bg-[#6366F1] text-[#050506] text-[0.85rem] font-bold border-none cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 transition-all active:scale-[0.98]"
+  1769→  1769→                    >
+  1770→  1770→                      {notifSending ? (
+  1771→  1771→                        <div className="w-4 h-4 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
+  1772→  1772→                      ) : (
+  1773→  1773→                        <i className="fas fa-paper-plane text-[0.7rem]"></i>
+  1774→  1774→                      )}
+  1775→  1775→                      {notifSending
+  1776→  1776→                        ? 'Envoi en cours...'
+  1777→  1777→                        : notifTarget === 'all'
+  1778→  1778→                          ? 'Envoyer à tous les utilisateurs'
+  1779→  1779→                          : 'Envoyer à l\'utilisateur'
+  1780→  1780→                      }
+  1781→  1781→                    </button>
+  1782→  1782→                  </div>
+  1783→  1783→
+  1784→  1784→                  {/* Broadcast history */}
+  1785→  1785→                  <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 mt-2">
+  1786→  1786→                    <div className="flex items-center justify-between mb-2.5">
+  1787→  1787→                      <div className="text-[0.72rem] font-bold text-[#EDEDEF] flex items-center gap-1.5">
+  1788→  1788→                        <i className="fas fa-history text-[#6366F1] text-[0.65rem]"></i>
+  1789→  1789→                        Historique des diffusions
+  1790→  1790→                      </div>
+  1791→  1791→                      <button
+  1792→  1792→                        onClick={loadBroadcasts}
+  1793→  1793→                        disabled={broadcastsLoading}
+  1794→  1794→                        className="text-[0.62rem] text-[rgba(255,255,255,0.45)] hover:text-[#6366F1] cursor-pointer bg-transparent border-none flex items-center gap-1 disabled:opacity-50"
+  1795→  1795→                      >
+  1796→  1796→                        <i className={`fas fa-sync-alt text-[0.55rem] ${broadcastsLoading ? 'fa-spin' : ''}`}></i>
+  1797→  1797→                        Actualiser
+  1798→  1798→                      </button>
+  1799→  1799→                    </div>
+  1800→  1800→                    {broadcastsLoading && broadcasts.length === 0 ? (
+  1801→  1801→                      <div className="flex justify-center py-4">
+  1802→  1802→                        <div className="w-6 h-6 border-2 border-[rgba(255,255,255,0.1)] border-t-[#6366F1] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
+  1803→  1803→                      </div>
+  1804→  1804→                    ) : broadcasts.length === 0 ? (
+  1805→  1805→                      <div className="text-center py-4">
+  1806→  1806→                        <i className="fas fa-inbox text-[rgba(255,255,255,0.15)] text-[1.1rem] mb-1.5"></i>
+  1807→  1807→                        <p className="text-[0.7rem] text-[rgba(255,255,255,0.25)]">Aucune diffusion envoyée pour le moment</p>
+  1808→  1808→                      </div>
+  1809→  1809→                    ) : (
+  1810→  1810→                      <div className="max-h-80 overflow-y-auto pr-0.5 space-y-2 [scrollbar-width:thin]">
+  1811→  1811→                        {broadcasts.map((b: any) => {
+  1812→  1812→                          const isAll = b.target === 'all';
+  1813→  1813→                          const targetName = isAll
+  1814→  1814→                            ? 'Tous les utilisateurs'
+  1815→  1815→                            : (usersList.find((u: any) => u.id === b.userId)?.name || 'Utilisateur');
+  1816→  1816→                          const typeBadge: Record<string, { bg: string; color: string; label: string }> = {
+  1817→  1817→                            admin_broadcast: { bg: 'rgba(99,102,241,0.12)', color: '#818CF8', label: 'Diffusion' },
+  1818→  1818→                            admin_individual: { bg: 'rgba(34,197,94,0.12)', color: '#4ADE80', label: 'Individuel' },
+  1819→  1819→                            info: { bg: 'rgba(99,102,241,0.12)', color: '#818CF8', label: 'Info' },
+  1820→  1820→                            promo: { bg: 'rgba(245,158,11,0.12)', color: '#FBBF24', label: 'Promo' },
+  1821→  1821→                            alert: { bg: 'rgba(248,113,113,0.12)', color: '#F87171', label: 'Alerte' },
+  1822→  1822→                            maintenance: { bg: 'rgba(148,163,184,0.12)', color: '#94A3B8', label: 'Maintenance' },
+  1823→  1823→                          };
+  1824→  1824→                          const tb = typeBadge[b.type] || typeBadge.info;
+  1825→  1825→                          const date = b.createdAt ? new Date(b.createdAt).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+  1826→  1826→                          return (
+  1827→  1827→                            <div key={b.id} className="bg-[#161719] rounded-lg p-2.5 border border-[rgba(255,255,255,0.04)]">
+  1828→  1828→                              <div className="flex items-start justify-between gap-2 mb-1">
+  1829→  1829→                                <div className="text-[0.74rem] font-bold text-[#EDEDEF] flex-1 min-w-0">{esc(b.title || 'Sans titre')}</div>
+  1830→  1830→                                <span className="shrink-0 text-[0.5rem] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: tb.bg, color: tb.color }}>{tb.label}</span>
+  1831→  1831→                              </div>
+  1832→  1832→                              <p className="text-[0.66rem] text-[rgba(255,255,255,0.55)] leading-relaxed mb-1.5 line-clamp-2">{esc(b.message || '')}</p>
+  1833→  1833→                              <div className="flex items-center gap-2 text-[0.55rem] text-[rgba(255,255,255,0.3)]">
+  1834→  1834→                                <span className="flex items-center gap-0.5"><i className={`fas ${isAll ? 'fa-users' : 'fa-user'} text-[0.45rem]`}></i>{targetName}</span>
+  1835→  1835→                                <span>·</span>
+  1836→  1836→                                <span className="flex items-center gap-0.5"><i className="fas fa-clock text-[0.45rem]"></i>{date}</span>
+  1837→  1837→                              </div>
+  1838→  1838→                            </div>
+  1839→  1839→                          );
+  1840→  1840→                        })}
+  1841→  1841→                      </div>
+  1842→  1842→                    )}
+  1843→  1843→                  </div>
+  1844→  1844→                </>
+  1845→  1845→              )}
+  1846→  1846→
+  1847→  1847→              {/* Config Tab */}
+  1848→  1848→              {tab === 'config' && siteConfig && (
+  1849→  1849→                <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-4">
+  1850→  1850→                  <div className="mb-3">
+  1851→  1851→                    <label className="block mb-1 text-[0.75rem] font-semibold text-[rgba(255,255,255,0.45)]">Adresse TRX Admin</label>
+  1852→  1852→                    <input type="text" value={configAddr} onChange={(e) => setConfigAddr(e.target.value)} className="w-full py-3 px-4 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#6366F1]" />
+  1853→  1853→                  </div>
+  1854→  1854→                  <div className="mb-3">
+  1855→  1855→                    <label className="block mb-1 text-[0.75rem] font-semibold text-[rgba(255,255,255,0.45)]">Prix TRX (USD)</label>
+  1856→  1856→                    <input type="number" step="0.001" value={configPrice} onChange={(e) => setConfigPrice(e.target.value)} className="w-full py-3 px-4 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#6366F1]" />
+  1857→  1857→                  </div>
+  1858→  1858→                  <div className="bg-[#161719] rounded-xl p-3 mb-3 border border-[rgba(99,102,241,0.12)]">
+  1859→  1859→                    <div className="text-[0.72rem] font-bold text-[#818CF8] mb-2"><i className="fas fa-globe mr-1"></i>Lien World (10+ parrainés)</div>
+  1860→  1860→                    <div className="mb-2">
+  1861→  1861→                      <label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(255,255,255,0.45)]">URL du lien World</label>
+  1862→  1862→                      <input type="text" value={configWorldLink} onChange={(e) => setConfigWorldLink(e.target.value)} placeholder="https://example.com/world" className="w-full py-3 px-4 bg-[#0E0F11] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#6366F1]" />
+  1863→  1863→                      <p className="text-[0.6rem] text-[rgba(255,255,255,0.3)] mt-1">Ce lien sera visible uniquement pour les utilisateurs ayant 10 parrainés ou plus.</p>
+  1864→  1864→                    </div>
+  1865→  1865→                  </div>
+  1866→  1866→                  <div className="bg-[#161719] rounded-xl p-3 mb-3 border border-[rgba(99,102,241,0.12)]">
+  1867→  1867→                    <div className="text-[0.72rem] font-bold text-[#818CF8] mb-2"><i className="fas fa-exchange-alt mr-1"></i>Config Yas du Togo</div>
+  1868→  1868→                    <div className="mb-3">
+  1869→  1869→                      <label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(255,255,255,0.45)]">Numéro Yas Admin</label>
+  1870→  1870→                      <input type="text" value={configYasAddr} onChange={(e) => setConfigYasAddr(e.target.value)} placeholder="90XXXXXX ou 70XXXXXX" className="w-full py-3 px-4 bg-[#0E0F11] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#6366F1]" />
+  1871→  1871→                    </div>
+  1872→  1872→                    <div>
+  1873→  1873→                      <label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(255,255,255,0.45)]">Taux CFA/USD (1 USD = ? CFA)</label>
+  1874→  1874→                      <input type="number" step="1" value={configCfaRate} onChange={(e) => setConfigCfaRate(e.target.value)} className="w-full py-3 px-4 bg-[#0E0F11] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-xl text-[0.85rem] text-white outline-none focus:border-[#6366F1]" />
+  1875→  1875→                    </div>
+  1876→  1876→                  </div>
+  1877→  1877→                  <button onClick={async () => { setSavingConfig(true); try { const r = await authFetch('/api/admin/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminTrxAddress: configAddr, trxUsdPrice: configPrice, adminYasAccount: configYasAddr, cfaUsdRate: configCfaRate, worldLink: configWorldLink }) }); const d = await r.json(); if (d.success) { addToast('Config sauvegardée', 'success'); await loadConfig(); } else addToast(d.error, 'error'); } catch { addToast('Erreur', 'error'); } setSavingConfig(false); }} disabled={savingConfig} className="w-full py-3 rounded-xl bg-[#6366F1] text-[#050506] font-bold text-[0.85rem] border-none cursor-pointer disabled:opacity-60 flex items-center justify-center gap-1.5">
+  1878→  1878→                    {savingConfig ? <div className="w-4 h-4 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <i className="fas fa-save mr-1"></i>}
+  1879→  1879→                    {savingConfig ? 'Sauvegarde...' : 'Sauvegarder'}
+  1880→  1880→                  </button>
+  1881→  1881→                </div>
+  1882→  1882→              )}
+  1883→  1883→
+  1884→  1884→              {/* Videos Tab */}
+  1885→  1885→              {tab === 'videos' && (
+  1886→  1886→                <>
+  1887→  1887→                  {/* Header card */}
+  1888→  1888→                  <div className="bg-[#0E0F11] border border-[rgba(99,102,241,0.15)] rounded-2xl p-3 mb-4 flex items-center gap-2">
+  1889→  1889→                    <div className="w-8 h-8 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center shrink-0">
+  1890→  1890→                      <i className="fas fa-video text-[#6366F1] text-[0.9rem]"></i>
+  1891→  1891→                    </div>
+  1892→  1892→                    <div>
+  1893→  1893→                      <div className="text-[#EDEDEF] text-[0.85rem] font-bold">Liens vidéo</div>
+  1894→  1894→                      <div className="text-[rgba(255,255,255,0.45)] text-[0.65rem]">Ajoutez des vidéos YouTube visibles par tous les utilisateurs</div>
+  1895→  1895→                    </div>
+  1896→  1896→                  </div>
+  1897→  1897→
+  1898→  1898→                  {/* Add video form */}
+  1899→  1899→                  <div className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-3 mb-4">
+  1900→  1900→                    <div className="text-[0.72rem] font-bold text-[#EDEDEF] mb-2.5 flex items-center gap-1.5">
+  1901→  1901→                      <i className="fas fa-plus-circle text-[#6366F1] text-[0.7rem]"></i> Ajouter une vidéo
+  1902→  1902→                    </div>
+  1903→  1903→
+  1904→  1904→                    <div className="mb-2.5">
+  1905→  1905→                      <label className="block mb-1 text-[0.65rem] font-semibold text-[rgba(255,255,255,0.45)]">Lien YouTube ou ID vidéo</label>
+  1906→  1906→                      <input
+  1907→  1907→                        type="text"
+  1908→  1908→                        value={videoUrlOrId}
+  1909→  1909→                        onChange={(e) => setVideoUrlOrId(e.target.value)}
+  1910→  1910→                        placeholder="Collez un lien YouTube ou un ID vidéo"
+  1911→  1911→                        className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.78rem] text-white outline-none focus:border-[#6366F1]"
+  1912→  1912→                      />
+  1913→  1913→                    </div>
+  1914→  1914→
+  1915→  1915→                    <div className="mb-2.5">
+  1916→  1916→                      <label className="block mb-1 text-[0.65rem] font-semibold text-[rgba(255,255,255,0.45)]">Titre <span className="text-[#F87171]">*</span></label>
+  1917→  1917→                      <input
+  1918→  1918→                        type="text"
+  1919→  1919→                        value={videoTitle}
+  1920→  1920→                        onChange={(e) => setVideoTitle(e.target.value)}
+  1921→  1921→                        placeholder="Titre conforme à la vidéo"
+  1922→  1922→                        maxLength={150}
+  1923→  1923→                        className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.78rem] text-white outline-none focus:border-[#6366F1]"
+  1924→  1924→                      />
+  1925→  1925→                    </div>
+  1926→  1926→
+  1927→  1927→                    <div className="mb-2.5">
+  1928→  1928→                      <label className="block mb-1 text-[0.65rem] font-semibold text-[rgba(255,255,255,0.45)]">Entreprise / Sponsor <span className="text-[#F87171]">*</span></label>
+  1929→  1929→                      <input
+  1930→  1930→                        type="text"
+  1931→  1931→                        value={videoSponsor}
+  1932→  1932→                        onChange={(e) => setVideoSponsor(e.target.value)}
+  1933→  1933→                        placeholder="Nom de l'entreprise"
+  1934→  1934→                        maxLength={100}
+  1935→  1935→                        className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.78rem] text-white outline-none focus:border-[#6366F1]"
+  1936→  1936→                      />
+  1937→  1937→                    </div>
+  1938→  1938→
+  1939→  1939→                    <div className="mb-2.5">
+  1940→  1940→                      <label className="block mb-1 text-[0.65rem] font-semibold text-[rgba(255,255,255,0.45)]">Catégorie</label>
+  1941→  1941→                      <div className="grid grid-cols-4 gap-1.5">
+  1942→  1942→                        {([
+  1943→  1943→                          { v: 'chinois', l: 'Chinois' },
+  1944→  1944→                          { v: 'japonais', l: 'Japonais' },
+  1945→  1945→                          { v: 'indien', l: 'Indien' },
+  1946→  1946→                          { v: 'entreprise', l: 'Entreprise' },
+  1947→  1947→                        ] as const).map(c => (
+  1948→  1948→                          <button
+  1949→  1949→                            key={c.v}
+  1950→  1950→                            onClick={() => setVideoCategory(c.v)}
+  1951→  1951→                            className={`py-2 rounded-lg text-[0.6rem] font-semibold border-none cursor-pointer transition-all ${
+  1952→  1952→                              videoCategory === c.v
+  1953→  1953→                                ? 'bg-[#6366F1] text-white'
+  1954→  1954→                                : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)]'
+  1955→  1955→                            }`}
+  1956→  1956→                          >
+  1957→  1957→                            {c.l}
+  1958→  1958→                          </button>
+  1959→  1959→                        ))}
+  1960→  1960→                      </div>
+  1961→  1961→                    </div>
+  1962→  1962→
+  1963→  1963→                    <div className="grid grid-cols-2 gap-2 mb-3">
+  1964→  1964→                      <div>
+  1965→  1965→                        <label className="block mb-1 text-[0.65rem] font-semibold text-[rgba(255,255,255,0.45)]">Durée (min)</label>
+  1966→  1966→                        <input
+  1967→  1967→                          type="number"
+  1968→  1968→                          min="1"
+  1969→  1969→                          step="1"
+  1970→  1970→                          value={videoDuration}
+  1971→  1971→                          onChange={(e) => setVideoDuration(e.target.value)}
+  1972→  1972→                          className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.78rem] text-white outline-none focus:border-[#6366F1]"
+  1973→  1973→                        />
+  1974→  1974→                      </div>
+  1975→  1975→                      <div>
+  1976→  1976→                        <label className="block mb-1 text-[0.65rem] font-semibold text-[rgba(255,255,255,0.45)]">Récompense (USD)</label>
+  1977→  1977→                        <input
+  1978→  1978→                          type="number"
+  1979→  1979→                          min="0"
+  1980→  1980→                          step="0.01"
+  1981→  1981→                          value={videoReward}
+  1982→  1982→                          onChange={(e) => setVideoReward(e.target.value)}
+  1983→  1983→                          className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.78rem] text-white outline-none focus:border-[#6366F1]"
+  1984→  1984→                        />
+  1985→  1985→                      </div>
+  1986→  1986→                    </div>
+  1987→  1987→
+  1988→  1988→                    <button
+  1989→  1989→                      onClick={handleAddVideo}
+  1990→  1990→                      disabled={addingVideo || !videoUrlOrId.trim() || !videoTitle.trim() || !videoSponsor.trim()}
+  1991→  1991→                      className="w-full py-3 rounded-xl bg-[#6366F1] text-[#050506] text-[0.85rem] font-bold border-none cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 transition-all active:scale-[0.98]"
+  1992→  1992→                    >
+  1993→  1993→                      {addingVideo ? (
+  1994→  1994→                        <div className="w-4 h-4 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} />
+  1995→  1995→                      ) : (
+  1996→  1996→                        <i className="fas fa-plus text-[0.7rem]"></i>
+  1997→  1997→                      )}
+  1998→  1998→                      {addingVideo ? 'Ajout en cours...' : 'Ajouter la vidéo'}
+  1999→  1999→                    </button>
+  2000→  2000→                  </div>
+
+[showing lines 1-2000 of 2002; use offset=2001 with limit to continue reading]

@@ -1,0 +1,525 @@
+     1→Forcing web requests to allow TLS v1.2 (Required for requests to Chocolatey.org)
+     2→Getting latest version of the Chocolatey package for download.
+     3→Not using proxy.                                                                                                        Getting Chocolatey from https://community.chocolatey.org/api/v2/package/chocolatey/2.7.3.                               Downloading https://community.chocolatey.org/api/v2/package/chocolatey/2.7.3 to C:\Users\WN1125~1\AppData\Local\Temp\chocolatey\chocoInstall\chocolatey.zip                                                                                     Not using proxy.                                                                                                        Extracting C:\Users\WN1125~1\AppData\Local\Temp\chocolatey\chocoInstall\chocolatey.zip to C:\Users\WN1125~1\AppData\Local\Temp\chocolatey\chocoInstall
+     4→Installing Chocolatey on the local machine
+     5→Creating ChocolateyInstall as an environment variable (targeting 'Machine')
+     6→  Setting ChocolateyInstall to 'C:\ProgramData\chocolatey'
+     7→WARNING: It's very likely you will need to close and reopen your shell
+     8→  before you can use choco.
+     9→Restricting write permissions to Administrators
+    10→We are setting up the Chocolatey package repository.
+    11→The packages themselves go to 'C:\ProgramData\chocolatey\lib'
+    12→  (i.e. C:\ProgramData\chocolatey\lib\yourPackageName).
+    13→A shim file for the command line goes to 'C:\ProgramData\chocolatey\bin'
+    14→  and points to an executable in 'C:\ProgramData\chocolatey\lib\yourPackageName'.
+    15→
+    16→Creating Chocolatey CLI folders if they do not already exist.
+    17→
+    18→chocolatey.nupkg file not installed in lib.
+    19→ Attempting to locate it from bootstrapper.
+    20→PATH environment variable does not have C:\ProgramData\chocolatey\bin in it. Adding...
+    21→AVERTISSEMENT : Not setting tab completion: Profile file does not exist at 'C:\Users\WN11
+    22→25H2\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1'.
+    23→Chocolatey CLI (choco.exe) is now ready.
+    24→You can call choco from anywhere, command line or PowerShell by typing choco.
+    25→Run choco /? for a list of functions.
+    26→You may need to shut down and restart PowerShell and/or consoles
+    27→ first prior to using choco.
+    28→Ensuring Chocolatey commands are on the path
+    29→Ensuring chocolatey.nupkg is in the lib folder
+    30→Chocolatey v2.7.3
+    31→Upgrading the following packages:
+    32→python;visualstudio2026-workload-vctools
+    33→By upgrading, you accept licenses for the packages.
+    34→python is not installed. Installing...
+    35→Downloading package from source 'https://community.chocolatey.org/api/v2/'
+    36→Progress: Downloading chocolatey-compatibility.extension 1.0.0... 100%
+    37→
+    38→chocolatey-compatibility.extension v1.0.0 [Approved]
+    39→chocolatey-compatibility.extension package files upgrade completed. Performing other installation steps.
+    40→ Installed/updated chocolatey-compatibility extensions.
+    41→ The upgrade of chocolatey-compatibility.extension was successful.
+    42→  Deployed to 'C:\ProgramData\chocolatey\extensions\chocolatey-compatibility'
+    43→Downloading package from source 'https://community.chocolatey.org/api/v2/'
+    44→Progress: Downloading chocolatey-core.extension 1.4.0... 100%
+    45→
+    46→chocolatey-core.extension v1.4.0 [Approved]
+    47→chocolatey-core.extension package files upgrade completed. Performing other installation steps.
+    48→ Installed/updated chocolatey-core extensions.
+    49→ The upgrade of chocolatey-core.extension was successful.
+    50→  Deployed to 'C:\ProgramData\chocolatey\extensions\chocolatey-core'
+    51→Downloading package from source 'https://community.chocolatey.org/api/v2/'
+    52→Progress: Downloading chocolatey-windowsupdate.extension 1.0.5... 100%
+    53→
+    54→chocolatey-windowsupdate.extension v1.0.5 [Approved]
+    55→chocolatey-windowsupdate.extension package files upgrade completed. Performing other installation steps.
+    56→ Installed/updated chocolatey-windowsupdate extensions.
+    57→ The upgrade of chocolatey-windowsupdate.extension was successful.
+    58→  Deployed to 'C:\ProgramData\chocolatey\extensions\chocolatey-windowsupdate'
+    59→Downloading package from source 'https://community.chocolatey.org/api/v2/'
+    60→Progress: Downloading KB2919442 1.0.20160915... 100%
+    61→
+    62→KB2919442 v1.0.20160915 [Approved]
+    63→KB2919442 package files upgrade completed. Performing other installation steps.
+    64→Skipping installation because this hotfix only applies to Windows 8.1 and Windows Server 2012 R2.
+    65→ The upgrade of KB2919442 was successful.
+    66→  Software install location not explicitly set, it could be in package or
+    67→  default install location of installer.
+    68→Downloading package from source 'https://community.chocolatey.org/api/v2/'
+    69→Progress: Downloading KB2919355 1.0.20160915... 100%
+    70→
+    71→KB2919355 v1.0.20160915 [Approved]
+    72→KB2919355 package files upgrade completed. Performing other installation steps.
+    73→Skipping installation because this hotfix only applies to Windows 8.1 and Windows Server 2012 R2.
+    74→ The upgrade of KB2919355 was successful.
+    75→  Software install location not explicitly set, it could be in package or
+    76→  default install location of installer.
+    77→Downloading package from source 'https://community.chocolatey.org/api/v2/'
+    78→Progress: Downloading KB2999226 1.0.20181019... 100%
+    79→
+    80→KB2999226 v1.0.20181019 [Approved]
+    81→KB2999226 package files upgrade completed. Performing other installation steps.
+    82→Skipping installation because update KB2999226 does not apply to this operating system (Microsoft Windows 11 Famille).
+    83→ The upgrade of KB2999226 was successful.
+    84→  Software install location not explicitly set, it could be in package or
+    85→  default install location of installer.
+    86→Downloading package from source 'https://community.chocolatey.org/api/v2/'
+    87→Progress: Downloading KB3035131 1.0.3... 100%
+    88→
+    89→KB3035131 v1.0.3 [Approved]
+    90→KB3035131 package files upgrade completed. Performing other installation steps.
+    91→Skipping installation because update KB3035131 does not apply to this operating system (Microsoft Windows 11 Famille).
+    92→ The upgrade of KB3035131 was successful.
+    93→  Software install location not explicitly set, it could be in package or
+    94→  default install location of installer.
+    95→Downloading package from source 'https://community.chocolatey.org/api/v2/'
+    96→Progress: Downloading KB3033929 1.0.5... 100%
+    97→
+    98→KB3033929 v1.0.5 [Approved]
+    99→KB3033929 package files upgrade completed. Performing other installation steps.
+   100→Skipping installation because update KB3033929 does not apply to this operating system (Microsoft Windows 11 Famille).
+   101→ The upgrade of KB3033929 was successful.
+   102→  Software install location not explicitly set, it could be in package or
+   103→  default install location of installer.
+   104→Downloading package from source 'https://community.chocolatey.org/api/v2/'
+   105→Progress: Downloading vcredist140 14.51.36247... 100%
+   106→
+   107→vcredist140 v14.51.36247 [Approved]
+   108→vcredist140 package files upgrade completed. Performing other installation steps.
+   109→Downloading vcredist140-x86
+   110→  from 'https://download.visualstudio.microsoft.com/download/pr/57eef8ae-a341-46c3-b0bc-c041027b54cd/F0BAB33A302B3CDB2E11113760D016F54FD3D2632C65BA7834FAC4F0ABD7F1A3/VC_redist.x86.exe'
+   111→Progress: 100% - Completed download of C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\vcredist140\14.51.36247\VC_redist.x86.exe (6.62 MB).
+   112→Download of VC_redist.x86.exe (6.62 MB) completed.
+   113→Hashes match.
+   114→Installing vcredist140-x86...
+   115→vcredist140-x86 has been installed.
+   116→Downloading vcredist140-x64 64 bit
+   117→  from 'https://download.visualstudio.microsoft.com/download/pr/ebdab8e5-1d7b-4d9f-a11b-cbb1720c3b12/843068991DAAA1F73AD9F6239BCE4D0F6A07A51F18C37EA2A867E9BECA71295C/VC_redist.x64.exe'
+   118→Progress: 100% - Completed download of C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\vcredist140\14.51.36247\VC_redist.x64.exe (17.86 MB).
+   119→Download of VC_redist.x64.exe (17.86 MB) completed.
+   120→Hashes match.
+   121→Installing vcredist140-x64...
+   122→vcredist140-x64 has been installed.
+   123→  vcredist140 may be able to be automatically uninstalled.
+   124→ The upgrade of vcredist140 was successful.
+   125→  Software installed as 'exe', install location is likely default.
+   126→Downloading package from source 'https://community.chocolatey.org/api/v2/'
+   127→Progress: Downloading vcredist2015 14.0.24215.20170201... 100%
+   128→
+   129→vcredist2015 v14.0.24215.20170201 [Approved]
+   130→vcredist2015 package files upgrade completed. Performing other installation steps.
+   131→ The upgrade of vcredist2015 was successful.
+   132→  Deployed to 'C:\ProgramData\chocolatey\lib\vcredist2015'
+   133→Downloading package from source 'https://community.chocolatey.org/api/v2/'
+   134→Progress: Downloading python314 3.14.6... 100%
+   135→
+   136→python314 v3.14.6 [Approved]
+   137→python314 package files upgrade completed. Performing other installation steps.
+   138→Installing 64-bit python314...
+   139→python314 has been installed.
+   140→Added C:\ProgramData\chocolatey\bin\python3.14.exe shim pointed to 'c:\python314\python.exe'.
+   141→Python installed to: 'C:\Python314'
+   142→Restricting write permissions to Administrators
+   143→  python314 can be automatically uninstalled.
+   144→Environment Vars (like PATH) have changed. Close/reopen your shell to
+   145→ see the changes (or in powershell/cmd.exe just type `refreshenv`).
+   146→ The upgrade of python314 was successful.
+   147→  Software installed as 'exe', install location is likely default.
+   148→Downloading package from source 'https://community.chocolatey.org/api/v2/'
+   149→Progress: Downloading python3 3.14.6... 100%
+   150→
+   151→python3 v3.14.6 [Approved]
+   152→python3 package files upgrade completed. Performing other installation steps.
+   153→ The upgrade of python3 was successful.
+   154→  Deployed to 'C:\ProgramData\chocolatey\lib\python3'
+   155→Downloading package from source 'https://community.chocolatey.org/api/v2/'
+   156→Progress: Downloading python 3.14.6... 100%
+   157→
+   158→python v3.14.6 [Approved]
+   159→python package files upgrade completed. Performing other installation steps.
+   160→ The upgrade of python was successful.
+   161→  Deployed to 'C:\ProgramData\chocolatey\lib\python'
+   162→visualstudio2026-workload-vctools is not installed. Installing...
+   163→Downloading package from source 'https://community.chocolatey.org/api/v2/'
+   164→Progress: Downloading chocolatey-dotnetfx.extension 1.0.1... 100%
+   165→
+   166→chocolatey-dotnetfx.extension v1.0.1
+   167→chocolatey-dotnetfx.extension package files upgrade completed. Performing other installation steps.
+   168→ Installed/updated chocolatey-dotnetfx extensions.
+   169→ The upgrade of chocolatey-dotnetfx.extension was successful.
+   170→  Deployed to 'C:\ProgramData\chocolatey\extensions\chocolatey-dotnetfx'
+   171→Downloading package from source 'https://community.chocolatey.org/api/v2/'
+   172→Progress: Downloading chocolatey-visualstudio.extension 1.13.0... 100%
+   173→
+   174→chocolatey-visualstudio.extension v1.13.0
+   175→chocolatey-visualstudio.extension package files upgrade completed. Performing other installation steps.
+   176→ Installed/updated chocolatey-visualstudio extensions.
+   177→ The upgrade of chocolatey-visualstudio.extension was successful.
+   178→  Deployed to 'C:\ProgramData\chocolatey\extensions\chocolatey-visualstudio'
+   179→Downloading package from source 'https://community.chocolatey.org/api/v2/'
+   180→Progress: Downloading dotnetfx 4.8.0.20220524... 100%
+   181→
+   182→dotnetfx v4.8.0.20220524 [Approved]
+   183→dotnetfx package files upgrade completed. Performing other installation steps.
+   184→Microsoft .NET Framework 4.8 or later is already installed.
+   185→ The upgrade of dotnetfx was successful.
+   186→  Software install location not explicitly set, it could be in package or
+   187→  default install location of installer.
+   188→Downloading package from source 'https://community.chocolatey.org/api/v2/'
+   189→Progress: Downloading visualstudio-installer 2.0.7... 100%
+   190→
+   191→visualstudio-installer v2.0.7 [Approved]
+   192→visualstudio-installer package files upgrade completed. Performing other installation steps.
+   193→ The upgrade of visualstudio-installer was successful.
+   194→  Software install location not explicitly set, it could be in package or
+   195→  default install location of installer.
+   196→Downloading package from source 'https://community.chocolatey.org/api/v2/'
+   197→Progress: Downloading visualstudio2026buildtools 118.7.2... 100%
+   198→
+   199→visualstudio2026buildtools v118.7.2 [Approved]
+   200→visualstudio2026buildtools package files upgrade completed. Performing other installation steps.
+   201→Downloading channel manifest
+   202→  from 'https://aka.ms/vs/18/stable/channel'
+   203→Progress: 100% - Completed download of C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\chocolatey-visualstudio.extension\ChannelManifest_444114094.man (115.6 KB).
+   204→Download of ChannelManifest_444114094.man (115.6 KB) completed.
+   205→Downloading catalog manifest
+   206→  from 'https://download.visualstudio.microsoft.com/download/pr/4037ccca-d103-412b-a678-bc0aa164315e/dde1579601f2f4e6c603c5d1d9abf3def2858c12814aeaf256c7ce68ede97bcb/VisualStudio.vsman'
+   207→Progress: 100% - Completed download of C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\chocolatey-visualstudio.extension\Catalog_961653454.man (18.02 MB).
+   208→Download of Catalog_961653454.man (18.02 MB) completed.
+   209→Downloading visualstudio2026buildtools
+   210→  from 'https://download.visualstudio.microsoft.com/download/pr/4c1645e2-fb0d-4889-a6b9-3fb6fd3a782f/f043f460270b8092067b3968de46f2f5caf5bed628b721c2ec4c4d4f12ffb6c8/vs_BuildTools.exe'
+   211→Progress: 100% - Completed download of C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\visualstudio2026buildtools\118.7.2\vs_BuildTools.exe (5.43 MB).
+   212→Download of vs_BuildTools.exe (5.43 MB) completed.
+   213→Hashes match.
+   214→Installing visualstudio2026buildtools...
+   215→
+   216→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\HelpFile\2052\help.html...
+   217→
+   218→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\HelpFile\1029\help.html...
+   219→
+   220→
+   221→
+   222→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\HelpFile\1046\help.html...
+   223→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\HelpFile\1055\help.html...
+   224→
+   225→
+   226→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\HelpFile\3082\help.html...
+   227→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\HelpFile\1028\help.html...
+   228→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\HelpFile\1040\help.html...
+   229→
+   230→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\HelpFile\1033\help.html...
+   231→
+   232→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\HelpFile\1045\help.html...
+   233→
+   234→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\HelpFile\1042\help.html...
+   235→
+   236→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\HelpFile\1031\help.html...
+   237→
+   238→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\HelpFile\1036\help.html...
+   239→
+   240→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\HelpFile\1041\help.html...
+   241→
+   242→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\HelpFile\1049\help.html...
+   243→
+   244→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\vs_setup_bootstrapper.exe...
+   245→
+   246→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Azure.Core.dll...
+   247→
+   248→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Azure.Identity.dll...
+   249→
+   250→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Microsoft.Bcl.AsyncInterfaces.dll...
+   251→
+   252→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Microsoft.C2RSignatureReader.Interop.dll...
+   253→
+   254→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Microsoft.C2RSignatureReader.Native.dll...
+   255→
+   256→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Microsoft.Extensions.DependencyInjection.Abstractions.dll...
+   257→
+   258→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Microsoft.Extensions.Logging.Abstractions.dll...
+   259→
+   260→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Microsoft.Identity.Client.Broker.dll...
+   261→
+   262→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Microsoft.Identity.Client.dll...
+   263→
+   264→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Microsoft.Identity.Client.Extensions.Msal.dll...
+   265→
+   266→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Microsoft.Identity.Client.NativeInterop.dll...
+   267→
+   268→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Microsoft.IdentityModel.Abstractions.dll...
+   269→
+   270→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Microsoft.IdentityModel.JsonWebTokens.dll...
+   271→
+   272→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Microsoft.IdentityModel.Logging.dll...
+   273→
+   274→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Microsoft.IdentityModel.Protocols.dll...
+   275→
+   276→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll...
+   277→
+   278→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Microsoft.IdentityModel.Tokens.dll...
+   279→
+   280→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Microsoft.VisualStudio.RemoteControl.dll...
+   281→
+   282→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Microsoft.VisualStudio.Services.Common.dll...
+   283→
+   284→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Microsoft.VisualStudio.Setup.Common.dll...
+   285→
+   286→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Microsoft.VisualStudio.Setup.dll...
+   287→
+   288→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Microsoft.VisualStudio.Setup.Download.dll...
+   289→
+   290→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Microsoft.VisualStudio.Telemetry.dll...
+   291→
+   292→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Microsoft.VisualStudio.Utilities.Internal.dll...
+   293→
+   294→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\runtimes\win-x64\native\msalruntime.dll...
+   295→
+   296→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\runtimes\win-arm64\native\msalruntime_arm64.dll...
+   297→
+   298→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\msalruntime_x86.dll...
+   299→
+   300→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\runtimes\win-x86\native\msalruntime_x86.dll...
+   301→
+   302→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\Newtonsoft.Json.dll...
+   303→
+   304→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\System.Buffers.dll...
+   305→
+   306→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\System.ClientModel.dll...
+   307→
+   308→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\System.Configuration.ConfigurationManager.dll...
+   309→
+   310→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\System.Diagnostics.DiagnosticSource.dll...
+   311→
+   312→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\System.IdentityModel.Tokens.Jwt.dll...
+   313→
+   314→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\System.IO.FileSystem.AccessControl.dll...
+   315→
+   316→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\System.IO.Packaging.dll...
+   317→
+   318→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\System.IO.Pipelines.dll...
+   319→
+   320→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\System.Memory.Data.dll...
+   321→
+   322→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\System.Memory.dll...
+   323→
+   324→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\System.Net.Http.Formatting.dll...
+   325→
+   326→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\System.Numerics.Vectors.dll...
+   327→
+   328→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\System.Runtime.CompilerServices.Unsafe.dll...
+   329→
+   330→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\System.Security.AccessControl.dll...
+   331→
+   332→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\System.Security.Cryptography.ProtectedData.dll...
+   333→
+   334→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\System.Security.Permissions.dll...
+   335→
+   336→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\System.Security.Principal.Windows.dll...
+   337→
+   338→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\System.Text.Encodings.Web.dll...
+   339→
+   340→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\System.Text.Json.dll...
+   341→
+   342→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\System.Threading.Tasks.Extensions.dll...
+   343→
+   344→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\VSInstallerElevationService.Contracts.dll...
+   345→
+   346→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\ko\vs_setup_bootstrapper.resources.dll...
+   347→
+   348→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\pt-BR\vs_setup_bootstrapper.resources.dll...
+   349→
+   350→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\ru\vs_setup_bootstrapper.resources.dll...
+   351→
+   352→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\zh-Hant\vs_setup_bootstrapper.resources.dll...
+   353→
+   354→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\pl\vs_setup_bootstrapper.resources.dll...
+   355→
+   356→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\ja\vs_setup_bootstrapper.resources.dll...
+   357→
+   358→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\zh-Hans\vs_setup_bootstrapper.resources.dll...
+   359→
+   360→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\es\vs_setup_bootstrapper.resources.dll...
+   361→
+   362→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\tr\vs_setup_bootstrapper.resources.dll...
+   363→
+   364→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\it\vs_setup_bootstrapper.resources.dll...
+   365→
+   366→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\cs\vs_setup_bootstrapper.resources.dll...
+   367→
+   368→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\de\vs_setup_bootstrapper.resources.dll...
+   369→
+   370→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\fr\vs_setup_bootstrapper.resources.dll...
+   371→
+   372→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\vs_setup_bootstrapper.config...
+   373→
+   374→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\vs_setup_bootstrapper.exe.config...
+   375→
+   376→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\detection.json...
+   377→
+   378→Preparing: C:\Users\WN11 25H2\AppData\Local\Temp\chocolatey\ae4824796ce5004ec1d56e99ff55f9\vs_bootstrapper_d15\vs_setup_bootstrapper.json...
+   379→
+   380→visualstudio2026buildtools has been installed.
+   381→  visualstudio2026buildtools may be able to be automatically uninstalled.
+   382→ The upgrade of visualstudio2026buildtools was successful.
+   383→  Deployed to '"C:\Program Files (x86)\Microsoft Visual Studio\Installer"'
+   384→Downloading package from source 'https://community.chocolatey.org/api/v2/'
+   385→Progress: Downloading visualstudio2026-workload-vctools 1.0.0... 100%
+   386→
+   387→visualstudio2026-workload-vctools v1.0.0 [Approved]
+   388→visualstudio2026-workload-vctools package files upgrade completed. Performing other installation steps.
+   389→Installing visualstudio2026-workload-vctools...
+   390→
+   391→[5f60:0001][2026-07-11T15:34:09] Saving the current locale (fr-FR) to user.json.
+   392→[5f60:0001][2026-07-11T15:34:09] Setting the telemetry services
+   393→[5f60:0005][2026-07-11T15:34:09] Creating a new telemetry service.
+   394→[5f60:0001][2026-07-11T15:34:10] Visual Studio Installer Version: 4.7.25+56ad8fb6f1
+   395→[5f60:0001][2026-07-11T15:34:10] Raw Command line: "C:\Program Files (x86)\Microsoft Visual Studio\Installer\setup.exe" modify --installPath "C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools" --includeRecommended --norestart --quiet --add Microsoft.VisualStudio.Workload.VCTools
+   396→[5f60:0001][2026-07-11T15:34:10] Parsed command line options: modify --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --installPath "C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools" --norestart --quiet
+   397→[5f60:0001][2026-07-11T15:34:10] Using registry value of (1) to theme installer.
+   398→[5f60:0001][2026-07-11T15:34:10] Getting singleton lock. Mutex name: DevdivInstallerUI
+   399→[5f60:0001][2026-07-11T15:34:10] Getting singleton lock succeed.
+   400→[5f60:0005][2026-07-11T15:34:10] Telemetry session ID: 6547f6a5-358a-48e4-b736-2be67577da12
+   401→[5f60:0001][2026-07-11T15:34:10] Creating new ExperimentationService
+   402→[5f60:0001][2026-07-11T15:34:10] Telemetry property VS.ABExp.Flights : lazytoolboxinit;fwlargebuffer;refactoring;spmoretempsbtn1;asloff;keybindgoldbarext;asynccsproj;vsfricheditor;completionapi;4f604693:30775293
+   403→[5f60:0005][2026-07-11T15:34:10] Telemetry property vs.willow.source : WPF
+   404→[5f60:0005][2026-07-11T15:34:10] Telemetry property vs.willow.locale : fr-FR
+   405→[5f60:0005][2026-07-11T15:34:10] Telemetry property vs.willow.installerversion : 4.7.25.22189
+   406→[5f60:0005][2026-07-11T15:34:10] Telemetry property vs.willow.startmethod : direct
+   407→[5f60:0005][2026-07-11T15:34:10] Telemetry property vs.willow.activityid : 667be946-ab05-4b63-83bd-d0c53080bc69
+   408→[5f60:0005][2026-07-11T15:34:10] Telemetry property vs.willow.campaign :
+   409→[5f60:0005][2026-07-11T15:34:10] Telemetry property vs.willow.passive : False
+   410→[5f60:0005][2026-07-11T15:34:10] Telemetry property vs.willow.quiet : True
+   411→[5f60:0005][2026-07-11T15:34:10] Telemetry property vs.willow.processtype : ui
+   412→[5f60:0005][2026-07-11T15:34:10] Telemetry property vs.willow.force : False
+   413→[5f60:0005][2026-07-11T15:34:10] Telemetry property vs.willow.noweb : False
+   414→[5f60:0005][2026-07-11T15:34:10] Telemetry property vs.willow.iselevated : True
+   415→[5f60:0005][2026-07-11T15:34:10] Telemetry property vs.willow.issystem : False
+   416→[5f60:0005][2026-07-11T15:34:10] Telemetry property vs.willow.isadmin : True
+   417→[5f60:0001][2026-07-11T15:34:10] Navigation requested from ApplicationViewModel to MainPageViewModel
+   418→[5f60:000e][2026-07-11T15:34:11] Uri 'https://go.microsoft.com/fwlink/?linkid=857708' redirected to 'https://sendvsfeedback2.azurewebsites.net/api'
+   419→[5f60:0014][2026-07-11T15:34:11] Telemetry property vs.setup.WorkloadOverrides.DidReceiveOverride : False
+   420→[5f60:0014][2026-07-11T15:34:11] Telemetry property vs.setup.WorkloadOverrides.RuleId : None
+   421→[5f60:0005][2026-07-11T15:34:12] Telemetry property VS.SetupEngine.ChannelUpdateDisabled : False
+   422→Warning: [5f60:0005][2026-07-11T15:34:12] Setup expects one or more channel manifest in the repository.
+   423→Warning: [5f60:0005][2026-07-11T15:34:12] Setup expects one or more channel manifest in the repository.
+   424→[5f60:0005][2026-07-11T15:34:12] Authentication Environment variable setting value: null
+   425→[5f60:0005][2026-07-11T15:34:12] Authenticate: True
+   426→[5f60:000e][2026-07-11T15:34:12] Download requested: https://download.visualstudio.microsoft.com/download/pr/4037ccca-d103-412b-a678-bc0aa164315e/9bba450d38eaae79baf703dc08f85c321cbf7099b3ef114e6a7137f123674dad/VisualStudio.18.Release.chman
+   427→[5f60:001a][2026-07-11T15:34:12] Attempting download 'https://download.visualstudio.microsoft.com/download/pr/4037ccca-d103-412b-a678-bc0aa164315e/9bba450d38eaae79baf703dc08f85c321cbf7099b3ef114e6a7137f123674dad/VisualStudio.18.Release.chman' using engine 'WebClient'
+   428→[5f60:001a][2026-07-11T15:34:13] ManifestVerifier Result: Success
+   429→[5f60:001a][2026-07-11T15:34:13] Download of 'https://download.visualstudio.microsoft.com/download/pr/4037ccca-d103-412b-a678-bc0aa164315e/9bba450d38eaae79baf703dc08f85c321cbf7099b3ef114e6a7137f123674dad/VisualStudio.18.Release.chman' succeeded using engine 'WebClient'
+   430→[5f60:0008][2026-07-11T15:34:13] Trying to remove channel manifest: C:\Users\WN11 25H2\AppData\Local\Microsoft\VisualStudio\Packages\_Channels\c126ba6c\installChannelManifest.json
+   431→[5f60:0008][2026-07-11T15:34:13] Trying to remove product manifest: C:\Users\WN11 25H2\AppData\Local\Microsoft\VisualStudio\Packages\_Channels\c126ba6c\install_catalog.json
+   432→[5f60:000e][2026-07-11T15:34:13] Download requested: https://go.microsoft.com/fwlink/?linkid=2066144
+   433→[5f60:001a][2026-07-11T15:34:13] Attempting download 'https://go.microsoft.com/fwlink/?linkid=2066144' using engine 'WebClient'
+   434→Warning: [5f60:000b][2026-07-11T15:34:13] No previous catalog found at 'C:\ProgramData\Microsoft\VisualStudio\Packages\_Instances\e4d95723\catalog.previous.json'
+   435→[5f60:0003][2026-07-11T15:34:13] Status changed to NoUpdate
+   436→[5f60:000b][2026-07-11T15:34:13] Telemetry property VS.SetupEngine.ChannelUpdateDisabled : False
+   437→Warning: [5f60:000b][2026-07-11T15:34:14] Didn't find any channel feed.
+   438→[5f60:0008][2026-07-11T15:34:14] Setup Engine v4.7.25, Microsoft Windows NT 10.0.26200.0
+   439→[5f60:0008][2026-07-11T15:34:14] Command line: "C:\Program Files (x86)\Microsoft Visual Studio\Installer\setup.exe" modify --installPath "C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools" --includeRecommended --norestart --quiet --add Microsoft.VisualStudio.Workload.VCTools
+   440→[5f60:0008][2026-07-11T15:34:14] Loading packages for instance 'e4d95723'
+   441→[5f60:001a][2026-07-11T15:34:14] Uri 'https://go.microsoft.com/fwlink/?linkid=2066144' redirected to 'https://newsfeed.visualstudio.microsoft.com/news/vs'
+   442→[5f60:001a][2026-07-11T15:34:14] Download of 'https://go.microsoft.com/fwlink/?linkid=2066144' succeeded using engine 'WebClient'
+   443→[5f60:0008][2026-07-11T15:34:15] DependencyComparer was created without a productArch. productArch will be ignored for dependency comparison.
+   444→[5f60:0008][2026-07-11T15:34:16] Loaded existing instance for product 'Microsoft.VisualStudio.Product.BuildTools,version=18.7.11925.98'
+   445→[5f60:0008][2026-07-11T15:34:16] Telemetry property VS.SetupEngine.Id : VisualStudio/18.7.3+11925.98
+   446→[5f60:0008][2026-07-11T15:34:16] Telemetry property VS.SetupEngine.Branch : stable
+   447→[5f60:0008][2026-07-11T15:34:16] Telemetry property VS.SetupEngine.BuildNumber : 18.7.11925.98
+   448→[5f60:0008][2026-07-11T15:34:16] Telemetry property VS.SetupEngine.InstanceId : e4d95723
+   449→[5f60:0008][2026-07-11T15:34:16] Telemetry property VS.SetupEngine.EngineVersion : 4.7.25.22189
+   450→[5f60:0008][2026-07-11T15:34:16] Package Microsoft.Windows.UniversalCRT.Msu.8 is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [6.2,6.3) ».
+   451→[5f60:0008][2026-07-11T15:34:16] Package Microsoft.Windows.UniversalCRT.Msu.81 is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [6.3,6.4) ».
+   452→[5f60:0008][2026-07-11T15:34:16] Package Microsoft.Net.4.8.FullRedist.20H2 is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [10.0.19042,10.0.22000] ».
+   453→[5f60:0008][2026-07-11T15:34:16] Package Microsoft.Net.4.8.FullRedist.Resources.20H2 is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [10.0.19042,10.0.22000] ».
+   454→[5f60:0008][2026-07-11T15:34:16] Package Microsoft.Net.4.8.FullRedist is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [6.1.1,10.0.17763] ».
+   455→[5f60:0008][2026-07-11T15:34:16] Package Microsoft.Net.4.8.FullRedist.Resources is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [6.1.1,10.0.19042) ».
+   456→[5f60:0008][2026-07-11T15:34:16] Package Microsoft.Net.4.8.KB5003306 is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [10.0.18362,10.0.18363] ».
+   457→[5f60:0008][2026-07-11T15:34:16] Package Microsoft.Net.4.8.KB5003304 is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [10.0.19041,10.0.19042) ».
+   458→[5f60:0008][2026-07-11T15:34:16] Package Microsoft.Net.4.8.1.FullRedist is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [10.0.19042,10.0.22000] ».
+   459→[5f60:0008][2026-07-11T15:34:16] Package Microsoft.Net.4.8.1.FullRedist.Resources is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [10.0.19042,10.0.22000] ».
+   460→[5f60:0008][2026-07-11T15:34:16] Package Microsoft.Windows.UniversalCRT.Msu.7 is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [6.1,6.2) ».
+   461→[5f60:0008][2026-07-11T15:34:16] Package Microsoft.VisualStudio.NuGet.PowershellBindingRedirect is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [6.1,6.2) ».
+   462→[5f60:0008][2026-07-11T15:34:17] Package Microsoft.Windows.UniversalCRT.Msu.8 is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [6.2,6.3) ».
+   463→[5f60:0008][2026-07-11T15:34:17] Package Microsoft.Windows.UniversalCRT.Msu.81 is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [6.3,6.4) ».
+   464→[5f60:0008][2026-07-11T15:34:17] Package Microsoft.Net.4.8.FullRedist.20H2 is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [10.0.19042,10.0.22000] ».
+   465→[5f60:0008][2026-07-11T15:34:17] Package Microsoft.Net.4.8.FullRedist.Resources.20H2 is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [10.0.19042,10.0.22000] ».
+   466→[5f60:0008][2026-07-11T15:34:17] Package Microsoft.Net.4.8.FullRedist is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [6.1.1,10.0.17763] ».
+   467→[5f60:0008][2026-07-11T15:34:17] Package Microsoft.Net.4.8.FullRedist.Resources is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [6.1.1,10.0.19042) ».
+   468→[5f60:0008][2026-07-11T15:34:17] Package Microsoft.Net.4.8.KB5003306 is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [10.0.18362,10.0.18363] ».
+   469→[5f60:0008][2026-07-11T15:34:17] Package Microsoft.Net.4.8.KB5003304 is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [10.0.19041,10.0.19042) ».
+   470→[5f60:0008][2026-07-11T15:34:17] Package Microsoft.Net.4.8.1.FullRedist is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [10.0.19042,10.0.22000] ».
+   471→[5f60:0008][2026-07-11T15:34:17] Package Microsoft.Net.4.8.1.FullRedist.Resources is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [10.0.19042,10.0.22000] ».
+   472→[5f60:0008][2026-07-11T15:34:17] Package Microsoft.Windows.UniversalCRT.Msu.7 is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [6.1,6.2) ».
+   473→[5f60:0008][2026-07-11T15:34:17] Package Microsoft.VisualStudio.NuGet.PowershellBindingRedirect is not applicable: La version actuelle du système d'exploitation « 10.0.26200.0 » ne se trouve pas dans la plage de versions prise en charge « [6.1,6.2) ».
+   474→[5f60:0008][2026-07-11T15:34:17] Adding packages from --add
+   475→[5f60:0004][2026-07-11T15:34:17] Planning graph selection
+   476→[5f60:0004][2026-07-11T15:34:17] Graph.PlanSelection completed in 4ms
+   477→[5f60:0004][2026-07-11T15:34:17] Building the required chain
+   478→[5f60:0004][2026-07-11T15:34:17] Committing graph selection
+   479→[5f60:0004][2026-07-11T15:34:17] Graph.CommitSelection completed in 5ms
+   480→[5f60:0004][2026-07-11T15:34:17] Updating graph selection
+   481→[5f60:0004][2026-07-11T15:34:17] Graph.UpdateSelection completed in 14ms
+   482→[5f60:0004][2026-07-11T15:34:17] Notifying VMs with the updated selections: GroupSelected - Microsoft.VisualStudio.Workload.VCTools Microsoft.VisualStudio.Component.VC.CoreBuildTools Microsoft.VisualStudio.Component.VC.Tools.x86.x64 Microsoft.VisualStudio.Component.VC.Redist.14.Latest Microsoft.VisualStudio.Component.Windows11SDK.26100 Microsoft.VisualStudio.Component.VC.CMake.Project Microsoft.VisualStudio.Component.TestTools.BuildTools Microsoft.VisualStudio.Component.VC.ASAN Microsoft.VisualStudio.ComponentGroup.NativeDesktop.Core Microsoft.VisualStudio.Component.Vcpkg Microsoft.VisualStudio.Component.Windows10SDK Microsoft.VisualStudio.Component.TextTemplating
+   483→[5f60:0014][2026-07-11T15:34:17] Extension signature validation returned 0 unsigned extensions and 0 invalidly signed extensions.
+   484→[5f60:0014][2026-07-11T15:34:17] No restart manager available. Assuming no reboot required for instance state.
+   485→[5f60:0014][2026-07-11T15:34:17] No restart manager available. Assuming no reboot required for instance state.
+   486→[5f60:000f][2026-07-11T15:34:17] ManifestVerifier Result: Success
+   487→[5f60:000f][2026-07-11T15:34:17] Creating a UnelevatedProductModifier to modify the following packages: Microsoft.VisualStudio.Product.BuildTools Microsoft.VisualStudio.Workload.MSBuildTools Microsoft.VisualStudio.Workload.VCTools Microsoft.VisualStudio.Component.Roslyn.Compiler Microsoft.Component.MSBuild Microsoft.VisualStudio.Component.CoreBuildTools Microsoft.VisualStudio.Component.Windows10SDK Microsoft.VisualStudio.Component.VC.CoreBuildTools Microsoft.VisualStudio.Component.VC.Tools.x86.x64 Microsoft.VisualStudio.Component.VC.Redist.14.Latest Microsoft.VisualStudio.Component.Windows11SDK.26100 Microsoft.VisualStudio.Component.VC.CMake.Project Microsoft.VisualStudio.Component.TestTools.BuildTools Microsoft.VisualStudio.Component.VC.ASAN Microsoft.VisualStudio.Component.TextTemplating Microsoft.VisualStudio.ComponentGroup.NativeDesktop.Core Microsoft.VisualStudio.Component.Vcpkg
+   488→[5f60:000f][2026-07-11T15:34:17] Created a UnelevatedProductModifier
+   489→[5f60:000f][2026-07-11T15:34:17] Decorating UnelevatedProductModifier with UnelevatedInstallerTelemetryDecorator
+   490→[5f60:000f][2026-07-11T15:34:17] ManifestVerifier Result: Success
+   491→Warning: [5f60:000d][2026-07-11T15:34:17] L'opération a été annulée.
+   492→Warning: [5f60:0004][2026-07-11T15:34:17] Didn't find any channel feed.
+   493→Warning: [5f60:000d][2026-07-11T15:34:17] Didn't find any channel feed.
+   494→[5f60:001a][2026-07-11T15:34:17] WebClient error 'RequestCanceled' with 'https://aka.ms/vs/channels' - ExecuteWithRetryAsync failed along with a cancellation request
+   495→Warning: [5f60:001a][2026-07-11T15:34:17] Failed to get the HttpWebResponse while invoking a HEAD request against https://aka.ms/vs/channels:System.OperationCanceledException: L'opération a été annulée.
+   496→   à System.Threading.CancellationToken.ThrowOperationCanceledException()
+   497→   à System.Threading.CancellationToken.ThrowIfCancellationRequested()
+   498→   à Microsoft.VisualStudio.Setup.Download.WebRequestService.<>c__DisplayClass9_0.<ExecuteWithRetryAsync>b__0(Object _)
+   499→   à System.Threading.Tasks.Task`1.InnerInvoke()
+   500→   à System.Threading.Tasks.Task.Execute()
+   501→--- Fin de la trace de la pile à partir de l'emplacement précédent au niveau duquel l'exception a été levée ---
+   502→   à System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   503→   à System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   504→   à Microsoft.VisualStudio.Setup.Download.DownloadManagerAuthenticationProxy.<MungeUriAsync>d__16.MoveNext()
+   505→[5f60:001a][2026-07-11T15:34:17] Download requested: https://aka.ms/vs/channels
+   506→Warning: [5f60:000e][2026-07-11T15:34:17] Failed to download channels file from https://aka.ms/vs/channels: Une tâche a été annulée.
+   507→[5f60:001c][2026-07-11T15:34:18] WebClient error 'RequestCanceled' with 'https://aka.ms/vs/installer/latest/feed' - ExecuteWithRetryAsync failed along with a cancellation request
+   508→Warning: [5f60:001c][2026-07-11T15:34:18] Failed to get the HttpWebResponse while invoking a HEAD request against https://aka.ms/vs/installer/latest/feed:System.OperationCanceledException: L'opération a été annulée.
+   509→   à System.Threading.CancellationToken.ThrowOperationCanceledException()
+   510→   à System.Threading.CancellationToken.ThrowIfCancellationRequested()
+   511→   à Microsoft.VisualStudio.Setup.Download.WebRequestService.<>c__DisplayClass9_0.<ExecuteWithRetryAsync>b__0(Object _)
+   512→   à System.Threading.Tasks.Task`1.InnerInvoke()
+   513→   à System.Threading.Tasks.Task.Execute()
+   514→--- Fin de la trace de la pile à partir de l'emplacement précédent au niveau duquel l'exception a été levée ---
+   515→   à System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   516→   à System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   517→   à Microsoft.VisualStudio.Setup.Download.DownloadManagerAuthenticationProxy.<MungeUriAsync>d__16.MoveNext()
+   518→[5f60:001c][2026-07-11T15:34:18] Download requested: https://aka.ms/vs/installer/latest/feed
+   519→Warning: [5f60:001d][2026-07-11T15:34:18] Failed to update the latest installer feed Une tâche a été annulée.
+   520→Warning: [5f60:001d][2026-07-11T15:34:18] Didn't find any channel feed.
+   521→[5f60:000d][2026-07-11T15:34:18] Status changed to NoUpdate
+   522→Warning: [5f60:000f][2026-07-11T15:34:18] Didn't find any channel feed.
+   523→Warning: [5f60:000b][2026-07-11T15:34:18] Didn't find any channel feed.
+   524→[5f60:0009][2026-07-11T15:34:18] Authenticode verification returned 0x00000000 for path: C:\Program Files (x86)\Microsoft Visual Studio\Installer\setup.exe.
+   525→

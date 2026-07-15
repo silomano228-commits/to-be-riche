@@ -1,0 +1,990 @@
+     1→'use client';
+     2→
+     3→import { useState, useEffect, useCallback, Component } from 'react';
+     4→import dynamic from 'next/dynamic';
+     5→import { useAppStore, formatMoney, esc, authFetch, refreshUser } from '@/lib/store';
+     6→import { LogoImg, ToastContainer, NotificationContainer, Header, AI_TIPS } from '@/components/shared';
+     7→import { useTabChangeAd } from '@/lib/useTabChangeAd';
+     8→
+     9→// ==================== ERROR BOUNDARY ====================
+    10→class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean; error?: string }> {
+    11→  state = { hasError: false, error: '' };
+    12→  static getDerivedStateFromError(e: Error) { return { hasError: true, error: e.message }; }
+    13→  render() {
+    14→    if (this.state.hasError) {
+    15→      return (
+    16→        <div className="bg-gradient-to-b from-[#F8F9FA] to-[#F1F5F9] min-h-screen flex items-center justify-center p-6">
+    17→          <div className="text-center max-w-[320px]">
+    18→            <div className="w-16 h-16 rounded-full bg-[rgba(34,197,94,0.1)] flex items-center justify-center mx-auto mb-4">
+    19→              <i className="fas fa-exclamation-triangle text-[#F59E0B] text-2xl"></i>
+    20→            </div>
+    21→            <h2 className="text-lg font-bold text-[#1F2937] mb-2">Oups !</h2>
+    22→            <p className="text-sm text-[rgba(0,0,0,0.5)] mb-4">Une erreur inattendue s&apos;est produite.</p>
+    23→            <button onClick={() => { this.setState({ hasError: false }); window.location.reload(); }} className="px-6 py-3 rounded-xl bg-[#22C55E] text-white font-semibold border-none cursor-pointer">
+    24→              Réessayer
+    25→            </button>
+    26→          </div>
+    27→        </div>
+    28→      );
+    29→    }
+    30→    return this.props.children;
+    31→  }
+    32→}
+    33→
+    34→// ==================== SCREEN LOADER (lazy-load fallback) ====================
+    35→function ScreenLoader() {
+    36→  return (
+    37→    <div className="flex-1 flex flex-col items-center justify-center bg-[#F8F9FA]">
+    38→      <LogoImg className="w-12 h-12 mb-3" style={{ animation: 'spFloat 2s ease-in-out infinite' }} />
+    39→      <div className="w-5 h-5 border-[2.5px] border-[rgba(0,0,0,0.08)] border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
+    40→    </div>
+    41→  );
+    42→}
+    43→
+    44→// Lazy load heavy screen components
+    45→const InvestHubScreen = dynamic(() => import('@/components/screens/InvestHubScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+    46→const SpinGameScreen = dynamic(() => import('@/components/screens/SpinGameScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+    47→const VideoPlatformScreen = dynamic(() => import('@/components/screens/VideoPlatformScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+    48→const EnterpriseScreen = dynamic(() => import('@/components/screens/EnterpriseScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+    49→const ProfileScreen = dynamic(() => import('@/components/screens/ProfileScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+    50→const AnalyticsScreen = dynamic(() => import('@/components/screens/AnalyticsScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+    51→const WithdrawScreen = dynamic(() => import('@/components/screens/WithdrawScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+    52→const AdminScreen = dynamic(() => import('@/components/screens/AdminScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+    53→const ChatScreen = dynamic(() => import('@/components/screens/ChatScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+    54→const DepositScreen = dynamic(() => import('@/components/screens/DepositScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+    55→const GuideScreen = dynamic(() => import('@/components/screens/GuideScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+    56→const FloatingGift = dynamic(() => import('@/components/FloatingGift'), { ssr: false, loading: () => <ScreenLoader /> });
+    57→const TabChangeAd = dynamic(() => import('@/components/TabChangeAd').then(m => ({ default: m.TabChangeAd })), { ssr: false, loading: () => <ScreenLoader /> });
+    58→const InstallPrompt = dynamic(() => import('@/components/InstallPrompt'), { ssr: false, loading: () => <ScreenLoader /> });
+    59→const NotificationBell = dynamic(() => import('@/components/NotificationBell'), { ssr: false, loading: () => <ScreenLoader /> });
+    60→const WithdrawalTicker = dynamic(() => import('@/components/WithdrawalTicker'), { ssr: false, loading: () => <ScreenLoader /> });
+    61→const PromoBanner = dynamic(() => import('@/components/PromoBanner'), { ssr: false, loading: () => <ScreenLoader /> });
+    62→const RefreshReminderBanner = dynamic(() => import('@/components/RefreshReminderBanner'), { ssr: false, loading: () => null });
+    63→
+    64→// ==================== SPLASH ====================
+    65→function SplashScreen({ onDone }: { onDone: () => void }) {
+    66→  const [hide, setHide] = useState(false);
+    67→  useEffect(() => {
+    68→    const t = setTimeout(() => { setHide(true); setTimeout(onDone, 500); }, 1200);
+    69→    return () => clearTimeout(t);
+    70→  }, [onDone]);
+    71→  return (
+    72→    <div className={`absolute inset-0 bg-gradient-to-br from-[#F0FDF4] to-[#ECFDF5] z-[9999] flex flex-col items-center justify-center transition-all duration-500 ${hide ? 'opacity-0 invisible' : ''}`}>
+    73→      <div className="absolute w-[200px] h-[200px] rounded-full bg-[rgba(34,197,94,0.08)] blur-[80px] top-[25%] left-[15%]" style={{ animation: 'orbFloat 6s ease-in-out infinite' }} />
+    74→      <div className="absolute w-[160px] h-[160px] rounded-full bg-[rgba(20,184,166,0.06)] blur-[80px] bottom-[20%] right-[10%]" style={{ animation: 'orbFloat 6s ease-in-out infinite 3s reverse' }} />
+    75→      <div className="absolute w-[120px] h-[120px] rounded-full bg-[rgba(245,158,11,0.05)] blur-[80px] top-[60%] left-[60%]" style={{ animation: 'orbFloat 7s ease-in-out infinite 1.5s' }} />
+    76→      <LogoImg className="w-[140px] h-[140px] mb-5" style={{ animation: 'logoPulse 2.4s ease-in-out infinite', filter: 'drop-shadow(0 8px 40px rgba(34,197,94,0.3))' }} />
+    77→      <h1 className="text-[2rem] font-black mb-6 bg-gradient-to-r from-[#22C55E] to-[#16A34A] bg-clip-text text-transparent tracking-[3px]">BE RICH</h1>
+    78→      <div className="w-5 h-5 border-[2.5px] border-[rgba(0,0,0,0.08)] border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
+    79→      <div className="text-[rgba(0,0,0,0.25)] mt-4 text-[0.6rem] tracking-[5px] uppercase">Chargement</div>
+    80→    </div>
+    81→  );
+    82→}
+    83→
+    84→// ==================== AUTH SCREEN ====================
+    85→function AuthScreen() {
+    86→  const { user, setUser, setPage, addToast } = useAppStore();
+    87→  // Referral code from URL (lazy init before useState)
+    88→  const { prefilledReferral, initialMode } = (() => {
+    89→    if (typeof window === 'undefined') return { prefilledReferral: '', initialMode: 'login' as const };
+    90→    try {
+    91→      const params = new URLSearchParams(window.location.search);
+    92→      const ref = params.get('ref');
+    93→      if (ref) return { prefilledReferral: ref.toUpperCase(), initialMode: 'register' as const };
+    94→    } catch { /* */ }
+    95→    return { prefilledReferral: '', initialMode: 'login' as const };
+    96→  })();
+    97→  const [mode, setMode] = useState<'login' | 'register'>(initialMode);
+    98→  const [loading, setLoading] = useState(false);
+    99→  const [showPw, setShowPw] = useState({ l: false, r: false, r2: false });
+   100→  const [errors, setErrors] = useState<Record<string, string>>({});
+   101→  // OTP state (registration only)
+   102→  const [otpStep, setOtpStep] = useState(false);
+   103→  const [otpEmail, setOtpEmail] = useState('');
+   104→  const [otpCode, setOtpCode] = useState('');
+   105→  const [otpLoading, setOtpLoading] = useState(false);
+   106→  const [simCode, setSimCode] = useState('');
+   107→
+   108→  if (user) return null;
+   109→
+   110→  const handleLogin = async (e: React.FormEvent) => {
+   111→    e.preventDefault();
+   112→    setLoading(true);
+   113→    try {
+   114→      const fd = new FormData(e.target as HTMLFormElement);
+   115→      const email = fd.get('email') as string;
+   116→      const password = fd.get('password') as string;
+   117→      const res = await fetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }), headers: { 'Content-Type': 'application/json' } });
+   118→      const data = await res.json();
+   119→      if (data.success) {
+   120→        setUser(data.user); addToast('Bienvenue, ' + data.user.name, 'success'); setPage('videos');
+   121→      } else if (data.needs_verification) {
+   122→        // Account exists but email isn't verified — switch to OTP screen.
+   123→        setOtpEmail(email);
+   124→        setOtpStep(true);
+   125→        if (data.plain_code) {
+   126→          setSimCode(data.plain_code);
+   127→          addToast('Mode simulation - Code: ' + data.plain_code, 'info');
+   128→        } else {
+   129→          addToast('Code de vérification envoyé à ' + email, 'success');
+   130→        }
+   131→      } else {
+   132→        addToast(data.error, 'error');
+   133→      }
+   134→    } catch { addToast('Erreur réseau', 'error'); }
+   135→    setLoading(false);
+   136→  };
+   137→
+   138→  const handleOtpVerify = async () => {
+   139→    if (!otpCode || otpCode.length < 6) { addToast('Entrez le code à 6 chiffres', 'error'); return; }
+   140→    setOtpLoading(true);
+   141→    try {
+   142→      const res = await fetch('/api/auth/otp', { method: 'POST', body: JSON.stringify({ action: 'verify', email: otpEmail, code: otpCode, purpose: 'email_verification' }), headers: { 'Content-Type': 'application/json' } });
+   143→      const data = await res.json();
+   144→      if (data.success && data.user) {
+   145→        setUser(data.user);
+   146→        addToast('Email vérifié ! Bienvenue, ' + data.user.name, 'success');
+   147→        setPage('videos');
+   148→      } else {
+   149→        addToast(data.error || 'Code invalide', 'error');
+   150→      }
+   151→    } catch { addToast('Erreur réseau', 'error'); }
+   152→    setOtpLoading(false);
+   153→  };
+   154→
+   155→  const handleResendOtp = async () => {
+   156→    setOtpLoading(true);
+   157→    try {
+   158→      const res = await fetch('/api/auth/otp', { method: 'POST', body: JSON.stringify({ action: 'send', email: otpEmail, purpose: 'email_verification' }), headers: { 'Content-Type': 'application/json' } });
+   159→      const data = await res.json();
+   160→      if (data.success) {
+   161→        if (data.plain_code) {
+   162→          setSimCode(data.plain_code);
+   163→          addToast('Code: ' + data.plain_code, 'info');
+   164→        } else {
+   165→          addToast('Code renvoyé à ' + otpEmail, 'success');
+   166→        }
+   167→      } else { addToast(data.error, 'error'); }
+   168→    } catch { addToast('Erreur réseau', 'error'); }
+   169→    setOtpLoading(false);
+   170→  };
+   171→
+   172→  const handleRegister = async (e: React.FormEvent) => {
+   173→    e.preventDefault();
+   174→    const fd = new FormData(e.target as HTMLFormElement);
+   175→    const name = (fd.get('name') as string)?.trim() || '';
+   176→    const email = (fd.get('email') as string)?.trim() || '';
+   177→    const phone = (fd.get('phone') as string)?.trim() || '';
+   178→    const password = fd.get('password') as string || '';
+   179→    const password2 = fd.get('password2') as string || '';
+   180→    const referralCode = (fd.get('referralCode') as string)?.trim().toUpperCase() || '';
+   181→    const errs: Record<string, string> = {};
+   182→    if (name.length < 2) errs.name = 'Min. 2 caractères';
+   183→    if (password.length < 6) errs.password = 'Min. 6 caractères';
+   184→    if (password !== password2) errs.password2 = 'Ne correspond pas';
+   185→    if (Object.keys(errs).length) { setErrors(errs); return; }
+   186→    setErrors({});
+   187→    setLoading(true);
+   188→    try {
+   189→      const res = await fetch('/api/auth/register', { method: 'POST', body: JSON.stringify({ name, email, phone: phone.trim(), password, password2, referralCode }), headers: { 'Content-Type': 'application/json' } });
+   190→      const data = await res.json();
+   191→      if (data.success && data.requires_verification) {
+   192→        // Account created — must verify email via OTP
+   193→        setOtpEmail(email);
+   194→        setOtpStep(true);
+   195→        if (data.plain_code) {
+   196→          setSimCode(data.plain_code);
+   197→          addToast('Mode simulation - Code: ' + data.plain_code, 'info');
+   198→        } else {
+   199→          addToast('Code de vérification envoyé à ' + email, 'success');
+   200→        }
+   201→      } else if (data.success) {
+   202→        setUser(data.user); addToast('Compte créé !', 'success'); setPage('videos');
+   203→      } else {
+   204→        addToast(data.error, 'error');
+   205→      }
+   206→    } catch { addToast('Erreur réseau', 'error'); }
+   207→    setLoading(false);
+   208→  };
+   209→
+   210→  return (
+   211→    <section className="absolute inset-0 bg-gradient-to-br from-[#F0FDF4] via-[#F8F9FA] to-[#ECFDF5] flex flex-col items-center justify-start sm:justify-center overflow-y-auto z-[200]">
+   212→      {/* Floating decorative orbs */}
+   213→      <div className="absolute w-[200px] h-[200px] rounded-full bg-[rgba(34,197,94,0.06)] blur-[80px] top-[15%] left-[10%]" style={{ animation: 'orbFloat 6s ease-in-out infinite' }} />
+   214→      <div className="absolute w-[160px] h-[160px] rounded-full bg-[rgba(20,184,166,0.05)] blur-[80px] bottom-[15%] right-[10%]" style={{ animation: 'orbFloat 6s ease-in-out infinite 3s reverse' }} />
+   215→      <div className="absolute w-[120px] h-[120px] rounded-full bg-[rgba(245,158,11,0.04)] blur-[80px] top-[50%] right-[25%]" style={{ animation: 'orbFloat 7s ease-in-out infinite 1.5s' }} />
+   216→
+   217→      <div className="w-full max-w-[330px] text-center px-5 relative z-[1] py-6 my-auto">
+   218→        <LogoImg className="w-[100px] h-[100px] mx-auto mb-4" style={{ filter: 'drop-shadow(0 8px 32px rgba(34,197,94,0.25))' }} />
+   219→        <h1 className="text-[1.8rem] font-black mb-1 bg-gradient-to-r from-[#22C55E] to-[#16A34A] bg-clip-text text-transparent tracking-[2px]">BE RICH</h1>
+   220→        {/* Communication platform tagline */}
+   221→        <div className="inline-flex items-center gap-1.5 mb-1 px-3 py-1 rounded-full bg-[rgba(20,184,166,0.1)] border border-[rgba(20,184,166,0.2)]">
+   222→          <i className="fas fa-globe-asia text-[#14B8A6] text-[0.6rem]"></i>
+   223→          <span className="text-[0.58rem] font-bold text-[#0F766E] uppercase tracking-wide">Plateforme de communication des grandes entreprises</span>
+   224→        </div>
+   225→        <p className="text-[0.6rem] text-[rgba(0,0,0,0.45)] mb-4">Regardez des vidéos d&rsquo;entreprises chinoises, japonaises et indiennes &mdash; soyez pay&eacute;s&nbsp;!</p>
+   226→
+   227→        {/* OTP Verification Step — Registration only */}
+   228→        {otpStep ? (
+   229→          <>
+   230→            <div className="w-14 h-14 mx-auto rounded-full bg-[rgba(34,197,94,0.1)] flex items-center justify-center mb-4 mt-4">
+   231→              <i className="fas fa-shield-alt text-[#22C55E] text-[1.3rem]"></i>
+   232→            </div>
+   233→            <h2 className="text-[1rem] font-bold text-[#1F2937] mb-1">Vérification email</h2>
+   234→            <p className="text-[rgba(0,0,0,0.45)] text-[0.72rem] mb-5">
+   235→              Un code a été envoyé à <strong className="text-[#1F2937]">{otpEmail}</strong> pour vérifier votre adresse email
+   236→            </p>
+   237→
+   238→            {/* Simulation mode code display */}
+   239→            {simCode && (
+   240→              <div className="mb-4 p-4 bg-[rgba(245,158,11,0.12)] border-2 border-[rgba(245,158,11,0.4)] rounded-xl">
+   241→                <div className="flex items-center gap-1.5 mb-2">
+   242→                  <i className="fas fa-key text-[#F59E0B] text-[0.7rem]"></i>
+   243→                  <div className="text-[0.72rem] text-[#D97706] font-bold">Votre code de vérification</div>
+   244→                </div>
+   245→                <div className="text-[2rem] font-black text-[#F59E0B] tracking-[8px] font-mono text-center py-2">{simCode}</div>
+   246→                <div className="flex gap-2 mt-2">
+   247→                  <button
+   248→                    onClick={() => { setOtpCode(simCode); addToast('Code rempli automatiquement', 'success'); }}
+   249→                    className="flex-1 py-2 rounded-lg bg-[#F59E0B] text-white text-[0.75rem] font-bold border-none cursor-pointer flex items-center justify-center gap-1"
+   250→                  >
+   251→                    <i className="fas fa-magic mr-1"></i>Remplir automatiquement
+   252→                  </button>
+   253→                  <button
+   254→                    onClick={() => { try { navigator.clipboard.writeText(simCode); } catch { /* */ } addToast('Code copié', 'success'); }}
+   255→                    className="py-2 px-3 rounded-lg bg-[rgba(245,158,11,0.15)] text-[0.72rem] text-[#D97706] font-semibold border border-[rgba(245,158,11,0.3)] cursor-pointer"
+   256→                  >
+   257→                    <i className="fas fa-copy mr-1"></i>Copier
+   258→                  </button>
+   259→                </div>
+   260→              </div>
+   261→            )}
+   262→
+   263→            {/* 6-digit OTP input */}
+   264→            <div className="flex justify-center gap-2 mb-5">
+   265→              {[0, 1, 2, 3, 4, 5].map((i) => (
+   266→                <input
+   267→                  key={i}
+   268→                  type="text"
+   269→                  inputMode="numeric"
+   270→                  maxLength={1}
+   271→                  className="w-10 h-12 text-center text-[1.1rem] font-bold bg-white border-[1.5px] border-[rgba(0,0,0,0.1)] rounded-xl outline-none focus:border-[#22C55E] focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)] transition-all text-[#1F2937]"
+   272→                  value={otpCode[i] || ''}
+   273→                  onChange={(e) => {
+   274→                    const val = e.target.value.replace(/\D/g, '');
+   275→                    const newCode = otpCode.split('');
+   276→                    newCode[i] = val.slice(-1);
+   277→                    const final = newCode.join('').slice(0, 6);
+   278→                    setOtpCode(final);
+   279→                    if (val && i < 5) {
+   280→                      const next = e.target.nextElementSibling as HTMLInputElement;
+   281→                      next?.focus();
+   282→                    }
+   283→                  }}
+   284→                  onKeyDown={(e) => {
+   285→                    if (e.key === 'Backspace' && !otpCode[i] && i > 0) {
+   286→                      const prev = (e.target as HTMLElement).previousElementSibling as HTMLInputElement;
+   287→                      prev?.focus();
+   288→                    }
+   289→                  }}
+   290→                  onPaste={(e) => {
+   291→                    e.preventDefault();
+   292→                    const paste = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6);
+   293→                    setOtpCode(paste);
+   294→                  }}
+   295→                />
+   296→              ))}
+   297→            </div>
+   298→
+   299→            {/* Hint when code is incomplete */}
+   300→            {otpCode.length < 6 && (
+   301→              <p className="text-[0.65rem] text-[rgba(0,0,0,0.4)] mb-2"><i className="fas fa-info-circle mr-1"></i>Entrez les 6 chiffres reçus par email pour finaliser</p>
+   302→            )}
+   303→
+   304→            <button
+   305→              onClick={handleOtpVerify}
+   306→              disabled={otpLoading || otpCode.length < 6}
+   307→              className="w-full py-3.5 rounded-xl btn-gradient-green text-[0.88rem] cursor-not-allowed disabled:opacity-60 enabled:cursor-pointer transition-transform active:scale-[0.97] flex items-center justify-center gap-2 mb-3"
+   308→            >
+   309→              {otpLoading ? <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <><i className="fas fa-check-circle"></i> Finaliser l&rsquo;inscription</>}
+   310→            </button>
+   311→
+   312→            <button
+   313→              onClick={handleResendOtp}
+   314→              disabled={otpLoading}
+   315→              className="w-full py-3 rounded-xl border-[1.5px] border-[rgba(0,0,0,0.08)] bg-transparent text-[rgba(0,0,0,0.5)] font-semibold text-[0.82rem] cursor-pointer transition-transform active:scale-95 mb-3"
+   316→            >
+   317→              <i className="fas fa-redo mr-1.5 text-[0.7rem]"></i>Renvoyer le code
+   318→            </button>
+   319→
+   320→            <button
+   321→              onClick={() => { setOtpStep(false); setOtpCode(''); setSimCode(''); }}
+   322→              className="text-[0.75rem] text-[rgba(0,0,0,0.4)] cursor-pointer bg-transparent border-none font-medium"
+   323→            >
+   324→              <i className="fas fa-arrow-left mr-1"></i>Retour
+   325→            </button>
+   326→          </>
+   327→        ) : (
+   328→          <>
+   329→            <p className="text-[rgba(0,0,0,0.35)] text-[0.72rem] mb-6">{mode === 'login' ? 'Connectez-vous à votre compte.' : 'Rejoignez Be Rich.'}</p>
+   330→            <div className="flex bg-[#FFFFFF] rounded-xl p-[3px] mb-6 border border-[rgba(0,0,0,0.08)]">
+   331→              <button onClick={() => { setMode('login'); setErrors({}); }} className={`flex-1 py-[11px] text-center text-[0.82rem] font-semibold rounded-lg transition-all border-none cursor-pointer ${mode === 'login' ? 'bg-[#22C55E] text-white shadow-lg' : 'text-[rgba(0,0,0,0.35)]'}`}>Connexion</button>
+   332→              <button onClick={() => { setMode('register'); setErrors({}); }} className={`flex-1 py-[11px] text-center text-[0.82rem] font-semibold rounded-lg transition-all border-none cursor-pointer ${mode === 'register' ? 'bg-[#22C55E] text-white shadow-lg' : 'text-[rgba(0,0,0,0.35)]'}`}>Inscription</button>
+   333→            </div>
+   334→            {mode === 'login' ? (
+   335→              <form onSubmit={handleLogin}>
+   336→                {/* Email */}
+   337→                <div className="mb-2 w-full relative">
+   338→                  <i className="fas fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgba(0,0,0,0.3)] text-[0.78rem] pointer-events-none"></i>
+   339→                  <input name="email" type="email" required placeholder="Adresse email" className="w-full py-2.5 pl-10 pr-3.5 bg-white/80 border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.82rem] font-medium text-[#1F2937] placeholder:text-[rgba(0,0,0,0.35)] placeholder:font-normal outline-none focus:border-[#22C55E] focus:bg-white focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)] transition-all" />
+   340→                </div>
+   341→                {/* Mot de passe */}
+   342→                <div className="mb-3 w-full relative">
+   343→                  <i className="fas fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgba(0,0,0,0.3)] text-[0.78rem] pointer-events-none"></i>
+   344→                  <input name="password" type={showPw.l ? 'text' : 'password'} required placeholder="Mot de passe" className="w-full py-2.5 pl-10 pr-10 bg-white/80 border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.82rem] font-medium text-[#1F2937] placeholder:text-[rgba(0,0,0,0.35)] placeholder:font-normal outline-none focus:border-[#22C55E] focus:bg-white focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)] transition-all" />
+   345→                  <button type="button" onClick={() => setShowPw({ ...showPw, l: !showPw.l })} className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-[rgba(0,0,0,0.35)] cursor-pointer p-0.5"><i className={`fas ${showPw.l ? 'fa-eye-slash' : 'fa-eye'} text-[0.78rem]`}></i></button>
+   346→                </div>
+   347→                <button type="submit" disabled={loading} className="w-full py-3 rounded-xl btn-gradient-green text-[0.85rem] cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">{loading ? <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <><i className="fas fa-arrow-right"></i> Se connecter</>}</button>
+   348→                <div className="mt-3"><a href="/forgot-password" className="text-[0.7rem] text-[#22C55E] font-medium hover:underline">Mot de passe oublié ?</a></div>
+   349→              </form>
+   350→            ) : (
+   351→              <form onSubmit={handleRegister}>
+   352→                {/* Nom complet */}
+   353→                <div className="mb-1.5 w-full relative">
+   354→                  <i className="fas fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgba(0,0,0,0.3)] text-[0.78rem] pointer-events-none"></i>
+   355→                  <input name="name" type="text" required placeholder="Nom complet" minLength={2} className={`w-full py-2.5 pl-10 pr-3.5 bg-white/80 border-[1.5px] ${errors.name ? 'border-[#F87171]' : 'border-[rgba(0,0,0,0.08)]'} rounded-xl text-[0.82rem] font-medium text-[#1F2937] placeholder:text-[rgba(0,0,0,0.35)] placeholder:font-normal outline-none focus:border-[#22C55E] focus:bg-white focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)] transition-all`} />
+   356→                  {errors.name && <p className="text-[#F87171] text-[0.6rem] mt-0.5 text-left ml-1">{errors.name}</p>}
+   357→                </div>
+   358→                {/* Email */}
+   359→                <div className="mb-1.5 w-full relative">
+   360→                  <i className="fas fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgba(0,0,0,0.3)] text-[0.78rem] pointer-events-none"></i>
+   361→                  <input name="email" type="email" required placeholder="Adresse email" className="w-full py-2.5 pl-10 pr-3.5 bg-white/80 border-[1.5px] border-[rgba(0,0,0,0.08)] rounded-xl text-[0.82rem] font-medium text-[#1F2937] placeholder:text-[rgba(0,0,0,0.35)] placeholder:font-normal outline-none focus:border-[#22C55E] focus:bg-white focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)] transition-all" />
+   362→                </div>
+   363→                {/* Téléphone */}
+   364→                <div className="mb-1.5 w-full relative">
+   365→                  <i className="fas fa-phone absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgba(0,0,0,0.3)] text-[0.78rem] pointer-events-none"></i>
+   366→                  <input name="phone" type="tel" required placeholder="Numéro de téléphone (ex: +228 90 12 34 56)" className={`w-full py-2.5 pl-10 pr-3.5 bg-white/80 border-[1.5px] ${errors.phone ? 'border-[#F87171]' : 'border-[rgba(0,0,0,0.08)]'} rounded-xl text-[0.82rem] font-medium text-[#1F2937] placeholder:text-[rgba(0,0,0,0.35)] placeholder:font-normal outline-none focus:border-[#22C55E] focus:bg-white focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)] transition-all`} />
+   367→                  {errors.phone && <p className="text-[#F87171] text-[0.6rem] mt-0.5 text-left ml-1">{errors.phone}</p>}
+   368→                </div>
+   369→                {/* Mot de passe */}
+   370→                <div className="mb-1.5 w-full relative">
+   371→                  <i className="fas fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgba(0,0,0,0.3)] text-[0.78rem] pointer-events-none"></i>
+   372→                  <input name="password" type={showPw.r ? 'text' : 'password'} required placeholder="Mot de passe (min. 6 caractères)" minLength={6} className={`w-full py-2.5 pl-10 pr-10 bg-white/80 border-[1.5px] ${errors.password ? 'border-[#F87171]' : 'border-[rgba(0,0,0,0.08)]'} rounded-xl text-[0.82rem] font-medium text-[#1F2937] placeholder:text-[rgba(0,0,0,0.35)] placeholder:font-normal outline-none focus:border-[#22C55E] focus:bg-white focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)] transition-all`} />
+   373→                  <button type="button" onClick={() => setShowPw({ ...showPw, r: !showPw.r })} className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-[rgba(0,0,0,0.35)] cursor-pointer p-0.5"><i className={`fas ${showPw.r ? 'fa-eye-slash' : 'fa-eye'} text-[0.78rem]`}></i></button>
+   374→                  {errors.password && <p className="text-[#F87171] text-[0.6rem] mt-0.5 text-left ml-1">{errors.password}</p>}
+   375→                </div>
+   376→                {/* Confirmer */}
+   377→                <div className="mb-1.5 w-full relative">
+   378→                  <i className="fas fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgba(0,0,0,0.3)] text-[0.78rem] pointer-events-none"></i>
+   379→                  <input name="password2" type={showPw.r2 ? 'text' : 'password'} required placeholder="Confirmer le mot de passe" className={`w-full py-2.5 pl-10 pr-10 bg-white/80 border-[1.5px] ${errors.password2 ? 'border-[#F87171]' : 'border-[rgba(0,0,0,0.08)]'} rounded-xl text-[0.82rem] font-medium text-[#1F2937] placeholder:text-[rgba(0,0,0,0.35)] placeholder:font-normal outline-none focus:border-[#22C55E] focus:bg-white focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)] transition-all`} />
+   380→                  <button type="button" onClick={() => setShowPw({ ...showPw, r2: !showPw.r2 })} className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-[rgba(0,0,0,0.35)] cursor-pointer p-0.5"><i className={`fas ${showPw.r2 ? 'fa-eye-slash' : 'fa-eye'} text-[0.78rem]`}></i></button>
+   381→                  {errors.password2 && <p className="text-[#F87171] text-[0.6rem] mt-0.5 text-left ml-1">{errors.password2}</p>}
+   382→                </div>
+   383→                {/* Code de parrainage (optionnel) */}
+   384→                <div className="mb-3 w-full relative">
+   385→                  <i className="fas fa-gift absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgba(0,0,0,0.3)] text-[0.78rem] pointer-events-none"></i>
+   386→                  <input name="referralCode" type="text" placeholder="Code de parrainage (optionnel)" defaultValue={prefilledReferral} className={`w-full py-2.5 pl-10 pr-3.5 bg-white/80 border-[1.5px] ${prefilledReferral ? 'border-[#22C55E] !bg-[rgba(34,197,94,0.04)]' : 'border-[rgba(0,0,0,0.08)]'} rounded-xl text-[0.82rem] font-medium text-[#1F2937] placeholder:text-[rgba(0,0,0,0.35)] placeholder:font-normal outline-none focus:border-[#22C55E] focus:bg-white focus:shadow-[0_0_0_3px_rgba(34,197,94,0.1)] transition-all`} />
+   387→                  {prefilledReferral && <p className="text-[#22C55E] text-[0.6rem] mt-0.5 text-left ml-1 font-medium"><i className="fas fa-user-friends mr-1"></i>Code de parrainage appliqué !</p>}
+   388→                </div>
+   389→                <button type="submit" disabled={loading} className="w-full py-3 rounded-xl btn-gradient-green text-[0.85rem] cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">{loading ? <><div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /><span>Envoi du code...</span></> : <><i className="fas fa-user-plus"></i> Créer mon compte</>}</button>
+   390→              </form>
+   391→            )}
+   392→          </>
+   393→        )}
+   394→      </div>
+   395→    </section>
+   396→  );
+   397→}
+   398→
+   399→// ==================== HOME SCREEN ====================
+   400→function HomeScreen() {
+   401→  const { user, setPage, setUser, addToast } = useAppStore();
+   402→  const [tip] = useState(() => AI_TIPS[Math.floor(Math.random() * AI_TIPS.length)]);
+   403→  const [refreshing, setRefreshing] = useState(false);
+   404→  const [dailyNotif, setDailyNotif] = useState<{ message: string; referrals: number; required: number; code: string } | null>(null);
+   405→  const [dailyNotifShown, setDailyNotifShown] = useState(false);
+   406→
+   407→  // Fetch daily notification once per session
+   408→  useEffect(() => {
+   409→    if (!user) return;
+   410→    const today = new Date().toDateString();
+   411→    const lastShown = typeof window !== 'undefined' ? localStorage.getItem('br_daily_notif_date') : '';
+   412→    if (lastShown === today || dailyNotifShown) return;
+   413→    (async () => {
+   414→      try {
+   415→        const res = await authFetch('/api/notifications/daily');
+   416→        const data = await res.json();
+   417→        if (data.success && data.data) {
+   418→          setDailyNotif({ message: data.data.message, referrals: data.data.referralCount || 0, required: data.data.requiredReferrals || 10, code: data.data.referralCode || '' });
+   419→          localStorage.setItem('br_daily_notif_date', today);
+   420→        }
+   421→      } catch { /* */ }
+   422→    })();
+   423→    // eslint-disable-next-line react-hooks/set-state-in-effect
+   424→    setDailyNotifShown(true);
+   425→  }, [user, dailyNotifShown]);
+   426→
+   427→  const refresh = async () => {
+   428→    setRefreshing(true);
+   429→    try { await refreshUser(); } catch { /* */ }
+   430→    setRefreshing(false);
+   431→  };
+   432→
+   433→  if (!user) return null;
+   434→  const txs = user.transactions?.slice(0, 5) || [];
+   435→
+   436→  return (
+   437→    <>
+   438→      <Header title={<><LogoImg className="w-[26px] h-[26px] rounded-md" style={{ objectFit: 'contain' }} /> <span className="text-[#1F2937] font-black">Be Rich</span></>} rightElement={
+   439→        <div className="flex items-center gap-1.5">
+   440→          <NotificationBell />
+   441→          <button onClick={refresh} className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.6)] backdrop-blur-sm text-[rgba(0,0,0,0.55)] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90"><i className={`fas fa-sync-alt ${refreshing ? 'animate-spin' : ''}`} /></button>
+   442→        </div>
+   443→      } />
+   444→      <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
+   445→        {/* Daily Notification Popup */}
+   446→        {dailyNotif && (
+   447→          <div className="mb-4 rounded-2xl p-4 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #22C55E, #16A34A)', animation: 'modalIn 0.4s cubic-bezier(0.34,1.56,0.64,1)' }}>
+   448→            <button onClick={() => setDailyNotif(null)} className="absolute top-2 right-3 bg-transparent border-none text-white/60 cursor-pointer text-[0.75rem]"><i className="fas fa-times"></i></button>
+   449→            <div className="flex items-start gap-3">
+   450→              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0"><i className="fas fa-bullhorn text-white text-[0.85rem]"></i></div>
+   451→              <div className="flex-1 min-w-0">
+   452→                <div className="text-[0.68rem] text-white/70 font-bold uppercase tracking-[1px] mb-1">Notification du jour</div>
+   453→                <div className="text-[0.78rem] text-white font-semibold leading-snug mb-2">{dailyNotif.message}</div>
+   454→                <div className="flex items-center gap-3 text-[0.65rem] text-white/80">
+   455→                  <span><i className="fas fa-users mr-1"></i>{dailyNotif.referrals}/{dailyNotif.required} parrainés</span>
+   456→                  <span><i className="fas fa-key mr-1"></i>{dailyNotif.code}</span>
+   457→                </div>
+   458→              </div>
+   459→            </div>
+   460→          </div>
+   461→        )}
+   462→        {/* Welcome + Balance Card — Premium Gradient */}
+   463→        <div className="gradient-card rounded-2xl p-5 mb-4 relative overflow-hidden">
+   464→          {/* Decorative orbs */}
+   465→          <div className="absolute -top-20 -right-20 w-[200px] h-[200px] bg-[radial-gradient(circle,rgba(255,255,255,0.15),transparent_60%)]" style={{ animation: 'orbFloat 8s ease-in-out infinite' }} />
+   466→          <div className="absolute -bottom-10 -left-10 w-[140px] h-[140px] bg-[radial-gradient(circle,rgba(255,255,255,0.1),transparent_60%)]" style={{ animation: 'orbFloat 8s ease-in-out infinite 4s reverse' }} />
+   467→          <div className="relative z-[1]">
+   468→            <div className="flex items-center justify-between mb-1">
+   469→              <p className="text-[rgba(0,0,0,0.7)] text-[0.75rem]">Bienvenue, <span className="text-[#000000] font-semibold">{esc(user.name)}</span></p>
+   470→              {user.depositCount > 0 && (
+   471→                <span className="bg-[rgba(0,0,0,0.1)] text-[#000000] text-[0.6rem] font-bold px-2.5 py-[3px] rounded-full">{user.depositCount} dépôt{user.depositCount > 1 ? 's' : ''}</span>
+   472→              )}
+   473→            </div>
+   474→            <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.5px] font-semibold mb-0.5">Solde total</div>
+   475→            <div className="flex items-baseline gap-2 mb-3">
+   476→              <div className="text-[1.8rem] font-black tracking-[-1px] text-[#000000]">{formatMoney(user.balance)}</div>
+   477→              <button onClick={() => setPage('deposit')} className="ml-auto py-2 px-3.5 rounded-xl bg-[rgba(255,255,255,0.25)] hover:bg-[rgba(255,255,255,0.35)] text-[#000000] text-[0.68rem] font-semibold cursor-pointer border-none transition-all active:scale-95 flex items-center gap-1.5 backdrop-blur-sm">
+   478→                <i className="fas fa-arrow-down text-[0.6rem]"></i> Déposer
+   479→              </button>
+   480→            </div>
+   481→            {/* Compact 2x2 Account Grid — Glass Cards */}
+   482→            <div className="grid grid-cols-2 gap-1.5">
+   483→              <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
+   484→                <div className="w-8 h-8 icon-box bg-[rgba(34,197,94,0.15)] shrink-0"><i className="fas fa-wallet text-[0.65rem] text-[#22C55E]"></i></div>
+   485→                <div className="min-w-0">
+   486→                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Principal</div>
+   487→                  <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.balance)}</div>
+   488→                </div>
+   489→              </div>
+   490→              <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
+   491→                <div className="w-8 h-8 icon-box bg-[rgba(245,158,11,0.15)] shrink-0"><i className="fas fa-dice text-[0.65rem] text-[#F59E0B]"></i></div>
+   492→                <div className="min-w-0">
+   493→                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Jeu</div>
+   494→                  <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.gameTotalWon || 0)}</div>
+   495→                </div>
+   496→              </div>
+   497→              <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
+   498→                <div className="w-8 h-8 icon-box bg-[rgba(139,92,246,0.15)] shrink-0"><i className="fas fa-building text-[0.65rem] text-[#8B5CF6]"></i></div>
+   499→                <div className="min-w-0">
+   500→                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Projets</div>
+   501→                  <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.projectBalance)}</div>
+   502→                </div>
+   503→              </div>
+   504→              <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
+   505→                <div className="w-8 h-8 icon-box bg-[rgba(20,184,166,0.15)] shrink-0"><i className="fas fa-video text-[0.65rem] text-[#14B8A6]"></i></div>
+   506→                <div className="min-w-0">
+   507→                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Vidéo</div>
+   508→                  <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.videoBalance || 0)}</div>
+   509→                </div>
+   510→              </div>
+   511→            </div>
+   512→          </div>
+   513→        </div>
+   514→
+   515→        {/* Quick Actions — Colored bottom borders */}
+   516→        <div className="flex gap-2 mb-4">
+   517→          {[
+   518→            { icon: 'fa-wallet', label: 'Wallet', page: 'wallet', color: '#22C55E', bg: 'rgba(34,197,94,0.12)', borderColor: 'border-[#22C55E]' },
+   519→            { icon: 'fa-chart-line', label: 'Investir', page: 'invest', color: '#3B82F6', bg: 'rgba(59,130,246,0.12)', borderColor: 'border-[#3B82F6]' },
+   520→            { icon: 'fa-dice', label: 'Jeu', page: 'game', color: '#F87171', bg: 'rgba(248,113,113,0.12)', borderColor: 'border-[#F87171]' },
+   521→            { icon: 'fa-building', label: 'Projets', page: 'enterprise', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)', borderColor: 'border-[#8B5CF6]' },
+   522→          ].map((a, i) => (
+   523→            <button key={i} onClick={() => setPage(a.page)} className={`flex-1 glass-card rounded-xl py-2 px-1 text-center cursor-pointer transition-all active:scale-95 hover:shadow-md hover:scale-[1.04] border-b-2 ${a.borderColor}`}>
+   524→              <div className="w-9 h-9 icon-box mx-auto mb-1" style={{ backgroundColor: a.bg }}><i className={`fas ${a.icon} text-[0.8rem]`} style={{ color: a.color }}></i></div>
+   525→              <div className="text-[0.6rem] font-semibold text-[rgba(0,0,0,0.55)] leading-tight">{a.label}</div>
+   526→            </button>
+   527→          ))}
+   528→        </div>
+   529→
+   530→        {/* AI Tip Card — Purple gradient left border + glow */}
+   531→        <div className="bg-[rgba(139,92,246,0.04)] border border-[rgba(139,92,246,0.12)] rounded-xl p-3.5 mb-4 flex items-center gap-3" style={{ borderLeft: '5px solid', borderImage: 'linear-gradient(to bottom, #8B5CF6, #6D28D9) 1', boxShadow: '0 0 12px rgba(139,92,246,0.08)' }}>
+   532→          <div className="w-10 h-10 icon-box bg-[rgba(139,92,246,0.12)] shrink-0 border border-[rgba(139,92,246,0.15)]"><i className="fas fa-robot text-[#8B5CF6] text-[0.9rem]"></i></div>
+   533→          <div className="flex-1 min-w-0"><div className="text-[0.6rem] text-[#8B5CF6] font-bold uppercase tracking-[1px] mb-0.5">IA Be Rich</div><div className="text-[0.75rem] leading-relaxed text-[rgba(0,0,0,0.7)]">{tip}</div></div>
+   534→        </div>
+   535→
+   536→        {/* Promo Banner */}
+   537→        <PromoBanner />
+   538→
+   539→        {/* Shortcuts — Small cards with horizontal scroll */}
+   540→        <div className="flex gap-2 mb-4 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+   541→          {[
+   542→            { icon: 'fa-compass', label: 'Guide', page: 'guide', color: '#14B8A6', bg: 'rgba(20,184,166,0.12)', borderColor: 'border-[#14B8A6]' },
+   543→            { icon: 'fa-gift', label: 'Parrainage', page: 'profile', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', borderColor: 'border-[#F59E0B]' },
+   544→            { icon: 'fa-comment', label: 'Messages', page: 'chat', color: '#6366F1', bg: 'rgba(99,102,241,0.12)', borderColor: 'border-[#6366F1]' },
+   545→            { icon: 'fa-video', label: 'Vidéos', page: 'videos', color: '#14B8A6', bg: 'rgba(20,184,166,0.12)', borderColor: 'border-[#14B8A6]' },
+   546→            { icon: 'fa-newspaper', label: 'Actualités', page: 'guide', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)', borderColor: 'border-[#8B5CF6]' },
+   547→          ].map((a, i) => (
+   548→            <button key={i} onClick={() => setPage(a.page)} className={`glass-card rounded-xl py-2 px-2 text-center cursor-pointer transition-all active:scale-95 hover:shadow-md border-b-2 ${a.borderColor} shrink-0 min-w-[72px]`}>
+   549→              <div className="w-8 h-8 icon-box mx-auto mb-1" style={{ backgroundColor: a.bg }}><i className={`fas ${a.icon} text-[0.75rem]`} style={{ color: a.color }}></i></div>
+   550→              <div className="text-[0.55rem] font-semibold text-[rgba(0,0,0,0.55)] leading-tight whitespace-nowrap">{a.label}</div>
+   551→            </button>
+   552→          ))}
+   553→        </div>
+   554→
+   555→        {/* Recent Activity */}
+   556→        {txs.length > 0 && (
+   557→          <>
+   558→            <h3 className="text-[0.88rem] font-bold text-[#1F2937] mb-2.5 flex items-center gap-2"><span className="w-1 h-4 rounded-full bg-[#22C55E] inline-block"></span>Activité récente</h3>
+   559→            <div className="glass-card rounded-2xl p-4 mb-4">
+   560→              {txs.map((tx, i) => {
+   561→                const isD = tx.type === 'deposit' || tx.type === 'claim' || tx.type === 'enterprise_claim' || tx.type === 'trade_win';
+   562→                const isW = tx.type === 'withdrawal' || tx.type === 'trade_lose' || tx.type === 'enterprise_crash';
+   563→                return (
+   564→                  <div key={tx.id || i} className={`flex items-center gap-3 py-2.5 stagger-${i + 1} rounded-lg px-1 -mx-1 transition-all hover:bg-[rgba(34,197,94,0.04)] ${i < txs.length - 1 ? 'border-b border-[rgba(0,0,0,0.08)]' : ''}`}>
+   565→                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[0.7rem] shrink-0 ${isD ? 'bg-[rgba(74,222,128,0.12)] text-[#4ADE80]' : isW ? 'bg-[rgba(248,113,113,0.12)] text-[#F87171]' : 'bg-[rgba(34,197,94,0.12)] text-[#22C55E]'}`}>
+   566→                      <i className={`fas fa-${isW ? 'arrow-up' : isD ? 'arrow-down' : 'exchange-alt'}`}></i>
+   567→                    </div>
+   568→                    <div className="flex-1 min-w-0">
+   569→                      <div className="text-[0.75rem] font-semibold text-[#1F2937]">{tx.detail || tx.type}</div>
+   570→                      <div className="text-[0.6rem] text-[rgba(0,0,0,0.35)]">{new Date(tx.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</div>
+   571→                    </div>
+   572→                    <div className={`text-[0.82rem] font-bold ${isW ? 'text-[#F87171]' : 'text-[#4ADE80]'}`}>{isW ? '-' : '+'}{formatMoney(Math.abs(tx.amount))}</div>
+   573→                  </div>
+   574→                );
+   575→              })}
+   576→            </div>
+   577→          </>
+   578→        )}
+   579→      </div>
+   580→    </>
+   581→  );
+   582→}
+   583→
+   584→// ==================== WALLET SCREEN ====================
+   585→type TransferTarget = { from: string; to: string; label: string; fee: boolean; fromColor: string; toColor: string; fromIcon: string; toIcon: string };
+   586→
+   587→function WalletScreen() {
+   588→  const { user, setUser, setPage, addToast } = useAppStore();
+   589→  const [transferTarget, setTransferTarget] = useState<TransferTarget | null>(null);
+   590→  const [transferAmt, setTransferAmt] = useState('');
+   591→  const [transferring, setTransferring] = useState(false);
+   592→  const [refreshing, setRefreshing] = useState(false);
+   593→  const [gameStatus, setGameStatus] = useState<{ spinsRemaining: number; totalWonToday: number } | null>(null);
+   594→  const [investSummary, setInvestSummary] = useState<{ totalInvested: number; totalEarned: number; active: number } | null>(null);
+   595→
+   596→  const refresh = async () => { setRefreshing(true); try { await refreshUser(); } catch { /* */ } setRefreshing(false); };
+   597→
+   598→  // Fetch game status + investment summary in parallel on mount (silent failures)
+   599→  useEffect(() => {
+   600→    let cancelled = false;
+   601→    const loadExtras = async () => {
+   602→      const [invRes, gameRes] = await Promise.allSettled([
+   603→        authFetch('/api/invest/list'),
+   604→        authFetch('/api/game/status'),
+   605→      ]);
+   606→      if (cancelled) return;
+   607→      if (invRes.status === 'fulfilled') {
+   608→        try {
+   609→          const data = await invRes.value.json();
+   610→          if (data.success && data.summary) {
+   611→            setInvestSummary({
+   612→              totalInvested: data.summary.totalInvested || 0,
+   613→              totalEarned: data.summary.totalEarned || 0,
+   614→              active: data.summary.active || 0,
+   615→            });
+   616→          }
+   617→        } catch { /* ignore */ }
+   618→      }
+   619→      if (gameRes.status === 'fulfilled') {
+   620→        try {
+   621→          const data = await gameRes.value.json();
+   622→          if (data.success) {
+   623→            setGameStatus({
+   624→              spinsRemaining: data.spinsRemaining ?? 10,
+   625→              totalWonToday: data.totalWonToday || 0,
+   626→            });
+   627→          }
+   628→        } catch { /* ignore */ }
+   629→      }
+   630→    };
+   631→    loadExtras();
+   632→    return () => { cancelled = true; };
+   633→  }, []);
+   634→
+   635→  const handleTransfer = async () => {
+   636→    const amt = parseFloat(transferAmt);
+   637→    if (!amt || amt < 2) { addToast('Minimum 2 $', 'error'); return; }
+   638→    if (!transferTarget) return;
+   639→    setTransferring(true);
+   640→    try {
+   641→      const res = await authFetch('/api/transfer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ from: transferTarget.from, to: transferTarget.to, amount: amt }) });
+   642→      const data = await res.json();
+   643→      if (data.success) {
+   644→        // Level-2 hold: funds sent to escrow for 10 days — surface the API's message verbatim.
+   645→        if (data.held) addToast(data.message || 'Transfert en cours. Les fonds seront disponibles sous 10 jours.', 'info');
+   646→        else addToast('Transfert effectué !', 'success');
+   647→        setTransferAmt(''); setTransferTarget(null); await refreshUser();
+   648→      }
+   649→      else { addToast(data.error, 'error'); }
+   650→    } catch { addToast('Erreur', 'error'); }
+   651→    setTransferring(false);
+   652→  };
+   653→
+   654→  if (!user) return null;
+   655→
+   656→  // Vidéo account is funded only by watching videos (no deposit/transfer),
+   657→  // so it's a display-only card. Project is transferable to/from Principal.
+   658→  const accounts = [
+   659→    { key: 'video', label: 'Compte Vidéo', balance: user.videoBalance || 0, icon: 'fa-video', iconColor: '#14B8A6', iconBg: 'bg-[rgba(20,184,166,0.12)]', borderColor: '#14B8A6', transferable: false },
+   660→    { key: 'project', label: 'Compte de Projet', balance: user.projectBalance, icon: 'fa-building', iconColor: '#8B5CF6', iconBg: 'bg-[rgba(139,92,246,0.12)]', borderColor: '#8B5CF6', transferable: true },
+   661→  ] as const;
+   662→
+   663→  // Label helper for the transfer modal — 'trade' intentionally absent (trading account removed).
+   664→  const accountLabel = (k: string) =>
+   665→    k === 'principal' ? 'Principal' : k === 'invest' ? 'Investissement' : k === 'project' ? 'Projets' : k === 'video' ? 'Vidéo' : k;
+   666→
+   667→  // Derived values from API (silent fallbacks if fetch failed)
+   668→  const spinsRemaining = gameStatus?.spinsRemaining ?? 10;
+   669→  const totalWonToday = gameStatus?.totalWonToday ?? 0;
+   670→  const totalInvested = investSummary?.totalInvested ?? 0;
+   671→  const totalEarned = investSummary?.totalEarned ?? 0;
+   672→  const activeInvestments = investSummary?.active ?? 0;
+   673→
+   674→  return (
+   675→    <>
+   676→      <Header title="Portefeuille" icon="fa-wallet" iconColor="#22C55E" leftElement={<button onClick={() => setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(255,255,255,0.6)] backdrop-blur-sm text-[rgba(0,0,0,0.55)] cursor-pointer border-none mr-1"><i className="fas fa-arrow-left text-[0.8rem]"></i></button>} rightElement={<button onClick={refresh} className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.6)] backdrop-blur-sm text-[rgba(0,0,0,0.55)] cursor-pointer border-none"><i className={`fas fa-sync-alt text-[0.7rem] ${refreshing ? 'animate-spin' : ''}`} /></button>} />
+   677→      <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
+   678→        {/* Principal Balance — Gradient Card */}
+   679→        <div className="gradient-card rounded-2xl p-5 mb-3 relative overflow-hidden">
+   680→          <div className="absolute -top-20 -right-20 w-[200px] h-[200px] bg-[radial-gradient(circle,rgba(255,255,255,0.15),transparent_60%)]" style={{ animation: 'orbFloat 8s ease-in-out infinite' }} />
+   681→          <div className="absolute -bottom-10 -left-10 w-[140px] h-[140px] bg-[radial-gradient(circle,rgba(255,255,255,0.1),transparent_60%)]" style={{ animation: 'orbFloat 8s ease-in-out infinite 4s reverse' }} />
+   682→          <div className="relative z-[1]">
+   683→            <div className="flex items-center gap-2 mb-1">
+   684→              <div className="w-9 h-9 icon-box bg-white/20"><i className="fas fa-wallet text-[0.85rem] text-white"></i></div>
+   685→              <div className="text-[0.7rem] text-white/70 font-semibold uppercase tracking-[1.5px]">Compte Principal</div>
+   686→            </div>
+   687→            <div className="text-[2rem] font-black tracking-[-1px] text-white mb-3">{formatMoney(user.balance)}</div>
+   688→            <button onClick={() => setPage('withdraw')} className="w-full py-[11px] rounded-xl text-[0.78rem] font-semibold cursor-pointer flex items-center justify-center gap-1.5 border-none bg-white/15 text-white hover:bg-white/25 transition-colors"><i className="fas fa-arrow-up"></i> Retirer</button>
+   689→            <button onClick={() => setPage('invest')} className="mt-2 w-full text-[0.66rem] text-white/70 hover:text-white underline-offset-2 hover:underline transition-colors border-none bg-transparent cursor-pointer"><i className="fas fa-info-circle mr-1"></i>Les dépôts se font directement dans les niveaux d&apos;investissement</button>
+   690→          </div>
+   691→        </div>
+   692→
+   693→        {/* Promo Banner — compact */}
+   694→        <PromoBanner compact />
+   695→
+   696→        {/* Section header — Mes comptes */}
+   697→        <div className="flex justify-between items-center mb-2.5 mt-1">
+   698→          <h3 className="text-[0.9rem] font-bold text-[#1F2937]">Mes comptes</h3>
+   699→        </div>
+   700→
+   701→        {/* Compte Jeu — Amber card with dice icon */}
+   702→        <div className="glass-card rounded-2xl p-4 mb-3" style={{ borderLeft: '4px solid #F59E0B' }}>
+   703→          <div className="flex items-center justify-between mb-2">
+   704→            <div className="flex items-center gap-2.5">
+   705→              <div className="w-10 h-10 icon-box bg-[rgba(245,158,11,0.12)]"><i className="fas fa-dice text-[0.9rem]" style={{ color: '#F59E0B' }}></i></div>
+   706→              <div>
+   707→                <div className="text-[0.7rem] text-[rgba(0,0,0,0.5)] font-semibold uppercase tracking-[1.5px]">Compte Jeu</div>
+   708→                <div className="text-[0.55rem] text-[#F59E0B] font-semibold mt-0.5">Roue de la fortune</div>
+   709→              </div>
+   710→            </div>
+   711→            <div className="text-right">
+   712→              <div className="text-[1.3rem] font-black text-[#1F2937]">{formatMoney(user.gameTotalWon || 0)}</div>
+   713→              <div className="text-[0.55rem] text-[rgba(0,0,0,0.45)] font-medium">{spinsRemaining} tours restants · {formatMoney(totalWonToday)} aujourd&apos;hui</div>
+   714→            </div>
+   715→          </div>
+   716→          <button onClick={() => setPage('game')} className="w-full py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none text-white transition-transform active:scale-95" style={{ background: 'linear-gradient(90deg, #F59E0B 0%, #FBBF24 100%)' }}><i className="fas fa-play text-[0.65rem]"></i> Jouer maintenant</button>
+   717→        </div>
+   718→
+   719→        {/* Compte Investissement — Teal card with seedling icon */}
+   720→        <div className="glass-card rounded-2xl p-4 mb-3" style={{ borderLeft: '4px solid #14B8A6' }}>
+   721→          <div className="flex items-center justify-between mb-2">
+   722→            <div className="flex items-center gap-2.5">
+   723→              <div className="w-10 h-10 icon-box bg-[rgba(20,184,166,0.12)]"><i className="fas fa-seedling text-[0.9rem]" style={{ color: '#0F766E' }}></i></div>
+   724→              <div>
+   725→                <div className="text-[0.7rem] text-[rgba(0,0,0,0.5)] font-semibold uppercase tracking-[1.5px]">Compte Investissement</div>
+   726→                <div className="text-[0.55rem] text-[#0F766E] font-semibold mt-0.5">+{formatMoney(totalEarned)} gagnés · {activeInvestments} actif{activeInvestments > 1 ? 's' : ''}</div>
+   727→              </div>
+   728→            </div>
+   729→            <div className="text-[1.3rem] font-black text-[#1F2937]">{formatMoney(totalInvested)}</div>
+   730→          </div>
+   731→          <div className="flex gap-2">
+   732→            <button onClick={() => setTransferTarget({ from: 'invest', to: 'principal', label: 'Retirer vers Principal', fee: false, fromColor: '#14B8A6', toColor: '#22C55E', fromIcon: 'fa-seedling', toIcon: 'fa-wallet' })} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none text-white transition-transform active:scale-95" style={{ background: 'linear-gradient(90deg, #14B8A6 0%, #0F766E 100%)' }}><i className="fas fa-arrow-left text-[0.65rem]"></i> Retirer vers Principal</button>
+   733→            <button onClick={() => setPage('invest')} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border border-[rgba(20,184,166,0.25)] bg-transparent text-[#0F766E] transition-transform active:scale-95"><i className="fas fa-list text-[0.65rem]"></i> Voir mes investissements</button>
+   734→          </div>
+   735→          <p className="mt-2 text-[0.6rem] text-[rgba(0,0,0,0.45)] flex items-center gap-1"><i className="fas fa-info-circle text-[#0F766E]"></i>Pour retirer, transférez vers le compte principal.</p>
+   736→        </div>
+   737→
+   738→        {/* Autres comptes — Vidéo et Projet (Glass Cards with colored left border) */}
+   739→        {accounts.map((acc) => (
+   740→          <div key={acc.key} className="glass-card rounded-2xl p-4 mb-3" style={{ borderLeft: `4px solid ${acc.borderColor}` }}>
+   741→            <div className="flex items-center justify-between mb-2">
+   742→              <div className="flex items-center gap-2.5">
+   743→                <div className={`w-10 h-10 icon-box ${acc.iconBg}`}><i className={`fas ${acc.icon} text-[0.9rem]`} style={{ color: acc.iconColor }}></i></div>
+   744→                <div>
+   745→                  <div className="text-[0.7rem] text-[rgba(0,0,0,0.5)] font-semibold uppercase tracking-[1.5px]">{acc.label}</div>
+   746→                  {acc.key === 'video' && <div className="text-[0.55rem] text-[#14B8A6] font-semibold mt-0.5">Alimenté par les vidéos regardées</div>}
+   747→                </div>
+   748→              </div>
+   749→              <div className="text-[1.3rem] font-black text-[#1F2937]">{formatMoney(acc.balance)}</div>
+   750→            </div>
+   751→            {acc.transferable ? (
+   752→              <div className="flex gap-2">
+   753→                <button onClick={() => setTransferTarget({ from: 'principal', to: acc.key, label: `Verser vers ${acc.label}`, fee: true, fromColor: '#22C55E', toColor: acc.iconColor, fromIcon: 'fa-wallet', toIcon: acc.icon })} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(34,197,94,0.12)] text-[#22C55E] hover:bg-[rgba(34,197,94,0.18)] transition-colors"><i className="fas fa-arrow-right text-[0.65rem]"></i> Verser</button>
+   754→                <button onClick={() => setTransferTarget({ from: acc.key, to: 'principal', label: `Retirer vers Principal`, fee: false, fromColor: acc.iconColor, toColor: '#22C55E', fromIcon: acc.icon, toIcon: 'fa-wallet' })} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(0,0,0,0.04)] text-[rgba(0,0,0,0.7)]"><i className="fas fa-arrow-left text-[0.65rem]"></i> Retirer</button>
+   755→              </div>
+   756→            ) : (
+   757→              <button onClick={() => setPage('videos')} className="w-full py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(20,184,166,0.10)] text-[#0F766E] hover:bg-[rgba(20,184,166,0.16)] transition-colors"><i className="fas fa-play text-[0.65rem]"></i> Regarder des vidéos</button>
+   758→            )}
+   759→          </div>
+   760→        ))}
+   761→
+   762→        {/* Transfer Modal — Frosted Glass */}
+   763→        {transferTarget && (
+   764→          <div className="fixed inset-0 bg-[rgba(0,0,0,0.25)] z-[6000] flex items-center justify-center" style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }} onClick={() => setTransferTarget(null)}>
+   765→            <div className="glass-card rounded-2xl w-[88%] max-w-[340px] overflow-hidden" style={{ animation: 'modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1)' }} onClick={(e) => e.stopPropagation()}>
+   766→              {/* Modal Header */}
+   767→              <div className="p-5 relative overflow-hidden border-b border-[rgba(0,0,0,0.06)]">
+   768→                <h3 className="text-[1rem] font-bold text-[#1F2937] mb-2">{transferTarget.label}</h3>
+   769→                {/* From → To visual */}
+   770→                <div className="flex items-center gap-2">
+   771→                  <div className="flex items-center gap-1.5 bg-[rgba(0,0,0,0.04)] rounded-lg px-2.5 py-1.5">
+   772→                    <div className="w-5 h-5 rounded-md flex items-center justify-center bg-[rgba(34,197,94,0.12)]"><i className={`fas ${transferTarget.fromIcon} text-[0.5rem] text-[#22C55E]`}></i></div>
+   773→                    <span className="text-[0.65rem] font-medium text-[rgba(0,0,0,0.55)]">{accountLabel(transferTarget.from)}</span>
+   774→                  </div>
+   775→                  <i className="fas fa-arrow-right text-[0.6rem] text-[rgba(0,0,0,0.35)]"></i>
+   776→                  <div className="flex items-center gap-1.5 bg-[rgba(0,0,0,0.04)] rounded-lg px-2.5 py-1.5">
+   777→                    <div className="w-5 h-5 rounded-md flex items-center justify-center bg-[rgba(34,197,94,0.12)]"><i className={`fas ${transferTarget.toIcon} text-[0.5rem] text-[#22C55E]`}></i></div>
+   778→                    <span className="text-[0.65rem] font-medium text-[rgba(0,0,0,0.55)]">{accountLabel(transferTarget.to)}</span>
+   779→                  </div>
+   780→                </div>
+   781→              </div>
+   782→              {/* Modal Body */}
+   783→              <div className="p-5">
+   784→                <div className="flex items-center gap-1.5 mb-3">
+   785→                  <i className={`fas ${transferTarget.fee ? 'fa-percentage text-[#22C55E]' : 'fa-check-circle text-[#4ADE80]'} text-[0.7rem]`}></i>
+   786→                  <p className="text-[0.75rem] text-[rgba(0,0,0,0.55)]">{transferTarget.fee ? 'Frais de 2% sur le transfert' : 'Transfert sans frais'}</p>
+   787→                </div>
+   788→                <input type="number" step="0.01" value={transferAmt} onChange={(e) => setTransferAmt(e.target.value)} placeholder="Montant (min 2 $)" className="w-full premium-input mb-4" />
+   789→                <div className="flex gap-2">
+   790→                  <button onClick={() => { setTransferTarget(null); setTransferAmt(''); }} className="flex-1 py-3.5 rounded-xl border-[1.5px] border-[rgba(0,0,0,0.08)] bg-transparent text-[rgba(0,0,0,0.55)] font-semibold text-[0.82rem] cursor-pointer transition-transform active:scale-95">Annuler</button>
+   791→                  <button onClick={handleTransfer} disabled={transferring} className="flex-1 py-3.5 rounded-xl btn-gradient-green text-[0.82rem] cursor-pointer disabled:opacity-60 transition-transform active:scale-95">{transferring ? '...' : 'Confirmer'}</button>
+   792→                </div>
+   793→              </div>
+   794→            </div>
+   795→          </div>
+   796→        )}
+   797→
+   798→        {/* Stats — Vertical readable list (replaces previous cramped 2-col grid) */}
+   799→        <div className="glass-card rounded-2xl p-1.5 mb-4">
+   800→          {[
+   801→            { icon: 'fa-chart-line', color: '#22C55E', bg: 'bg-[rgba(34,197,94,0.10)]', label: 'Gains totaux', value: formatMoney(user.totalProfit || 0), sub: 'Cumul des gains' },
+   802→            { icon: 'fa-arrow-trend-down', color: '#F87171', bg: 'bg-[rgba(248,113,113,0.10)]', label: 'Pertes totales', value: formatMoney(user.totalLoss || 0), sub: 'Cumul des pertes' },
+   803→            { icon: 'fa-video', color: '#14B8A6', bg: 'bg-[rgba(20,184,166,0.10)]', label: 'Solde vidéo', value: formatMoney(user.videoBalance || 0), sub: 'Compte vidéo autonome' },
+   804→            { icon: 'fa-seedling', color: '#14B8A6', bg: 'bg-[rgba(20,184,166,0.10)]', label: 'Solde investissement', value: formatMoney(user.investBalance || 0), sub: 'Compte d\'investissement' },
+   805→            { icon: 'fa-building', color: '#8B5CF6', bg: 'bg-[rgba(139,92,246,0.10)]', label: 'Solde projet', value: formatMoney(user.projectBalance || 0), sub: 'Compte de projet' },
+   806→          ].map((s, i, arr) => (
+   807→            <div key={s.label} className={`flex items-center gap-3 px-3 py-3 ${i < arr.length - 1 ? 'border-b border-[rgba(0,0,0,0.05)]' : ''}`}>
+   808→              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${s.bg}`}>
+   809→                <i className={`fas ${s.icon} text-[0.85rem]`} style={{ color: s.color }}></i>
+   810→              </div>
+   811→              <div className="flex-1 min-w-0">
+   812→                <div className="text-[0.8rem] font-semibold text-[#1F2937]">{s.label}</div>
+   813→                <div className="text-[0.62rem] text-[rgba(0,0,0,0.4)]">{s.sub}</div>
+   814→              </div>
+   815→              <div className="text-[0.95rem] font-bold tracking-[-0.3px]" style={{ color: s.color }}>{s.value}</div>
+   816→            </div>
+   817→          ))}
+   818→        </div>
+   819→
+   820→        {/* Recent transactions shortcut */}
+   821→        <button onClick={() => setPage('home')} className="w-full glass-card rounded-2xl p-3.5 mb-4 flex items-center gap-3 cursor-pointer transition-all active:scale-[0.98]">
+   822→          <div className="w-9 h-9 icon-box bg-[rgba(34,197,94,0.12)] shrink-0"><i className="fas fa-clock-rotate-left text-[#22C55E] text-[0.85rem]"></i></div>
+   823→          <div className="flex-1 text-left">
+   824→            <div className="text-[0.82rem] font-bold text-[#1F2937]">Activité récente</div>
+   825→            <div className="text-[0.62rem] text-[rgba(0,0,0,0.45)]">Voir vos dernières transactions sur l&apos;accueil</div>
+   826→          </div>
+   827→          <i className="fas fa-chevron-right text-[rgba(0,0,0,0.35)] text-[0.7rem]"></i>
+   828→        </button>
+   829→      </div>
+   830→    </>
+   831→  );
+   832→}
+   833→
+   834→// ==================== FINANCE SCREEN ====================
+   835→function FinanceScreen() {
+   836→  const [subTab, setSubTab] = useState<'invest' | 'game' | 'projects'>('invest');
+   837→
+   838→  return (
+   839→    <div className="flex-1 flex flex-col overflow-hidden">
+   840→      {/* Sub-header with 3 pill tabs — Gradient Active */}
+   841→      <div className="flex gap-2 px-[18px] py-2.5 bg-white/80 backdrop-blur-2xl border-b border-[rgba(0,0,0,0.04)]">
+   842→        {[
+   843→          { id: 'invest', label: 'Invest', icon: 'fa-chart-line' },
+   844→          { id: 'game', label: 'Jeu', icon: 'fa-dice' },
+   845→          { id: 'projects', label: 'Projets', icon: 'fa-building' },
+   846→        ].map(t => (
+   847→          <button
+   848→            key={t.id}
+   849→            onClick={() => setSubTab(t.id as 'invest' | 'game' | 'projects')}
+   850→            className={`flex-1 py-2 rounded-xl text-[0.75rem] font-semibold border-none cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
+   851→              subTab === t.id
+   852→                ? 'bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white shadow-md'
+   853→                : 'bg-[rgba(0,0,0,0.04)] text-[rgba(0,0,0,0.5)]'
+   854→            }`}
+   855→          >
+   856→            <i className={`fas ${t.icon} text-[0.65rem]`}></i>
+   857→            {t.label}
+   858→          </button>
+   859→        ))}
+   860→      </div>
+   861→      {/* Content */}
+   862→      <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+   863→        {subTab === 'invest' && <InvestHubScreen />}
+   864→        {subTab === 'game' && <SpinGameScreen />}
+   865→        {subTab === 'projects' && <EnterpriseScreen />}
+   866→      </div>
+   867→    </div>
+   868→  );
+   869→}
+   870→
+   871→// ==================== BOTTOM NAV ====================
+   872→function BottomNav() {
+   873→  const { currentPage, setPage } = useAppStore();
+   874→  const tabs = [
+   875→    { id: 'videos', icon: 'fa-video', label: 'Vidéos' },
+   876→    { id: 'home', icon: 'fa-coins', label: 'Make Money' },
+   877→    { id: 'guide', icon: 'fa-compass', label: 'Guide' },
+   878→    { id: 'profile', icon: 'fa-user', label: 'Profil' },
+   879→  ];
+   880→  const isActive = (tabId: string) => {
+   881→    if (tabId === 'home') return ['home', 'finance', 'invest', 'game', 'enterprise', 'wallet', 'deposit', 'withdraw'].includes(currentPage);
+   882→    if (tabId === 'guide') return currentPage === 'guide';
+   883→    return currentPage === tabId;
+   884→  };
+   885→  return (
+   886→    <nav className="h-[60px] bg-white/90 backdrop-blur-xl border-t border-[rgba(0,0,0,0.06)] flex items-center justify-around px-2 shrink-0 safe-area-bottom">
+   887→      {tabs.map(t => (
+   888→        <button key={t.id} onClick={() => setPage(t.id)} className={`flex flex-col items-center justify-center py-1.5 px-2 border-none cursor-pointer transition-all relative ${isActive(t.id) ? 'text-[#22C55E]' : 'text-[rgba(0,0,0,0.3)]'}`}>
+   889→          {isActive(t.id) && <div className="absolute -top-0.5 w-5 h-[3px] rounded-full bg-[#22C55E]"></div>}
+   890→          <i className={`fas ${t.icon} text-[0.95rem] mb-0.5`}></i>
+   891→          <span className={`text-[0.55rem] ${isActive(t.id) ? 'font-bold text-[#22C55E]' : 'font-semibold'}`}>{t.label}</span>
+   892→        </button>
+   893→      ))}
+   894→    </nav>
+   895→  );
+   896→}
+   897→
+   898→// ==================== SERVICE WORKER REGISTRAR ====================
+   899→function ServiceWorkerRegistrar() {
+   900→  useEffect(() => {
+   901→    if ('serviceWorker' in navigator) {
+   902→      navigator.serviceWorker.register('/sw.js').catch(() => {
+   903→        // SW registration failed silently
+   904→      });
+   905→    }
+   906→  }, []);
+   907→  return null;
+   908→}
+   909→
+   910→// ==================== MAIN APP ====================
+   911→export default function BeRichApp() {
+   912→  const { user, currentPage, setPage, setUser, showSplash, setShowSplash } = useAppStore();
+   913→  const { currentAd, dismissAd } = useTabChangeAd(currentPage);
+   914→  const [initialized, setInitialized] = useState(false);
+   915→
+   916→  useEffect(() => {
+   917→    const init = async () => {
+   918→      try {
+   919→        const res = await authFetch('/api/auth/session');
+   920→        const data = await res.json();
+   921→        if (data.success && data.user) { setUser(data.user); setPage('videos'); }
+   922→        else { setPage('auth'); }
+   923→      } catch { setPage('auth'); }
+   924→      setInitialized(true);
+   925→      setShowSplash(false);
+   926→    };
+   927→    init();
+   928→  }, []);
+   929→
+   930→  const handleSplashDone = useCallback(() => { setShowSplash(false); }, [setShowSplash]);
+   931→
+   932→  if (!initialized) {
+   933→    return (<div className="bg-gradient-to-b from-[#F8F9FA] to-[#F1F5F9] h-screen flex items-center justify-center"><div className="w-8 h-8 border-[3px] border-[rgba(0,0,0,0.08)] border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} /></div>);
+   934→  }
+   935→
+   936→  const showNav = user && !['auth'].includes(currentPage);
+   937→
+   938→  return (
+   939→    <ErrorBoundary>
+   940→    <div className="bg-gradient-to-b from-[#F8F9FA] to-[#F1F5F9] min-h-screen flex items-center justify-center">
+   941→      <div id="app" className="w-full max-w-[430px] h-[100dvh] max-h-[932px] bg-gradient-to-b from-[#F8F9FA] to-[#F1F5F9] relative overflow-hidden shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_4px_16px_rgba(0,0,0,0.04)] noise-bg">
+   942→        <style>{`
+   943→          @keyframes spin { to { transform: rotate(360deg); } }
+   944→          @keyframes gs { 0% { background-position: 0% center; } 100% { background-position: 200% center; } }
+   945→          @keyframes spFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+   946→          @keyframes orbFloat { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(20px, -20px); } }
+   947→          @keyframes tIn { from { opacity: 0; transform: translateY(12px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+   948→          @keyframes nIn { from { opacity: 0; transform: translateY(-12px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+   949→          @keyframes modalIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+   950→          @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+   951→          @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+   952→          @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+   953→          @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); } 50% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); } }
+   954→          @keyframes claimPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); transform: scale(1); } 50% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); transform: scale(1.03); } }
+   955→          @keyframes logoPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+   956→          .overflow-x-auto::-webkit-scrollbar { display: none; }
+   957→        `}</style>
+   958→        {showSplash && <SplashScreen onDone={handleSplashDone} />}
+   959→        <div className="h-full flex flex-col min-h-0">
+   960→          {!user && <AuthScreen />}
+   961→          {user && currentPage === 'videos' && <VideoPlatformScreen />}
+   962→          {user && currentPage === 'home' && <HomeScreen />}
+   963→          {user && currentPage === 'wallet' && <WalletScreen />}
+   964→          {user && currentPage === 'finance' && <FinanceScreen />}
+   965→          {user && currentPage === 'invest' && <InvestHubScreen />}
+   966→          {user && currentPage === 'game' && <SpinGameScreen />}
+   967→          {user && currentPage === 'enterprise' && <EnterpriseScreen />}
+   968→          {user && currentPage === 'profile' && <ProfileScreen />}
+   969→          {user && currentPage === 'analytics' && <AnalyticsScreen />}
+   970→          {user && currentPage === 'withdraw' && <WithdrawScreen />}
+   971→          {user && currentPage === 'admin' && <AdminScreen />}
+   972→          {user && currentPage === 'chat' && <ChatScreen />}
+   973→          {user && currentPage === 'deposit' && <DepositScreen />}
+   974→          {user && currentPage === 'guide' && <GuideScreen />}
+   975→          {showNav && <BottomNav />}
+   976→          {user && (currentPage === 'home' || currentPage === 'videos') && <FloatingGift />}
+   977→          <InstallPrompt />
+   978→        </div>
+   979→        <TabChangeAd ad={currentAd} onClose={dismissAd} />
+   980→        <ToastContainer />
+   981→        <NotificationContainer />
+   982→        {user && <RefreshReminderBanner />}
+   983→        {user && <WithdrawalTicker />}
+   984→      </div>
+   985→      <ServiceWorkerRegistrar />
+   986→    </div>
+   987→    </ErrorBoundary>
+   988→  );
+   989→}
+   990→
