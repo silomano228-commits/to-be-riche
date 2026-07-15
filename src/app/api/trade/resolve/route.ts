@@ -1,26 +1,12 @@
 import { db } from '@/lib/db';
+import { getAuthToken } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-function getToken(request: Request): string | null {
-  const authHeader = request.headers.get('x-auth-token');
-  if (authHeader) return authHeader;
-  const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(/br_token=([^;]+)/);
-  if (match) return match[1];
-  return null;
-}
-
-async function getUser(request: Request) {
-  const token = getToken(request);
-  if (!token) return null;
-  return db.user.findUnique({ where: { id: token } });
-}
-
 export async function POST(request: Request) {
   try {
-    const user = await getUser(request);
+    const user = await getAuthToken(request);
     if (!user) {
       return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
     }
@@ -53,14 +39,11 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    // Resolve the trade
+    // Resolve the trade atomically
     if (trade.result === 'win') {
       const totalReturn = trade.amount + (trade.profit || 0);
       await db.$transaction([
-        db.trade.update({
-          where: { id: tradeId },
-          data: { resolved: true },
-        }),
+        db.trade.update({ where: { id: tradeId }, data: { resolved: true } }),
         db.user.update({
           where: { id: user.id },
           data: {
@@ -89,15 +72,10 @@ export async function POST(request: Request) {
       });
     } else if (trade.result === 'lose') {
       await db.$transaction([
-        db.trade.update({
-          where: { id: tradeId },
-          data: { resolved: true },
-        }),
+        db.trade.update({ where: { id: tradeId }, data: { resolved: true } }),
         db.user.update({
           where: { id: user.id },
-          data: {
-            totalLoss: { increment: trade.amount },
-          },
+          data: { totalLoss: { increment: trade.amount } },
         }),
         db.transaction.create({
           data: {
@@ -118,17 +96,11 @@ export async function POST(request: Request) {
         message: `You lost. -$${trade.amount.toFixed(2)}`,
       });
     } else {
-      // Draw — return amount to tradeBalance
       await db.$transaction([
-        db.trade.update({
-          where: { id: tradeId },
-          data: { resolved: true },
-        }),
+        db.trade.update({ where: { id: tradeId }, data: { resolved: true } }),
         db.user.update({
           where: { id: user.id },
-          data: {
-            tradeBalance: { increment: trade.amount },
-          },
+          data: { tradeBalance: { increment: trade.amount } },
         }),
         db.transaction.create({
           data: {
@@ -150,6 +122,6 @@ export async function POST(request: Request) {
       });
     }
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }

@@ -46,7 +46,15 @@ interface Conversation {
 
 export default function AdminScreen() {
   const { user, addToast } = useAppStore();
-  const [tab, setTab] = useState<'users' | 'deposits' | 'yas' | 'withdrawals' | 'messages' | 'notif' | 'videos' | 'config'>('users');
+  const [tab, setTab] = useState<'users' | 'deposits' | 'withdrawals' | 'messages' | 'notif' | 'videos' | 'config'>('users');
+  // Merged deposits state
+  const [depositFilter, setDepositFilter] = useState<'all' | 'trx' | 'yas'>('all');
+  const [depositsExpanded, setDepositsExpanded] = useState(true);
+
+  // User detail viewer state
+  const [userDetailId, setUserDetailId] = useState<string | null>(null);
+  const [userDetailData, setUserDetailData] = useState<any>(null);
+  const [userDetailLoading, setUserDetailLoading] = useState(false);
   const [adminData, setAdminData] = useState<any>(null);
   const [pendingDeposits, setPendingDeposits] = useState<any[]>([]);
   const [depositStats, setDepositStats] = useState<any>({});
@@ -193,7 +201,7 @@ export default function AdminScreen() {
   }, []);
 
   const loadConfig = useCallback(async () => {
-    try { const r = await authFetch('/api/admin/config'); const d = await r.json(); if (d.success) { setSiteConfig(d.data); setConfigAddr(d.data.adminTrxAddress || ''); setConfigPrice(String(d.data.trxUsdPrice || '')); setConfigYasAddr(d.data.adminYasAccount || ''); setConfigCfaRate(String(d.data.cfaUsdRate || '600')); setConfigWorldLink(d.data.worldLink || ''); } } catch { /* */ }
+    try { const r = await authFetch('/api/admin/config'); const d = await r.json(); if (d.success) { setSiteConfig(d.data); setConfigAddr(d.data.adminTrxAddress || ''); setConfigPrice(String(d.data.trxUsdPrice || '')); setConfigYasAddr(d.data.adminYasAccount || ''); setConfigCfaRate(String(d.data.cfaUsdRate || '550')); setConfigWorldLink(d.data.worldLink || ''); } } catch { /* */ }
   }, []);
 
   const loadAdminVideos = useCallback(async () => {
@@ -799,8 +807,7 @@ export default function AdminScreen() {
         <div className="flex gap-1.5 bg-[#0E0F11] border-b border-[rgba(255,255,255,0.06)] px-[10px] py-1.5 overflow-x-auto" style={{ scrollbarWidth: 'thin' }}>
           {([
             { k: 'users', l: 'Users', icon: 'fas fa-users' },
-            { k: 'deposits', l: 'Dépôts TRX', icon: 'fas fa-arrow-down' },
-            { k: 'yas', l: 'Yas', icon: 'fas fa-flag' },
+            { k: 'deposits', l: `Dépôts (${(pendingDeposits.filter(d => d.status === 'pending').length) + (yasDeposits.filter(d => d.status === 'pending').length)})`, icon: 'fas fa-arrow-down' },
             { k: 'withdrawals', l: 'Retraits', icon: 'fas fa-arrow-up' },
             { k: 'messages', l: `Messages${totalUnread > 0 ? ` (${totalUnread})` : ''}`, icon: 'fas fa-comment' },
             { k: 'notif', l: 'Notifs', icon: 'fas fa-bell' },
@@ -899,6 +906,24 @@ export default function AdminScreen() {
                               title="Modifier les soldes"
                             >
                               <i className="fas fa-pen text-[0.55rem]"></i>
+                            </button>
+                            <button
+                              onClick={async () => {
+                                setUserDetailId(u.id);
+                                setUserDetailData(null);
+                                setUserDetailLoading(true);
+                                try {
+                                  const r = await authFetch(`/api/admin/users/${u.id}`);
+                                  const d = await r.json();
+                                  if (d.success) setUserDetailData(d);
+                                  else addToast(d.error || 'Erreur', 'error');
+                                } catch { addToast('Erreur réseau', 'error'); }
+                                setUserDetailLoading(false);
+                              }}
+                              className="w-7 h-7 rounded-lg bg-[rgba(6,182,212,0.12)] flex items-center justify-center text-[#22D3EE] cursor-pointer border-none shrink-0 hover:bg-[rgba(6,182,212,0.2)] transition-colors"
+                              title="Voir détails"
+                            >
+                              <i className="fas fa-eye text-[0.55rem]"></i>
                             </button>
                             {u.role !== 'admin' && (
                               <>
@@ -1104,181 +1129,198 @@ export default function AdminScreen() {
                 </>
               )}
 
-              {/* Deposits Tab (TRX) */}
-              {tab === 'deposits' && (
-                <>
-                  <div className="grid grid-cols-3 gap-2 mb-4">
-                    {[
-                      { label: 'En attente', value: depositStats.pending || 0, color: '#818CF8' },
-                      { label: 'Approuvés', value: depositStats.approved || 0, color: '#4ADE80' },
-                      { label: 'Rejetés', value: depositStats.rejected || 0, color: '#F87171' },
-                    ].map((s, i) => (
-                      <div key={i} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-2.5 text-center">
-                        <div className="text-[0.85rem] font-bold" style={{ color: s.color }}>{s.value}</div>
-                        <div className="text-[0.55rem] text-[rgba(255,255,255,0.25)] uppercase">{s.label}</div>
-                      </div>
-                    ))}
-                  </div>
-                  {pendingDeposits.filter(d => d.status === 'pending').map((d: any) => {
-                    const isInvestment = d.type === 'investment';
-                    const invLevel = d.investmentLevel;
-                    const invAmount = d.investmentAmount ?? d.amountUsd;
-                    return (
-                    <div key={d.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] border-l-[3px] rounded-2xl p-3 mb-2" style={{ borderLeftColor: isInvestment ? '#22C55E' : '#6366F1' }}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <div className="text-[0.78rem] font-bold text-[#EDEDEF] flex items-center gap-1.5 flex-wrap">
-                            {esc(d.user?.name || '?')}
-                            {isInvestment && (
-                              <span className="text-[0.55rem] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-1" style={{ background: 'rgba(34,197,94,0.14)', color: '#22C55E' }}>
-                                <i className="fas fa-chart-line text-[0.45rem]"></i>Investissement{invLevel ? ` Niv. ${invLevel}` : ''}
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">{formatMoney(invAmount)}{isInvestment ? ' (investi)' : ''} → {d.amountTrx?.toFixed(2)} TRX</div>
-                        </div>
-                        <span className="text-[0.6rem] bg-[rgba(99,102,241,0.12)] text-[#6366F1] px-2 py-0.5 rounded-full">TRX</span>
-                      </div>
-                      <div className="bg-[#161719] rounded-lg p-2.5 mb-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Adresse TRX client</span>
-                          <button
-                            onClick={async () => {
-                              try { await navigator.clipboard.writeText(d.userAddress || ''); addToast('Adresse copiée !', 'success'); } catch { addToast('Erreur de copie', 'error'); }
-                            }}
-                            className="text-[0.6rem] text-[#6366F1] hover:text-[#818CF8] cursor-pointer bg-transparent border-none flex items-center gap-1"
-                          >
-                            <i className="fas fa-copy text-[0.55rem]"></i> Copier
-                          </button>
-                        </div>
-                        <div className="text-[0.72rem] font-mono font-bold text-[#818CF8] break-all leading-relaxed mt-1">{esc(d.userAddress || 'Non renseigné')}</div>
-                      </div>
-                      {isInvestment && (
-                        <div className="bg-[rgba(34,197,94,0.08)] rounded-lg p-2 mb-2 border border-[rgba(34,197,94,0.15)]">
-                          <p className="text-[0.6rem] text-[rgba(34,197,94,0.85)]">
-                            <i className="fas fa-info-circle mr-1"></i>
-                            L'approbation crée l'investissement <strong>Niv. {invLevel ?? 1}</strong> de <strong>{formatMoney(invAmount)}</strong> et démarre le compte à rebours (24h → première collecte).
-                          </p>
-                        </div>
-                      )}
-                      <div className="flex gap-2">
-                        <button
-                          onClick={async () => {
-                            const r = await authFetch('/api/admin/deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId: d.id, action: 'approve' }) });
-                            const data = await r.json(); if (data.success) { addToast(data.message || 'Approuvé', 'success'); loadDeposits(); } else addToast(data.error, 'error');
-                          }}
-                          className="flex-1 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer"
-                        >Approuver</button>
-                        <button
-                          onClick={async () => {
-                            const r = await authFetch('/api/admin/deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId: d.id, action: 'reject' }) });
-                            const data = await r.json(); if (data.success) { addToast('Rejeté', 'info'); loadDeposits(); } else addToast(data.error, 'error');
-                          }}
-                          className="flex-1 py-2 rounded-lg bg-[rgba(248,113,113,0.15)] text-[#F87171] text-[0.72rem] font-semibold border-none cursor-pointer"
-                        >Rejeter</button>
-                      </div>
-                    </div>
-                    );
-                  })}
-                  {pendingDeposits.filter(d => d.status === 'pending').length === 0 && (
-                    <p className="text-center text-[0.82rem] text-[rgba(255,255,255,0.25)] py-4">Aucun dépôt TRX en attente</p>
-                  )}
-                </>
-              )}
+              {/* Merged Deposits Tab (TRX + YAS) */}
+              {tab === 'deposits' && (() => {
+                const pendingTrx = pendingDeposits.filter(d => d.status === 'pending');
+                const pendingYas = yasDeposits.filter(d => d.status === 'pending');
+                const totalPending = pendingTrx.length + pendingYas.length;
+                // Build merged list with source tag
+                const mergedPending = [
+                  ...pendingTrx.map(d => ({ ...d, _source: 'trx' as const })),
+                  ...pendingYas.map(d => ({ ...d, _source: 'yas' as const })),
+                ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                const filteredPending = depositFilter === 'trx' ? mergedPending.filter(d => d._source === 'trx')
+                  : depositFilter === 'yas' ? mergedPending.filter(d => d._source === 'yas')
+                  : mergedPending;
 
-              {/* Yas du Togo Tab */}
-              {tab === 'yas' && (
+                return (
                 <>
-                  <div className="bg-[#0E0F11] border border-[rgba(99,102,241,0.15)] rounded-2xl p-3 mb-4 flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-[rgba(34,197,94,0.12)] flex items-center justify-center shrink-0">
-                      <i className="fas fa-mobile-alt text-[#22C55E] text-[0.9rem]"></i>
-                    </div>
-                    <div>
-                      <div className="text-[#EDEDEF] text-[0.85rem] font-bold">Dépôts Yas</div>
-                      <div className="text-[rgba(255,255,255,0.45)] text-[0.65rem]">Approuvez pour créditer le solde principal</div>
-                    </div>
-                  </div>
-                  <div className="bg-[#0E0F11] border border-[rgba(99,102,241,0.12)] rounded-2xl p-3.5 mb-4">
+                  {/* YAS Config (compact) */}
+                  <div className="bg-[#0E0F11] border border-[rgba(34,197,94,0.12)] rounded-2xl p-3 mb-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-7 h-7 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center shrink-0"><i className="fas fa-cog text-[#6366F1] text-[0.65rem]"></i></div>
+                      <div className="w-7 h-7 rounded-lg bg-[rgba(34,197,94,0.12)] flex items-center justify-center shrink-0"><i className="fas fa-cog text-[#22C55E] text-[0.65rem]"></i></div>
                       <div className="text-[0.78rem] font-bold text-[#EDEDEF]">Configuration Yas</div>
                     </div>
-                    <div className="mb-2.5">
-                      <label className="block mb-1 text-[0.7rem] font-semibold text-[rgba(255,255,255,0.45)]">Votre numéro Yas (affiché aux utilisateurs)</label>
-                      <input type="text" value={configYasAddr} onChange={(e) => setConfigYasAddr(e.target.value)} placeholder="90XXXXXX ou 70XXXXXX" maxLength={8} className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.82rem] text-white outline-none focus:border-[#6366F1]" />
-                      {configYasAddr && !/^(9[0-3]|7[0-3])\d{6}$/.test(configYasAddr.trim()) && (<p className="text-[0.6rem] text-[#F87171] mt-1">Format: 8 chiffres, commence par 90-93 ou 70-73</p>)}
+                    <div className="grid grid-cols-2 gap-2 mb-2.5">
+                      <div>
+                        <label className="block mb-1 text-[0.6rem] font-semibold text-[rgba(255,255,255,0.4)]">N° Yas</label>
+                        <input type="text" value={configYasAddr} onChange={(e) => setConfigYasAddr(e.target.value)} placeholder="90XXXXXX" maxLength={8} className="w-full py-2 px-2.5 bg-[#161719] border-[1px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.72rem] text-white outline-none focus:border-[#22C55E]" />
+                      </div>
+                      <div>
+                        <label className="block mb-1 text-[0.6rem] font-semibold text-[rgba(255,255,255,0.4)]">CFA/USD</label>
+                        <input type="number" step="1" value={configCfaRate} onChange={(e) => setConfigCfaRate(e.target.value)} className="w-full py-2 px-2.5 bg-[#161719] border-[1px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.72rem] text-white outline-none focus:border-[#22C55E]" />
+                      </div>
                     </div>
-                    <div className="mb-3">
-                      <label className="block mb-1 text-[0.7rem] font-semibold text-[rgba(255,255,255,0.45)]">Taux CFA/USD (1 USD = ? CFA)</label>
-                      <input type="number" step="1" value={configCfaRate} onChange={(e) => setConfigCfaRate(e.target.value)} className="w-full py-2.5 px-3 bg-[#161719] border-[1.5px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.82rem] text-white outline-none focus:border-[#6366F1]" />
-                    </div>
-                    <button onClick={async () => { setSavingYas(true); try { const r = await authFetch('/api/admin/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminYasAccount: configYasAddr, cfaUsdRate: configCfaRate }) }); const d = await r.json(); if (d.success) { addToast('Config Yas sauvegardée !', 'success'); await loadConfig(); } else addToast(d.error || 'Erreur de sauvegarde', 'error'); } catch { addToast('Erreur réseau', 'error'); } setSavingYas(false); }} disabled={savingYas} className="w-full py-2.5 rounded-lg bg-[#6366F1] text-[#050506] text-[0.78rem] font-bold border-none cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-60">
-                      {savingYas ? <div className="w-4 h-4 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <i className="fas fa-save text-[0.7rem]"></i>}
-                      {savingYas ? 'Sauvegarde...' : 'Sauvegarder la config Yas'}
+                    <button onClick={async () => { setSavingYas(true); try { const r = await authFetch('/api/admin/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminYasAccount: configYasAddr, cfaUsdRate: configCfaRate }) }); const d = await r.json(); if (d.success) { addToast('Config Yas sauvegardée !', 'success'); await loadConfig(); } else addToast(d.error || 'Erreur', 'error'); } catch { addToast('Erreur réseau', 'error'); } setSavingYas(false); }} disabled={savingYas} className="w-full py-2 rounded-lg bg-[#22C55E] text-[#050506] text-[0.7rem] font-bold border-none cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-60">
+                      {savingYas ? <div className="w-3.5 h-3.5 border-2 border-[rgba(5,5,6,0.3)] border-t-[#050506] rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <i className="fas fa-save text-[0.6rem]"></i>}
+                      {savingYas ? 'Sauvegarde...' : 'Sauvegarder'}
                     </button>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 mb-4">
+
+                  {/* Stats row */}
+                  <div className="grid grid-cols-4 gap-1.5 mb-4">
                     {[
-                      { label: 'En attente', value: yasStats.pending || 0, color: '#818CF8' },
-                      { label: 'Approuvées', value: yasStats.approved || 0, color: '#4ADE80' },
-                      { label: 'Rejetées', value: yasStats.rejected || 0, color: '#F87171' },
+                      { label: 'En attente', value: totalPending, color: '#818CF8' },
+                      { label: 'TRX', value: pendingTrx.length, color: '#6366F1' },
+                      { label: 'YAS', value: pendingYas.length, color: '#22C55E' },
+                      { label: 'Total approuvés', value: (depositStats.approved || 0) + (yasStats.approved || 0), color: '#4ADE80' },
                     ].map((s, i) => (
-                      <div key={i} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-2xl p-2.5 text-center">
+                      <div key={i} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-xl p-2 text-center">
                         <div className="text-[0.85rem] font-bold" style={{ color: s.color }}>{s.value}</div>
-                        <div className="text-[0.55rem] text-[rgba(255,255,255,0.25)] uppercase">{s.label}</div>
+                        <div className="text-[0.5rem] text-[rgba(255,255,255,0.25)] uppercase">{s.label}</div>
                       </div>
                     ))}
                   </div>
-                  {yasDeposits.filter(d => d.status === 'pending').map((d: any) => {
-                    const isInvestment = d.type === 'investment';
-                    const invLevel = d.investmentLevel;
-                    const invAmount = d.investmentAmount ?? d.amountUsd;
-                    return (
-                    <div key={d.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] border-l-[3px] rounded-2xl p-3 mb-2" style={{ borderLeftColor: isInvestment ? '#22C55E' : '#818CF8' }}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <div className="text-[0.78rem] font-bold text-[#EDEDEF] flex items-center gap-1.5 flex-wrap">
-                            {esc(d.user?.name || '?')}
-                            {isInvestment && (
-                              <span className="text-[0.55rem] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-1" style={{ background: 'rgba(34,197,94,0.14)', color: '#22C55E' }}>
-                                <i className="fas fa-chart-line text-[0.45rem]"></i>Investissement{invLevel ? ` Niv. ${invLevel}` : ''}
+
+                  {/* Expandable section header */}
+                  <button
+                    onClick={() => setDepositsExpanded(v => !v)}
+                    className="w-full bg-[#0E0F11] border border-[rgba(99,102,241,0.15)] rounded-2xl p-3 mb-3 flex items-center justify-between cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-[rgba(99,102,241,0.12)] flex items-center justify-center shrink-0">
+                        <i className="fas fa-clock text-[#818CF8] text-[0.85rem]"></i>
+                      </div>
+                      <div className="text-left">
+                        <div className="text-[#EDEDEF] text-[0.85rem] font-bold">Dépôts en attente</div>
+                        <div className="text-[rgba(255,255,255,0.45)] text-[0.65rem]">{totalPending} dépôt{totalPending !== 1 ? 's' : ''} à traiter</div>
+                      </div>
+                    </div>
+                    <i className={`fas fa-chevron-down text-[rgba(255,255,255,0.35)] text-[0.7rem] transition-transform ${depositsExpanded ? 'rotate-180' : ''}`}></i>
+                  </button>
+
+                  {depositsExpanded && (
+                    <>
+                      {/* Sub-filter toggle */}
+                      <div className="flex gap-1.5 mb-3">
+                        {(['all', 'trx', 'yas'] as const).map(f => (
+                          <button
+                            key={f}
+                            onClick={() => setDepositFilter(f)}
+                            className={`flex-1 py-2 rounded-xl text-[0.68rem] font-semibold border-none cursor-pointer transition-all ${
+                              depositFilter === f
+                                ? 'bg-[#6366F1] text-white'
+                                : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.08)]'
+                            }`}
+                          >
+                            {f === 'all' ? 'Tous' : f === 'trx' ? 'TRX' : 'YAS 🇹🇬'}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Merged deposit list */}
+                      {filteredPending.map((d: any) => {
+                        const isYas = d._source === 'yas';
+                        const isInvestment = d.type === 'investment';
+                        const invLevel = d.investmentLevel;
+                        const invAmount = d.investmentAmount ?? d.amountUsd;
+                        return (
+                        <div key={d.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] border-l-[3px] rounded-2xl p-3 mb-2" style={{ borderLeftColor: isInvestment ? '#22C55E' : isYas ? '#22C55E' : '#6366F1' }}>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[0.78rem] font-bold text-[#EDEDEF] flex items-center gap-1.5 flex-wrap">
+                                {esc(d.user?.name || '?')}
+                                {isInvestment && (
+                                  <span className="text-[0.55rem] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-1" style={{ background: 'rgba(34,197,94,0.14)', color: '#22C55E' }}>
+                                    <i className="fas fa-chart-line text-[0.45rem]"></i>Investissement{invLevel ? ` Niv. ${invLevel}` : ''}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">
+                                {isYas
+                                  ? `${d.amountCfa ? `${d.amountCfa.toLocaleString()} FCFA` : formatMoney(d.amountUsd)}${d.amountCfa > 0 ? ` (${formatMoney(d.amountUsd)})` : ''}`
+                                  : `${formatMoney(invAmount)}${isInvestment ? ' (investi)' : ''} → ${d.amountTrx?.toFixed(2)} TRX`
+                                }
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                              {isInvestment && (
+                                <span className="text-[0.55rem] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: 'rgba(34,197,94,0.14)', color: '#22C55E' }}>
+                                  → Invest.
+                                </span>
+                              )}
+                              <span className={`text-[0.6rem] px-2 py-0.5 rounded-full font-semibold ${isYas ? 'bg-[rgba(34,197,94,0.12)] text-[#22C55E]' : 'bg-[rgba(99,102,241,0.12)] text-[#6366F1]'}`}>
+                                {isYas ? 'YAS 🇹🇬' : 'TRX'}
                               </span>
+                            </div>
+                          </div>
+                          {/* Address info */}
+                          <div className="bg-[#161719] rounded-lg p-2.5 mb-2">
+                            {isYas ? (
+                              <div className="flex justify-between items-center">
+                                <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Compte Yas client</span>
+                                <span className="text-[0.72rem] font-bold text-[#22C55E]">{esc(d.yasAccount)}</span>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Adresse TRX client</span>
+                                  <button
+                                    onClick={async () => {
+                                      try { await navigator.clipboard.writeText(d.userAddress || ''); addToast('Adresse copiée !', 'success'); } catch { addToast('Erreur de copie', 'error'); }
+                                    }}
+                                    className="text-[0.6rem] text-[#6366F1] hover:text-[#818CF8] cursor-pointer bg-transparent border-none flex items-center gap-1"
+                                  >
+                                    <i className="fas fa-copy text-[0.55rem]"></i> Copier
+                                  </button>
+                                </div>
+                                <div className="text-[0.7rem] font-mono font-bold text-[#818CF8] break-all leading-relaxed mt-1">{esc(d.userAddress || 'Non renseigné')}</div>
+                              </>
                             )}
                           </div>
-                          <div className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">{d.amountCfa ? `${d.amountCfa.toLocaleString()} FCFA` : formatMoney(d.amountUsd)} → {d.amountTrx?.toFixed(2)} TRX</div>
-                          {d.amountCfa > 0 && <div className="text-[0.6rem] text-[#818CF8]">{formatMoney(d.amountUsd)} USD{isInvestment ? ' (investi)' : ''}</div>}
+                          {isInvestment && (
+                            <div className="bg-[rgba(34,197,94,0.08)] rounded-lg p-2 mb-2 border border-[rgba(34,197,94,0.15)]">
+                              <p className="text-[0.6rem] text-[rgba(34,197,94,0.85)]">
+                                <i className="fas fa-info-circle mr-1"></i>
+                                L'approbation crée l'investissement <strong>Niv. {invLevel ?? 1}</strong> de <strong>{formatMoney(invAmount)}</strong> et démarre le compte à rebours (24h → première collecte).
+                              </p>
+                            </div>
+                          )}
+                          {/* YAS admin note field */}
+                          {isYas && (
+                            <div className="mb-2"><input type="text" value={yasNote[d.id] || ''} onChange={(e) => setYasNote(prev => ({ ...prev, [d.id]: e.target.value }))} placeholder="Note admin (optionnel)" className="w-full py-2 px-3 bg-[#161719] border-[1px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.72rem] text-white outline-none focus:border-[#22C55E]" /></div>
+                          )}
+                          <div className="flex gap-2">
+                            {isYas ? (
+                              <>
+                                <button onClick={async () => { const r = await authFetch('/api/admin/yas-deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId: d.id, action: 'approve', adminNote: yasNote[d.id] || (isInvestment ? 'Investissement approuvé.' : 'Dépôt validé.') }) }); const data = await r.json(); if (data.success) { addToast(data.message || 'Approuvé', 'success'); loadDeposits(); loadYasDeposits(); } else addToast(data.error, 'error'); }} className="flex-1 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer"><i className="fas fa-check mr-1"></i>Approuver</button>
+                                <button onClick={async () => { const r = await authFetch('/api/admin/yas-deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId: d.id, action: 'reject', adminNote: yasNote[d.id] || undefined }) }); const data = await r.json(); if (data.success) { addToast('Rejeté', 'info'); loadDeposits(); loadYasDeposits(); } else addToast(data.error, 'error'); }} className="flex-1 py-2 rounded-lg bg-[rgba(248,113,113,0.15)] text-[#F87171] text-[0.72rem] font-semibold border-none cursor-pointer">Rejeter</button>
+                              </>
+                            ) : (
+                              <>
+                                <button onClick={async () => { const r = await authFetch('/api/admin/deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId: d.id, action: 'approve' }) }); const data = await r.json(); if (data.success) { addToast(data.message || 'Approuvé', 'success'); loadDeposits(); loadYasDeposits(); } else addToast(data.error, 'error'); }} className="flex-1 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer">Approuver</button>
+                                <button onClick={async () => { const r = await authFetch('/api/admin/deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId: d.id, action: 'reject' }) }); const data = await r.json(); if (data.success) { addToast('Rejeté', 'info'); loadDeposits(); loadYasDeposits(); } else addToast(data.error, 'error'); }} className="flex-1 py-2 rounded-lg bg-[rgba(248,113,113,0.15)] text-[#F87171] text-[0.72rem] font-semibold border-none cursor-pointer">Rejeter</button>
+                              </>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[0.6rem] px-2 py-0.5 rounded-full font-semibold" style={{ background: isInvestment ? 'rgba(34,197,94,0.14)' : 'rgba(34,197,94,0.12)', color: '#22C55E' }}>
-                            {isInvestment ? '→ Invest.' : '→ Solde'}
-                          </span>
-                          <span className="text-[0.6rem] bg-[rgba(99,102,241,0.12)] text-[#6366F1] px-2 py-0.5 rounded-full font-semibold">Yas 🇹🇬</span>
-                        </div>
-                      </div>
-                      <div className="bg-[#161719] rounded-lg p-2.5 mb-2 space-y-1">
-                        <div className="flex justify-between items-center"><span className="text-[0.65rem] text-[rgba(255,255,255,0.45)]">Compte Yas client</span><span className="text-[0.7rem] font-bold text-[#EDEDEF]">{esc(d.yasAccount)}</span></div>
-                      </div>
-                      {isInvestment && (
-                        <div className="bg-[rgba(34,197,94,0.08)] rounded-lg p-2 mb-2 border border-[rgba(34,197,94,0.15)]">
-                          <p className="text-[0.6rem] text-[rgba(34,197,94,0.85)]">
-                            <i className="fas fa-info-circle mr-1"></i>
-                            L'approbation crée l'investissement <strong>Niv. {invLevel ?? 1}</strong> de <strong>{formatMoney(invAmount)}</strong> et démarre le compte à rebours (24h → première collecte).
+                        );
+                      })}
+                      {filteredPending.length === 0 && (
+                        <div className="text-center py-6">
+                          <div className="w-12 h-12 rounded-full bg-[rgba(34,197,94,0.12)] flex items-center justify-center mx-auto mb-2">
+                            <i className="fas fa-check-circle text-[#22C55E] text-[1.2rem]"></i>
+                          </div>
+                          <p className="text-[0.82rem] text-[rgba(255,255,255,0.25)]">
+                            {depositFilter === 'all' ? 'Aucun dépôt en attente' : depositFilter === 'trx' ? 'Aucun dépôt TRX en attente' : 'Aucun dépôt YAS en attente'}
                           </p>
                         </div>
                       )}
-                      <div className="mb-2"><input type="text" value={yasNote[d.id] || ''} onChange={(e) => setYasNote(prev => ({ ...prev, [d.id]: e.target.value }))} placeholder="Note admin (optionnel)" className="w-full py-2 px-3 bg-[#161719] border-[1px] border-[rgba(255,255,255,0.06)] rounded-lg text-[0.72rem] text-white outline-none focus:border-[#6366F1]" /></div>
-                      <div className="flex gap-2">
-                        <button onClick={async () => { const r = await authFetch('/api/admin/yas-deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId: d.id, action: 'approve', adminNote: yasNote[d.id] || (isInvestment ? 'Investissement approuvé. Compte à rebours démarré.' : 'Dépôt validé. Solde principal crédité.') }) }); const data = await r.json(); if (data.success) { addToast(data.message || 'Approuvé', 'success'); loadYasDeposits(); } else addToast(data.error, 'error'); }} className="flex-1 py-2 rounded-lg bg-[#6366F1] text-[#050506] text-[0.72rem] font-bold border-none cursor-pointer"><i className="fas fa-check mr-1"></i>Approuver</button>
-                        <button onClick={async () => { const r = await authFetch('/api/admin/yas-deposits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ depositId: d.id, action: 'reject', adminNote: yasNote[d.id] || undefined }) }); const data = await r.json(); if (data.success) { addToast('Rejeté', 'info'); loadYasDeposits(); } else addToast(data.error, 'error'); }} className="flex-1 py-2 rounded-lg bg-[rgba(248,113,113,0.15)] text-[#F87171] text-[0.72rem] font-semibold border-none cursor-pointer">Rejeter</button>
-                      </div>
-                    </div>
-                    );
-                  })}
-                  {yasDeposits.filter(d => d.status === 'pending').length === 0 && (
-                    <div className="text-center py-6"><div className="w-12 h-12 rounded-full bg-[rgba(34,197,94,0.12)] flex items-center justify-center mx-auto mb-2"><i className="fas fa-check-circle text-[#22C55E] text-[1.2rem]"></i></div><p className="text-[0.82rem] text-[rgba(255,255,255,0.25)]">Aucun dépôt Yas en attente</p></div>
+                    </>
                   )}
                 </>
-              )}
+                );
+              })()}
 
               {/* Withdrawals Tab */}
               {tab === 'withdrawals' && (
@@ -2146,6 +2188,207 @@ export default function AdminScreen() {
           )}
         </div>
       </div>
+      {/* User Detail Modal */}
+      {userDetailId && (
+        <div
+          className="fixed inset-0 backdrop-blur-sm z-[7000] flex items-start justify-center overflow-y-auto"
+          style={{ background: 'rgba(0,0,0,0.5)' }}
+          onClick={() => { setUserDetailId(null); setUserDetailData(null); }}
+        >
+          <div
+            className="rounded-2xl p-5 w-[95%] max-w-[420px] my-4"
+            style={{
+              background: '#1A1B1E',
+              border: '1px solid rgba(255,255,255,0.08)',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+              animation: 'modalIn 0.25s ease-out',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {userDetailLoading && !userDetailData ? (
+              <div className="flex justify-center py-10">
+                <div className="w-8 h-8 border-3 border-[rgba(255,255,255,0.1)] border-t-[#6366F1] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
+              </div>
+            ) : userDetailData ? (
+              <>
+                {/* Header */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#6366F1] to-[#4F46E5] flex items-center justify-center text-white text-[0.8rem] font-bold shrink-0">
+                      {userDetailData.user?.name?.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || '?'}
+                    </div>
+                    <div>
+                      <div className="text-[0.95rem] font-bold text-[#EDEDEF]">{esc(userDetailData.user?.name)}</div>
+                      <div className="text-[0.65rem] text-[rgba(255,255,255,0.4)]">{esc(userDetailData.user?.email)}</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { setUserDetailId(null); setUserDetailData(null); }}
+                    className="w-8 h-8 rounded-lg bg-[rgba(255,255,255,0.06)] flex items-center justify-center text-[rgba(255,255,255,0.45)] cursor-pointer border-none shrink-0 hover:bg-[rgba(255,255,255,0.1)] transition-colors"
+                  >
+                    <i className="fas fa-times text-[0.7rem]"></i>
+                  </button>
+                </div>
+
+                {/* 1. User Info */}
+                <div className="bg-[#161719] rounded-xl p-3 mb-3">
+                  <div className="text-[0.7rem] font-bold text-[#818CF8] mb-2 flex items-center gap-1.5"><i className="fas fa-user text-[0.6rem]"></i>Informations</div>
+                  <div className="space-y-1.5">
+                    {[
+                      { label: 'Téléphone', value: esc(userDetailData.user?.phone || '—') },
+                      { label: 'Code parrainage', value: <span className="font-mono">{esc(userDetailData.user?.referralCode || '—')}</span> },
+                      { label: 'Parrainé par', value: esc(userDetailData.user?.referredByCode || '—') },
+                      { label: 'Inscription', value: userDetailData.user?.createdAt ? new Date(userDetailData.user.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—' },
+                      { label: 'Dernière activité', value: userDetailData.user?.updatedAt ? new Date(userDetailData.user.updatedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—' },
+                    ].map((row, i) => (
+                      <div key={i} className="flex justify-between items-center">
+                        <span className="text-[0.62rem] text-[rgba(255,255,255,0.4)]">{row.label}</span>
+                        <span className="text-[0.68rem] font-semibold text-[#EDEDEF] text-right max-w-[60%] truncate">{row.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. All Balances */}
+                <div className="bg-[#161719] rounded-xl p-3 mb-3">
+                  <div className="text-[0.7rem] font-bold text-[#4ADE80] mb-2 flex items-center gap-1.5"><i className="fas fa-wallet text-[0.6rem]"></i>Soldes</div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {([
+                      { label: 'Solde Total', val: userDetailData.user?.balance ?? 0, color: '#22C55E', icon: 'fa-wallet' },
+                      { label: 'Jeu', val: userDetailData.user?.tradeBalance ?? 0, color: '#F59E0B', icon: 'fa-dice' },
+                      { label: 'Investissement', val: userDetailData.user?.investBalance ?? 0, color: '#3B82F6', icon: 'fa-chart-line' },
+                      { label: 'Projet', val: userDetailData.user?.projectBalance ?? 0, color: '#8B5CF6', icon: 'fa-building' },
+                      { label: 'Vidéo', val: userDetailData.user?.videoBalance ?? 0, color: '#14B8A6', icon: 'fa-video' },
+                      { label: 'Gains vidéo tot.', val: userDetailData.user?.videoTotalEarned ?? 0, color: '#06B6D4', icon: 'fa-film' },
+                    ]).map((b) => (
+                      <div key={b.label} className="bg-[#0E0F11] rounded-lg p-2 border-l-[3px]" style={{ borderLeftColor: b.color }}>
+                        <div className="flex items-center gap-1 mb-0.5">
+                          <i className={`fas ${b.icon} text-[0.45rem]`} style={{ color: b.color }}></i>
+                          <span className="text-[0.5rem] text-[rgba(255,255,255,0.4)] uppercase tracking-[0.3px] font-semibold">{b.label}</span>
+                        </div>
+                        <div className="text-[0.78rem] font-bold text-[#EDEDEF]">{formatMoney(b.val)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 3. Account Stats */}
+                <div className="bg-[#161719] rounded-xl p-3 mb-3">
+                  <div className="text-[0.7rem] font-bold text-[#FBBF24] mb-2 flex items-center gap-1.5"><i className="fas fa-chart-bar text-[0.6rem]"></i>Statistiques</div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                      { label: 'Total déposé', val: formatMoney(userDetailData.stats?.totalDeposited ?? 0), color: '#4ADE80', icon: 'fa-arrow-down' },
+                      { label: 'Total retiré', val: formatMoney(userDetailData.stats?.totalWithdrawn ?? 0), color: '#F87171', icon: 'fa-arrow-up' },
+                      { label: 'Investissements', val: String(userDetailData.stats?.investmentCount ?? 0), color: '#6366F1', icon: 'fa-chart-line' },
+                      { label: 'Vidéos vues', val: String(userDetailData.stats?.videoWatchCount ?? 0), color: '#14B8A6', icon: 'fa-video' },
+                      { label: 'Parrainages', val: String(userDetailData.stats?.referralCount ?? 0), color: '#818CF8', icon: 'fa-users' },
+                      { label: 'Profit total', val: formatMoney(userDetailData.user?.totalProfit ?? 0), color: '#10B981', icon: 'fa-arrow-trend-up' },
+                    ].map((s) => (
+                      <div key={s.label} className="bg-[#0E0F11] rounded-lg p-2 text-center">
+                        <i className={`fas ${s.icon} text-[0.5rem] mb-1 block`} style={{ color: s.color }}></i>
+                        <div className="text-[0.75rem] font-bold text-[#EDEDEF]">{s.val}</div>
+                        <div className="text-[0.48rem] text-[rgba(255,255,255,0.3)] uppercase">{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 4. Referral Tree */}
+                <div className="bg-[#161719] rounded-xl p-3 mb-3">
+                  <div className="text-[0.7rem] font-bold text-[#C084FC] mb-2 flex items-center gap-1.5">
+                    <i className="fas fa-sitemap text-[0.6rem]"></i>
+                    Arbre de parrainage
+                    <span className="ml-auto text-[0.55rem] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(192,132,252,0.12)', color: '#C084FC' }}>
+                      {userDetailData.referralTree?.length ?? 0} filleul{((userDetailData.referralTree?.length ?? 0) !== 1) ? 's' : ''}
+                    </span>
+                  </div>
+                  {userDetailData.referralTree?.length > 0 ? (
+                    <div className="max-h-64 overflow-y-auto space-y-1.5 pr-0.5 [scrollbar-width:thin]">
+                      {userDetailData.referralTree.map((ref: any) => {
+                        const regDate = ref.createdAt ? new Date(ref.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+                        return (
+                          <div key={ref.id} className="bg-[#0E0F11] rounded-lg p-2.5 border border-[rgba(255,255,255,0.04)]">
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#C084FC] to-[#8B5CF6] flex items-center justify-center text-white text-[0.5rem] font-bold shrink-0">
+                                  {ref.name?.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || '?'}
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="text-[0.72rem] font-bold text-[#EDEDEF] truncate flex items-center gap-1.5">
+                                    {esc(ref.name)}
+                                    {ref.isActive ? (
+                                      <span className="text-[0.48rem] px-1 py-0.5 rounded-full font-semibold" style={{ background: 'rgba(34,197,94,0.14)', color: '#4ADE80' }}>Actif</span>
+                                    ) : (
+                                      <span className="text-[0.48rem] px-1 py-0.5 rounded-full font-semibold" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.35)' }}>Inactif</span>
+                                    )}
+                                  </div>
+                                  <div className="text-[0.58rem] text-[rgba(255,255,255,0.35)] truncate">{esc(ref.email)}{ref.phone ? ` · ${esc(ref.phone)}` : ''}</div>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5 px-1">
+                              <span className="text-[0.5rem] text-[rgba(255,255,255,0.3)]"><i className="fas fa-calendar mr-0.5"></i>{regDate}</span>
+                              <span className="text-[0.5rem] text-[rgba(255,255,255,0.3)]"><i className="fas fa-wallet mr-0.5 text-[#22C55E]"></i>{formatMoney(ref.balance)}</span>
+                              <span className="text-[0.5rem] text-[rgba(255,255,255,0.3)]"><i className="fas fa-chart-line mr-0.5 text-[#3B82F6]"></i>{formatMoney(ref.investBalance)}</span>
+                              <span className="text-[0.5rem] text-[rgba(255,255,255,0.3)]"><i className="fas fa-medal mr-0.5 text-[#FBBF24]"></i>{ref.levelLabel}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-center text-[0.72rem] text-[rgba(255,255,255,0.25)] py-3">Aucun filleul</p>
+                  )}
+                </div>
+
+                {/* 5. Recent Activity */}
+                <div className="bg-[#161719] rounded-xl p-3 mb-3">
+                  <div className="text-[0.7rem] font-bold text-[#F97316] mb-2 flex items-center gap-1.5">
+                    <i className="fas fa-history text-[0.6rem]"></i>
+                    Activité récente
+                    <span className="ml-auto text-[0.55rem] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(249,115,22,0.12)', color: '#F97316' }}>
+                      {userDetailData.recentTransactions?.length ?? 0}
+                    </span>
+                  </div>
+                  {userDetailData.recentTransactions?.length > 0 ? (
+                    <div className="max-h-60 overflow-y-auto space-y-1 pr-0.5 [scrollbar-width:thin]">
+                      {userDetailData.recentTransactions.map((t: any) => {
+                        const isPositive = t.amount > 0;
+                        const typeColors: Record<string, string> = {
+                          deposit: '#4ADE80', withdrawal: '#F87171', referral_bonus: '#818CF8',
+                          invest_create: '#6366F1', invest_claim: '#22C55E', trade_result: '#FBBF24',
+                          video_reward: '#14B8A6', game_win: '#EC4899', game_bet: '#F97316',
+                        };
+                        const tColor = typeColors[t.type] || 'rgba(255,255,255,0.4)';
+                        const tDate = t.createdAt ? new Date(t.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+                        return (
+                          <div key={t.id} className="flex items-center gap-2 py-1.5 px-1 border-b border-[rgba(255,255,255,0.03)] last:border-0">
+                            <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ background: `${tColor}18` }}>
+                              <i className="fas fa-circle text-[0.25rem]" style={{ color: tColor }}></i>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[0.62rem] text-[#EDEDEF] truncate">{esc(t.detail || t.type)}</div>
+                              <div className="text-[0.5rem] text-[rgba(255,255,255,0.25)]">{tDate}</div>
+                            </div>
+                            <div className={`text-[0.68rem] font-bold shrink-0 ${isPositive ? 'text-[#4ADE80]' : 'text-[#F87171]'}`}>
+                              {isPositive ? '+' : ''}{formatMoney(t.amount)}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-center text-[0.72rem] text-[rgba(255,255,255,0.25)] py-3">Aucune transaction</p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <p className="text-center text-[0.82rem] text-[#F87171] py-10">Erreur de chargement</p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Delete User Confirmation Modal */}
       {deleteUserId && (
         <div

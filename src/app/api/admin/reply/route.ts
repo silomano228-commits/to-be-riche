@@ -1,25 +1,14 @@
 import { db } from '@/lib/db';
+import { getAuthToken } from '@/lib/auth';
 import { notifyUser } from '@/lib/notify';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-function getToken(request: Request): string | null {
-  const authHeader = request.headers.get('x-auth-token');
-  if (authHeader) return authHeader;
-  const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(/br_token=([^;]+)/);
-  if (match) return match[1];
-  return null;
-}
-
 export async function POST(request: Request) {
   try {
-    const token = getToken(request);
-    if (!token) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
-
-    const admin = await db.user.findUnique({ where: { id: token } });
-    if (!admin || admin.role !== 'admin') {
+    const user = await getAuthToken(request);
+    if (!user || user.role !== 'admin') {
       return NextResponse.json({ success: false, error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -28,11 +17,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Champs manquants' });
     }
 
+    // Sanitize content length
+    if (content.length > 5000) {
+      return NextResponse.json({ success: false, error: 'Message trop long (max 5000 caractères)' });
+    }
+
     const message = await db.chatMessage.create({
       data: { content: content.trim(), userId: targetUserId, isAdmin: true, isAdminMsg: true },
     });
 
-    // Send a user notification so they know they have a new message
     await notifyUser({
       userId: targetUserId,
       type: 'new_message',
@@ -41,7 +34,6 @@ export async function POST(request: Request) {
       link: 'chat',
     });
 
-    // Return the created message so the frontend can use it directly
     return NextResponse.json({
       success: true,
       message: {
@@ -55,6 +47,6 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }

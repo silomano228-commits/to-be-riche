@@ -1,38 +1,20 @@
 import { db } from '@/lib/db';
+import { getAuthToken } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { validatePaymentAddress } from '@/lib/payment';
 
 export const dynamic = 'force-dynamic';
 
-function getToken(request: Request): string | null {
-  const authHeader = request.headers.get('x-auth-token');
-  if (authHeader) return authHeader;
-  const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(/br_token=([^;]+)/);
-  if (match) return match[1];
-  return null;
-}
-
-async function getUser(request: Request) {
-  const token = getToken(request);
-  if (!token) return null;
-  return db.user.findUnique({ where: { id: token } });
-}
-
-// Minimum video withdrawal is $1 (converted from $1 USD reference).
 const MIN_WITHDRAWAL_USD = 1;
+const MAX_WITHDRAWAL_USD = 50000;
 
 export async function POST(request: Request) {
   try {
-    const user = await getUser(request);
+    const user = await getAuthToken(request);
     if (!user) {
       return NextResponse.json({ success: false, error: 'Non authentifié' }, { status: 401 });
     }
 
-    // 3-day cycle rule: if a new cycle has begun (every 3 days of watching) and
-    // the user hasn't cleared it yet, withdrawals are BLOCKED. They must clear
-    // the cycle by depositing at investment Level 1 + inviting the required
-    // number of referrals (cycle N needs N referrals).
     if (user.videoDepositRequired) {
       let daysWatching = 0;
       if (user.videoFirstWatchAt) {
@@ -63,6 +45,13 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
+    if (amount > MAX_WITHDRAWAL_USD) {
+      return NextResponse.json({
+        success: false,
+        error: `Le retrait maximum est de $${MAX_WITHDRAWAL_USD}.`,
+      }, { status: 400 });
+    }
+
     if (!['yas', 'trx'].includes(method)) {
       return NextResponse.json({ success: false, error: 'Méthode invalide. Choisissez YAS ou TRX.' }, { status: 400 });
     }
@@ -71,18 +60,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Adresse de retrait requise.' }, { status: 400 });
     }
 
-    // Format validation — same rules as the principal account deposit flow:
-    //   YAS: 8 digits, starts with 90-93 or 70-73
-    //   TRX: starts with 'T', at least 20 chars
     const addressErr = validatePaymentAddress(method as 'yas' | 'trx', String(userAddress));
     if (addressErr) {
       return NextResponse.json({ success: false, error: addressErr }, { status: 400 });
     }
 
-    if (user.videoBalance < amount) {
+    // Re-read fresh balance inside transaction to prevent race condition
+    const freshUser = await db.user.findUnique({ where: { id: user.id }, select: { videoBalance: true } });
+    if (!freshUser || freshUser.videoBalance < amount) {
+      const bal = freshUser?.videoBalance ?? 0;
       return NextResponse.json({
         success: false,
-        error: `Solde vidéo insuffisant. Votre solde: $${user.videoBalance.toFixed(2)}. Minimum de retrait: $${MIN_WITHDRAWAL_USD}.`,
+        error: `Solde vidéo insuffisant. Votre solde: $${bal.toFixed(2)}. Minimum de retrait: $${MIN_WITHDRAWAL_USD}.`,
       }, { status: 400 });
     }
 
@@ -112,16 +101,17 @@ export async function POST(request: Request) {
           userId: user.id,
           type: 'withdrawal_pending',
           title: 'Retrait en cours de traitement',
-          message: `Votre demande de retrait de $${amount.toFixed(2)} depuis le compte Vidéo a été prise en compte. Les fonds seront disponibles dans les 6 heures.`,
+          message: `Votre demande de retrait de $${amount.toFixed(2)} depuis le compte Vidéo a été prise en compte.`,
+          link: 'wallet',
         },
       });
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Demande de retrait prise en compte. Les fonds seront disponibles dans les 6 heures.',
+      message: 'Demande de retrait prise en compte.',
     });
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }

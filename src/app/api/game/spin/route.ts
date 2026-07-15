@@ -1,37 +1,9 @@
 import { db } from '@/lib/db';
+import { getAuthToken } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { WHEEL_SEGMENTS, DAILY_SPINS, SPIN_COST } from '../status/route';
 
 export const dynamic = 'force-dynamic';
-
-function getToken(request: Request): string | null {
-  const authHeader = request.headers.get('x-auth-token');
-  if (authHeader) return authHeader;
-  const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(/br_token=([^;]+)/);
-  if (match) return match[1];
-  return null;
-}
-
-async function getUser(request: Request) {
-  const token = getToken(request);
-  if (!token) return null;
-  return db.user.findUnique({ where: { id: token } });
-}
-
-// ==================== RIGGED ALGORITHM (HIDDEN — do NOT surface in UI) ====================
-//
-// Over a rolling 3-day window derived from account age:
-//   Days 1-2: User wins ~55-65% of the time with SMALL amounts (feels like winning).
-//   Day 3+:   Win rate drops to ~25-35% (system profits more).
-//
-// Total winnings MUST NEVER exceed 70% of total spent.
-//   totalSpent = gameSpinsUsed * 0.20
-//   Hard cap:  user.gameTotalWon < totalSpent * 0.7
-//   When close to the cap → force losses.
-//   When far from the cap → allow wins.
-//
-// Jackpot ($10) is EXTREMELY rare: only allowed when gameTotalWon < totalSpent * 0.3
 
 function getAccountDayIndex(createdAt: Date | string): number {
   const createdMs = new Date(createdAt).getTime();
@@ -47,51 +19,37 @@ function shouldWin(
 ): boolean {
   const totalSpent = gameSpinsUsed * SPIN_COST;
 
-  // --- Hard profit cap: never let total won exceed 70% of total spent ---
   const profitLimit = totalSpent * 0.7;
   if (gameTotalWon >= profitLimit) {
-    // Already at or above the profit limit — force loss.
     return false;
   }
 
-  // If the next win would push us over 70%, force loss.
-  // Estimate average small win as $0.20 (most common).
   if (gameTotalWon + 0.20 >= profitLimit) {
     return false;
   }
 
   const dayIndex = getAccountDayIndex(createdAt);
 
-  // --- 3-day rolling window ---
-  // Days 0-1 (first 2 days): good days ~55-65% win rate
-  // Day 2+: bad days ~25-35% win rate
   const isGoodDay = dayIndex <= 1;
   let baseProbability = isGoodDay
-    ? 0.55 + Math.random() * 0.10  // 55-65%
-    : 0.25 + Math.random() * 0.10; // 25-35%
+    ? 0.55 + Math.random() * 0.10
+    : 0.25 + Math.random() * 0.10;
 
-  // --- Profit proximity: as user approaches the 70% cap, reduce probability ---
   const profitRatio = totalSpent > 0 ? gameTotalWon / totalSpent : 0;
   if (profitRatio > 0.5) {
-    // Within 20% of the cap: aggressively reduce
     baseProbability *= 0.3;
   } else if (profitRatio > 0.35) {
-    // Getting closer: moderate reduction
     baseProbability *= 0.6;
   } else if (profitRatio > 0.2) {
-    // Starting to approach: slight reduction
     baseProbability *= 0.85;
   }
 
-  // --- Daily catch-up mechanism ---
   const targetRate = isGoodDay ? 0.60 : 0.30;
   const expectedWinsSoFar = targetRate * spinsUsedToday;
   if (spinsUsedToday > 0) {
     if (winsSoFarToday < expectedWinsSoFar - 1.0) {
-      // Behind target — small boost (but still limited by profit cap above)
       baseProbability = Math.min(0.80, baseProbability + 0.10);
     } else if (winsSoFarToday > expectedWinsSoFar + 1.0) {
-      // Ahead of target — trim
       baseProbability = Math.max(0.10, baseProbability - 0.10);
     }
   }
@@ -99,46 +57,35 @@ function shouldWin(
   return Math.random() < baseProbability;
 }
 
-// Pick the wheel segment index for a given outcome.
-// Wins are HEAVILY biased toward small amounts ($0.10, $0.20, $0.30).
-// The $10 jackpot is EXTREMELY rare: only when gameTotalWon < totalSpent * 0.3.
 function pickSegment(isWin: boolean, gameTotalWon: number, gameSpinsUsed: number): number {
   if (isWin) {
     const totalSpent = gameSpinsUsed * SPIN_COST;
 
-    // Small win segments: $0.10, $0.20, $0.30 (most common)
     const smallWinIndices = WHEEL_SEGMENTS
       .map((s, i) => (s.isWin && s.reward <= 0.30 ? i : -1))
       .filter((i) => i >= 0);
 
-    // Medium win segments: $0.50, $0.80, $1.00
     const mediumWinIndices = WHEEL_SEGMENTS
       .map((s, i) => (s.isWin && s.reward > 0.30 && s.reward < 10 ? i : -1))
       .filter((i) => i >= 0);
 
-    // Jackpot segment: $10.00
     const jackpotIndices = WHEEL_SEGMENTS
       .map((s, i) => (s.isWin && s.reward >= 10 ? i : -1))
       .filter((i) => i >= 0);
 
-    // Jackpot: ONLY allow if totalWon is less than 30% of total spent
     const jackpotAllowed = totalSpent > 0 && gameTotalWon < totalSpent * 0.3;
     if (jackpotAllowed && jackpotIndices.length > 0 && Math.random() < 0.01) {
-      // 1% chance of jackpot when allowed (extremely rare)
       return jackpotIndices[Math.floor(Math.random() * jackpotIndices.length)];
     }
 
-    // Medium wins: 8% chance
     if (mediumWinIndices.length > 0 && Math.random() < 0.08) {
       return mediumWinIndices[Math.floor(Math.random() * mediumWinIndices.length)];
     }
 
-    // 91%+ of wins: small amounts ($0.10, $0.20, $0.30)
     if (smallWinIndices.length > 0) {
       return smallWinIndices[Math.floor(Math.random() * smallWinIndices.length)];
     }
 
-    // Fallback: any win segment
     const anyWinIndices = WHEEL_SEGMENTS
       .map((s, i) => (s.isWin ? i : -1))
       .filter((i) => i >= 0);
@@ -147,7 +94,6 @@ function pickSegment(isWin: boolean, gameTotalWon: number, gameSpinsUsed: number
     }
   }
 
-  // Loss: pick uniformly from "Perdu" segments
   const losingIndices = WHEEL_SEGMENTS
     .map((s, i) => (!s.isWin ? i : -1))
     .filter((i) => i >= 0);
@@ -156,20 +102,22 @@ function pickSegment(isWin: boolean, gameTotalWon: number, gameSpinsUsed: number
 
 export async function POST(request: Request) {
   try {
-    const user = await getUser(request);
+    const user = await getAuthToken(request);
     if (!user) {
       return NextResponse.json({ success: false, error: 'Non authentifié' }, { status: 401 });
     }
 
     const today = new Date().toISOString().slice(0, 10);
 
-    // Reset if date changed
-    let spinsUsed = user.gameSpinsUsed;
-    if (user.gameSpinsDate !== today) {
+    // Re-read user fresh to get latest spin count (prevents race on daily reset)
+    const freshUser = await db.user.findUnique({ where: { id: user.id } });
+    if (!freshUser) return NextResponse.json({ success: false, error: 'Utilisateur introuvable' }, { status: 401 });
+
+    let spinsUsed = freshUser.gameSpinsUsed;
+    if (freshUser.gameSpinsDate !== today) {
       spinsUsed = 0;
     }
 
-    // Daily limit: 10 spins, resets next day
     if (spinsUsed >= DAILY_SPINS) {
       return NextResponse.json({
         success: false,
@@ -178,43 +126,14 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    // ---- Deduct the $0.20 spin cost ----
-    // Order: balance (principal/jeu) → investBalance → videoBalance → projectBalance
-    // If ALL are zero, return error.
-    const bal = Math.max(0, user.balance);
-    const inv = Math.max(0, user.investBalance);
-    const vid = Math.max(0, user.videoBalance);
-    const prj = Math.max(0, user.projectBalance);
+    // Pre-check balance for fast-fail (not authoritative — authoritative check is inside transaction)
+    const preBal = Math.max(0, freshUser.balance);
+    const preInv = Math.max(0, freshUser.investBalance);
+    const preVid = Math.max(0, freshUser.videoBalance);
+    const prePrj = Math.max(0, freshUser.projectBalance);
+    const totalAvailable = preBal + preInv + preVid + prePrj;
 
-    let remaining = SPIN_COST;
-    let fromBalance = 0;
-    let fromInvest = 0;
-    let fromVideo = 0;
-    let fromProject = 0;
-
-    // 1) Principal balance (jeu)
-    if (remaining > 0 && bal > 0) {
-      fromBalance = Math.min(bal, remaining);
-      remaining -= fromBalance;
-    }
-    // 2) Invest balance
-    if (remaining > 0 && inv > 0) {
-      fromInvest = Math.min(inv, remaining);
-      remaining -= fromInvest;
-    }
-    // 3) Video balance
-    if (remaining > 0 && vid > 0) {
-      fromVideo = Math.min(vid, remaining);
-      remaining -= fromVideo;
-    }
-    // 4) Project balance
-    if (remaining > 0 && prj > 0) {
-      fromProject = Math.min(prj, remaining);
-      remaining -= fromProject;
-    }
-
-    if (remaining > 0) {
-      // Not enough across all accounts
+    if (totalAvailable < SPIN_COST) {
       return NextResponse.json({
         success: false,
         insufficientBalance: true,
@@ -222,26 +141,78 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    // Count wins today from gameSpins
-    const todaySpins = await db.gameSpin.findMany({
-      where: { userId: user.id, spinDate: today },
-    });
-    const winsSoFar = todaySpins.filter((s) => s.result === 'win').length;
+    // Mutable result container for transaction output
+    const result: { segmentIdx: number; winAmount: number; isWin: boolean; fromBalance: number; fromInvest: number; fromVideo: number; fromProject: number } = {
+      segmentIdx: 0, winAmount: 0, isWin: false, fromBalance: 0, fromInvest: 0, fromVideo: 0, fromProject: 0,
+    };
 
-    // Use cumulative gameSpinsUsed (across all days) for the rigged algorithm,
-    // plus gameTotalWon which also persists across days.
-    const cumulativeSpinsUsed = user.gameSpinsDate === today ? user.gameSpinsUsed : 0;
-    const isWin = shouldWin(cumulativeSpinsUsed, user.gameTotalWon, user.createdAt, spinsUsed, winsSoFar);
-    const segmentIdx = pickSegment(isWin, user.gameTotalWon, cumulativeSpinsUsed);
-    const segment = WHEEL_SEGMENTS[segmentIdx];
-    const winAmount = segment.reward;
     const now = new Date();
 
     await db.$transaction(async (tx) => {
-      // 1) Record the spin
+      // Re-read user inside transaction for authoritative balance (prevents race condition)
+      const txUser = await tx.user.findUnique({ where: { id: freshUser.id } });
+      if (!txUser) throw new Error('Utilisateur introuvable');
+
+      // Re-check daily limit inside transaction
+      let txSpinsUsed = txUser.gameSpinsUsed;
+      if (txUser.gameSpinsDate !== today) txSpinsUsed = 0;
+      if (txSpinsUsed >= DAILY_SPINS) throw new Error('DAILY_LIMIT');
+
+      // Authoritative balance check inside transaction
+      const bal = Math.max(0, txUser.balance);
+      const inv = Math.max(0, txUser.investBalance);
+      const vid = Math.max(0, txUser.videoBalance);
+      const prj = Math.max(0, txUser.projectBalance);
+
+      let remaining = SPIN_COST;
+      let fromBalance = 0;
+      let fromInvest = 0;
+      let fromVideo = 0;
+      let fromProject = 0;
+
+      if (remaining > 0 && bal > 0) {
+        fromBalance = Math.min(bal, remaining);
+        remaining -= fromBalance;
+      }
+      if (remaining > 0 && inv > 0) {
+        fromInvest = Math.min(inv, remaining);
+        remaining -= fromInvest;
+      }
+      if (remaining > 0 && vid > 0) {
+        fromVideo = Math.min(vid, remaining);
+        remaining -= fromVideo;
+      }
+      if (remaining > 0 && prj > 0) {
+        fromProject = Math.min(prj, remaining);
+        remaining -= fromProject;
+      }
+
+      if (remaining > 0) throw new Error('INSUFFICIENT_BALANCE');
+
+      // Re-read today's spins inside transaction for accurate win calculation
+      const todaySpins = await tx.gameSpin.findMany({
+        where: { userId: txUser.id, spinDate: today },
+      });
+      const winsSoFar = todaySpins.filter((s) => s.result === 'win').length;
+
+      const cumulativeSpinsUsed = txUser.gameSpinsDate === today ? txUser.gameSpinsUsed : 0;
+      const isWin = shouldWin(cumulativeSpinsUsed, txUser.gameTotalWon, txUser.createdAt, txSpinsUsed, winsSoFar);
+      const segmentIdx = pickSegment(isWin, txUser.gameTotalWon, cumulativeSpinsUsed);
+      const segment = WHEEL_SEGMENTS[segmentIdx];
+      const winAmount = segment.reward;
+
+      // Store results for response outside transaction
+      result.segmentIdx = segmentIdx;
+      result.winAmount = winAmount;
+      result.isWin = isWin;
+      result.fromBalance = fromBalance;
+      result.fromInvest = fromInvest;
+      result.fromVideo = fromVideo;
+      result.fromProject = fromProject;
+
       await tx.gameSpin.create({
         data: {
-          userId: user.id,
+          userId: txUser.id,
           betAmount: SPIN_COST,
           winAmount,
           result: isWin ? 'win' : 'loss',
@@ -250,9 +221,6 @@ export async function POST(request: Request) {
         },
       });
 
-      // 2) Build the user update with net effect on each account.
-      //    - Principal balance change = winAmount (if won) - fromBalance (cost)
-      //    - Other balances only decrease by their cost portion
       const balanceDelta = (isWin ? winAmount : 0) - fromBalance;
       const investDelta = -fromInvest;
       const videoDelta = -fromVideo;
@@ -272,11 +240,10 @@ export async function POST(request: Request) {
       }
 
       await tx.user.update({
-        where: { id: user.id },
+        where: { id: txUser.id },
         data: userUpdate,
       });
 
-      // 3) Build detail string for cost audit
       const costParts: string[] = [];
       if (fromBalance > 0) costParts.push(`${fromBalance.toFixed(2)} $ du compte Jeu`);
       if (fromInvest > 0) costParts.push(`${fromInvest.toFixed(2)} $ de l'investissement`);
@@ -286,54 +253,60 @@ export async function POST(request: Request) {
         ? `Tour de roue (0,20 $) — ${costParts.join(' + ')}`
         : `Tour de roue (0,20 $) — ${costParts[0]}`;
 
-      // 4) Audit transaction for the spin cost (always)
       await tx.transaction.create({
         data: {
           type: 'game_spin_cost',
           amount: -SPIN_COST,
           detail: costDetail,
-          userId: user.id,
+          userId: txUser.id,
         },
       });
 
-      // 5) Audit transaction for the win (only if won)
       if (isWin && winAmount > 0) {
         await tx.transaction.create({
           data: {
             type: 'game_win',
             amount: winAmount,
             detail: `Gain roue de la fortune: ${segment.label}`,
-            userId: user.id,
+            userId: txUser.id,
           },
         });
       }
     });
 
-    // Re-fetch user for accurate balance
-    const updatedUser = await db.user.findUnique({ where: { id: user.id } });
+    const updatedUser = await db.user.findUnique({ where: { id: freshUser.id } });
 
     const newSpinsUsed = spinsUsed + 1;
     const spinsRemaining = Math.max(0, DAILY_SPINS - newSpinsUsed);
-    const netResult = winAmount - SPIN_COST;
+    const netResult = result.winAmount - SPIN_COST;
+    const segment = WHEEL_SEGMENTS[result.segmentIdx];
 
-    const message = isWin
-      ? `Félicitations ! Vous avez gagné $${winAmount.toFixed(2)} à la roue ! (Coût du tour: $${SPIN_COST.toFixed(2)} — gain net: $${netResult.toFixed(2)})`
+    const message = result.isWin
+      ? `Félicitations ! Vous avez gagné $${result.winAmount.toFixed(2)} à la roue ! (Coût du tour: $${SPIN_COST.toFixed(2)} — gain net: $${netResult.toFixed(2)})`
       : `Vous n'avez pas gagné cette fois-ci. Coût du tour: $${SPIN_COST.toFixed(2)}. Réessayez !`;
 
     return NextResponse.json({
       success: true,
-      segmentIdx,
-      segment: { label: segment.label, reward: segment.reward, color: segment.color, isWin },
-      isWin,
-      winAmount,
+      segmentIdx: result.segmentIdx,
+      segment: { label: segment.label, reward: segment.reward, color: segment.color, isWin: result.isWin },
+      isWin: result.isWin,
+      winAmount: result.winAmount,
       spinCost: SPIN_COST,
       netResult,
       spinsUsed: newSpinsUsed,
       spinsRemaining,
-      newBalance: updatedUser?.balance ?? user.balance,
+      newBalance: updatedUser?.balance ?? freshUser.balance,
       message,
     });
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    if (error instanceof Error) {
+      if (error.message === 'DAILY_LIMIT') {
+        return NextResponse.json({ success: false, dailyLimitReached: true, error: 'Limite quotidienne atteinte (10 tours). Revenez demain !' }, { status: 400 });
+      }
+      if (error.message === 'INSUFFICIENT_BALANCE') {
+        return NextResponse.json({ success: false, insufficientBalance: true, error: 'Veuillez effectuer un dépôt sur votre compte Jeu pour continuer à jouer.' }, { status: 400 });
+      }
+    }
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }

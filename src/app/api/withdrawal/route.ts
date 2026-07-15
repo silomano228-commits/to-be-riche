@@ -32,21 +32,28 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { amount, trxAddress, sourceAccount } = body;
 
-    // Validate amount
+    // Validate amount — $1 minimum for video account, $5 for all others
+    const src = sourceAccount || 'jeu';
     const amt = parseFloat(amount);
-    if (isNaN(amt) || amt < 5) {
-      return NextResponse.json({ success: false, error: 'Minimum de retrait : 5 $' });
+    const minWithdrawal = src === 'video' ? 1 : 5;
+    if (isNaN(amt) || !isFinite(amt) || amt < minWithdrawal) {
+      return NextResponse.json({ success: false, error: `Minimum de retrait : ${minWithdrawal} $` });
+    }
+    if (amt > 50000) {
+      return NextResponse.json({ success: false, error: 'Maximum de retrait : 50 000 $' });
     }
 
-    // Determine source balance based on sourceAccount
-    const src = sourceAccount || 'jeu';
+    // Re-read user fresh to prevent TOCTOU race condition
+    const freshUser = await db.user.findUnique({ where: { id: user.id } });
+    if (!freshUser) return NextResponse.json({ success: false, error: 'Utilisateur introuvable' }, { status: 401 });
+
     const balanceMap: Record<string, number> = {
-      jeu: user.balance || 0,
-      investissement: user.investBalance || 0,
-      projet: user.projectBalance || 0,
-      video: user.videoBalance || 0,
+      jeu: freshUser.balance || 0,
+      investissement: freshUser.investBalance || 0,
+      projet: freshUser.projectBalance || 0,
+      video: freshUser.videoBalance || 0,
     };
-    const srcBalance = balanceMap[src] ?? user.balance;
+    const srcBalance = balanceMap[src] ?? freshUser.balance;
     const srcLabel = src === 'jeu' ? 'compte jeu' : src === 'investissement' ? 'compte investissement' : src === 'projet' ? 'compte projet' : 'compte vidéo';
 
     if (amt > srcBalance) {
@@ -54,8 +61,8 @@ export async function POST(request: Request) {
     }
 
     // 48h cooldown after first deposit
-    if (user.firstDepositAt) {
-      const hoursSinceFirstDeposit = (Date.now() - new Date(user.firstDepositAt).getTime()) / (1000 * 60 * 60);
+    if (freshUser.firstDepositAt) {
+      const hoursSinceFirstDeposit = (Date.now() - new Date(freshUser.firstDepositAt).getTime()) / (1000 * 60 * 60);
       if (hoursSinceFirstDeposit < 48) {
         const hoursLeft = Math.ceil(48 - hoursSinceFirstDeposit);
         return NextResponse.json({
@@ -74,21 +81,22 @@ export async function POST(request: Request) {
     });
     const requiredReferrals = getRequiredReferrals(completedWithdrawals);
 
-    if (requiredReferrals > user.referralCount) {
-      const needed = requiredReferrals - user.referralCount;
+    if (requiredReferrals > freshUser.referralCount) {
+      const needed = requiredReferrals - freshUser.referralCount;
       return NextResponse.json({
         success: false,
         error: `Parrainage obligatoire ! Vous devez parrainer au moins ${needed} personne${needed > 1 ? 's' : ''} supplémentaire${needed > 1 ? 's' : ''} pour effectuer ce retrait. Partagez votre code : ${user.referralCode}`,
         needsReferral: true,
         requiredReferrals,
-        currentReferrals: user.referralCount,
-        referralCode: user.referralCode,
+        currentReferrals: freshUser.referralCount,
+        referralCode: freshUser.referralCode,
       });
     }
 
-    // Validate TRX address
-    if (!trxAddress || trxAddress.length < 20) {
-      return NextResponse.json({ success: false, error: 'Adresse TRX invalide' });
+    // Validate TRX address (must start with T and be 34 characters)
+    const trimmedTrxAddr = (trxAddress || '').trim();
+    if (!trimmedTrxAddr || !/^T[A-Za-z0-9]{33}$/.test(trimmedTrxAddr)) {
+      return NextResponse.json({ success: false, error: 'Adresse TRX invalide (doit commencer par T et faire 34 caractères)' });
     }
 
     // Check if user already has a pending withdrawal (any type)
@@ -106,7 +114,7 @@ export async function POST(request: Request) {
         userId: user.id,
         amount: amt,
         type: 'trx',
-        trxAddress,
+        trxAddress: trimmedTrxAddr,
         status: 'pending',
         sourceAccount: src,
       },
@@ -117,7 +125,7 @@ export async function POST(request: Request) {
       data: {
         type: 'withdrawal_pending',
         amount: -amt,
-        detail: `Retrait TRX en attente — ${amt} $ vers ${trxAddress} (${srcLabel})`,
+        detail: `Retrait TRX en attente — ${amt} $ vers ${trimmedTrxAddr} (${srcLabel})`,
         userId: user.id,
       },
     });
@@ -126,7 +134,7 @@ export async function POST(request: Request) {
     await notifyAdmin({
       type: 'new_withdrawal',
       title: 'Nouvelle demande de retrait',
-      message: `${user.name} demande un retrait de ${amt.toFixed(2)} $ (TRX) vers ${trxAddress}`,
+      message: `${freshUser.name} demande un retrait de ${amt.toFixed(2)} $ (TRX) vers ${trimmedTrxAddr}`,
       userId: user.id,
     });
 

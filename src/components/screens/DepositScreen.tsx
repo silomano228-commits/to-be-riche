@@ -44,7 +44,7 @@ export default function DepositScreen() {
   const [yasAmount, setYasAmount] = useState('');
   const [yasAccount, setYasAccount] = useState('');
   const [yasSubmitting, setYasSubmitting] = useState(false);
-  const [cfaUsdRate, setCfaUsdRate] = useState(600);
+  const [cfaUsdRate, setCfaUsdRate] = useState(550);
   const [adminYasAccount, setAdminYasAccount] = useState('');
   const [yasCopied, setYasCopied] = useState(false);
   const [syntaxCopied, setSyntaxCopied] = useState(false);

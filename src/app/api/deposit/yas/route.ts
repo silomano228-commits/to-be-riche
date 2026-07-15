@@ -1,19 +1,13 @@
 import { db } from '@/lib/db';
+import { getAuthToken } from '@/lib/auth';
 import { notifyAdmin, notifyUser } from '@/lib/notify';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { getTrxPrice, getTrxUsdPrice } from '@/lib/trongrid';
 import { ensureSiteConfig } from '@/lib/site-config';
 
 export const dynamic = 'force-dynamic';
 
-function getToken(request: Request): string | null {
-  const authHeader = request.headers.get('x-auth-token');
-  if (authHeader) return authHeader;
-  return null;
-}
-
-// getSiteConfig is replaced by ensureSiteConfig which auto-seeds defaults
+const MAX_DEPOSIT = 50000;
 
 /**
  * Check if a user has ANY pending deposit (TRX or YAS)
@@ -32,35 +26,32 @@ async function getAnyPendingDeposit(userId: string) {
   return null;
 }
 
-// POST — Crée une demande de dépôt Yas (vers compte principal ou conversion TRX)
+// POST — Crée une demande de dépôt Yas
 export async function POST(request: Request) {
   try {
-    let token = getToken(request);
-    if (!token) {
-      const cookieStore = await cookies();
-      token = cookieStore.get('br_token')?.value || null;
-    }
-    if (!token) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
+    const user = await getAuthToken(request);
+    if (!user) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
 
     const { amountCfa, yasAccount, trxAddress, destination: destParam, targetAccount } = await request.json();
     const amtCfa = parseFloat(amountCfa);
-    // Determine destination based on targetAccount
     const safeDestination = targetAccount === 'jeu' ? 'balance'
       : targetAccount === 'projet' ? 'projectBalance'
       : targetAccount === 'invest' ? 'investBalance'
       : (destParam || 'balance');
 
-    // Get CFA rate from config (auto-seeded if missing)
     const config = await ensureSiteConfig();
     const cfaUsdRate = config.cfaUsdRate || 600;
 
-    if (isNaN(amtCfa) || amtCfa < 3000) {
+    if (isNaN(amtCfa) || !isFinite(amtCfa) || amtCfa < 3000) {
       return NextResponse.json({ success: false, error: 'Minimum 3 000 FCFA' });
+    }
+    const amountUsd = Math.round((amtCfa / cfaUsdRate) * 100) / 100;
+    if (amountUsd > 50000) {
+      return NextResponse.json({ success: false, error: 'Maximum de dépôt: 30 000 000 FCFA' });
     }
     if (!yasAccount || !yasAccount.trim()) {
       return NextResponse.json({ success: false, error: 'Numéro de compte Yas du Togo requis' });
     }
-    // Validate Yas account: 8 digits, starts with 90-93 or 70-73
     const yasNum = yasAccount.trim();
     if (!/^\d{8}$/.test(yasNum)) {
       return NextResponse.json({ success: false, error: 'Le numéro Yas doit contenir exactement 8 chiffres' });
@@ -70,8 +61,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Le numéro Yas doit commencer par 90-93 ou 70-73' });
     }
 
-    // Vérifier s'il y a déjà un dépôt en attente (TRX OU YAS)
-    const anyPending = await getAnyPendingDeposit(token);
+    const anyPending = await getAnyPendingDeposit(user.id);
     if (anyPending) {
       const errorMsg = anyPending.type === 'trx'
         ? 'Vous avez déjà un dépôt TRX en attente de confirmation. Attendez qu\'il soit traité avant de faire une nouvelle demande.'
@@ -79,10 +69,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: errorMsg });
     }
 
-    // Calculate amounts
-    const amountUsd = Math.round((amtCfa / cfaUsdRate) * 100) / 100;
-
-    // Prix TRX
     let trxPrice = await getTrxPrice();
     const configPrice = await getTrxUsdPrice();
     if (configPrice > 0) trxPrice = configPrice;
@@ -91,7 +77,7 @@ export async function POST(request: Request) {
 
     const deposit = await db.yasDeposit.create({
       data: {
-        userId: token,
+        userId: user.id,
         amountCfa: amtCfa,
         amountUsd,
         amountTrx,
@@ -103,20 +89,15 @@ export async function POST(request: Request) {
       },
     });
 
-    // Notify admin about new YAS deposit request
-    const depositUser = await db.user.findUnique({ where: { id: token } });
-    if (depositUser) {
-      await notifyAdmin({
-        type: 'new_deposit',
-        title: 'Nouveau dépôt Yas',
-        message: `${depositUser.name} demande un dépôt de ${amtCfa.toLocaleString()} FCFA (${amountUsd.toFixed(2)} $) via Yas`,
-        userId: token,
-      });
-    }
+    await notifyAdmin({
+      type: 'new_deposit',
+      title: 'Nouveau dépôt Yas',
+      message: `${user.name} demande un dépôt de ${amtCfa.toLocaleString()} FCFA (${amountUsd.toFixed(2)} $) via Yas`,
+      userId: user.id,
+    });
 
-    // Notify user that their deposit request has been received
     await notifyUser({
-      userId: token,
+      userId: user.id,
       type: 'deposit_pending',
       title: 'Demande de dépôt prise en compte',
       message: 'Votre demande de dépôt a été prise en compte. Elle sera vérifiée prochainement.',
@@ -136,43 +117,36 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }
 
 // GET — Info: prix TRX, dépôt Yas en attente, cfaUsdRate, adminYasAccount
 export async function GET(request: Request) {
   try {
-    let token = getToken(request);
-    if (!token) {
-      const cookieStore = await cookies();
-      token = cookieStore.get('br_token')?.value || null;
-    }
-    if (!token) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
+    const user = await getAuthToken(request);
+    if (!user) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
 
     let trxPrice = await getTrxPrice();
     const configPrice = await getTrxUsdPrice();
     if (configPrice > 0) trxPrice = configPrice;
 
-    // Get site config for cfaUsdRate and adminYasAccount (auto-seeded if missing)
     const config = await ensureSiteConfig();
     const cfaUsdRate = config.cfaUsdRate || 600;
     const adminYasAccount = config.adminYasAccount;
 
     const deposit = await db.yasDeposit.findFirst({
-      where: { userId: token, status: 'pending' },
+      where: { userId: user.id, status: 'pending' },
       orderBy: { createdAt: 'desc' },
     });
 
-    // Also check if user has a pending TRX deposit
     const trxDeposit = await db.pendingDeposit.findFirst({
-      where: { userId: token, status: 'pending' },
+      where: { userId: user.id, status: 'pending' },
       orderBy: { createdAt: 'desc' },
     });
 
-    // Get the latest processed deposit
     const lastProcessed = await db.yasDeposit.findFirst({
-      where: { userId: token, status: { in: ['approved', 'rejected'] } },
+      where: { userId: user.id, status: { in: ['approved', 'rejected'] } },
       orderBy: { updatedAt: 'desc' },
     });
 
@@ -211,6 +185,6 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }

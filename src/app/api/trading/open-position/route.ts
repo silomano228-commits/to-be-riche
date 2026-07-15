@@ -6,18 +6,14 @@ import {
   MIN_TRADE_AMOUNT,
   MIN_BALANCE_TO_ACCESS,
   getSimulatedPrice,
-  getToken,
 } from '@/lib/trading/helpers';
+import { getAuthToken } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-async function getUser(request: Request) {
-  return getToken(request);
-}
-
 export async function POST(request: Request) {
   try {
-    const user = await getUser(request);
+    const user = await getAuthToken(request);
     if (!user) {
       return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
     }
@@ -58,8 +54,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check sufficient balance
-    if (user.tradeBalance < tradeAmount) {
+    // Check sufficient balance (re-read fresh to prevent race)
+    const freshUser = await db.user.findUnique({ where: { id: user.id }, select: { tradeBalance: true } });
+    if (!freshUser || freshUser.tradeBalance < tradeAmount) {
       return NextResponse.json(
         { success: false, error: 'Insufficient trading balance. Transfer funds from your Wallet.' },
         { status: 400 }
@@ -87,37 +84,30 @@ export async function POST(request: Request) {
     // Generate simulated entry price
     const entryPrice = getSimulatedPrice(asset);
 
-    // Create the position
-    const position = await db.tradingPosition.create({
-      data: {
-        userId: user.id,
-        asset,
-        direction,
-        amount: tradeAmount,
-        entryPrice,
-        currentPrice: entryPrice,
-        stopLoss: sl,
-        takeProfit: tp,
-        profitLoss: 0,
-        plPercent: 0,
-        status: 'open',
-      },
-    });
+    // Atomic: create position + deduct balance
+    const position = await db.$transaction(async (tx) => {
+      const p = await tx.tradingPosition.create({
+        data: {
+          userId: user.id, asset, direction, amount: tradeAmount,
+          entryPrice, currentPrice: entryPrice, stopLoss: sl, takeProfit: tp,
+          profitLoss: 0, plPercent: 0, status: 'open',
+        },
+      });
 
-    // Deduct from tradeBalance
-    await db.user.update({
-      where: { id: user.id },
-      data: { tradeBalance: { decrement: tradeAmount } },
-    });
+      await tx.user.update({
+        where: { id: user.id },
+        data: { tradeBalance: { decrement: tradeAmount } },
+      });
 
-    // Create transaction record
-    await db.transaction.create({
-      data: {
-        type: 'trading_open',
-        amount: -tradeAmount,
-        detail: `Trading Arena: ${direction} $${tradeAmount.toFixed(2)} ${asset} @ ${entryPrice}`,
-        userId: user.id,
-      },
+      await tx.transaction.create({
+        data: {
+          type: 'trading_open', amount: -tradeAmount,
+          detail: `Trading Arena: ${direction} $${tradeAmount.toFixed(2)} ${asset} @ ${entryPrice}`,
+          userId: user.id,
+        },
+      });
+
+      return p;
     });
 
     return NextResponse.json({
@@ -136,6 +126,6 @@ export async function POST(request: Request) {
       message: `Position opened: ${direction} $${tradeAmount.toFixed(2)} ${asset} @ ${entryPrice}`,
     });
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }

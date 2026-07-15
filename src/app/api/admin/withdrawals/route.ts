@@ -1,46 +1,18 @@
 import { db } from '@/lib/db';
 import { notifyUser } from '@/lib/notify';
+import { checkAdmin } from '@/app/api/admin/data/route';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-function getToken(request: Request): string | null {
-  const authHeader = request.headers.get('x-auth-token');
-  if (authHeader) return authHeader;
-  const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(/br_token=([^;]+)/);
-  if (match) return match[1];
-  return null;
-}
-
-async function checkAdmin(request: Request) {
-  const token = getToken(request);
-  if (!token) return { error: NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 }), admin: null };
-  const admin = await db.user.findUnique({ where: { id: token } });
-  if (!admin || admin.role !== 'admin') return { error: NextResponse.json({ success: false, error: 'Accès refusé' }, { status: 403 }), admin: null };
-  return { error: null, admin };
-}
-
-// GET — List all withdrawal requests (admin only)
 export async function GET(request: Request) {
   try {
-    const { error, admin } = await checkAdmin(request);
+    const { error } = await checkAdmin(request);
     if (error) return error;
-
-    console.log('[ADMIN-WITHDRAWALS] Admin:', admin?.name, 'fetching withdrawals...');
 
     const withdrawals = await db.withdrawal.findMany({
       orderBy: { createdAt: 'desc' },
-      include: {
-        user: {
-          select: { id: true, name: true, email: true, balance: true },
-        },
-      },
-    });
-
-    console.log('[ADMIN-WITHDRAWALS] Found', withdrawals.length, 'withdrawals');
-    withdrawals.forEach(w => {
-      console.log(`  - ${w.type} | ${w.status} | ${w.amount} | yasAccount: ${w.yasAccount} | trxAddress: ${w.trxAddress} | user: ${w.user?.name}`);
+      include: { user: { select: { id: true, name: true, email: true, balance: true } } },
     });
 
     const stats = {
@@ -54,13 +26,10 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ success: true, data: withdrawals, stats });
   } catch (error) {
-    console.error('[ADMIN-WITHDRAWALS] GET Error:', error);
     return NextResponse.json({ success: false, error: 'Erreur serveur' });
   }
 }
 
-// POST — Approve, execute, or reject a withdrawal request (admin only)
-// Flow: pending → approved (admin validates) → executed (admin sends funds, balance deducted)
 export async function POST(request: Request) {
   try {
     const { error } = await checkAdmin(request);
@@ -78,7 +47,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Retrait introuvable' });
     }
 
-    // ========== APPROVE ==========
     if (action === 'approve') {
       if (withdrawal.status !== 'pending') {
         return NextResponse.json({ success: false, error: 'Ce retrait n\'est plus en attente' });
@@ -89,31 +57,22 @@ export async function POST(request: Request) {
         data: { status: 'approved', adminNote: adminNote || null },
       });
 
-      // Notify user
       await notifyUser({
-        userId: withdrawal.userId,
-        type: 'withdrawal_approved',
+        userId: withdrawal.userId, type: 'withdrawal_approved',
         title: 'Retrait approuvé',
-        message: `Votre retrait de ${withdrawal.amount.toFixed(2)} $ a été approuvé. Il sera traité prochainement. Actualisez votre page régulièrement pour voir votre solde à jour.`,
+        message: `Votre retrait de ${withdrawal.amount.toFixed(2)} $ a été approuvé.`,
         link: 'wallet',
       });
 
       return NextResponse.json({ success: true, message: 'Retrait approuvé — prêt pour exécution' });
     }
 
-    // ========== EXECUTE ==========
     if (action === 'execute') {
       if (withdrawal.status !== 'approved') {
         return NextResponse.json({ success: false, error: 'Le retrait doit d\'abord être approuvé' });
       }
 
-      // Verify user still has enough balance from the source account
-      const user = await db.user.findUnique({ where: { id: withdrawal.userId } });
-      if (!user) {
-        return NextResponse.json({ success: false, error: 'Utilisateur introuvable' });
-      }
-
-      // Determine source balance field based on sourceAccount
+      // Determine source balance field
       const src = withdrawal.sourceAccount || 'jeu';
       const balanceFieldMap: Record<string, string> = {
         jeu: 'balance',
@@ -122,56 +81,54 @@ export async function POST(request: Request) {
         video: 'videoBalance',
       };
       const balanceField = balanceFieldMap[src] || 'balance';
-      const currentBalance = (user as any)[balanceField] || 0;
 
-      if (currentBalance < withdrawal.amount) {
-        const label = src === 'jeu' ? 'compte jeu' : src === 'investissement' ? 'compte investissement' : src === 'projet' ? 'compte projet' : 'compte vidéo';
-        return NextResponse.json({ success: false, error: `L'utilisateur n'a plus assez de solde sur le ${label}` });
+      // Execute atomically: check balance + deduct + update status in transaction
+      try {
+        await db.$transaction(async (tx) => {
+          // Re-read user inside transaction for fresh balance
+          const user = await tx.user.findUnique({ where: { id: withdrawal.userId } });
+          if (!user) throw new Error('Utilisateur introuvable');
+
+          const currentBalance = (user as Record<string, unknown>)[balanceField] as number || 0;
+
+          if (currentBalance < withdrawal.amount) {
+            throw new Error(`Solde insuffisant sur le compte ${balanceField}`);
+          }
+
+          await tx.user.update({
+            where: { id: withdrawal.userId },
+            data: { [balanceField]: { decrement: withdrawal.amount } },
+          });
+
+          await tx.transaction.create({
+            data: {
+              type: 'withdrawal',
+              amount: withdrawal.amount,
+              detail: `Retrait exécuté — ${withdrawal.amount} $ vers ${withdrawal.trxAddress || withdrawal.yasAccount || ''}`,
+              userId: withdrawal.userId,
+            },
+          });
+
+          await tx.withdrawal.update({
+            where: { id: withdrawalId },
+            data: { status: 'executed', adminNote: adminNote || null },
+          });
+        });
+
+        await notifyUser({
+          userId: withdrawal.userId, type: 'withdrawal_executed',
+          title: 'Retrait exécuté !',
+          message: `Votre retrait de ${withdrawal.amount.toFixed(2)} $ a été exécuté avec succès.`,
+          link: 'wallet',
+        });
+
+        return NextResponse.json({ success: true, message: 'Retrait exécuté — fonds envoyés et solde débité' });
+      } catch (txError) {
+        const msg = txError instanceof Error ? txError.message : 'Erreur lors de l\'exécution';
+        return NextResponse.json({ success: false, error: msg });
       }
-
-      // Deduct from the correct balance
-      await db.user.update({
-        where: { id: withdrawal.userId },
-        data: {
-          [balanceField]: { decrement: withdrawal.amount },
-        },
-      });
-
-      // Create a withdrawal transaction record
-      let typeLabel = 'TRX';
-      let detailSuffix = ` vers ${withdrawal.trxAddress || ''}`;
-      if (withdrawal.type === 'yas') {
-        typeLabel = 'Yas';
-        detailSuffix = ` (${withdrawal.amountCfa?.toLocaleString() || 0} FCFA vers ${withdrawal.yasAccount})`;
-      }
-      await db.transaction.create({
-        data: {
-          type: 'withdrawal',
-          amount: withdrawal.amount,
-          detail: `Retrait ${typeLabel} exécuté — ${withdrawal.amount} $${detailSuffix}`,
-          userId: withdrawal.userId,
-        },
-      });
-
-      // Update withdrawal status to executed
-      await db.withdrawal.update({
-        where: { id: withdrawalId },
-        data: { status: 'executed', adminNote: adminNote || null },
-      });
-
-      // Notify user
-      await notifyUser({
-        userId: withdrawal.userId,
-        type: 'withdrawal_executed',
-        title: 'Retrait exécuté !',
-        message: `Votre retrait de ${withdrawal.amount.toFixed(2)} $ a été exécuté avec succès. Les fonds ont été envoyés. Actualisez votre page régulièrement pour voir votre solde à jour.`,
-        link: 'wallet',
-      });
-
-      return NextResponse.json({ success: true, message: 'Retrait exécuté — fonds envoyés et solde débité' });
     }
 
-    // ========== REJECT ==========
     if (action === 'reject') {
       if (withdrawal.status !== 'pending' && withdrawal.status !== 'approved') {
         return NextResponse.json({ success: false, error: 'Ce retrait ne peut plus être rejeté' });
@@ -182,12 +139,10 @@ export async function POST(request: Request) {
         data: { status: 'rejected', adminNote: adminNote || null },
       });
 
-      // Notify user
       await notifyUser({
-        userId: withdrawal.userId,
-        type: 'withdrawal_rejected',
+        userId: withdrawal.userId, type: 'withdrawal_rejected',
         title: 'Retrait rejeté',
-        message: `Votre retrait de ${withdrawal.amount.toFixed(2)} $ a été rejeté. Actualisez votre page régulièrement pour voir votre solde à jour.`,
+        message: `Votre retrait de ${withdrawal.amount.toFixed(2)} $ a été rejeté.`,
         link: 'wallet',
       });
 
@@ -196,7 +151,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: false, error: 'Action inconnue' });
   } catch (error) {
-    console.error('[ADMIN-WITHDRAWALS] Error:', error);
     return NextResponse.json({ success: false, error: 'Erreur serveur' });
   }
 }

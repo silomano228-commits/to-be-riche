@@ -1,27 +1,9 @@
 import { db } from '@/lib/db';
+import { getAuthToken } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-function getToken(request: Request): string | null {
-  const authHeader = request.headers.get('x-auth-token');
-  if (authHeader) return authHeader;
-  const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(/br_token=([^;]+)/);
-  if (match) return match[1];
-  return null;
-}
-
-async function getUser(request: Request) {
-  const token = getToken(request);
-  if (!token) return null;
-  return db.user.findUnique({ where: { id: token } });
-}
-
-// Feature 2: trade account is removed — only principal, invest, and project
-// remain. The invest → principal direction is the ONLY withdrawal path from
-// the investment account (Feature 2). Deposits to invest are NOT allowed via
-// transfer — they must go through the investment-level creation flow.
 const VALID_ACCOUNTS = ['principal', 'invest', 'project'] as const;
 type AccountType = typeof VALID_ACCOUNTS[number];
 
@@ -31,13 +13,11 @@ const ACCOUNT_LABELS: Record<AccountType, string> = {
   project: 'Compte de Projet',
 };
 
-// Feature 2: 2% fee applies ONLY to transfers OUT of the principal account
-// (i.e. principal → project). Transfers TO principal (invest → principal,
-// project → principal) are free — they are withdrawals, not deposits.
 const FEE_RATE = 0.02;
 const MIN_TRANSFER = 2;
 const HOLD_DAYS = 10;
 const LEVEL_2_REFERRAL_REQUIREMENT = 12;
+const MAX_TRANSFER = 50000;
 
 function getBalance(user: Record<string, unknown>, account: AccountType): number {
   switch (account) {
@@ -57,7 +37,7 @@ function getFieldName(account: AccountType): string {
 
 export async function POST(request: Request) {
   try {
-    const user = await getUser(request);
+    const user = await getAuthToken(request);
     if (!user) {
       return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
     }
@@ -80,9 +60,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Source and destination cannot be the same' }, { status: 400 });
     }
 
-    // Feature 2 / Feature 4: deposits to the investment account are NOT
-    // allowed via transfer — they must go through the investment-level
-    // creation flow (/api/invest/create). Principal → invest is blocked.
     if (fromAccount === 'principal' && toAccount === 'invest') {
       return NextResponse.json({
         success: false,
@@ -94,15 +71,19 @@ export async function POST(request: Request) {
     if (isNaN(transferAmount) || transferAmount < MIN_TRANSFER) {
       return NextResponse.json({ success: false, error: `Minimum transfer amount is $${MIN_TRANSFER}` }, { status: 400 });
     }
+    if (transferAmount > MAX_TRANSFER) {
+      return NextResponse.json({ success: false, error: `Maximum transfer amount is $${MAX_TRANSFER}` }, { status: 400 });
+    }
 
-    // Check source balance
-    const sourceBalance = getBalance(user, fromAccount);
+    // Re-read user fresh to prevent TOCTOU race condition
+    const freshUser = await db.user.findUnique({ where: { id: user.id } });
+    if (!freshUser) return NextResponse.json({ success: false, error: 'Utilisateur introuvable' }, { status: 401 });
+
+    const sourceBalance = getBalance(freshUser, fromAccount);
     if (sourceBalance < transferAmount) {
       return NextResponse.json({ success: false, error: `Insufficient balance in ${ACCOUNT_LABELS[fromAccount]}. Have $${sourceBalance.toFixed(2)}` }, { status: 400 });
     }
 
-    // Feature 2: fee only on transfers OUT of principal (principal → project).
-    // Transfers TO principal are free (withdrawals).
     let fee = 0;
     let receivedAmount = transferAmount;
     if (fromAccount === 'principal') {
@@ -110,19 +91,12 @@ export async function POST(request: Request) {
       receivedAmount = Math.round((transferAmount - fee) * 100) / 100;
     }
 
-    // Feature 3 (HIDDEN level-2 hold): when transferring invest → principal
-    // (the withdrawal path), if the user has an active investment at level 2
-    // or higher AND has not yet reached 12 referrals, the funds are held in
-    // escrow (heldInvestBalance) and released after 10 days AND 12 referrals.
-    // The user is told "available within 10 days" — the referral condition is
-    // intentionally hidden from the UI.
     if (fromAccount === 'invest' && toAccount === 'principal') {
       const level2PlusInvestment = await db.investment.findFirst({
         where: { userId: user.id, level: { gte: 2 }, status: 'active' },
       });
 
-      if (level2PlusInvestment && user.referralCount < LEVEL_2_REFERRAL_REQUIREMENT) {
-        // Hold the funds in escrow
+      if (level2PlusInvestment && freshUser.referralCount < LEVEL_2_REFERRAL_REQUIREMENT) {
         const releaseAt = new Date(Date.now() + HOLD_DAYS * 24 * 60 * 60 * 1000);
         await db.$transaction([
           db.user.update({
@@ -159,7 +133,6 @@ export async function POST(request: Request) {
       }
     }
 
-    // Perform the transfer (normal path — no hold)
     const updateData: Record<string, { decrement: number } | { increment: number }> = {};
     updateData[getFieldName(fromAccount)] = { decrement: transferAmount };
     updateData[getFieldName(toAccount)] = { increment: receivedAmount };
@@ -200,6 +173,6 @@ export async function POST(request: Request) {
       message: `Transferred $${transferAmount.toFixed(2)} from ${ACCOUNT_LABELS[fromAccount]} to ${ACCOUNT_LABELS[toAccount]}${fee > 0 ? ` (fee: $${fee.toFixed(2)})` : ''}`,
     });
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }

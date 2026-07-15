@@ -17,19 +17,25 @@ export async function POST(request: Request) {
 
     // Validate amount
     const amt = parseFloat(amountUsd);
-    if (isNaN(amt) || amt < 5) {
+    if (isNaN(amt) || !isFinite(amt) || amt < 5) {
       return NextResponse.json({ success: false, error: 'Minimum de retrait : 5 $' });
     }
+    if (amt > 50000) {
+      return NextResponse.json({ success: false, error: 'Maximum de retrait : 50 000 $' });
+    }
 
-    // Determine source balance based on sourceAccount
+    // Re-read user fresh to prevent TOCTOU race condition
+    const freshUser = await db.user.findUnique({ where: { id: user.id } });
+    if (!freshUser) return NextResponse.json({ success: false, error: 'Utilisateur introuvable' }, { status: 401 });
+
     const src = sourceAccount || 'jeu';
     const balanceMap: Record<string, number> = {
-      jeu: user.balance || 0,
-      investissement: user.investBalance || 0,
-      projet: user.projectBalance || 0,
-      video: user.videoBalance || 0,
+      jeu: freshUser.balance || 0,
+      investissement: freshUser.investBalance || 0,
+      projet: freshUser.projectBalance || 0,
+      video: freshUser.videoBalance || 0,
     };
-    const srcBalance = balanceMap[src] ?? user.balance;
+    const srcBalance = balanceMap[src] ?? freshUser.balance;
     const srcLabel = src === 'jeu' ? 'compte jeu' : src === 'investissement' ? 'compte investissement' : src === 'projet' ? 'compte projet' : 'compte vidéo';
 
     if (amt > srcBalance) {
@@ -37,7 +43,7 @@ export async function POST(request: Request) {
     }
 
     // 48h cooldown after first deposit
-    if (user.firstDepositAt) {
+    if (freshUser.firstDepositAt) {
       const hoursSinceFirstDeposit = (Date.now() - new Date(user.firstDepositAt).getTime()) / (1000 * 60 * 60);
       if (hoursSinceFirstDeposit < 48) {
         const hoursLeft = Math.ceil(48 - hoursSinceFirstDeposit);
@@ -57,15 +63,15 @@ export async function POST(request: Request) {
     });
     const requiredReferrals = getRequiredReferrals(completedWithdrawals);
 
-    if (requiredReferrals > user.referralCount) {
-      const needed = requiredReferrals - user.referralCount;
+    if (requiredReferrals > freshUser.referralCount) {
+      const needed = requiredReferrals - freshUser.referralCount;
       return NextResponse.json({
         success: false,
         error: `Parrainage obligatoire ! Vous devez parrainer au moins ${needed} personne${needed > 1 ? 's' : ''} supplémentaire${needed > 1 ? 's' : ''} pour effectuer ce retrait. Partagez votre code : ${user.referralCode}`,
         needsReferral: true,
         requiredReferrals,
-        currentReferrals: user.referralCount,
-        referralCode: user.referralCode,
+        currentReferrals: freshUser.referralCount,
+        referralCode: freshUser.referralCode,
       });
     }
 
@@ -88,7 +94,7 @@ export async function POST(request: Request) {
 
     // Get CFA rate from site config
     const config = await db.siteConfig.findUnique({ where: { id: 'main' } });
-    const cfaUsdRate = config?.cfaUsdRate || 600;
+    const cfaUsdRate = config?.cfaUsdRate || 550;
     const amountCfa = Math.round(amt * cfaUsdRate);
 
     // Create withdrawal request (no balance deduction yet — admin approves then executes)
@@ -154,7 +160,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       data: {
-        cfaUsdRate: config?.cfaUsdRate || 600,
+        cfaUsdRate: config?.cfaUsdRate || 550,
         pendingYasWithdrawal: pendingYas,
       },
     });

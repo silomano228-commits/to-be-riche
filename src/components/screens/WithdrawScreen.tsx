@@ -25,7 +25,7 @@ export default function WithdrawScreen() {
   const [method, setMethod] = useState<Method>('choose');
   const [loading, setLoading] = useState(true);
   const [pendingWithdrawal, setPendingWithdrawal] = useState<any>(null);
-  const [cfaUsdRate, setCfaUsdRate] = useState(600);
+  const [cfaUsdRate, setCfaUsdRate] = useState(550);
   const [trxPrice, setTrxPrice] = useState(0.12);
 
   // TRX withdrawal state

@@ -38,7 +38,7 @@ interface AdminConfig {
 const DEFAULT_CONFIG: AdminConfig = {
   adminYasAccount: '',
   adminTrxAddress: '',
-  cfaUsdRate: 600,
+  cfaUsdRate: 550,
   trxPrice: 0.12,
 };
 

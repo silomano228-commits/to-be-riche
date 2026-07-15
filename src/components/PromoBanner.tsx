@@ -2,14 +2,13 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAppStore } from '@/lib/store';
-import { INVEST_LEVELS, ENTERPRISE_TYPES } from '@/components/shared';
 
 interface PromoItem {
   id: string;
   icon: string;
   title: string;
   subtitle: string;
-  type: 'invest' | 'trading' | 'project';
+  label: string;
   gradientFrom: string;
   gradientTo: string;
   gradientMid: string;
@@ -19,61 +18,97 @@ interface PromoItem {
 }
 
 const PROMOS: PromoItem[] = [
-  // Investment promos
-  ...INVEST_LEVELS.slice(0, 3).map((level, i) => ({
-    id: `invest-${level.level}`,
-    icon: level.icon,
-    title: `Investissement ${level.name}: +${level.profit}% en ${level.cycles} jours!`,
-    subtitle: `Rendement de ${level.totalReturn}% — À partir de ${level.min}$`,
-    type: 'invest' as const,
+  {
+    id: 'video-daily',
+    icon: 'fa-video',
+    title: '🔥 Faites vos 5 vidéos quotidiennes et gagnez jusqu\'à 1 $ par jour !',
+    subtitle: 'Regardez des vidéos d\'entreprises et encaissez chaque jour',
+    label: 'Vidéos',
+    gradientFrom: '#0D9488',
+    gradientTo: '#065F46',
+    gradientMid: '#14B8A6',
+    accentColor: '#2DD4BF',
+    actionPage: 'videos',
+    badge: undefined,
+  },
+  {
+    id: 'invest-daily',
+    icon: 'fa-coins',
+    title: '💰 Déposez sur votre compte Investissement et recevez 5 % chaque jour',
+    subtitle: 'Investissez et laissez votre argent travailler pour vous',
+    label: 'Investissement',
     gradientFrom: '#059669',
     gradientTo: '#065F46',
     gradientMid: '#10B981',
     accentColor: '#34D399',
     actionPage: 'invest',
-    badge: (i === 0 ? 'Nouveau' : undefined) as 'Nouveau' | undefined,
-  })),
-  // Trading promos
+    badge: undefined,
+  },
   {
-    id: 'trading-forex',
-    icon: 'fa-bolt',
-    title: 'Trading Forex: Jusqu\'à 95% de rendement!',
-    subtitle: 'Marchés volatils, gains rapides — Mise à partir de 2$',
-    type: 'trading',
+    id: 'wheel-fortune',
+    icon: 'fa-dice',
+    title: '🎰 Tournez la roue de la fortune — 10 tours gratuits par jour !',
+    subtitle: 'Tentez votre chance et gagnez des prix chaque jour',
+    label: 'Jeu',
     gradientFrom: '#D97706',
     gradientTo: '#92400E',
     gradientMid: '#F59E0B',
     accentColor: '#FBBF24',
-    actionPage: 'trading',
+    actionPage: 'game',
     badge: 'Hot',
   },
   {
-    id: 'trading-crypto',
-    icon: 'fa-chart-line',
-    title: 'Trading Crypto: Opportunités 24/7!',
-    subtitle: 'Bitcoin, Ethereum et plus — Réagissez au marché',
-    type: 'trading',
-    gradientFrom: '#DC2626',
-    gradientTo: '#991B1B',
-    gradientMid: '#EF4444',
-    accentColor: '#F87171',
-    actionPage: 'trading',
-    badge: 'Hot',
-  },
-  // Project promos
-  ...ENTERPRISE_TYPES.slice(0, 2).map((et) => ({
-    id: `project-${et.type}`,
-    icon: et.icon,
-    title: `Projet ${et.name}: ${et.maxRet}% de retour en ${et.days} jours!`,
-    subtitle: `Risque ${et.risk} — Investissement minimum ${et.minAmount}$`,
-    type: 'project' as const,
+    id: 'referral',
+    icon: 'fa-user-group',
+    title: '👥 Parrainez vos amis et gagnez 5 % de leurs gains d\'investissement',
+    subtitle: 'Plus de parrainages = plus de revenus passifs',
+    label: 'Parrainage',
     gradientFrom: '#7C3AED',
     gradientTo: '#5B21B6',
     gradientMid: '#8B5CF6',
     accentColor: '#A78BFA',
-    actionPage: 'enterprise',
+    actionPage: 'referral',
     badge: undefined,
-  })),
+  },
+  {
+    id: 'long-term',
+    icon: 'fa-chart-line',
+    title: '📈 L\'investissement à long terme est la clé de la richesse',
+    subtitle: 'Commencez petit, restez régulier, et regardez votre fortune grandir',
+    label: 'Investissement',
+    gradientFrom: '#059669',
+    gradientTo: '#064E3B',
+    gradientMid: '#10B981',
+    accentColor: '#6EE7B7',
+    actionPage: 'invest',
+    badge: undefined,
+  },
+  {
+    id: 'video-goals',
+    icon: 'fa-bullseye',
+    title: '🎯 Chaque vidéo regardée vous rapproche de vos objectifs',
+    subtitle: '5 vidéos par jour = un pas de plus vers la liberté financière',
+    label: 'Vidéos',
+    gradientFrom: '#0D9488',
+    gradientTo: '#115E59',
+    gradientMid: '#14B8A6',
+    accentColor: '#5EEAD4',
+    actionPage: 'videos',
+    badge: undefined,
+  },
+  {
+    id: 'elite-level',
+    icon: 'fa-crown',
+    title: '⭐ Niveau Élite débloqué à 25 parrainages — investissez jusqu\'à 3 000 $ !',
+    subtitle: 'Parrainez 25 amis pour débloquer les investissements Élite',
+    label: 'Parrainage',
+    gradientFrom: '#B45309',
+    gradientTo: '#78350F',
+    gradientMid: '#F59E0B',
+    accentColor: '#FCD34D',
+    actionPage: 'referral',
+    badge: 'Nouveau',
+  },
 ];
 
 export default function PromoBanner({ compact = false }: { compact?: boolean }) {
@@ -285,7 +320,7 @@ export default function PromoBanner({ compact = false }: { compact?: boolean }) 
               className="text-[0.6rem] font-bold uppercase tracking-[1px] px-2.5 py-1 rounded-full"
               style={{ background: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.9)' }}
             >
-              {promo.type === 'invest' ? 'Investissement' : promo.type === 'trading' ? 'Trading' : 'Projets'}
+              {promo.label}
             </span>
             {promo.badge && (
               <span

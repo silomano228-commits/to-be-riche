@@ -1,34 +1,14 @@
 import { db } from '@/lib/db';
+import { getAuthToken } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
-
-// DEPRECATED: The video section is now withdrawal-only (no deposit needed to
-// start watching — the account is autonomous). The 3-day cycle rule (deposit
-// at investment Level 1 + referrals) is enforced via /api/invest/create and
-// the videoDepositRequired flag, NOT via this route. This endpoint is kept
-// only for backward compatibility and is no longer called from the frontend.
-
-function getToken(request: Request): string | null {
-  const authHeader = request.headers.get('x-auth-token');
-  if (authHeader) return authHeader;
-  const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(/br_token=([^;]+)/);
-  if (match) return match[1];
-  return null;
-}
-
-async function getUser(request: Request) {
-  const token = getToken(request);
-  if (!token) return null;
-  return db.user.findUnique({ where: { id: token } });
-}
 
 const MIN_DEPOSIT_USD = 5;
 
 export async function POST(request: Request) {
   try {
-    const user = await getUser(request);
+    const user = await getAuthToken(request);
     if (!user) {
       return NextResponse.json({ success: false, error: 'Non authentifié' }, { status: 401 });
     }
@@ -90,15 +70,15 @@ export async function POST(request: Request) {
         userId: user.id,
         type: 'deposit_pending',
         title: 'Dépôt en cours de traitement',
-        message: `Votre demande de dépôt de $${amount.toFixed(2)} sur le compte Vidéo a été prise en compte. Les fonds seront disponibles dans les 6 heures.`,
+        message: `Votre demande de dépôt de $${amount.toFixed(2)} sur le compte Vidéo a été prise en compte.`,
       },
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Demande de dépôt prise en compte. Les fonds seront disponibles dans les 6 heures.',
+      message: 'Demande de dépôt prise en compte.',
     });
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }

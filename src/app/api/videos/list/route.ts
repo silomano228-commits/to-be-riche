@@ -1,36 +1,11 @@
 import { db } from '@/lib/db';
+import { getAuthToken } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { getDailyVideos, DAILY_VIDEO_LIMIT, getVideoReward, computeDayNumber, getDailyVideoTotal, type VideoItem } from '@/lib/videos';
 
 export const dynamic = 'force-dynamic';
 
-function getToken(request: Request): string | null {
-  const authHeader = request.headers.get('x-auth-token');
-  if (authHeader) return authHeader;
-  const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(/br_token=([^;]+)/);
-  if (match) return match[1];
-  return null;
-}
-
-async function getUser(request: Request) {
-  const token = getToken(request);
-  if (!token) return null;
-  return db.user.findUnique({ where: { id: token } });
-}
-
-// 3-day cycle: every 3 days of watching, the user must clear a new cycle to
-// continue withdrawing from the video account. Cycle 0 = days 1-3, cycle 1 =
-// days 4-6, cycle 2 = days 7-9, etc. Clearing cycle N requires:
-//   - at least one ACTIVE investment at Level 1
-//   - referralCount >= N (cycle 1 needs 1 referral, cycle 2 needs 2, etc.)
-// When both conditions are met, we auto-clear the cycle on this GET call and
-// set videoDepositRequired = false. Otherwise, videoDepositRequired = true and
-// the frontend disables the withdraw button.
-async function computeVideoCycle(
-  user: NonNullable<Awaited<ReturnType<typeof getUser>>>
-) {
-  // daysWatching: number of distinct days since first watch (+1)
+async function computeVideoCycle(user: NonNullable<Awaited<ReturnType<typeof getAuthToken>>>) {
   let daysWatching = 0;
   if (user.videoFirstWatchAt) {
     const diffMs = Date.now() - new Date(user.videoFirstWatchAt).getTime();
@@ -38,28 +13,19 @@ async function computeVideoCycle(
     if (daysWatching < 1) daysWatching = 1;
   }
 
-  // currentCycle = floor((daysWatching - 1) / 3). Cycle 0 = days 1-3.
   const currentCycle = Math.max(0, Math.floor((daysWatching - 1) / 3));
 
-  // Check if user has an active investment at Level 1
   const level1Investment = await db.investment.findFirst({
     where: { userId: user.id, level: 1, status: 'active' },
     select: { id: true },
   });
   const hasLevel1Investment = !!level1Investment;
 
-  // Number of referrals needed to clear the CURRENT cycle.
-  // Cycle 0 (days 1-3) needs 0 referrals, cycle 1 (days 4-6) needs 1, etc.
   const requiredReferrals = currentCycle;
 
-  // If a new cycle has begun beyond the one the user already cleared, the
-  // user must clear it. They can clear it if they have a Level 1 investment
-  // AND enough referrals.
   let videoDepositRequired = user.videoDepositRequired;
   if (currentCycle > user.videoCycleNumber) {
-    // A new cycle has begun. Can the user clear it automatically?
     if (hasLevel1Investment && user.referralCount >= requiredReferrals) {
-      // Auto-clear the new cycle
       await db.user.update({
         where: { id: user.id },
         data: {
@@ -70,7 +36,6 @@ async function computeVideoCycle(
       });
       videoDepositRequired = false;
     } else {
-      // User must clear it manually (deposit at Level 1 + invite referrals)
       if (!videoDepositRequired) {
         await db.user.update({
           where: { id: user.id },
@@ -92,25 +57,18 @@ async function computeVideoCycle(
 
 export async function GET(request: Request) {
   try {
-    const user = await getUser(request);
+    const user = await getAuthToken(request);
     if (!user) {
       return NextResponse.json({ success: false, error: 'Non authentifié' }, { status: 401 });
     }
 
     const today = new Date().toISOString().slice(0, 10);
 
-    // Admin-managed links give sponsors extra visibility, but the daily
-    // catalog rotation ALWAYS happens so users see fresh videos every day.
     const adminLinks = await db.adminVideoLink.findMany({
       where: { active: true },
       orderBy: { createdAt: 'desc' },
     });
 
-    // Daily rotation ALWAYS happens, even if the admin has added active links.
-    // Today's 5 catalog videos are computed first; admin links (if any) are
-    // merged on top so they get visibility but users still see fresh catalog
-    // videos every day. Admin links are capped at 3 so at least 2 catalog
-    // videos rotate in daily. Final list is deduped by YouTube video ID.
     const dailyCatalog = getDailyVideos();
 
     const adminVideos: VideoItem[] = adminLinks.map((l) => ({
@@ -125,15 +83,12 @@ export async function GET(request: Request) {
     let dailyVideos: VideoItem[];
     let source: 'admin' | 'catalog' | 'mixed';
     if (adminVideos.length > 0) {
-      // Show admin links first (max 3), then fill the rest from today's
-      // rotating catalog (deduped by YouTube video ID) up to 5 total.
       const topAdmin = adminVideos.slice(0, 3);
       const seenIds = new Set(topAdmin.map((v) => v.id));
       const fillers = dailyCatalog.filter((v) => !seenIds.has(v.id));
       dailyVideos = [...topAdmin, ...fillers].slice(0, DAILY_VIDEO_LIMIT);
       source = 'mixed';
     } else {
-      // No admin links — use the daily catalog (rotates each day).
       dailyVideos = dailyCatalog;
       source = 'catalog';
     }
@@ -145,21 +100,12 @@ export async function GET(request: Request) {
 
     const watchedMap = new Map(watched.map((w) => [w.videoId, w]));
 
-    // Compute per-video reward badges for the current user/day. For logged-in
-    // users we use the deterministic day-1 / day-2+ distribution from
-    // getVideoReward (day 1 totals $1.60-$1.80; day 2+ totals $0.60-$0.95).
-    // The catalog `reward` field is only used as a fallback display hint when
-    // no user is logged in (e.g. for public/anonymous previews).
     const dayNumber = computeDayNumber(user.videoFirstWatchAt);
     const potentialTotalToday = getDailyVideoTotal(user.id, dayNumber);
 
     const videosWithStatus = dailyVideos.map((v, idx) => {
       const computedReward = getVideoReward(user.id, idx, dayNumber);
       const watchedRow = watchedMap.get(v.id);
-      // If the user already watched this video today, the reward field shows
-      // the actual credited amount from the watch record (so the UI badge
-      // matches what was actually paid). Otherwise show the computed reward
-      // for the current day.
       const displayReward = watchedRow ? watchedRow.reward : computedReward;
       return {
         ...v,
@@ -173,7 +119,6 @@ export async function GET(request: Request) {
     const remaining = Math.max(0, DAILY_VIDEO_LIMIT - watchedCount);
     const totalEarnedToday = watched.reduce((sum, w) => sum + w.reward, 0);
 
-    // Compute the 3-day cycle state (auto-clears if conditions are met).
     const cycleState = await computeVideoCycle(user);
 
     return NextResponse.json({
@@ -196,6 +141,6 @@ export async function GET(request: Request) {
       source,
     });
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }

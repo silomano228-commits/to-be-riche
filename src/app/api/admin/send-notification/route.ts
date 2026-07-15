@@ -1,25 +1,14 @@
 import { db } from '@/lib/db';
+import { getAuthToken } from '@/lib/auth';
 import { notifyUser } from '@/lib/notify';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-function getToken(request: Request): string | null {
-  const authHeader = request.headers.get('x-auth-token');
-  if (authHeader) return authHeader;
-  const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(/br_token=([^;]+)/);
-  if (match) return match[1];
-  return null;
-}
-
 export async function POST(request: Request) {
   try {
-    const token = getToken(request);
-    if (!token) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
-
-    const admin = await db.user.findUnique({ where: { id: token } });
-    if (!admin || admin.role !== 'admin') {
+    const user = await getAuthToken(request);
+    if (!user || user.role !== 'admin') {
       return NextResponse.json({ success: false, error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -29,11 +18,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Titre et message requis' });
     }
 
+    // Sanitize: limit length
+    if (title.length > 200 || message.length > 2000) {
+      return NextResponse.json({ success: false, error: 'Titre ou message trop long' });
+    }
+
     const notifType = type || 'admin_broadcast';
     const notifLink = link || null;
 
     if (target === 'all') {
-      // Broadcast to all non-admin users
       const users = await db.user.findMany({
         where: { role: 'user' },
         select: { id: true },
@@ -51,16 +44,8 @@ export async function POST(request: Request) {
         sentCount++;
       }
 
-      // Persist the broadcast so the admin can review past sends later.
-      // (BroadcastMessage is only created for target === 'all'.)
       await db.broadcastMessage.create({
-        data: {
-          title,
-          message,
-          target: 'all',
-          type: notifType,
-          userId: null,
-        },
+        data: { title, message, target: 'all', type: notifType, userId: null },
       });
 
       return NextResponse.json({
@@ -69,7 +54,6 @@ export async function POST(request: Request) {
         count: sentCount,
       });
     } else if (target === 'individual' && userId) {
-      // Send to specific user
       const targetUser = await db.user.findUnique({ where: { id: userId } });
       if (!targetUser) {
         return NextResponse.json({ success: false, error: 'Utilisateur introuvable' });
@@ -83,15 +67,8 @@ export async function POST(request: Request) {
         link: notifLink || undefined,
       });
 
-      // Persist the individual broadcast record as well.
       await db.broadcastMessage.create({
-        data: {
-          title,
-          message,
-          target: 'individual',
-          type: notifType,
-          userId,
-        },
+        data: { title, message, target: 'individual', type: notifType, userId },
       });
 
       return NextResponse.json({
@@ -102,6 +79,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Paramètres invalides. Utilisez target=all ou target=individual avec userId' });
     }
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }

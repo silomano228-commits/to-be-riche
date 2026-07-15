@@ -6,7 +6,7 @@ const DEFAULTS = {
   adminTrxAddress: 'TRMJ5R1cKbrMLy19PLu9rVtVGc5Ff2ZrHY',
   adminYasAccount: '90876459',
   trxUsdPrice: 0.12,
-  cfaUsdRate: 600,
+  cfaUsdRate: 550,
 } as const;
 
 /**

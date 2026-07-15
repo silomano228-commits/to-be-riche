@@ -1,36 +1,23 @@
 import { db } from '@/lib/db';
 import { notifyUser } from '@/lib/notify';
+import { getAuthToken } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-function getToken(request: Request): string | null {
-  const authHeader = request.headers.get('x-auth-token');
-  if (authHeader) return authHeader;
-  const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(/br_token=([^;]+)/);
-  if (match) return match[1];
-  return null;
-}
-
 async function checkAdmin(request: Request) {
-  const token = getToken(request);
-  if (!token) return { error: NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 }), admin: null };
-  const admin = await db.user.findUnique({ where: { id: token } });
-  if (!admin || admin.role !== 'admin') return { error: NextResponse.json({ success: false, error: 'Accès refusé' }, { status: 403 }), admin: null };
-  return { error: null, admin };
+  const user = await getAuthToken(request);
+  if (!user) return { error: NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 }), admin: null };
+  if (user.role !== 'admin') return { error: NextResponse.json({ success: false, error: 'Accès refusé' }, { status: 403 }), admin: null };
+  return { error: null, admin: user };
 }
 
-// Investment levels — mirror of /api/invest/create. Used when approving an
-// investment-type deposit to create the Investment record with the correct
-// rate. totalCycles = 0 means UNLIMITED collection days.
 const INVESTMENT_LEVELS: Record<number, { rate: number; label: string }> = {
   1: { rate: 5, label: 'Niveau 1 — Débutant' },
   2: { rate: 5, label: 'Niveau 2 — Business' },
   3: { rate: 5, label: 'Niveau 3 — Elite' },
 };
 
-// GET — Liste tous les dépôts en attente (admin)
 export async function GET(request: Request) {
   try {
     const { error } = await checkAdmin(request);
@@ -44,7 +31,6 @@ export async function GET(request: Request) {
     const pending = deposits.filter(d => d.status === 'pending').length;
     const approved = deposits.filter(d => d.status === 'approved').length;
     const rejected = deposits.filter(d => d.status === 'rejected').length;
-    // Count of investment-type deposits (so the admin badge can highlight them)
     const pendingInvestments = deposits.filter(d => d.status === 'pending' && d.type === 'investment').length;
 
     return NextResponse.json({
@@ -53,15 +39,10 @@ export async function GET(request: Request) {
       stats: { pending, approved, rejected, total: deposits.length, pendingInvestments },
     });
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }
 
-// POST — Approuver ou rejeter un dépôt (admin)
-// When the deposit has type='investment', approval creates the actual
-// Investment record with the countdown starting NOW (nextClaimAt = +24h,
-// finishesAt = null for unlimited cycles). The user's principal balance is
-// NOT credited — the funds are invested directly.
 export async function POST(request: Request) {
   try {
     const { error } = await checkAdmin(request);
@@ -85,13 +66,12 @@ export async function POST(request: Request) {
         where: { id: depositId },
         data: { status: 'rejected', processedAt: now },
       });
-      // Notify user
       if (isInvestment) {
         await notifyUser({
           userId: deposit.userId,
           type: 'investment_rejected',
           title: 'Dépôt d\'investissement rejeté',
-          message: `Votre demande de dépôt d'investissement de ${deposit.amountUsd.toFixed(2)} $ a été rejetée par l'administrateur. Aucun fonds n'a été débité. Actualisez votre page régulièrement pour voir votre solde à jour.`,
+          message: `Votre demande de dépôt d'investissement de ${deposit.amountUsd.toFixed(2)} $ a été rejetée.`,
           link: 'invest',
         });
       } else {
@@ -99,24 +79,19 @@ export async function POST(request: Request) {
           userId: deposit.userId,
           type: 'deposit_rejected',
           title: 'Dépôt rejeté',
-          message: `Votre dépôt de ${deposit.amountUsd.toFixed(2)} $ a été rejeté. Actualisez votre page régulièrement pour voir votre solde à jour.`,
+          message: `Votre dépôt de ${deposit.amountUsd.toFixed(2)} $ a été rejeté.`,
           link: 'deposit',
         });
       }
       return NextResponse.json({ success: true, message: 'Dépôt rejeté' });
     }
 
-    // ============ APPROVE ============
     if (isInvestment) {
-      // Investment-type deposit: create the Investment record now.
-      // The countdown starts at approval time (NOT at request time).
       const level = deposit.investmentLevel ?? 1;
       const invAmount = deposit.investmentAmount ?? deposit.amountUsd;
       const levelConfig = INVESTMENT_LEVELS[level];
       const rate = levelConfig?.rate ?? 5;
       const levelLabel = levelConfig?.label ?? `Niveau ${level}`;
-
-      // nextClaimAt = 24h from now. totalCycles = 0 means UNLIMITED.
       const nextClaimAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
       await db.$transaction(async (tx) => {
@@ -124,49 +99,35 @@ export async function POST(request: Request) {
           where: { id: depositId },
           data: { status: 'approved', txHash: txHash || null, processedAt: now },
         });
-
         await tx.investment.create({
           data: {
-            userId: deposit.userId,
-            level,
-            amount: invAmount,
-            rate,
-            totalCycles: 0, // 0 = unlimited
-            doneCycles: 0,
-            earned: 0,
-            status: 'active',
-            nextClaimAt,
-            finishesAt: null, // never finishes (unlimited)
+            userId: deposit.userId, level, amount: invAmount, rate,
+            totalCycles: 0, doneCycles: 0, earned: 0, status: 'active',
+            nextClaimAt, finishesAt: null,
           },
         });
-
         await tx.transaction.create({
           data: {
-            type: 'invest_create',
-            amount: -invAmount,
-            detail: `Investissement approuvé: ${levelLabel} — $${invAmount.toFixed(2)} à ${rate}%/jour (collecte illimitée) — Paiement TRX — Compte à rebours démarré`,
+            type: 'invest_create', amount: -invAmount,
+            detail: `Investissement approuvé: ${levelLabel} — $${invAmount.toFixed(2)} à ${rate}%/jour`,
             userId: deposit.userId,
           },
         });
       });
 
-      // Notify user that investment is now active and countdown has started
       await notifyUser({
-        userId: deposit.userId,
-        type: 'investment_approved',
+        userId: deposit.userId, type: 'investment_approved',
         title: 'Investissement approuvé !',
-        message: `Votre dépôt d'investissement ${levelLabel} de ${invAmount.toFixed(2)} $ a été approuvé. Votre investissement a été activé. Le compte à rebours de 24h a démarré — vous pourrez collecter vos premiers gains demain. Actualisez votre page régulièrement pour voir votre solde à jour.`,
+        message: `Votre dépôt d'investissement ${levelLabel} de ${invAmount.toFixed(2)} $ a été approuvé.`,
         link: 'invest',
       });
 
       return NextResponse.json({ success: true, message: 'Investissement approuvé — compte à rebours démarré' });
     }
 
-    // ---------- Standard principal-wallet deposit (existing behavior) ----------
     const depositUser = await db.user.findUnique({ where: { id: deposit.userId } });
     const isFirstDeposit = !depositUser?.hasInvested;
 
-    // Determine which balance to credit based on destination
     const balanceField = deposit.destination === 'projectBalance' ? 'projectBalance'
       : deposit.destination === 'investBalance' ? 'investBalance'
       : 'balance';
@@ -190,31 +151,23 @@ export async function POST(request: Request) {
       });
       await tx.transaction.create({
         data: {
-          type: 'deposit',
-          amount: deposit.amountUsd,
+          type: 'deposit', amount: deposit.amountUsd,
           detail: `Deposit approved: $${deposit.amountUsd.toFixed(2)} credited to ${balanceLabel}`,
           userId: deposit.userId,
         },
       });
 
-      // 20% referral bonus on parrainé's first deposit
       if (isFirstDeposit && depositUser?.referredByCode) {
-        const referrer = await tx.user.findUnique({
-          where: { referralCode: depositUser.referredByCode },
-        });
+        const referrer = await tx.user.findUnique({ where: { referralCode: depositUser.referredByCode } });
         if (referrer) {
           const bonusAmount = Math.round(deposit.amountUsd * 0.2 * 100) / 100;
           await tx.user.update({
             where: { id: referrer.id },
-            data: {
-              balance: { increment: bonusAmount },
-              referralCount: { increment: 1 },
-            },
+            data: { balance: { increment: bonusAmount }, referralCount: { increment: 1 } },
           });
           await tx.transaction.create({
             data: {
-              type: 'referral_bonus',
-              amount: bonusAmount,
+              type: 'referral_bonus', amount: bonusAmount,
               detail: `Referral bonus: 20% of parrainé's first deposit ($${deposit.amountUsd.toFixed(2)})`,
               userId: referrer.id,
             },
@@ -223,17 +176,15 @@ export async function POST(request: Request) {
       }
     });
 
-    // Notify user
     await notifyUser({
-      userId: deposit.userId,
-      type: 'deposit_approved',
+      userId: deposit.userId, type: 'deposit_approved',
       title: 'Dépôt approuvé !',
-      message: `Votre dépôt de ${deposit.amountUsd.toFixed(2)} $ a été approuvé et crédité. Actualisez votre page régulièrement pour voir votre solde à jour.`,
+      message: `Votre dépôt de ${deposit.amountUsd.toFixed(2)} $ a été approuvé et crédité.`,
       link: 'wallet',
     });
 
     return NextResponse.json({ success: true, message: `Dépôt approuvé et crédité au ${balanceLabel}` });
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }

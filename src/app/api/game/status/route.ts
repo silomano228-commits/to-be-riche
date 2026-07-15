@@ -1,29 +1,9 @@
 import { db } from '@/lib/db';
+import { getAuthToken } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-function getToken(request: Request): string | null {
-  const authHeader = request.headers.get('x-auth-token');
-  if (authHeader) return authHeader;
-  const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(/br_token=([^;]+)/);
-  if (match) return match[1];
-  return null;
-}
-
-async function getUser(request: Request) {
-  const token = getToken(request);
-  if (!token) return null;
-  return db.user.findUnique({ where: { id: token } });
-}
-
-// Wheel segments: 20 segments with many elements for visual richness.
-// Win amounts calibrated for $5 minimum deposit.
-// NOTE: One segment is the rare $10.00 grand prize (gold/yellow). The actual
-// probability of landing on $10 is controlled by pickSegment() in /api/game/spin
-// (~5% of wins), NOT by the visual segment count. The visual segment is just
-// so the user can SEE that the $10 prize exists on the wheel.
 export const WHEEL_SEGMENTS = [
   { label: '$0.10', reward: 0.10, isWin: true, color: '#22C55E' },
   { label: 'Perdu', reward: 0, isWin: false, color: '#475569' },
@@ -34,7 +14,6 @@ export const WHEEL_SEGMENTS = [
   { label: '$0.10', reward: 0.10, isWin: true, color: '#22C55E' },
   { label: 'Perdu', reward: 0, isWin: false, color: '#475569' },
   { label: '$0.30', reward: 0.30, isWin: true, color: '#84CC16' },
-  // Rare $10 grand prize — bright gold to stand out from every other segment.
   { label: '$10.00', reward: 10.00, isWin: true, color: '#FCD34D' },
   { label: '$1.00', reward: 1.00, isWin: true, color: '#EF4444' },
   { label: 'Perdu', reward: 0, isWin: false, color: '#475569' },
@@ -49,23 +28,17 @@ export const WHEEL_SEGMENTS = [
 ];
 
 export const DAILY_SPINS = 10;
-
-// Cost per spin (in USD). Deducted from principal balance first; if principal
-// balance is short, the remainder is taken from investBalance. If neither
-// account can cover the full $0.20, the spin is rejected.
 export const SPIN_COST = 0.20;
 
 export async function GET(request: Request) {
   try {
-    const user = await getUser(request);
+    const user = await getAuthToken(request);
     if (!user) {
       return NextResponse.json({ success: false, error: 'Non authentifié' }, { status: 401 });
     }
 
     const today = new Date().toISOString().slice(0, 10);
 
-    // Reset spins used if date changed (gameTotalWon is NOT reset — it's
-    // cumulative across days for the algorithm to track total spend vs won).
     if (user.gameSpinsDate !== today) {
       await db.user.update({
         where: { id: user.id },
@@ -95,6 +68,6 @@ export async function GET(request: Request) {
       totalWonToday: user.gameSpinsDate === today ? user.gameTotalWon : 0,
     });
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }

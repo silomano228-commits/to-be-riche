@@ -71,6 +71,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Un compte existe déjà avec cette adresse email' });
     }
 
+    // Anti-duplicate: case-insensitive name check (SQLite doesn't support mode:'insensitive')
+    const existingName = await db.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT id FROM User WHERE LOWER(name) = LOWER(?) LIMIT 1`,
+      name,
+    );
+    if (existingName.length > 0) {
+      return NextResponse.json({ success: false, error: 'Un compte existe déjà avec ce nom' });
+    }
+
     // Validate referral code if provided
     let referredByCode: string | null = null;
     if (inputReferralCode && inputReferralCode.trim()) {

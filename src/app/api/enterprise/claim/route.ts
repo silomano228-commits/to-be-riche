@@ -1,26 +1,12 @@
 import { db } from '@/lib/db';
+import { getAuthToken } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-function getToken(request: Request): string | null {
-  const authHeader = request.headers.get('x-auth-token');
-  if (authHeader) return authHeader;
-  const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(/br_token=([^;]+)/);
-  if (match) return match[1];
-  return null;
-}
-
-async function getUser(request: Request) {
-  const token = getToken(request);
-  if (!token) return null;
-  return db.user.findUnique({ where: { id: token } });
-}
-
 export async function POST(request: Request) {
   try {
-    const user = await getUser(request);
+    const user = await getAuthToken(request);
     if (!user) {
       return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
     }
@@ -53,7 +39,6 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    // Calculate random return within minReturn-maxReturn range
     const returnPercent = Math.round(
       (enterprise.minReturn + Math.random() * (enterprise.maxReturn - enterprise.minReturn)) * 100
     ) / 100;
@@ -63,10 +48,7 @@ export async function POST(request: Request) {
     await db.$transaction([
       db.enterprise.update({
         where: { id: enterpriseId },
-        data: {
-          status: 'completed',
-          finalReturn: returnPercent,
-        },
+        data: { status: 'completed', finalReturn: returnPercent },
       }),
       db.user.update({
         where: { id: user.id },
@@ -97,6 +79,6 @@ export async function POST(request: Request) {
       message: `Enterprise ${enterprise.name} completed! $${returnAmount.toFixed(2)} profit (${returnPercent}%). Total credited: $${totalReturn.toFixed(2)}`,
     });
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }

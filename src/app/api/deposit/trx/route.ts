@@ -1,29 +1,22 @@
 import { db } from '@/lib/db';
+import { getAuthToken } from '@/lib/auth';
 import { notifyAdmin, notifyUser } from '@/lib/notify';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { getTrxPrice, getAdminTrxAddress, getTrxUsdPrice } from '@/lib/trongrid';
 
 export const dynamic = 'force-dynamic';
 
-function getToken(request: Request): string | null {
-  const authHeader = request.headers.get('x-auth-token');
-  if (authHeader) return authHeader;
-  return null;
-}
+const MAX_DEPOSIT = 50000;
 
 /**
  * Check if a user has ANY pending deposit (TRX or YAS)
- * Returns the pending deposit info or null
  */
 async function getAnyPendingDeposit(userId: string) {
-  // Check TRX pending
   const pendingTrx = await db.pendingDeposit.findFirst({
     where: { userId, status: 'pending' }
   });
   if (pendingTrx) return { type: 'trx' as const, deposit: pendingTrx };
 
-  // Check YAS pending
   const pendingYas = await db.yasDeposit.findFirst({
     where: { userId, status: 'pending' }
   });
@@ -35,17 +28,16 @@ async function getAnyPendingDeposit(userId: string) {
 // POST — Crée un dépôt en attente (l'utilisateur entre le montant + son adresse TRX)
 export async function POST(request: Request) {
   try {
-    let token = getToken(request);
-    if (!token) {
-      const cookieStore = await cookies();
-      token = cookieStore.get('br_token')?.value || null;
-    }
-    if (!token) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
+    const user = await getAuthToken(request);
+    if (!user) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
 
     const { amountUsd, userAddress, targetAccount } = await request.json();
     const amt = parseFloat(amountUsd);
-    if (isNaN(amt) || amt < 5) {
+    if (isNaN(amt) || !isFinite(amt) || amt < 5) {
       return NextResponse.json({ success: false, error: 'Minimum 5 $' });
+    }
+    if (amt > MAX_DEPOSIT) {
+      return NextResponse.json({ success: false, error: `Maximum de dépôt: $${MAX_DEPOSIT}` });
     }
 
     // Determine destination based on targetAccount
@@ -67,7 +59,7 @@ export async function POST(request: Request) {
     }
 
     // Vérifier s'il y a déjà un dépôt en attente (TRX OU YAS)
-    const anyPending = await getAnyPendingDeposit(token);
+    const anyPending = await getAnyPendingDeposit(user.id);
     if (anyPending) {
       const errorMsg = anyPending.type === 'trx'
         ? 'Vous avez déjà un dépôt TRX en attente de confirmation.'
@@ -77,7 +69,7 @@ export async function POST(request: Request) {
 
     const deposit = await db.pendingDeposit.create({
       data: {
-        userId: token,
+        userId: user.id,
         amountUsd: amt,
         amountTrx,
         trxPrice,
@@ -88,19 +80,16 @@ export async function POST(request: Request) {
     });
 
     // Notify admin about new TRX deposit request
-    const depositUser = await db.user.findUnique({ where: { id: token } });
-    if (depositUser) {
-      await notifyAdmin({
-        type: 'new_deposit',
-        title: 'Nouveau dépôt TRX',
-        message: `${depositUser.name} demande un dépôt de ${amt.toFixed(2)} $ (${amountTrx.toFixed(2)} TRX)`,
-        userId: token,
-      });
-    }
+    await notifyAdmin({
+      type: 'new_deposit',
+      title: 'Nouveau dépôt TRX',
+      message: `${user.name} demande un dépôt de ${amt.toFixed(2)} $ (${amountTrx.toFixed(2)} TRX)`,
+      userId: user.id,
+    });
 
-    // Notify user that their deposit request has been received
+    // Notify user
     await notifyUser({
-      userId: token,
+      userId: user.id,
       type: 'deposit_pending',
       title: 'Demande de dépôt prise en compte',
       message: 'Votre demande de dépôt a été prise en compte. Elle sera vérifiée prochainement.',
@@ -118,19 +107,15 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }
 
 // GET — Info dépôt: adresse admin, prix TRX, dépôt en attente
 export async function GET(request: Request) {
   try {
-    let token = getToken(request);
-    if (!token) {
-      const cookieStore = await cookies();
-      token = cookieStore.get('br_token')?.value || null;
-    }
-    if (!token) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
+    const user = await getAuthToken(request);
+    if (!user) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
 
     const adminAddress = await getAdminTrxAddress();
     let trxPrice = await getTrxPrice();
@@ -138,13 +123,13 @@ export async function GET(request: Request) {
     if (configPrice > 0) trxPrice = configPrice;
 
     const deposit = await db.pendingDeposit.findFirst({
-      where: { userId: token, status: 'pending' },
+      where: { userId: user.id, status: 'pending' },
       orderBy: { createdAt: 'desc' },
     });
 
     // Also check if user has a pending YAS deposit
     const yasDeposit = await db.yasDeposit.findFirst({
-      where: { userId: token, status: 'pending' },
+      where: { userId: user.id, status: 'pending' },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -174,6 +159,6 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }

@@ -381,7 +381,7 @@ export const DEPOSIT_GUIDE: GuideSection = {
     },
     {
       title: '4. Taux de conversion',
-      description: 'Pour TRX : le taux est automatiquement récupéré depuis Binance. Pour YAS : 1$ = 600 FCFA (taux configuré par l\'admin). Le système calcule l\'équivalent automatiquement.',
+      description: 'Pour TRX : le taux est automatiquement récupéré depuis Binance. Pour YAS : 1$ = 550 FCFA (taux configuré par l\'admin). Le système calcule l\'équivalent automatiquement.',
       icon: 'fa-calculator',
       color: '#8B5CF6',
     },

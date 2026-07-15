@@ -35,8 +35,7 @@ export function validateYasAccount(account: string): string | null {
 export function validateTrxAddress(address: string): string | null {
   const trimmed = (address || '').trim();
   if (!trimmed) return 'Adresse TRX requise';
-  if (trimmed.length < 20) return 'Adresse TRX invalide (trop courte)';
-  if (!trimmed.startsWith('T')) return 'L\'adresse TRX doit commencer par la lettre T';
+  if (!/^T[A-Za-z0-9]{33}$/.test(trimmed)) return 'Adresse TRX invalide (doit commencer par T et faire 34 caractères)';
   return null; // null = valid
 }
 

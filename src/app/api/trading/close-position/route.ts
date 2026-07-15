@@ -1,16 +1,13 @@
 import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
-import { getSimulatedPriceWithWalk, calculatePL, getToken } from '@/lib/trading/helpers';
+import { getSimulatedPriceWithWalk, calculatePL } from '@/lib/trading/helpers';
+import { getAuthToken } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-async function getUser(request: Request) {
-  return getToken(request);
-}
-
 export async function POST(request: Request) {
   try {
-    const user = await getUser(request);
+    const user = await getAuthToken(request);
     if (!user) {
       return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
     }
@@ -90,42 +87,30 @@ export async function POST(request: Request) {
       result = 'loss';
     }
 
-    // Update the position
-    const updatedPosition = await db.tradingPosition.update({
-      where: { id: positionId },
-      data: {
-        status: 'closed',
-        closePrice: currentPrice,
-        currentPrice: currentPrice,
-        closeReason,
-        result,
-        profitLoss,
-        plPercent,
-        closedAt: new Date(),
-      },
-    });
+    // Update position and credit balance atomically
+    const [updatedPosition, actualReturn] = await db.$transaction(async (tx) => {
+      const up = await tx.tradingPosition.update({
+        where: { id: positionId },
+        data: {
+          status: 'closed', closePrice: currentPrice, currentPrice: currentPrice,
+          closeReason, result, profitLoss, plPercent, closedAt: new Date(),
+        },
+      });
 
-    // Credit user tradeBalance: amount + profit (or deduct loss)
-    const returnAmount = position.amount + profitLoss;
-    // Ensure we don't return negative (in case of liquidation or huge loss)
-    const actualReturn = Math.max(0, Math.round(returnAmount * 100) / 100);
+      const returnAmt = Math.max(0, Math.round((position.amount + profitLoss) * 100) / 100);
+      await tx.user.update({
+        where: { id: user.id },
+        data: { tradeBalance: { increment: returnAmt } },
+      });
 
-    await db.user.update({
-      where: { id: user.id },
-      data: { tradeBalance: { increment: actualReturn } },
-    });
+      const txType = result === 'win' ? 'trade_win' : 'trade_lose';
+      const detail = `Trading: ${position.direction} $${position.amount.toFixed(2)} ${position.asset} — P/L: ${profitLoss >= 0 ? '+' : ''}$${profitLoss.toFixed(2)} [${closeReason}]`;
 
-    // Create transaction record
-    const txType = result === 'win' ? 'trade_win' : 'trade_lose';
-    const detail = `Trading: ${position.direction} $${position.amount.toFixed(2)} ${position.asset} — P/L: ${profitLoss >= 0 ? '+' : ''}$${profitLoss.toFixed(2)} [${closeReason}]`;
+      await tx.transaction.create({
+        data: { type: txType, amount: returnAmt, detail, userId: user.id },
+      });
 
-    await db.transaction.create({
-      data: {
-        type: txType,
-        amount: actualReturn,
-        detail,
-        userId: user.id,
-      },
+      return [up, returnAmt] as const;
     });
 
     return NextResponse.json({
@@ -147,6 +132,6 @@ export async function POST(request: Request) {
       message: `Position closed: ${result === 'win' ? 'Profit' : 'Loss'} of $${Math.abs(profitLoss).toFixed(2)}`,
     });
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }

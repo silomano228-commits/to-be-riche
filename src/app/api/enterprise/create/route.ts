@@ -1,24 +1,9 @@
 import { db } from '@/lib/db';
+import { getAuthToken } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-function getToken(request: Request): string | null {
-  const authHeader = request.headers.get('x-auth-token');
-  if (authHeader) return authHeader;
-  const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(/br_token=([^;]+)/);
-  if (match) return match[1];
-  return null;
-}
-
-async function getUser(request: Request) {
-  const token = getToken(request);
-  if (!token) return null;
-  return db.user.findUnique({ where: { id: token } });
-}
-
-// New enterprise config: 5 levels, 30-90 days, 100-300% returns, min $10
 const ENTERPRISE_CONFIG: Record<string, {
   durationDays: number; minAmount: number; minReturn: number; maxReturn: number;
   categories: string[];
@@ -64,7 +49,7 @@ const PREFIXES = ['Alpha', 'Beta', 'Nova', 'Prime', 'Elite', 'Global', 'Vertex',
 
 export async function POST(request: Request) {
   try {
-    const user = await getUser(request);
+    const user = await getAuthToken(request);
     if (!user) {
       return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
     }
@@ -87,52 +72,51 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: `Minimum amount is $${config.minAmount}` }, { status: 400 });
     }
 
-    if (user.projectBalance < investAmount) {
+    // Re-read fresh balance to prevent race condition
+    const freshUser = await db.user.findUnique({ where: { id: user.id }, select: { projectBalance: true } });
+    if (!freshUser || freshUser.projectBalance < investAmount) {
       return NextResponse.json({ success: false, error: `Transférez des fonds vers votre Compte de Projet depuis le Portefeuille` }, { status: 400 });
     }
 
     const now = new Date();
     const finishesAt = new Date(now.getTime() + config.durationDays * 24 * 60 * 60 * 1000);
 
-    // Generate random enterprise name
     const prefix = PREFIXES[Math.floor(Math.random() * PREFIXES.length)];
     const category = config.categories[Math.floor(Math.random() * config.categories.length)];
     const enterpriseName = `${prefix} ${category}`;
 
-    // Projects always succeed
-    const status = 'active';
+    // Atomic: create enterprise + deduct balance
+    const enterprise = await db.$transaction(async (tx) => {
+      const e = await tx.enterprise.create({
+        data: {
+          userId: user.id,
+          name: enterpriseName,
+          category: type,
+          amount: investAmount,
+          durationDays: config.durationDays,
+          minReturn: config.minReturn,
+          maxReturn: config.maxReturn,
+          status: 'active',
+          riskEvents: null,
+          finishesAt,
+        },
+      });
 
-    const enterprise = await db.enterprise.create({
-      data: {
-        userId: user.id,
-        name: enterpriseName,
-        category: type,
-        amount: investAmount,
-        durationDays: config.durationDays,
-        minReturn: config.minReturn,
-        maxReturn: config.maxReturn,
-        status,
-        riskEvents: null,
-        finishesAt,
-      },
-    });
+      await tx.user.update({
+        where: { id: user.id },
+        data: { projectBalance: { decrement: investAmount } },
+      });
 
-    // Deduct from projectBalance
-    await db.user.update({
-      where: { id: user.id },
-      data: {
-        projectBalance: { decrement: investAmount },
-      },
-    });
+      await tx.transaction.create({
+        data: {
+          type: 'enterprise_create',
+          amount: -investAmount,
+          detail: `Projet créé: ${enterpriseName} ($${investAmount.toFixed(2)}) — ${config.durationDays} jours, +${config.minReturn}% de rendement`,
+          userId: user.id,
+        },
+      });
 
-    // Create transaction
-    await db.transaction.create({
-      data: {
-        type: 'enterprise_create',
-        amount: -investAmount,
-        detail: `Projet créé: ${enterpriseName} ($${investAmount.toFixed(2)}) — ${config.durationDays} jours, +${config.minReturn}% de rendement`,
-        userId: user.id,
-      },
+      return e;
     });
 
     return NextResponse.json({
@@ -152,6 +136,6 @@ export async function POST(request: Request) {
       message: `Projet créé: ${enterpriseName} — $${investAmount.toFixed(2)} pour ${config.durationDays} jours (+${config.minReturn}% de rendement garanti).`,
     });
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }

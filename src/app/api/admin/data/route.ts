@@ -1,28 +1,22 @@
 import { db } from '@/lib/db';
+import { getAuthToken } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-function getToken(request: Request): string | null {
-  // Try custom header first (most reliable)
-  const authHeader = request.headers.get('x-auth-token');
-  if (authHeader) return authHeader;
-  // Then try cookie
-  const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(/br_token=([^;]+)/);
-  if (match) return match[1];
-  return null;
-}
-
+/**
+ * Verify the request is from an authenticated admin user.
+ * Uses getAuthToken() which properly resolves session tokens
+ * (not raw user IDs), preventing auth bypass.
+ */
 async function checkAdmin(request: Request) {
-  const token = getToken(request);
-  if (!token) return { error: NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 }), admin: null };
-  const admin = await db.user.findUnique({ where: { id: token } });
-  if (!admin || admin.role !== 'admin') return { error: NextResponse.json({ success: false, error: 'Accès refusé' }, { status: 403 }), admin: null };
-  return { error: null, admin };
+  const user = await getAuthToken(request);
+  if (!user) return { error: NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 }), admin: null };
+  if (user.role !== 'admin') return { error: NextResponse.json({ success: false, error: 'Accès refusé' }, { status: 403 }), admin: null };
+  return { error: null, admin: user };
 }
 
-export { checkAdmin, getToken };
+export { checkAdmin };
 
 // GET — Admin data
 export async function GET(request: Request) {

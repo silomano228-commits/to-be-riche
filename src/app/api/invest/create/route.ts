@@ -1,31 +1,11 @@
 import { db } from '@/lib/db';
+import { getAuthToken } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { validatePaymentAddress } from '@/lib/payment';
 import { notifyAdmin } from '@/lib/notify';
 
 export const dynamic = 'force-dynamic';
 
-function getToken(request: Request): string | null {
-  const authHeader = request.headers.get('x-auth-token');
-  if (authHeader) return authHeader;
-  const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(/br_token=([^;]+)/);
-  if (match) return match[1];
-  return null;
-}
-
-async function getUser(request: Request) {
-  const token = getToken(request);
-  if (!token) return null;
-  return db.user.findUnique({ where: { id: token } });
-}
-
-// Investment levels — 3 levels, all at 5%/day, unlimited collection days
-// (totalCycles = 0 means unlimited — the user can collect every day forever).
-// Deposits are made DIRECTLY via YAS or TRX at every level (no investBalance).
-// Levels 2 and 3 unlock via referrals only (12 / 25). There is NO sequential
-// previous-level requirement, and a user may create MULTIPLE active investments
-// at the same level (as many as they want).
 const INVESTMENT_LEVELS: Record<number, {
   minAmount: number; maxAmount: number; rate: number;
   label: string; requiredReferrals: number; category: string;
@@ -37,7 +17,7 @@ const INVESTMENT_LEVELS: Record<number, {
 
 export async function POST(request: Request) {
   try {
-    const user = await getUser(request);
+    const user = await getAuthToken(request);
     if (!user) {
       return NextResponse.json({ success: false, error: 'Non authentifié' }, { status: 401 });
     }
@@ -61,7 +41,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: `Le montant doit être entre $${config.minAmount} et $${config.maxAmount} pour ${config.label}` }, { status: 400 });
     }
 
-    // Payment must be made directly via YAS or TRX at every level
     if (!['yas', 'trx'].includes(paymentMethod)) {
       return NextResponse.json({ success: false, error: 'Méthode de paiement invalide. Choisissez YAS ou TRX.' }, { status: 400 });
     }
@@ -70,15 +49,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Adresse de paiement requise.' }, { status: 400 });
     }
 
-    // Format validation — same rules as the principal account deposit flow:
-    //   YAS: 8 digits, starts with 90-93 or 70-73
-    //   TRX: starts with 'T', at least 20 chars
     const addressErr = validatePaymentAddress(paymentMethod as 'yas' | 'trx', userAddress);
     if (addressErr) {
       return NextResponse.json({ success: false, error: addressErr }, { status: 400 });
     }
 
-    // Check level unlock — user.unlockedLevel tracks the highest unlocked level
     if (level > user.unlockedLevel) {
       return NextResponse.json({
         success: false,
@@ -90,23 +65,9 @@ export async function POST(request: Request) {
       }, { status: 403 });
     }
 
-    // NOTE: There is NO sequential previous-level requirement and NO limit on
-    // the number of active investments a user can hold at the same level.
-    // Users may invest as many times as they want at any unlocked level.
-
     const siteConfig = await db.siteConfig.findUnique({ where: { id: 'main' } });
     const trxPrice = siteConfig?.trxUsdPrice || 0.12;
     const cfaUsdRate = siteConfig?.cfaUsdRate || 600;
-
-    // ========================================================================
-    // INVESTMENT APPROVAL FLOW (Task 7):
-    // The Investment record is NOT created here. We only create a pending
-    // deposit request (PendingDeposit for TRX / YasDeposit for YAS) with
-    // type='investment' and the investment details (level, amount, payment
-    // method). The admin must approve the deposit before the Investment is
-    // actually created — and only then does the countdown (nextClaimAt,
-    // finishesAt) start. See /api/admin/deposits and /api/admin/yas-deposits.
-    // ========================================================================
 
     const paymentMethodStr = paymentMethod as 'yas' | 'trx';
     let pendingId: string | null = null;
@@ -150,7 +111,6 @@ export async function POST(request: Request) {
       pendingId = pending.id;
     }
 
-    // Create a transaction record (informational — funds not yet invested)
     await db.transaction.create({
       data: {
         type: 'invest_create',
@@ -160,18 +120,16 @@ export async function POST(request: Request) {
       },
     });
 
-    // Notify user that their deposit request has been submitted
     await db.userNotification.create({
       data: {
         userId: user.id,
         type: 'investment_pending',
         title: 'Demande de dépôt envoyée',
-        message: `Votre demande de dépôt d'investissement ${config.label} de $${amount.toFixed(2)} a été envoyée. L'administrateur va l'approuver avant que les fonds ne soient disponibles et que l'investissement commence. Le compte à rebours démarrera après l'approbation.`,
+        message: `Votre demande de dépôt d'investissement ${config.label} de $${amount.toFixed(2)} a été envoyée.`,
         link: 'invest',
       },
     });
 
-    // Notify admin (badge count + admin notification panel)
     await notifyAdmin({
       type: 'investment_deposit_request',
       title: 'Nouvelle demande de dépôt d\'investissement',
@@ -184,9 +142,9 @@ export async function POST(request: Request) {
       success: true,
       pendingApproval: true,
       paymentMethod: paymentMethodStr,
-      message: `Votre demande de dépôt a été envoyée. L'administrateur va l'approuver avant que les fonds ne soient disponibles et que l'investissement commence. Le compte à rebours démarrera après l'approbation.`,
+      message: `Votre demande de dépôt a été envoyée. L'administrateur va l'approuver avant que les fonds ne soient disponibles.`,
     });
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }

@@ -474,9 +474,14 @@ function HomeScreen() {
             <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.5px] font-semibold mb-0.5">Solde total</div>
             <div className="flex items-baseline gap-2 mb-3">
               <div className="text-[1.8rem] font-black tracking-[-1px] text-[#000000]">{formatMoney((user.balance || 0) + (user.investBalance || 0) + (user.projectBalance || 0) + (user.videoBalance || 0))}</div>
-              <button onClick={() => setPage('deposit-choose')} className="ml-auto py-2 px-3.5 rounded-xl bg-[rgba(255,255,255,0.25)] hover:bg-[rgba(255,255,255,0.35)] text-[#000000] text-[0.68rem] font-semibold cursor-pointer border-none transition-all active:scale-95 flex items-center gap-1.5 backdrop-blur-sm">
-                <i className="fas fa-arrow-down text-[0.6rem]"></i> Déposer
-              </button>
+              <div className="ml-auto flex gap-1.5">
+                <button onClick={() => setPage('deposit-choose')} className="py-2 px-3.5 rounded-xl bg-[rgba(255,255,255,0.25)] hover:bg-[rgba(255,255,255,0.35)] text-[#000000] text-[0.68rem] font-semibold cursor-pointer border-none transition-all active:scale-95 flex items-center gap-1.5 backdrop-blur-sm">
+                  <i className="fas fa-arrow-down text-[0.6rem]"></i> Déposer
+                </button>
+                <button onClick={() => setPage('withdraw')} className="py-2 px-3.5 rounded-xl bg-[rgba(255,255,255,0.25)] hover:bg-[rgba(255,255,255,0.35)] text-[#000000] text-[0.68rem] font-semibold cursor-pointer border-none transition-all active:scale-95 flex items-center gap-1.5 backdrop-blur-sm">
+                  <i className="fas fa-arrow-up text-[0.6rem]"></i> Retirer
+                </button>
+              </div>
             </div>
             {/* Compact 2x2 Account Grid — Glass Cards */}
             <div className="grid grid-cols-2 gap-1.5">
@@ -501,12 +506,11 @@ function HomeScreen() {
                   <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.projectBalance)}</div>
                 </div>
               </div>
-              <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
-                <div className="w-8 h-8 icon-box bg-[rgba(20,184,166,0.15)] shrink-0"><i className="fas fa-video text-[0.65rem] text-[#14B8A6]"></i></div>
-                <div className="min-w-0">
-                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Vidéo</div>
-                  <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.videoBalance || 0)}</div>
-                </div>
+              <div className="glass-card rounded-lg p-2 flex items-center gap-1.5">
+                <div className="w-7 h-7 icon-box bg-[rgba(20,184,166,0.15)] shrink-0"><i className="fas fa-video text-[0.55rem] text-[#14B8A6]"></i></div>
+                <div className="text-[0.45rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Vidéo</div>
+                <div className="text-[0.7rem] font-black text-[#000000] leading-tight ml-auto mr-1">{formatMoney(user.videoBalance || 0)}</div>
+                <button onClick={() => setPage('videos')} className="text-[0.48rem] font-bold px-1.5 py-[2px] rounded-md cursor-pointer border-none text-white shrink-0 transition-transform active:scale-95" style={{ background: '#14B8A6' }}>Regarder</button>
               </div>
             </div>
           </div>

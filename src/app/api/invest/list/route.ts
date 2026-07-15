@@ -1,28 +1,15 @@
 import { db } from '@/lib/db';
+import { getAuthToken } from '@/lib/auth';
 import { NextResponse } from 'next/server';
+import { getDailyVideos, DAILY_VIDEO_LIMIT, getVideoReward, computeDayNumber, type VideoItem } from '@/lib/videos';
 
 export const dynamic = 'force-dynamic';
 
-function getToken(request: Request): string | null {
-  const authHeader = request.headers.get('x-auth-token');
-  if (authHeader) return authHeader;
-  const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(/br_token=([^;]+)/);
-  if (match) return match[1];
-  return null;
-}
-
-async function getUser(request: Request) {
-  const token = getToken(request);
-  if (!token) return null;
-  return db.user.findUnique({ where: { id: token } });
-}
-
 export async function GET(request: Request) {
   try {
-    const user = await getUser(request);
+    const user = await getAuthToken(request);
     if (!user) {
-      return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
+      return NextResponse.json({ success: false, error: 'Non authentifié' }, { status: 401 });
     }
 
     const investments = await db.investment.findMany({
@@ -44,7 +31,6 @@ export async function GET(request: Request) {
         }
       }
 
-      // totalCycles = 0 means UNLIMITED collection days
       const unlimited = inv.totalCycles === 0;
       const remainingCycles = unlimited ? -1 : Math.max(0, inv.totalCycles - inv.doneCycles);
       const potentialEarning = unlimited
@@ -68,14 +54,6 @@ export async function GET(request: Request) {
     const totalEarned = investments.reduce((sum, i) => sum + i.earned, 0);
     const totalInvested = investments.reduce((sum, i) => sum + i.amount, 0);
 
-    // ========================================================================
-    // Pending investment deposit requests (Task 7):
-    // When a user creates an investment, the Investment record is NOT created
-    // immediately — instead a PendingDeposit (TRX) or YasDeposit (YAS) with
-    // type='investment' is created and waits for admin approval. We return
-    // those pending requests here so the UI can show "en attente d'approbation"
-    // cards with the investment level, amount and request date.
-    // ========================================================================
     const [pendingTrx, pendingYas] = await Promise.all([
       db.pendingDeposit.findMany({
         where: { userId: user.id, type: 'investment', status: 'pending' },
@@ -106,8 +84,6 @@ export async function GET(request: Request) {
       })),
     ];
 
-    // 3-level investment system (Débutant $5-15 / Business $65-250 / Elite $500-3000).
-    // All levels pay 5%/day with unlimited daily collections.
     const LEVELS = [
       { level: 1, min: 5, max: 15, rate: 5, requiredReferrals: 0, label: 'Niveau 1 — Débutant' },
       { level: 2, min: 65, max: 250, rate: 5, requiredReferrals: 12, label: 'Niveau 2 — Business' },
@@ -132,6 +108,6 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }

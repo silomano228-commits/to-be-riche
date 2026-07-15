@@ -1,8 +1,8 @@
 import { db } from '@/lib/db';
+import { getAuthToken } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { getDailyVideos, DAILY_VIDEO_LIMIT, getVideoReward, computeDayNumber, type VideoItem } from '@/lib/videos';
 
-// Build the current video list: admin links take priority over the catalog.
 async function getCurrentVideos(): Promise<VideoItem[]> {
   const adminLinks = await db.adminVideoLink.findMany({
     where: { active: true },
@@ -23,24 +23,9 @@ async function getCurrentVideos(): Promise<VideoItem[]> {
 
 export const dynamic = 'force-dynamic';
 
-function getToken(request: Request): string | null {
-  const authHeader = request.headers.get('x-auth-token');
-  if (authHeader) return authHeader;
-  const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(/br_token=([^;]+)/);
-  if (match) return match[1];
-  return null;
-}
-
-async function getUser(request: Request) {
-  const token = getToken(request);
-  if (!token) return null;
-  return db.user.findUnique({ where: { id: token } });
-}
-
 export async function POST(request: Request) {
   try {
-    const user = await getUser(request);
+    const user = await getAuthToken(request);
     if (!user) {
       return NextResponse.json({ success: false, error: 'Non authentifié' }, { status: 401 });
     }
@@ -52,7 +37,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'ID vidéo requis' }, { status: 400 });
     }
 
-    // Must have watched at least 30% of the video (lowered for longer videos)
     if (typeof watchedPercent !== 'number' || watchedPercent < 30) {
       return NextResponse.json({
         success: false,
@@ -61,13 +45,6 @@ export async function POST(request: Request) {
     }
 
     const today = new Date().toISOString().slice(0, 10);
-
-    // NOTE: The 3-day cycle rule is computed and persisted in
-    // /api/videos/list. The videoDepositRequired flag now BLOCKS
-    // WITHDRAWALS (see /api/videos/withdraw) — it does NOT block watching.
-    // Users may keep watching videos every day; they just can't withdraw the
-    // video balance until they clear the current cycle (Level 1 investment +
-    // required referrals).
 
     const watchedTodayCount = await db.videoWatch.count({
       where: { userId: user.id, watchDate: today },
@@ -86,6 +63,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Vidéo non disponible aujourd\'hui' }, { status: 400 });
     }
 
+    // Pre-check for fast-fail (authoritative check is inside transaction)
     const existing = await db.videoWatch.findFirst({
       where: { userId: user.id, videoId, watchDate: today },
     });
@@ -93,19 +71,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Vidéo déjà regardée aujourd\'hui' }, { status: 400 });
     }
 
-    // Compute the day number for this user's video reward cycle.
-    // - If videoFirstWatchAt is null → day 1 (first ever watch).
-    // - Otherwise → floor((now - videoFirstWatchAt) / 1d) + 1.
-    // The reward is then derived deterministically from (userId, dayNumber,
-    // videoIndex) so the same user always gets the same reward for the same
-    // video on the same day. Day 1 totals $1.60-$1.80 across 5 videos; day 2+
-    // totals $0.60-$0.95. See src/lib/videos.ts for the full distribution.
     const now = new Date();
     const dayNumber = computeDayNumber(user.videoFirstWatchAt, now);
     const videoIndex = dailyVideos.findIndex((v) => v.id === videoId);
     const reward = getVideoReward(user.id, videoIndex >= 0 ? videoIndex : 0, dayNumber);
 
     await db.$transaction(async (tx) => {
+      // Re-check idempotency inside transaction to prevent race condition double-claim
+      const txExisting = await tx.videoWatch.findFirst({
+        where: { userId: user.id, videoId, watchDate: today },
+      });
+      if (txExisting) throw new Error('ALREADY_CLAIMED');
+
       await tx.videoWatch.create({
         data: {
           userId: user.id,
@@ -122,7 +99,6 @@ export async function POST(request: Request) {
         videoLastWatchAt: now,
         videoWatchedDate: today,
       };
-      // Set first-watch timestamp only once.
       if (!user.videoFirstWatchAt) {
         updateData.videoFirstWatchAt = now;
       }
@@ -152,6 +128,9 @@ export async function POST(request: Request) {
       message: `Récompense de $${reward.toFixed(2)} créditée sur votre compte vidéo ! ${newRemaining} vidéo(s) restante(s) aujourd'hui.`,
     });
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    if (error instanceof Error && error.message === 'ALREADY_CLAIMED') {
+      return NextResponse.json({ success: false, error: 'Vidéo déjà regardée aujourd\'hui' }, { status: 400 });
+    }
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }

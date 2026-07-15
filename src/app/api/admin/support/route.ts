@@ -1,24 +1,12 @@
 import { db } from '@/lib/db';
+import { getAuthToken } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-function getToken(request: Request): string | null {
-  const authHeader = request.headers.get('x-auth-token');
-  if (authHeader) return authHeader;
-  const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(/br_token=([^;]+)/);
-  if (match) return match[1];
-  return null;
-}
-
-// GET: List all support tickets
 export async function GET(request: Request) {
   try {
-    const token = getToken(request);
-    if (!token) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
-
-    const user = await db.user.findUnique({ where: { id: token } });
+    const user = await getAuthToken(request);
     if (!user || user.role !== 'admin') {
       return NextResponse.json({ success: false, error: 'Accès refusé' }, { status: 403 });
     }
@@ -28,14 +16,8 @@ export async function GET(request: Request) {
     const ticketId = searchParams.get('ticketId');
 
     if (ticketId) {
-      // Get specific ticket with user and chat messages
-      const ticket = await db.supportTicket.findUnique({
-        where: { id: ticketId },
-      });
-
-      if (!ticket) {
-        return NextResponse.json({ success: false, error: 'Ticket introuvable' });
-      }
+      const ticket = await db.supportTicket.findUnique({ where: { id: ticketId } });
+      if (!ticket) return NextResponse.json({ success: false, error: 'Ticket introuvable' });
 
       const ticketUser = await db.user.findUnique({
         where: { id: ticket.userId },
@@ -67,8 +49,7 @@ export async function GET(request: Request) {
       });
     }
 
-    // List tickets
-    const where: any = {};
+    const where: Record<string, string> = {};
     if (status !== 'all') where.status = status;
 
     const tickets = await db.supportTicket.findMany({
@@ -77,7 +58,6 @@ export async function GET(request: Request) {
       take: 50,
     });
 
-    // Fetch users and last messages for each ticket
     const ticketsWithMeta = await Promise.all(
       tickets.map(async (t) => {
         const ticketUser = await db.user.findUnique({
@@ -109,23 +89,18 @@ export async function GET(request: Request) {
       stats: { open: openCount, closed: closedCount, total: openCount + closedCount },
     });
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }
 
-// POST: Close a ticket
 export async function POST(request: Request) {
   try {
-    const token = getToken(request);
-    if (!token) return NextResponse.json({ success: false, error: 'Non connecté' }, { status: 401 });
-
-    const user = await db.user.findUnique({ where: { id: token } });
+    const user = await getAuthToken(request);
     if (!user || user.role !== 'admin') {
       return NextResponse.json({ success: false, error: 'Accès refusé' }, { status: 403 });
     }
 
     const { ticketId, action } = await request.json();
-
     if (!ticketId) return NextResponse.json({ success: false, error: 'Ticket ID requis' });
 
     if (action === 'close') {
@@ -134,16 +109,12 @@ export async function POST(request: Request) {
         data: { status: 'closed' },
       });
 
-      // Get the ticket to find user
       const ticket = await db.supportTicket.findUnique({ where: { id: ticketId } });
       if (ticket) {
         await db.chatMessage.create({
           data: {
-            content: '✅ Votre ticket de support a été résolu et fermé par un administrateur. N\'hésitez pas à rouvrir une conversation si besoin.',
-            userId: ticket.userId,
-            isAdmin: true,
-            isAdminMsg: true,
-            ticketId: ticket.id,
+            content: '✅ Votre ticket de support a été résolu et fermé par un administrateur.',
+            userId: ticket.userId, isAdmin: true, isAdminMsg: true, ticketId: ticket.id,
           },
         });
       }
@@ -153,6 +124,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: false, error: 'Action non reconnue' });
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
   }
 }
