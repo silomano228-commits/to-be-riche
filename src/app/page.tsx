@@ -66,11 +66,11 @@ const RefreshReminderBanner = dynamic(() => import('@/components/RefreshReminder
 function SplashScreen({ onDone }: { onDone: () => void }) {
   const [hide, setHide] = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => { setHide(true); setTimeout(onDone, 500); }, 1200);
+    const t = setTimeout(() => { setHide(true); setTimeout(onDone, 150); }, 400);
     return () => clearTimeout(t);
   }, [onDone]);
   return (
-    <div className={`absolute inset-0 bg-gradient-to-br from-[#F0FDF4] to-[#ECFDF5] z-[9999] flex flex-col items-center justify-center transition-all duration-500 ${hide ? 'opacity-0 invisible' : ''}`}>
+    <div className={`absolute inset-0 bg-gradient-to-br from-[#F0FDF4] to-[#ECFDF5] z-[9999] flex flex-col items-center justify-center transition-all duration-150 ${hide ? 'opacity-0 invisible' : ''}`}>
       <div className="absolute w-[200px] h-[200px] rounded-full bg-[rgba(34,197,94,0.08)] blur-[80px] top-[25%] left-[15%]" style={{ animation: 'orbFloat 6s ease-in-out infinite' }} />
       <div className="absolute w-[160px] h-[160px] rounded-full bg-[rgba(20,184,166,0.06)] blur-[80px] bottom-[20%] right-[10%]" style={{ animation: 'orbFloat 6s ease-in-out infinite 3s reverse' }} />
       <div className="absolute w-[120px] h-[120px] rounded-full bg-[rgba(245,158,11,0.05)] blur-[80px] top-[60%] left-[60%]" style={{ animation: 'orbFloat 7s ease-in-out infinite 1.5s' }} />
