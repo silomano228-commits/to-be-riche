@@ -120,13 +120,12 @@ export function esc(s: string): string {
 }
 
 export function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
-  const store = useAppStore.getState();
-  const userId = store.user?.id;
+  // Auth is handled via the br_token cookie (sessionToken) set on login.
+  // Do NOT send X-Auth-Token header — it would override the cookie check
+  // and cause 401s because userId !== sessionToken.
   const headers = new Headers(options.headers || {});
-  if (userId) {
-    headers.set('X-Auth-Token', userId);
-  }
-  return fetch(url, { ...options, headers });
+  // Ensure credentials are sent (cookies) for same-origin requests
+  return fetch(url, { ...options, headers, credentials: 'same-origin' });
 }
 
 export async function refreshUser(): Promise<void> {
