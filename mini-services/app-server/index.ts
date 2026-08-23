@@ -6,9 +6,9 @@ const PROJECT_DIR = resolve('/home/z/my-project');
 function startNext() {
   console.log('[app-server] Starting Next.js on port 3000...');
   
-  const child = spawn('node', [resolve(PROJECT_DIR, 'node_modules/.bin/next'), 'dev', '-p', '3000'], {
+  const child = spawn('bun', ['run', 'dev'], {
     cwd: PROJECT_DIR,
-    env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=4096' },
+    env: { ...process.env, PORT: '3000' },
     stdio: ['ignore', 'pipe', 'pipe'],
     detached: true,
   });
