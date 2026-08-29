@@ -1,0 +1,659 @@
+     1→'use client';
+     2→
+     3→import { useState, useEffect, useRef } from 'react';
+     4→import { useAppStore, esc, authFetch } from '@/lib/store';
+     5→
+     6→const REQUIRED_REFERRALS = 12;
+     7→
+     8→// Mysterious, enticing stage messages — like a slow reveal
+     9→const STAGE_MESSAGES = [
+    10→  { min: 0, msg: "Certains chemins mènent à des horizons insoupçonnés...", emoji: '🎁', sub: "Chaque connexion compte" },
+    11→  { min: 1, msg: "Une première étincelle... quelque chose s'éveille.", emoji: '✨', sub: "Le voyage commence" },
+    12→  { min: 2, msg: "Deux lueurs dans le noir. Le chemin s'éclaire.", emoji: '💫', sub: "L'élan se dessine" },
+    13→  { min: 3, msg: "Le cercle grandit. L'inattendu se prépare.", emoji: '🌟', sub: "Ça prend forme" },
+    14→  { min: 4, msg: "Presque à mi-chemin... la suite promet.", emoji: '🔮', sub: "Perspectives en vue" },
+    15→  { min: 5, msg: "La moitié du chemin. Un tournant approche.", emoji: '🌙', sub: "Mi-parcours atteint" },
+    16→  { min: 6, msg: "L'horizon se précise. Continuez.", emoji: '🌅', sub: "Direction claire" },
+    17→  { min: 7, msg: "Un monde nouveau se dessine.", emoji: '⭐', sub: "Presque là" },
+    18→  { min: 8, msg: "Les portes d'un univers plus vaste sont proches.", emoji: '🚪', sub: "À deux doigts" },
+    19→  { min: 9, msg: "Un dernier pas... et tout change.", emoji: '🔑', sub: "Le moment est proche" },
+    20→  { min: 10, msg: "La promesse se précise. Encore un effort.", emoji: '🔥', sub: "Vous chauffez" },
+    21→  { min: 11, msg: "Plus qu'un seul parrainage... le cadeau est à portée de main !", emoji: '⚡', sub: "À un cheveu" },
+    22→  { min: 12, msg: "Félicitations ! Vous avez débloqué votre cadeau de 5,00 $ ! 🎉", emoji: '🎉', sub: "Cadeau débloqué" },
+    23→];
+    24→
+    25→// === Drag state helpers ===
+    26→const POS_STORAGE_KEY = 'beRich.floatingGift.pos';
+    27→const BUTTON_SIZE = 64; // main circle width/height
+    28→const DEFAULT_MARGIN_RIGHT = 18;
+    29→const DEFAULT_MARGIN_BOTTOM = 80;
+    30→const EDGE_PAD = 4; // px — keep button inside viewport
+    31→
+    32→interface Pos { x: number; y: number; }
+    33→
+    34→function getDefaultPos(): Pos {
+    35→  if (typeof window === 'undefined') return { x: 0, y: 0 };
+    36→  return {
+    37→    x: window.innerWidth - BUTTON_SIZE - DEFAULT_MARGIN_RIGHT,
+    38→    y: window.innerHeight - BUTTON_SIZE - DEFAULT_MARGIN_BOTTOM,
+    39→  };
+    40→}
+    41→
+    42→function clampPos(p: Pos): Pos {
+    43→  if (typeof window === 'undefined') return p;
+    44→  const maxX = Math.max(EDGE_PAD, window.innerWidth - BUTTON_SIZE - EDGE_PAD);
+    45→  const maxY = Math.max(EDGE_PAD, window.innerHeight - BUTTON_SIZE - EDGE_PAD);
+    46→  return {
+    47→    x: Math.min(Math.max(EDGE_PAD, p.x), maxX),
+    48→    y: Math.min(Math.max(EDGE_PAD, p.y), maxY),
+    49→  };
+    50→}
+    51→
+    52→function loadStoredPos(): Pos {
+    53→  try {
+    54→    const raw = typeof window !== 'undefined' ? window.localStorage.getItem(POS_STORAGE_KEY) : null;
+    55→    if (raw) {
+    56→      const p = JSON.parse(raw);
+    57→      if (typeof p?.x === 'number' && typeof p?.y === 'number') {
+    58→        return clampPos({ x: p.x, y: p.y });
+    59→      }
+    60→    }
+    61→  } catch { /* ignore */ }
+    62→  return getDefaultPos();
+    63→}
+    64→
+    65→function saveStoredPos(p: Pos) {
+    66→  try { window.localStorage.setItem(POS_STORAGE_KEY, JSON.stringify(p)); } catch { /* ignore */ }
+    67→}
+    68→
+    69→export default function FloatingGift() {
+    70→  const { user, addToast } = useAppStore();
+    71→  const [open, setOpen] = useState(false);
+    72→  const [animClass, setAnimClass] = useState('');
+    73→  const [pulse, setPulse] = useState(0);
+    74→  const [worldLink, setWorldLink] = useState<string | null>(null);
+    75→  const [worldLinkSeen, setWorldLinkSeen] = useState(false);
+    76→
+    77→  // === Drag state ===
+    78→  // Lazy initializer so the saved position is read once on first client render
+    79→  // (avoids calling setState inside an effect — and is SSR-safe via the window guard).
+    80→  const [pos, setPos] = useState<Pos | null>(() => {
+    81→    if (typeof window === 'undefined') return null;
+    82→    return loadStoredPos();
+    83→  });
+    84→  const [dragging, setDragging] = useState(false);
+    85→  const [showHandle, setShowHandle] = useState(false); // hover hint
+    86→  const dragRef = useRef<{
+    87→    startX: number;
+    88→    startY: number;
+    89→    offsetX: number;
+    90→    offsetY: number;
+    91→    moved: boolean;
+    92→    pointerId: number | null;
+    93→  } | null>(null);
+    94→
+    95→  useEffect(() => {
+    96→    const t = setInterval(() => setPulse(p => p + 1), 4000);
+    97→    return () => clearInterval(t);
+    98→  }, []);
+    99→
+   100→  // Re-clamp position on viewport resize (e.g. orientation change, browser chrome show/hide)
+   101→  useEffect(() => {
+   102→    const onResize = () => {
+   103→      setPos(prev => (prev ? clampPos(prev) : prev));
+   104→    };
+   105→    window.addEventListener('resize', onResize);
+   106→    return () => window.removeEventListener('resize', onResize);
+   107→  }, []);
+   108→
+   109→  // Fetch world link when modal opens and user has 12+ referrals
+   110→  useEffect(() => {
+   111→    if (!open || !user) return;
+   112→    const referralCount = user.referralCount || 0;
+   113→    if (referralCount < REQUIRED_REFERRALS) return;
+   114→
+   115→    let cancelled = false;
+   116→    const load = async () => {
+   117→      try {
+   118→        const res = await authFetch('/api/user/world-link');
+   119→        const data = await res.json();
+   120→        if (!cancelled && data.success && data.data?.link) {
+   121→          setWorldLink(data.data.link);
+   122→          setWorldLinkSeen(data.data.seen || false);
+   123→        }
+   124→      } catch { /* */ }
+   125→    };
+   126→    load();
+   127→    return () => { cancelled = true; };
+   128→  }, [open, user]);
+   129→
+   130→  if (!user) return null;
+   131→
+   132→  const referralCount = user.referralCount || 0;
+   133→  const progress = Math.min(referralCount / REQUIRED_REFERRALS, 1);
+   134→  const stage = STAGE_MESSAGES.filter(s => referralCount >= s.min).pop() || STAGE_MESSAGES[0];
+   135→  const isComplete = referralCount >= REQUIRED_REFERRALS;
+   136→  const remaining = Math.max(0, REQUIRED_REFERRALS - referralCount);
+   137→
+   138→  const handleWorldLinkClick = async () => {
+   139→    if (!worldLink) return;
+   140→    // Mark as seen
+   141→    try {
+   142→      await authFetch('/api/user/world-link', { method: 'POST' });
+   143→      setWorldLinkSeen(true);
+   144→    } catch { /* */ }
+   145→    // Open link
+   146→    window.open(worldLink, '_blank', 'noopener');
+   147→  };
+   148→
+   149→  // === Drag handlers (pointer events) ===
+   150→  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+   151→    if (!pos) return;
+   152→    // Don't start drag if user clicked on the share/copy buttons inside the modal — but those are in the modal, not the button, so we're safe.
+   153→    e.preventDefault();
+   154→    try {
+   155→      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+   156→    } catch { /* ignore */ }
+   157→    dragRef.current = {
+   158→      startX: e.clientX,
+   159→      startY: e.clientY,
+   160→      offsetX: e.clientX - pos.x,
+   161→      offsetY: e.clientY - pos.y,
+   162→      moved: false,
+   163→      pointerId: e.pointerId,
+   164→    };
+   165→    setDragging(true);
+   166→  };
+   167→
+   168→  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+   169→    if (!dragRef.current || dragRef.current.pointerId !== e.pointerId) return;
+   170→    const dx = e.clientX - dragRef.current.startX;
+   171→    const dy = e.clientY - dragRef.current.startY;
+   172→    // Spec: < 5px movement = click, ≥ 5px = drag.
+   173→    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) dragRef.current.moved = true;
+   174→    const next = clampPos({
+   175→      x: e.clientX - dragRef.current.offsetX,
+   176→      y: e.clientY - dragRef.current.offsetY,
+   177→    });
+   178→    setPos(next);
+   179→  };
+   180→
+   181→  const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+   182→    const ref = dragRef.current;
+   183→    dragRef.current = null;
+   184→    setDragging(false);
+   185→    if (!ref) return;
+   186→    try {
+   187→      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+   188→    } catch { /* ignore */ }
+   189→    if (!ref.moved) {
+   190→      // Treat as click — open modal
+   191→      setOpen(true);
+   192→      setAnimClass('giftModalIn');
+   193→    } else {
+   194→      // Persist final position
+   195→      setPos(cur => {
+   196→        if (cur) saveStoredPos(cur);
+   197→        return cur;
+   198→      });
+   199→    }
+   200→  };
+   201→
+   202→  // Until we have a measured position (first client mount), render nothing to avoid SSR/CLS jumps.
+   203→  if (!pos) {
+   204→    return null;
+   205→  }
+   206→
+   207→  return (
+   208→    <>
+   209→      {/* Floating Gift Button + Parrainez Banner — DRAGGABLE */}
+   210→      <div
+   211→        className="fixed z-[100] select-none"
+   212→        style={{
+   213→          left: `${pos.x}px`,
+   214→          top: `${pos.y}px`,
+   215→          cursor: dragging ? 'grabbing' : 'grab',
+   216→          touchAction: 'none', // prevent scroll while dragging on mobile
+   217→          transition: dragging ? 'none' : 'left 0.15s ease, top 0.15s ease',
+   218→        }}
+   219→        onPointerDown={onPointerDown}
+   220→        onPointerMove={onPointerMove}
+   221→        onPointerUp={endDrag}
+   222→        onPointerCancel={endDrag}
+   223→        onMouseEnter={() => setShowHandle(true)}
+   224→        onMouseLeave={() => setShowHandle(false)}
+   225→      >
+   226→        <div className="flex items-center gap-2">
+   227→          {/* Parrainez Banner — visible when not complete */}
+   228→          {!isComplete && (
+   229→            <div
+   230→              className="px-3 py-1.5 rounded-full text-[0.6rem] font-bold whitespace-nowrap"
+   231→              style={{
+   232→                background: 'linear-gradient(135deg, #F59E0B, #FBBF24)',
+   233→                color: '#050506',
+   234→                boxShadow: '0 2px 12px rgba(245,158,11,0.35)',
+   235→                animation: 'bannerPulse 2.5s ease-in-out infinite',
+   236→              }}
+   237→            >
+   238→              <i className="fas fa-gift mr-1 text-[0.5rem]"></i>
+   239→              Parrainez !
+   240→            </div>
+   241→          )}
+   242→
+   243→          {/* Main button */}
+   244→          <div className="relative">
+   245→            {/* Drag handle hint — appears on hover, top-left */}
+   246→            <div
+   247→              className="absolute -top-2 -left-2 w-5 h-5 rounded-full flex items-center justify-center text-[0.55rem] pointer-events-none transition-opacity duration-200 z-10"
+   248→              style={{
+   249→                background: '#FFFFFF',
+   250→                color: '#F59E0B',
+   251→                border: '1px solid rgba(245,158,11,0.3)',
+   252→                boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+   253→                opacity: showHandle || dragging ? 1 : 0,
+   254→              }}
+   255→              title="Glissez pour déplacer"
+   256→            >
+   257→              ✥
+   258→            </div>
+   259→            {/* Prominent pulsing glow ring — larger */}
+   260→            <div className="absolute inset-0 w-[64px] h-[64px] rounded-full"
+   261→              style={{
+   262→                background: 'radial-gradient(circle, rgba(245,158,11,0.35) 0%, transparent 70%)',
+   263→                animation: 'giftGlow 2.5s ease-in-out infinite',
+   264→                transform: 'scale(1.8)',
+   265→              }}
+   266→            />
+   267→            {/* Second glow ring for extra prominence */}
+   268→            <div className="absolute inset-0 w-[64px] h-[64px] rounded-full"
+   269→              style={{
+   270→                background: 'radial-gradient(circle, rgba(245,158,11,0.15) 0%, transparent 60%)',
+   271→                animation: 'giftGlowOuter 3s ease-in-out infinite 0.5s',
+   272→                transform: 'scale(2.4)',
+   273→              }}
+   274→            />
+   275→            {/* Main circle — 64px with gold border */}
+   276→            <div
+   277→              className="w-[64px] h-[64px] rounded-full flex items-center justify-center transition-all duration-300"
+   278→              style={{
+   279→                background: '#FFFFFF',
+   280→                border: '2px solid rgba(245,158,11,0.4)',
+   281→                boxShadow: isComplete
+   282→                  ? '0 0 24px rgba(245,158,11,0.35), 0 2px 8px rgba(0,0,0,0.08)'
+   283→                  : '0 2px 8px rgba(0,0,0,0.08)',
+   284→                animation: pulse % 2 === 0 ? 'giftFloat 3s ease-in-out infinite' : 'giftBreathe 4s ease-in-out infinite',
+   285→              }}
+   286→            >
+   287→              <span className="text-[1.6rem]">{stage.emoji}</span>
+   288→            </div>
+   289→            {/* Referral count badge — gold */}
+   290→            {referralCount > 0 && !isComplete && (
+   291→              <div
+   292→                className="absolute -top-1 -right-1 min-w-[20px] h-[20px] rounded-full flex items-center justify-center text-[0.6rem] font-bold px-1"
+   293→                style={{
+   294→                  background: '#F59E0B',
+   295→                  color: '#050506',
+   296→                  boxShadow: '0 2px 8px rgba(245,158,11,0.4)',
+   297→                }}
+   298→              >
+   299→                {referralCount}
+   300→              </div>
+   301→            )}
+   302→            {isComplete && (
+   303→              <div
+   304→                className="absolute -top-1 -right-1 w-[20px] h-[20px] rounded-full flex items-center justify-center text-[0.6rem] font-bold"
+   305→                style={{
+   306→                  background: '#F59E0B',
+   307→                  color: '#050506',
+   308→                  boxShadow: '0 2px 8px rgba(245,158,11,0.4)',
+   309→                }}
+   310→              >
+   311→                ✓
+   312→              </div>
+   313→            )}
+   314→          </div>
+   315→        </div>
+   316→      </div>
+   317→
+   318→      {/* Modal Overlay */}
+   319→      {open && (
+   320→        <div className="fixed inset-0 z-[5000] flex items-center justify-center" onClick={() => setOpen(false)}>
+   321→          <div className="absolute inset-0 bg-[rgba(0,0,0,0.3)] backdrop-blur-sm" />
+   322→          <div
+   323→            className={`relative w-[88%] max-w-[340px] shadow-2xl overflow-hidden ${animClass}`}
+   324→            style={{
+   325→              background: '#FFFFFF',
+   326→              border: '1px solid rgba(0,0,0,0.08)',
+   327→              borderRadius: '1rem',
+   328→            }}
+   329→            onClick={(e) => e.stopPropagation()}
+   330→          >
+   331→            {/* Subtle gold line at top instead of gradient header */}
+   332→            <div className="h-[2px] w-full" style={{
+   333→              background: 'linear-gradient(90deg, transparent, #F59E0B, transparent)',
+   334→              opacity: isComplete ? 0.8 : 0.4,
+   335→            }} />
+   336→
+   337→            {/* Close button */}
+   338→            <button
+   339→              onClick={() => setOpen(false)}
+   340→              className="absolute top-4 right-4 w-7 h-7 rounded-full flex items-center justify-center cursor-pointer border-none text-[0.7rem] transition-colors"
+   341→              style={{
+   342→                background: 'rgba(0,0,0,0.06)',
+   343→                color: 'rgba(0,0,0,0.55)',
+   344→              }}
+   345→            >
+   346→              ✕
+   347→            </button>
+   348→
+   349→            {/* Gift animation area */}
+   350→            <div className="pt-8 pb-2 px-6">
+   351→              <div className="flex justify-center mb-4">
+   352→                <div className="relative">
+   353→                  <div className="text-[3rem]" style={{
+   354→                    filter: isComplete ? 'drop-shadow(0 0 16px rgba(245,158,11,0.35))' : 'none',
+   355→                    animation: isComplete ? 'giftCelebrate 3s ease-in-out infinite' : 'giftWiggle 4s ease-in-out infinite',
+   356→                  }}>
+   357→                    {isComplete ? '🎉' : '🎁'}
+   358→                  </div>
+   359→                  {/* Subtle sparkles */}
+   360→                  {referralCount > 0 && !isComplete && (
+   361→                    <>
+   362→                      <div className="absolute -top-1 -left-2 text-[0.6rem] opacity-60" style={{ animation: 'sparkle 3s ease-in-out infinite' }}>✨</div>
+   363→                    </>
+   364→                  )}
+   365→                  {isComplete && (
+   366→                    <>
+   367→                      <div className="absolute -top-1 -left-2 text-[0.65rem] opacity-70" style={{ animation: 'sparkle 2.5s ease-in-out infinite' }}>✨</div>
+   368→                      <div className="absolute -top-2 right-0 text-[0.55rem] opacity-50" style={{ animation: 'sparkle 2.5s ease-in-out infinite 0.8s' }}>⭐</div>
+   369→                      <div className="absolute bottom-0 -right-3 text-[0.6rem] opacity-60" style={{ animation: 'sparkle 2.5s ease-in-out infinite 1.5s' }}>💫</div>
+   370→                    </>
+   371→                  )}
+   372→                </div>
+   373→              </div>
+   374→
+   375→              {/* Main message */}
+   376→              <div className="text-center mb-1">
+   377→                <div className="text-[0.92rem] font-bold mb-1" style={{ color: '#1F2937' }}>{stage.msg}</div>
+   378→                <div className="text-[0.65rem] tracking-wide" style={{ color: 'rgba(0,0,0,0.35)' }}>{stage.sub}</div>
+   379→              </div>
+   380→            </div>
+   381→
+   382→            {/* Content */}
+   383→            <div className="px-6 pb-6 pt-2">
+   384→              {/* Progress section */}
+   385→              <div className="mb-4">
+   386→                <div className="flex items-center justify-between mb-2.5">
+   387→                  <span className="text-[0.72rem] font-semibold" style={{ color: 'rgba(0,0,0,0.55)' }}>Progression</span>
+   388→                  <span className="text-[0.72rem] font-bold" style={{ color: '#F59E0B' }}>{referralCount}/{REQUIRED_REFERRALS}</span>
+   389→                </div>
+   390→                {/* Progress bar — gold gradient on light track */}
+   391→                <div className="relative">
+   392→                  <div className="w-full h-[6px] rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.08)' }}>
+   393→                    <div
+   394→                      className="h-full rounded-full transition-all duration-700 ease-out"
+   395→                      style={{
+   396→                        width: `${progress * 100}%`,
+   397→                        background: 'linear-gradient(90deg, #F59E0B, #FBBF24)',
+   398→                      }}
+   399→                    />
+   400→                  </div>
+   401→                  {/* Milestone dots */}
+   402→                  <div className="absolute inset-0 flex items-center justify-between px-0.5">
+   403→                    {Array.from({ length: REQUIRED_REFERRALS }).map((_, i) => (
+   404→                      <div key={i}
+   405→                        className="w-[6px] h-[6px] rounded-full transition-all duration-300"
+   406→                        style={{
+   407→                          background: i < referralCount ? '#F59E0B' : 'rgba(0,0,0,0.1)',
+   408→                          boxShadow: i < referralCount ? '0 0 4px rgba(245,158,11,0.4)' : 'none',
+   409→                          transform: i < referralCount ? 'scale(1.2)' : 'scale(1)',
+   410→                        }}
+   411→                      />
+   412→                    ))}
+   413→                  </div>
+   414→                </div>
+   415→              </div>
+   416→
+   417→              {/* Remaining message — light card with subtle gold text */}
+   418→              {!isComplete && remaining > 0 && (
+   419→                <div
+   420→                  className="rounded-xl p-3.5 mb-4 flex items-center gap-3"
+   421→                  style={{
+   422→                    background: 'rgba(0,0,0,0.04)',
+   423→                    border: '1px solid rgba(245,158,11,0.1)',
+   424→                  }}
+   425→                >
+   426→                  <div
+   427→                    className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+   428→                    style={{ background: 'rgba(245,158,11,0.12)' }}
+   429→                  >
+   430→                    <i className="fas fa-users text-[0.65rem]" style={{ color: '#F59E0B' }}></i>
+   431→                  </div>
+   432→                  <div>
+   433→                    <div className="text-[0.7rem] font-semibold" style={{ color: '#FBBF24' }}>
+   434→                      {remaining === 1
+   435→                        ? "Plus qu'une personne..."
+   436→                        : `${remaining} personnes restantes`
+   437→                      }
+   438→                    </div>
+   439→                    <div className="text-[0.58rem]" style={{ color: 'rgba(0,0,0,0.35)' }}>
+   440→                      Et un univers plus vaste s'ouvrira à vous
+   441→                    </div>
+   442→                  </div>
+   443→                </div>
+   444→              )}
+   445→
+   446→              {/* $5 Gift Reveal — prominent celebratory banner shown at 12+ referrals */}
+   447→              {isComplete && (
+   448→                <>
+   449→                  <div
+   450→                    className="rounded-xl p-4 mb-3 relative overflow-hidden"
+   451→                    style={{
+   452→                      background: 'linear-gradient(135deg, rgba(245,158,11,0.18), rgba(251,191,36,0.12))',
+   453→                      border: '2px solid rgba(245,158,11,0.45)',
+   454→                      boxShadow: '0 4px 16px rgba(245,158,11,0.15)',
+   455→                    }}
+   456→                  >
+   457→                    <div className="absolute -top-4 -right-4 text-[2.2rem] opacity-25" style={{ animation: 'giftCelebrate 3s ease-in-out infinite' }}>🎉</div>
+   458→                    <div className="relative flex items-center gap-3">
+   459→                      <div
+   460→                        className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+   461→                        style={{ background: 'linear-gradient(135deg, #F59E0B, #FBBF24)', boxShadow: '0 2px 10px rgba(245,158,11,0.35)' }}
+   462→                      >
+   463→                        <i className="fas fa-gift text-[1rem]" style={{ color: '#FFFFFF' }}></i>
+   464→                      </div>
+   465→                      <div className="flex-1 min-w-0">
+   466→                        <div className="text-[0.78rem] font-black" style={{ color: '#B45309' }}>
+   467→                          🎉 Cadeau débloqué !
+   468→                        </div>
+   469→                        <div className="text-[0.68rem] font-bold mt-0.5" style={{ color: '#92400E' }}>
+   470→                          5,00 $ crédités sur votre compte principal
+   471→                        </div>
+   472→                        <div className="text-[0.58rem] mt-0.5" style={{ color: 'rgba(180,83,9,0.75)' }}>
+   473→                          Actualisez votre page pour voir votre nouveau solde.
+   474→                        </div>
+   475→                      </div>
+   476→                    </div>
+   477→                  </div>
+   478→
+   479→                  {/* Subtle secondary celebration card */}
+   480→                  <div
+   481→                    className="rounded-xl p-3.5 mb-4 flex items-center gap-3"
+   482→                    style={{
+   483→                      background: 'rgba(245,158,11,0.1)',
+   484→                      border: '1px solid rgba(245,158,11,0.15)',
+   485→                    }}
+   486→                  >
+   487→                    <div
+   488→                      className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+   489→                      style={{ background: 'rgba(245,158,11,0.15)' }}
+   490→                    >
+   491→                      <i className="fas fa-crown text-[0.65rem]" style={{ color: '#FBBF24' }}></i>
+   492→                    </div>
+   493→                    <div>
+   494→                      <div className="text-[0.7rem] font-bold" style={{ color: '#FBBF24' }}>
+   495→                        Horizons débloqués
+   496→                      </div>
+   497→                      <div className="text-[0.58rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>
+   498→                        Un monde d'opportunités étendues vous attend
+   499→                      </div>
+   500→                    </div>
+   501→                  </div>
+   502→                </>
+   503→              )}
+   504→
+   505→              {/* World Link Section — shown when 12+ referrals and link exists */}
+   506→              {isComplete && worldLink && (
+   507→                <div
+   508→                  className="rounded-xl p-4 mb-4 relative overflow-hidden"
+   509→                  style={{
+   510→                    background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(59,130,246,0.08))',
+   511→                    border: '1px solid rgba(139,92,246,0.15)',
+   512→                  }}
+   513→                >
+   514→                  <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full" style={{ background: 'rgba(139,92,246,0.06)' }} />
+   515→                  <div className="relative">
+   516→                    <div className="flex items-center gap-2 mb-2">
+   517→                      <i className="fas fa-globe text-[0.7rem]" style={{ color: '#8B5CF6' }}></i>
+   518→                      <span className="text-[0.72rem] font-semibold" style={{ color: '#8B5CF6' }}>Un nouvel horizon s'offre à vous</span>
+   519→                    </div>
+   520→                    <p className="text-[0.6rem] mb-3" style={{ color: 'rgba(0,0,0,0.45)' }}>
+   521→                      Découvrez des opportunités exclusives réservées aux membres les plus actifs.
+   522→                    </p>
+   523→                    <button
+   524→                      onClick={handleWorldLinkClick}
+   525→                      className="w-full py-2.5 rounded-lg text-[0.75rem] font-semibold border-none cursor-pointer flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
+   526→                      style={{
+   527→                        background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
+   528→                        color: '#FFFFFF',
+   529→                        boxShadow: '0 2px 12px rgba(139,92,246,0.3)',
+   530→                      }}
+   531→                    >
+   532→                      <i className="fas fa-external-link-alt text-[0.6rem]"></i>
+   533→                      Découvrir
+   534→                    </button>
+   535→                  </div>
+   536→                </div>
+   537→              )}
+   538→
+   539→              {/* World Link loading indicator — simple spinner */}
+   540→
+   541→              {/* Referral code — light bg, gold copy button */}
+   542→              <div
+   543→                className="rounded-xl p-4"
+   544→                style={{
+   545→                  background: 'rgba(0,0,0,0.04)',
+   546→                  border: '1px solid rgba(0,0,0,0.08)',
+   547→                }}
+   548→              >
+   549→                <div className="text-[0.62rem] mb-2 text-center" style={{ color: 'rgba(0,0,0,0.35)' }}>Votre code de parrainage</div>
+   550→                <div
+   551→                  className="text-center text-[1rem] font-black tracking-[3px] font-mono mb-3"
+   552→                  style={{ color: '#1F2937' }}
+   553→                >
+   554→                  {user.referralCode || '—'}
+   555→                </div>
+   556→                <div className="flex gap-2">
+   557→                  <button
+   558→                    onClick={() => {
+   559→                      if (user.referralCode) {
+   560→                        const link = `http://beriche.duckdns.org/?ref=${user.referralCode}`;
+   561→                        if (navigator.share) {
+   562→                          navigator.share({
+   563→                            title: 'Be Rich - Investissement & Trading',
+   564→                            text: `Rejoins Be Rich avec mon code de parrainage ${user.referralCode} et commence à investir ! 💰`,
+   565→                            url: link,
+   566→                          }).catch(() => {
+   567→                            navigator.clipboard?.writeText(link);
+   568→                            useAppStore.getState().addToast('Lien copié !', 'success');
+   569→                          });
+   570→                        } else {
+   571→                          navigator.clipboard?.writeText(link);
+   572→                          useAppStore.getState().addToast('Lien copié !', 'success');
+   573→                        }
+   574→                      }
+   575→                    }}
+   576→                    className="flex-1 py-2.5 rounded-lg text-[0.75rem] font-semibold border-none cursor-pointer flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
+   577→                    style={{
+   578→                      background: '#22C55E',
+   579→                      color: '#050506',
+   580→                      boxShadow: '0 2px 12px rgba(34,197,94,0.25)',
+   581→                    }}
+   582→                  >
+   583→                    <i className="fas fa-share-alt text-[0.6rem]"></i>
+   584→                    Partager
+   585→                  </button>
+   586→                  <button
+   587→                    onClick={() => {
+   588→                      if (user.referralCode) {
+   589→                        navigator.clipboard?.writeText(user.referralCode);
+   590→                        useAppStore.getState().addToast('Code copié !', 'success');
+   591→                      }
+   592→                    }}
+   593→                    className="flex-1 py-2.5 rounded-lg text-[0.75rem] font-semibold border-none cursor-pointer flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
+   594→                    style={{
+   595→                      background: '#F59E0B',
+   596→                      color: '#050506',
+   597→                      boxShadow: '0 2px 12px rgba(245,158,11,0.25)',
+   598→                    }}
+   599→                  >
+   600→                    <i className="fas fa-copy text-[0.6rem]"></i>
+   601→                    Copier
+   602→                  </button>
+   603→                </div>
+   604→              </div>
+   605→            </div>
+   606→          </div>
+   607→        </div>
+   608→      )}
+   609→
+   610→      {/* Animations */}
+   611→      <style>{`
+   612→        @keyframes giftFloat {
+   613→          0%, 100% { transform: translateY(0); }
+   614→          50% { transform: translateY(-5px); }
+   615→        }
+   616→        @keyframes giftBreathe {
+   617→          0%, 100% { transform: scale(1); }
+   618→          50% { transform: scale(1.04); }
+   619→        }
+   620→        @keyframes giftGlow {
+   621→          0%, 100% { opacity: 0.5; transform: scale(1.8); }
+   622→          50% { opacity: 1; transform: scale(2.1); }
+   623→        }
+   624→        @keyframes giftGlowOuter {
+   625→          0%, 100% { opacity: 0.2; transform: scale(2.4); }
+   626→          50% { opacity: 0.5; transform: scale(2.8); }
+   627→        }
+   628→        @keyframes giftWiggle {
+   629→          0%, 100% { transform: rotate(0deg); }
+   630→          25% { transform: rotate(-3deg); }
+   631→          75% { transform: rotate(3deg); }
+   632→        }
+   633→        @keyframes giftCelebrate {
+   634→          0% { transform: rotate(0deg) scale(1); }
+   635→          25% { transform: rotate(5deg) scale(1.04); }
+   636→          50% { transform: rotate(0deg) scale(1); }
+   637→          75% { transform: rotate(-5deg) scale(1.04); }
+   638→          100% { transform: rotate(0deg) scale(1); }
+   639→        }
+   640→        @keyframes sparkle {
+   641→          0%, 100% { opacity: 0.2; transform: scale(0.8); }
+   642→          50% { opacity: 0.8; transform: scale(1.1); }
+   643→        }
+   644→        @keyframes bannerPulse {
+   645→          0%, 100% { transform: scale(1); opacity: 1; }
+   646→          50% { transform: scale(1.05); opacity: 0.85; }
+   647→        }
+   648→        .giftModalIn {
+   649→          animation: giftModalIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+   650→        }
+   651→        @keyframes giftModalIn {
+   652→          from { opacity: 0; transform: scale(0.85) translateY(16px); }
+   653→          to { opacity: 1; transform: scale(1) translateY(0); }
+   654→        }
+   655→      `}</style>
+   656→    </>
+   657→  );
+   658→}
+   659→
