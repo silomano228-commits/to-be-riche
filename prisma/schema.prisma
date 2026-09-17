@@ -32,37 +32,56 @@ model User {
   totalInvestClaims Int         @default(0)
   investClaimBlocked Boolean     @default(false)
   worldLinkSeen   Boolean       @default(false)
-  // Anti-fraud: unique phone number per account + session token to prevent
-  // concurrent logins with the same account on multiple devices.
   phone           String?       @unique
   sessionToken    String?
-  // Referral milestone reward: $5 credited to principal when user reaches 12
-  // active referrals. Tracked to avoid crediting twice.
   referralRewardClaimed Boolean @default(false)
-  // Level-2 investment withdrawal hold (escrow). When a user transfers funds
-  // OUT of the investment account before unlocking level 2 (12 referrals) the
-  // amount is held here and released to the principal balance only after
-  // 10 days AND level-2 unlock. Hidden from the UI.
   heldInvestBalance Float      @default(0)
   heldReleaseAt     DateTime?
-  // Video platform autonomous account
-  videoBalance           Float     @default(0)
-  videoWatchedCount      Int       @default(0)
-  videoWatchedDate       String?
-  videoTotalEarned       Float     @default(0)
-  videoDepositRequired   Boolean   @default(false)
-  videoFirstWatchAt      DateTime?
-  videoLastWatchAt       DateTime?
-  videoWatchedVideoIds   String    @default("[]")
-  // 3-day cycle tracking: every 3 days of watching, user must deposit at
-  // investment Level 1 AND invite (cycleNumber) referrals to continue withdrawing.
-  videoCycleNumber       Int       @default(0)   // last cycle the user cleared
-  videoCycleClearedAt    DateTime?               // when the current cycle was cleared
+
+  // ===== Espace Jeunes — Mission & Micro-Prêt System =====
+  // Mission earnings (from validated images, separate from deposits)
+  missionBalance       Float     @default(0)
+  // Total earned from all validated images ever
+  missionTotalEarned   Float     @default(0)
+  // Number of validated images today
+  missionValidatedToday Int     @default(0)
+  // Date string YYYY-MM-DD for daily limit tracking
+  missionDate          String?
+  // Caution (guarantee deposit) — blocked, not withdrawable
+  cautionBalance       Float     @default(0)
+  // Caution status: none | pending | active | released
+  cautionStatus        String    @default("none")
+  // Personal deposit balance (distinct from mission earnings)
+  personalDepositBalance Float   @default(0)
+  // User level: 1=Nouveau, 2=Actif, 3=Éligible, 4=Fiable
+  userLevel            Int       @default(1)
+  // Reputation score (internal)
+  reputationScore      Float     @default(0)
+  // Date of birth
+  dateOfBirth          String?
+  // Country
+  country              String?
+  // City
+  city                 String?
+  // Payment method: mobile_money | bank | yas | trx
+  paymentMethod        String?
+  // Payment address/account number
+  paymentAddress       String?
+  // Account verification status: unverified | pending | verified
+  accountVerified      String    @default("unverified")
+  // Last activity timestamp (for inactivity detection)
+  lastActivityAt       DateTime  @default(now())
+  // Referral milestone: validated referrals (verified + first activity done)
+  validatedReferralCount Int     @default(0)
+  // Has active overdue loan (for blocking new loans)
+  hasOverdueLoan       Boolean   @default(false)
+
   // Casino wheel game state
   gameSpinsUsed          Int       @default(0)
   gameSpinsDate          String?
   gameTotalWon           Float     @default(0)
   gameLastSpinAt         DateTime?
+
   transactions    Transaction[]
   investments     Investment[]
   trades          Trade[]
@@ -75,7 +94,8 @@ model User {
   yasDeposits     YasDeposit[]
   userNotifications UserNotification[]
   tradingPositions  TradingPosition[]
-  videoWatches     VideoWatch[]
+  missionImages   MissionImage[]
+  microLoans      MicroLoan[]
   gameSpins        GameSpin[]
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -196,12 +216,9 @@ model PendingDeposit {
   trxPrice          Float
   userAddress       String
   txHash            String?
-  destination       String    @default("balance") // balance | video | invest_level_X
+  destination       String    @default("balance") // balance | mission | invest_level_X | caution
   status            String    @default("pending")
-  // Investment approval flow: type distinguishes principal-wallet deposits
-  // from investment deposits. When type='investment', admin approval
-  // creates the Investment record (countdown starts at approval time).
-  type              String    @default("deposit") // deposit | investment
+  type              String    @default("deposit") // deposit | investment | caution
   investmentLevel   Int?
   investmentAmount  Float?
   paymentMethod     String?   // yas | trx
@@ -222,6 +239,18 @@ model SiteConfig {
   trxUsdPrice     Float    @default(0.12)
   cfaUsdRate      Float    @default(550)
   worldLink       String?
+  // Mission system config
+  missionRewardCfa    Int     @default(25)     // 25 FCFA per validated image
+  missionDailyLimit   Int     @default(10)     // 10 images max per day
+  missionObjectiveCfa Int     @default(2500)   // 2500 FCFA objective for loan eligibility
+  cautionAmountCfa    Int     @default(5000)   // 5000 FCFA caution required
+  loanSmallCfa        Int     @default(5000)   // Small loan: 5000 FCFA
+  loanLargeCfa        Int     @default(10000)  // Large loan: 10000 FCFA
+  loanSmallReferrals  Int     @default(5)      // 5 validated referrals for small loan
+  loanLargeReferrals  Int     @default(10)     // 10 validated referrals for large loan
+  loanSmallFundsCfa   Int     @default(2500)   // 2500 FCFA minimum funds for small loan
+  loanLargeFundsCfa   Int     @default(5000)   // 5000 FCFA minimum funds for large loan
+  loanOverdueGraceDays Int    @default(5)      // 5 days grace before referral fund deduction
   updatedAt       DateTime @updatedAt
 }
 
@@ -249,7 +278,7 @@ model Withdrawal {
   yasAccount    String?
   status        String   @default("pending")
   adminNote     String?
-  sourceAccount String?  // jeu | investissement | projet | video
+  sourceAccount String?  // jeu | investissement | projet | mission
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -280,13 +309,10 @@ model YasDeposit {
   trxPrice          Float
   yasAccount        String
   trxAddress        String?
-  destination       String    @default("balance")
+  destination       String    @default("balance") // balance | caution | mission
   status            String    @default("pending")
   adminNote         String?
-  // Investment approval flow: type distinguishes principal-wallet deposits
-  // from investment deposits. When type='investment', admin approval
-  // creates the Investment record (countdown starts at approval time).
-  type              String    @default("deposit") // deposit | investment
+  type              String    @default("deposit") // deposit | investment | caution
   investmentLevel   Int?
   investmentAmount  Float?
   processedAt       DateTime?
@@ -303,11 +329,11 @@ model UserNotification {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      String   // deposit_approved, deposit_rejected, withdrawal_approved, withdrawal_rejected, new_message, referral_new, investment_claim, trade_result
+  type      String
   title     String
   message   String
   read      Boolean  @default(false)
-  link      String?  // optional navigation link (e.g. 'wallet', 'chat')
+  link      String?
   createdAt DateTime @default(now())
 
   @@index([userId])
@@ -323,10 +349,8 @@ model AdminNotification {
   read         Boolean  @default(false)
   ticketId     String?
   userId       String?
-  // Investment approval flow: link back to the pending deposit or
-  // withdrawal that triggered this admin notification.
-  depositId    String?  // PendingDeposit.id or YasDeposit.id
-  withdrawalId String?  // Withdrawal.id
+  depositId    String?
+  withdrawalId String?
   createdAt    DateTime @default(now())
 
   @@index([read])
@@ -338,19 +362,19 @@ model TradingPosition {
   id          String   @id @default(cuid())
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  asset       String   // EUR/USD, GBP/USD, BTC/USD, ETH/USD, GOLD/USD, SILVER/USD
-  direction   String   // BUY or SELL
-  amount      Float    // Amount in USD
-  entryPrice  Float    // Price when position was opened
-  currentPrice Float?  // Latest price (updated by system)
-  stopLoss    Float?   // Stop loss percentage (e.g. 5 means 5%)
-  takeProfit  Float?   // Take profit percentage (e.g. 15 means 15%)
-  profitLoss  Float?   // Current P/L in USD
-  plPercent   Float?   // Current P/L percentage
-  status      String   @default("open") // open, closed, liquidated
-  closePrice  Float?   // Price when position was closed
-  closeReason String?  // manual, stop_loss, take_profit, liquidated
-  result      String?  // win, loss
+  asset       String
+  direction   String
+  amount      Float
+  entryPrice  Float
+  currentPrice Float?
+  stopLoss    Float?
+  takeProfit  Float?
+  profitLoss  Float?
+  plPercent   Float?
+  status      String   @default("open")
+  closePrice  Float?
+  closeReason String?
+  result      String?
   openedAt    DateTime @default(now())
   closedAt    DateTime?
 
@@ -359,30 +383,129 @@ model TradingPosition {
   @@index([userId, status])
 }
 
-model VideoWatch {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  videoId   String   // YouTube video ID
-  title     String
-  reward    Float    // Reward amount in USD
-  watchedAt DateTime @default(now())
-  watchDate String   // Date string YYYY-MM-DD for daily limit tracking
+// ===== Espace Jeunes: Campaigns =====
+// Admin creates campaigns with brand, brief, constraints, reward
+model Campaign {
+  id            String   @id @default(cuid())
+  name          String                    // e.g. "Campagne Mercedes - Septembre 2026"
+  brand         String                    // e.g. "Mercedes"
+  description   String                    // Short description
+  brief         String                    // Detailed brief/instructions for image generation
+  format        String   @default("16:9") // Required aspect ratio: 16:9 | 4:3 | 1:1 | 9:16
+  style         String   @default("realistic") // realistic | artistic | cartoon | abstract
+  constraints   String                    // Additional constraints as text
+  rewardCfa     Int      @default(25)     // FCFA per validated image
+  dailyLimit    Int      @default(10)     // Max images per user per day
+  maxImages     Int      @default(1000)   // Max total images for campaign
+  totalImages   Int      @default(0)      // Current total images submitted
+  totalValidated Int     @default(0)      // Total validated images
+  startDate     DateTime                  // Campaign start
+  endDate       DateTime?                 // Campaign end (null = ongoing)
+  status        String   @default("active") // active | paused | completed | draft
+  category      String   @default("immobilier") // immobilier | automobile | mode | tech | food | travel | general
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  images        MissionImage[]
+
+  @@index([status])
+  @@index([brand])
+  @@index([startDate])
+}
+
+// ===== Espace Jeunes: Mission Images =====
+// Images submitted by users for campaigns
+model MissionImage {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaignId    String
+  campaign      Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  // Image data: base64 or URL
+  imageData     String                    // base64 encoded image data
+  imageHash     String                    // Perceptual hash for similarity detection
+  // AI Validation results
+  aiScore       Float    @default(0)      // 0-100 AI validation score
+  aiAnalysis    String?                    // AI analysis text (brief compliance, quality, etc.)
+  similarityScore Float  @default(0)      // Max similarity to any existing image (0-1)
+  similarToId   String?                    // ID of the most similar existing image
+  // Status: pending | validated | refused | to_correct | duplicate | non_compliant
+  status        String   @default("pending")
+  // Admin review
+  adminReviewed Boolean  @default(false)
+  adminNote     String?
+  // Reward tracking
+  rewardCfa     Int      @default(0)      // Reward amount (25 FCFA if validated)
+  rewardCredited Boolean @default(false)  // Whether reward was added to user balance
+  // Metadata
+  submittedDate String                    // YYYY-MM-DD for daily limit tracking
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([userId])
-  @@index([watchDate])
-  @@index([userId, watchDate])
+  @@index([campaignId])
+  @@index([status])
+  @@index([submittedDate])
+  @@index([userId, submittedDate])
+  @@index([imageHash])
+}
+
+// ===== Espace Jeunes: Micro Loans =====
+model MicroLoan {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amountCfa       Int                      // 5000 or 10000
+  // Status: pending | approved | active | repaying | overdue | completed | rejected
+  status          String   @default("pending")
+  // Dates
+  requestedAt     DateTime @default(now())
+  approvedAt      DateTime?
+  disbursedAt     DateTime?
+  dueDate         DateTime?                // Repayment due date
+  // Repayment tracking
+  amountRepaidCfa Int      @default(0)     // Total repaid so far
+  amountRemainingCfa Int                   // Remaining to repay
+  // Overdue handling
+  isOverdue       Boolean  @default(false)
+  overdueDays     Int      @default(0)
+  graceDaysRemaining Int   @default(5)     // Grace period before referral deduction
+  // Admin notes
+  adminNote       String?
+  rejectionReason String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  repayments      LoanRepayment[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([isOverdue])
+}
+
+// ===== Espace Jeunes: Loan Repayments =====
+model LoanRepayment {
+  id        String   @id @default(cuid())
+  loanId    String
+  loan      MicroLoan @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  amountCfa Int                       // Amount repaid in FCFA
+  method    String                    // mission_earnings | personal | admin_adjustment
+  status    String   @default("completed") // completed | pending | failed
+  createdAt DateTime @default(now())
+
+  @@index([loanId])
+  @@index([createdAt])
 }
 
 model GameSpin {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  betAmount Float    // Amount bet in USD
-  winAmount Float    @default(0) // Amount won (0 if lost)
-  result    String   // win, loss
-  segmentIdx Int     // Which segment the wheel landed on
-  spinDate  String   // Date string YYYY-MM-DD for daily limit tracking
+  betAmount Float
+  winAmount Float    @default(0)
+  result    String
+  segmentIdx Int
+  spinDate  String
   spunAt    DateTime @default(now())
 
   @@index([userId])
@@ -390,34 +513,13 @@ model GameSpin {
   @@index([userId, spinDate])
 }
 
-// Admin-managed video links.
-// The administrator can add any YouTube video link they want users to watch.
-// Admin links take priority over the default daily catalog when active.
-// totalCycles = 0 means unlimited collection days (no finite cycle cap).
-model AdminVideoLink {
-  id          String   @id @default(cuid())
-  youtubeId   String   // YouTube video ID (real, embeddable)
-  title       String   // Title that conforms to the video content
-  sponsor     String   // Company / sponsor name
-  category    String   @default("entreprise") // Theme: technologie | finance | sante | education | commerce | industrie | agriculture | immobilier | tourisme | restauration | mode | sport | entreprise
-  durationMin Int      @default(5)
-  reward      Float    @default(0.20) // 0.15 - 0.30 USD
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([active])
-}
-
-// Admin broadcast messages sent to all users (or a specific user).
-// Persisted so the admin can review past broadcasts.
 model BroadcastMessage {
   id        String   @id @default(cuid())
   title     String
   message   String
-  target    String   @default("all") // all | individual
-  userId    String?  // only set when target = individual
-  type      String   @default("info") // info | promo | alert | maintenance
+  target    String   @default("all")
+  userId    String?
+  type      String   @default("info")
   createdAt DateTime @default(now())
 
   @@index([createdAt])

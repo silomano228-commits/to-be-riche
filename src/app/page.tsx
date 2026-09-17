@@ -45,7 +45,7 @@ function ScreenLoader() {
 // Lazy load heavy screen components
 const InvestHubScreen = dynamic(() => import('@/components/screens/InvestHubScreen'), { ssr: false, loading: () => <ScreenLoader /> });
 const SpinGameScreen = dynamic(() => import('@/components/screens/SpinGameScreen'), { ssr: false, loading: () => <ScreenLoader /> });
-const VideoPlatformScreen = dynamic(() => import('@/components/screens/VideoPlatformScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+const MissionsScreen = dynamic(() => import('@/components/screens/MissionsScreen'), { ssr: false, loading: () => <ScreenLoader /> });
 const EnterpriseScreen = dynamic(() => import('@/components/screens/EnterpriseScreen'), { ssr: false, loading: () => <ScreenLoader /> });
 const ProfileScreen = dynamic(() => import('@/components/screens/ProfileScreen'), { ssr: false, loading: () => <ScreenLoader /> });
 const AnalyticsScreen = dynamic(() => import('@/components/screens/AnalyticsScreen'), { ssr: false, loading: () => <ScreenLoader /> });
@@ -118,7 +118,7 @@ function AuthScreen() {
       const res = await fetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }), headers: { 'Content-Type': 'application/json' } });
       const data = await res.json();
       if (data.success) {
-        setUser(data.user); addToast('Bienvenue, ' + data.user.name, 'success'); setPage('videos');
+        setUser(data.user); addToast('Bienvenue, ' + data.user.name, 'success'); setPage('missions');
       } else if (data.needs_verification) {
         // Account exists but email isn't verified — switch to OTP screen.
         setOtpEmail(email);
@@ -145,7 +145,7 @@ function AuthScreen() {
       if (data.success && data.user) {
         setUser(data.user);
         addToast('Email vérifié ! Bienvenue, ' + data.user.name, 'success');
-        setPage('videos');
+        setPage('missions');
       } else {
         addToast(data.error || 'Code invalide', 'error');
       }
@@ -200,7 +200,7 @@ function AuthScreen() {
           addToast('Code de vérification envoyé à ' + email, 'success');
         }
       } else if (data.success) {
-        setUser(data.user); addToast('Compte créé !', 'success'); setPage('videos');
+        setUser(data.user); addToast('Compte créé !', 'success'); setPage('missions');
       } else {
         addToast(data.error, 'error');
       }
@@ -473,7 +473,7 @@ function HomeScreen() {
             </div>
             <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.5px] font-semibold mb-0.5">Solde total</div>
             <div className="flex items-baseline gap-2 mb-3">
-              <div className="text-[1.8rem] font-black tracking-[-1px] text-[#000000]">{formatMoney((user.balance || 0) + (user.investBalance || 0) + (user.projectBalance || 0) + (user.videoBalance || 0))}</div>
+              <div className="text-[1.8rem] font-black tracking-[-1px] text-[#000000]">{formatMoney((user.balance || 0) + (user.investBalance || 0) + (user.projectBalance || 0) + (user.missionBalance || 0))}</div>
               <div className="ml-auto flex gap-1.5">
                 <button onClick={() => setPage('deposit-choose')} className="py-2 px-3.5 rounded-xl bg-[rgba(255,255,255,0.25)] hover:bg-[rgba(255,255,255,0.35)] text-[#000000] text-[0.68rem] font-semibold cursor-pointer border-none transition-all active:scale-95 flex items-center gap-1.5 backdrop-blur-sm">
                   <i className="fas fa-arrow-down text-[0.6rem]"></i> Déposer
@@ -507,10 +507,10 @@ function HomeScreen() {
                 </div>
               </div>
               <div className="glass-card rounded-lg p-2 flex items-center gap-1.5">
-                <div className="w-7 h-7 icon-box bg-[rgba(20,184,166,0.15)] shrink-0"><i className="fas fa-video text-[0.55rem] text-[#14B8A6]"></i></div>
-                <div className="text-[0.45rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Vidéo</div>
-                <div className="text-[0.7rem] font-black text-[#000000] leading-tight ml-auto mr-1">{formatMoney(user.videoBalance || 0)}</div>
-                <button onClick={() => setPage('videos')} className="text-[0.48rem] font-bold px-1.5 py-[2px] rounded-md cursor-pointer border-none text-white shrink-0 transition-transform active:scale-95" style={{ background: '#14B8A6' }}>Regarder</button>
+                <div className="w-7 h-7 icon-box bg-[rgba(34,197,94,0.15)] shrink-0"><i className="fas fa-bullhorn text-[0.55rem] text-[#22C55E]"></i></div>
+                <div className="text-[0.45rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Missions</div>
+                <div className="text-[0.7rem] font-black text-[#000000] leading-tight ml-auto mr-1">{formatMoney(user.missionBalance || 0)}</div>
+                <button onClick={() => setPage('missions')} className="text-[0.48rem] font-bold px-1.5 py-[2px] rounded-md cursor-pointer border-none text-white shrink-0 transition-transform active:scale-95" style={{ background: '#22C55E' }}>Missions</button>
               </div>
             </div>
           </div>
@@ -546,7 +546,7 @@ function HomeScreen() {
             { icon: 'fa-compass', label: 'Guide', page: 'guide', color: '#14B8A6', bg: 'rgba(20,184,166,0.12)', borderColor: 'border-[#14B8A6]' },
             { icon: 'fa-gift', label: 'Parrainage', page: 'profile', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', borderColor: 'border-[#F59E0B]' },
             { icon: 'fa-comment', label: 'Messages', page: 'chat', color: '#6366F1', bg: 'rgba(99,102,241,0.12)', borderColor: 'border-[#6366F1]' },
-            { icon: 'fa-video', label: 'Vidéos', page: 'videos', color: '#14B8A6', bg: 'rgba(20,184,166,0.12)', borderColor: 'border-[#14B8A6]' },
+            { icon: 'fa-bullhorn', label: 'Missions', page: 'missions', color: '#22C55E', bg: 'rgba(34,197,94,0.12)', borderColor: 'border-[#22C55E]' },
             { icon: 'fa-newspaper', label: 'Actualités', page: 'guide', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)', borderColor: 'border-[#8B5CF6]' },
           ].map((a, i) => (
             <button key={i} onClick={() => setPage(a.page)} className={`glass-card rounded-xl py-2 px-2 text-center cursor-pointer transition-all active:scale-95 hover:shadow-md border-b-2 ${a.borderColor} shrink-0 min-w-[72px]`}>
@@ -657,16 +657,16 @@ function WalletScreen() {
 
   if (!user) return null;
 
-  // Vidéo account is funded only by watching videos (no deposit/transfer),
+  // Mission account is funded by validated images (no deposit/transfer),
   // so it's a display-only card. Project is transferable to/from Principal.
   const accounts = [
-    { key: 'video', label: 'Compte Vidéo', balance: user.videoBalance || 0, icon: 'fa-video', iconColor: '#14B8A6', iconBg: 'bg-[rgba(20,184,166,0.12)]', borderColor: '#14B8A6', transferable: false },
+    { key: 'mission', label: 'Compte Missions', balance: user.missionBalance || 0, icon: 'fa-bullhorn', iconColor: '#22C55E', iconBg: 'bg-[rgba(34,197,94,0.12)]', borderColor: '#22C55E', transferable: false },
     { key: 'project', label: 'Compte Projet', balance: user.projectBalance, icon: 'fa-building', iconColor: '#8B5CF6', iconBg: 'bg-[rgba(139,92,246,0.12)]', borderColor: '#8B5CF6', transferable: true },
   ] as const;
 
   // Label helper for the transfer modal — 'trade' intentionally absent (trading account removed).
   const accountLabel = (k: string) =>
-    k === 'principal' ? 'Principal' : k === 'invest' ? 'Investissement' : k === 'project' ? 'Projets' : k === 'video' ? 'Vidéo' : k;
+    k === 'principal' ? 'Principal' : k === 'invest' ? 'Investissement' : k === 'project' ? 'Projets' : k === 'mission' ? 'Missions' : k;
 
   // Derived values from API (silent fallbacks if fetch failed)
   const spinsRemaining = gameStatus?.spinsRemaining ?? 10;
@@ -689,7 +689,7 @@ function WalletScreen() {
               <div className="text-[0.7rem] text-white/70 font-semibold uppercase tracking-[1.5px]">Solde Total</div>
               <div className="ml-auto"><button onClick={() => setPage('deposit-choose')} className="py-2 px-3.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-[0.65rem] font-semibold cursor-pointer border-none transition-all active:scale-95 flex items-center gap-1.5"><i className="fas fa-arrow-down text-[0.6rem]"></i> Déposer</button></div>
             </div>
-            <div className="text-[2rem] font-black tracking-[-1px] text-white">{formatMoney((user.balance || 0) + (user.investBalance || 0) + (user.projectBalance || 0) + (user.videoBalance || 0))}</div>
+            <div className="text-[2rem] font-black tracking-[-1px] text-white">{formatMoney((user.balance || 0) + (user.investBalance || 0) + (user.projectBalance || 0) + (user.missionBalance || 0))}</div>
           </div>
         </div>
 
@@ -758,21 +758,21 @@ function WalletScreen() {
           </div>
         </div>
 
-        {/* Compte Vidéo — Teal card with video icon */}
-        <div className="glass-card rounded-2xl p-4 mb-3" style={{ borderLeft: '4px solid #14B8A6' }}>
+        {/* Compte Missions — Green card with bullhorn icon */}
+        <div className="glass-card rounded-2xl p-4 mb-3" style={{ borderLeft: '4px solid #22C55E' }}>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 icon-box bg-[rgba(20,184,166,0.12)]"><i className="fas fa-video text-[0.9rem]" style={{ color: '#14B8A6' }}></i></div>
+              <div className="w-10 h-10 icon-box bg-[rgba(34,197,94,0.12)]"><i className="fas fa-bullhorn text-[0.9rem]" style={{ color: '#22C55E' }}></i></div>
               <div>
-                <div className="text-[0.7rem] text-[rgba(0,0,0,0.5)] font-semibold uppercase tracking-[1.5px]">Compte Vidéo</div>
-                <div className="text-[0.55rem] text-[#14B8A6] font-semibold mt-0.5">Alimenté par les vidéos regardées</div>
+                <div className="text-[0.7rem] text-[rgba(0,0,0,0.5)] font-semibold uppercase tracking-[1.5px]">Compte Missions</div>
+                <div className="text-[0.55rem] text-[#22C55E] font-semibold mt-0.5">Alimenté par les images validées</div>
               </div>
             </div>
-            <div className="text-[1.3rem] font-black text-[#1F2937]">{formatMoney(user.videoBalance || 0)}</div>
+            <div className="text-[1.3rem] font-black text-[#1F2937]">{formatMoney(user.missionBalance || 0)}</div>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setPage('videos')} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none text-white transition-transform active:scale-95" style={{ background: 'linear-gradient(90deg, #14B8A6 0%, #0D9488 100%)' }}><i className="fas fa-play text-[0.65rem]"></i> Vidéos</button>
-            <button onClick={() => { setWithdrawSource('video'); setPage('withdraw'); }} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(0,0,0,0.04)] text-[rgba(0,0,0,0.7)] transition-transform active:scale-95"><i className="fas fa-arrow-up text-[0.65rem]"></i> Retirer</button>
+            <button onClick={() => setPage('missions')} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none text-white transition-transform active:scale-95" style={{ background: 'linear-gradient(90deg, #22C55E 0%, #16A34A 100%)' }}><i className="fas fa-bullhorn text-[0.65rem]"></i> Missions</button>
+            <button onClick={() => { setWithdrawSource('mission'); setPage('withdraw'); }} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(0,0,0,0.04)] text-[rgba(0,0,0,0.7)] transition-transform active:scale-95"><i className="fas fa-arrow-up text-[0.65rem]"></i> Retirer</button>
           </div>
         </div>
 
@@ -817,7 +817,7 @@ function WalletScreen() {
           {[
             { icon: 'fa-chart-line', color: '#22C55E', bg: 'bg-[rgba(34,197,94,0.10)]', label: 'Gains totaux', value: formatMoney(user.totalProfit || 0), sub: 'Cumul des gains' },
             { icon: 'fa-arrow-trend-down', color: '#F87171', bg: 'bg-[rgba(248,113,113,0.10)]', label: 'Pertes totales', value: formatMoney(user.totalLoss || 0), sub: 'Cumul des pertes' },
-            { icon: 'fa-video', color: '#14B8A6', bg: 'bg-[rgba(20,184,166,0.10)]', label: 'Solde vidéo', value: formatMoney(user.videoBalance || 0), sub: 'Compte vidéo autonome' },
+            { icon: 'fa-bullhorn', color: '#22C55E', bg: 'bg-[rgba(34,197,94,0.10)]', label: 'Solde missions', value: formatMoney(user.missionBalance || 0), sub: 'Gains images validées' },
             { icon: 'fa-seedling', color: '#14B8A6', bg: 'bg-[rgba(20,184,166,0.10)]', label: 'Solde investissement', value: formatMoney(user.investBalance || 0), sub: 'Compte d\'investissement' },
             { icon: 'fa-building', color: '#8B5CF6', bg: 'bg-[rgba(139,92,246,0.10)]', label: 'Solde projet', value: formatMoney(user.projectBalance || 0), sub: 'Compte de projet' },
           ].map((s, i, arr) => (
@@ -973,7 +973,7 @@ function FinanceScreen() {
 function BottomNav() {
   const { currentPage, setPage } = useAppStore();
   const tabs = [
-    { id: 'videos', icon: 'fa-video', label: 'Vidéos' },
+    { id: 'missions', icon: 'fa-bullhorn', label: 'Missions' },
     { id: 'home', icon: 'fa-coins', label: 'Make Money' },
     { id: 'guide', icon: 'fa-compass', label: 'Guide' },
     { id: 'profile', icon: 'fa-user', label: 'Profil' },
@@ -1019,7 +1019,7 @@ export default function BeRichApp() {
       try {
         const res = await authFetch('/api/auth/session');
         const data = await res.json();
-        if (data.success && data.user) { setUser(data.user); setPage('videos'); }
+        if (data.success && data.user) { setUser(data.user); setPage('missions'); }
         else { setPage('auth'); }
       } catch { setPage('auth'); }
       setInitialized(true);
@@ -1059,7 +1059,7 @@ export default function BeRichApp() {
         {showSplash && <SplashScreen onDone={handleSplashDone} />}
         <div className="h-full flex flex-col min-h-0">
           {!user && <AuthScreen />}
-          {user && currentPage === 'videos' && <VideoPlatformScreen />}
+          {user && currentPage === 'missions' && <MissionsScreen />}
           {user && currentPage === 'home' && <HomeScreen />}
           {user && currentPage === 'wallet' && <WalletScreen />}
           {user && currentPage === 'finance' && <FinanceScreen />}
@@ -1075,7 +1075,7 @@ export default function BeRichApp() {
           {user && currentPage === 'deposit-choose' && <DepositChooseScreen />}
           {user && currentPage === 'guide' && <GuideScreen />}
           {showNav && <BottomNav />}
-          {user && (currentPage === 'home' || currentPage === 'videos') && <FloatingGift />}
+          {user && (currentPage === 'home' || currentPage === 'missions') && <FloatingGift />}
           <InstallPrompt />
         </div>
         <TabChangeAd ad={currentAd} onClose={dismissAd} />

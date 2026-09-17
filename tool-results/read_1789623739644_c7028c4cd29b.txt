@@ -1,0 +1,959 @@
+     1→'use client';
+     2→
+     3→import { useState, useEffect, useRef, useCallback } from 'react';
+     4→import { useAppStore, formatMoney, authFetch, refreshUser } from '@/lib/store';
+     5→import { Header, LogoImg } from '@/components/shared';
+     6→import { CongratulationsModal, type CongratulationsData } from '@/components/CongratulationsModal';
+     7→import PaymentDetails from '@/components/PaymentDetails';
+     8→
+     9→interface VideoItem {
+    10→  id: string;
+    11→  title: string;
+    12→  category: string;
+    13→  sponsor: string;
+    14→  durationMin: number;
+    15→  reward: number;
+    16→  watched: boolean;
+    17→  watchedAt?: string | null;
+    18→}
+    19→
+    20→// Map old category values to new theme values for backward compatibility
+    21→const resolveTheme = (category: string): string => {
+    22→  const oldMapping: Record<string, string> = {
+    23→    chinois: 'industrie',
+    24→    japonais: 'technologie',
+    25→    indien: 'commerce',
+    26→  };
+    27→  return oldMapping[category] || category;
+    28→};
+    29→
+    30→const THEME_LABEL: Record<string, string> = {
+    31→  technologie: 'Technologie',
+    32→  finance: 'Finance',
+    33→  sante: 'Santé',
+    34→  education: 'Éducation',
+    35→  commerce: 'Commerce',
+    36→  industrie: 'Industrie',
+    37→  agriculture: 'Agriculture',
+    38→  immobilier: 'Immobilier',
+    39→  tourisme: 'Tourisme',
+    40→  restauration: 'Restauration',
+    41→  mode: 'Mode',
+    42→  sport: 'Sport',
+    43→  entreprise: 'Entreprise',
+    44→  // Fallback for old categories
+    45→  chinois: 'Industrie',
+    46→  japonais: 'Technologie',
+    47→  indien: 'Commerce',
+    48→};
+    49→
+    50→const THEME_COLOR: Record<string, string> = {
+    51→  technologie: '#06B6D4',
+    52→  finance: '#22C55E',
+    53→  sante: '#EF4444',
+    54→  education: '#A855F7',
+    55→  commerce: '#FB923C',
+    56→  industrie: '#6B7280',
+    57→  agriculture: '#4ADE80',
+    58→  immobilier: '#6366F1',
+    59→  tourisme: '#3B82F6',
+    60→  restauration: '#F472B6',
+    61→  mode: '#EC4899',
+    62→  sport: '#EAB308',
+    63→  entreprise: '#14B8A6',
+    64→  // Fallback for old categories
+    65→  chinois: '#6B7280',
+    66→  japonais: '#06B6D4',
+    67→  indien: '#FB923C',
+    68→};
+    69→
+    70→const THEME_ICON: Record<string, string> = {
+    71→  technologie: 'fas fa-microchip',
+    72→  finance: 'fas fa-chart-line',
+    73→  sante: 'fas fa-heartbeat',
+    74→  education: 'fas fa-graduation-cap',
+    75→  commerce: 'fas fa-shopping-cart',
+    76→  industrie: 'fas fa-industry',
+    77→  agriculture: 'fas fa-seedling',
+    78→  immobilier: 'fas fa-building',
+    79→  tourisme: 'fas fa-plane',
+    80→  restauration: 'fas fa-utensils',
+    81→  mode: 'fas fa-tshirt',
+    82→  sport: 'fas fa-futbol',
+    83→  entreprise: 'fas fa-briefcase',
+    84→};
+    85→
+    86→
+    87→
+    88→export default function VideoPlatformScreen() {
+    89→  const { user, addToast, setPage } = useAppStore();
+    90→  const [videos, setVideos] = useState<VideoItem[]>([]);
+    91→  const [loading, setLoading] = useState(true);
+    92→  const [watchedCount, setWatchedCount] = useState(0);
+    93→  const [remaining, setRemaining] = useState(5);
+    94→  const [totalEarnedToday, setTotalEarnedToday] = useState(0);
+    95→  const [videoBalance, setVideoBalance] = useState(0);
+    96→  const [videoDepositRequired, setVideoDepositRequired] = useState(false);
+    97→  const [daysWatching, setDaysWatching] = useState(0);
+    98→  const [currentCycle, setCurrentCycle] = useState(0);
+    99→  const [requiredReferrals, setRequiredReferrals] = useState(0);
+   100→  const [referralCount, setReferralCount] = useState(0);
+   101→  const [hasLevel1Investment, setHasLevel1Investment] = useState(false);
+   102→  const [videoCycleNumber, setVideoCycleNumber] = useState(0);
+   103→  const [source, setSource] = useState<'admin' | 'catalog'>('catalog');
+   104→  const [activeVideo, setActiveVideo] = useState<VideoItem | null>(null);
+   105→  const [congratsData, setCongratsData] = useState<CongratulationsData>({ show: false, type: 'video' });
+   106→  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+   107→  const [showShareModal, setShowShareModal] = useState(false);
+   108→
+   109→  const loadStatus = useCallback(async () => {
+   110→    try {
+   111→      const res = await authFetch('/api/videos/list');
+   112→      const data = await res.json();
+   113→      if (data.success) {
+   114→        setVideos(data.videos || []);
+   115→        setWatchedCount(data.watchedCount || 0);
+   116→        setRemaining(data.remaining ?? 5);
+   117→        setTotalEarnedToday(data.totalEarnedToday || 0);
+   118→        setVideoBalance(data.videoBalance || 0);
+   119→        setVideoDepositRequired(data.videoDepositRequired || false);
+   120→        setDaysWatching(data.daysWatching || 0);
+   121→        setCurrentCycle(data.currentCycle || 0);
+   122→        setRequiredReferrals(data.requiredReferrals || 0);
+   123→        setReferralCount(data.referralCount || 0);
+   124→        setHasLevel1Investment(!!data.hasLevel1Investment);
+   125→        setVideoCycleNumber(data.videoCycleNumber || 0);
+   126→        setSource(data.source === 'admin' ? 'admin' : 'catalog');
+   127→      }
+   128→    } catch { /* ignore */ }
+   129→    setLoading(false);
+   130→  }, []);
+   131→
+   132→  useEffect(() => {
+   133→    let cancelled = false;
+   134→    const run = async () => {
+   135→      try {
+   136→        const res = await authFetch('/api/videos/list');
+   137→        const data = await res.json();
+   138→        if (cancelled || !data.success) return;
+   139→        setVideos(data.videos || []);
+   140→        setWatchedCount(data.watchedCount || 0);
+   141→        setRemaining(data.remaining ?? 5);
+   142→        setTotalEarnedToday(data.totalEarnedToday || 0);
+   143→        setVideoBalance(data.videoBalance || 0);
+   144→        setVideoDepositRequired(data.videoDepositRequired || false);
+   145→        setDaysWatching(data.daysWatching || 0);
+   146→        setCurrentCycle(data.currentCycle || 0);
+   147→        setRequiredReferrals(data.requiredReferrals || 0);
+   148→        setReferralCount(data.referralCount || 0);
+   149→        setHasLevel1Investment(!!data.hasLevel1Investment);
+   150→        setVideoCycleNumber(data.videoCycleNumber || 0);
+   151→        setSource(data.source === 'admin' ? 'admin' : 'catalog');
+   152→      } catch { /* ignore */ }
+   153→      if (!cancelled) setLoading(false);
+   154→    };
+   155→    run();
+   156→    return () => { cancelled = true; };
+   157→  }, []);
+   158→
+   159→  if (loading) {
+   160→    return (
+   161→      <>
+   162→        <Header title="Vidéos" />
+   163→        <div className="flex-1 flex items-center justify-center bg-[#F8F9FA]">
+   164→          <div className="w-8 h-8 border-[2.5px] border-[rgba(0,0,0,0.08)] border-t-[#14B8A6] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }}></div>
+   165→        </div>
+   166→      </>
+   167→    );
+   168→  }
+   169→
+   170→  // Step-based progress: 5 steps (one per daily video)
+   171→  const stepPct = Math.min(100, (watchedCount / 5) * 100);
+   172→
+   173→  return (
+   174→    <>
+   175→      <Header title="Vidéos d'entreprises" />
+   176→      <div className="flex-1 overflow-y-auto pb-6 bg-[#F8F9FA]">
+   177→        {/* 1. Concept info banner */}
+   178→        <div className="px-4 pt-4">
+   179→          <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(135deg, #ECFDF5, #F0FDFA)', border: '1px solid #A7F3D0' }}>
+   180→            <div className="flex items-start gap-3">
+   181→              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ background: 'linear-gradient(135deg, #14B8A6, #0D9488)' }}>
+   182→                <LogoImg className="w-7 h-7" />
+   183→              </div>
+   184→              <div>
+   185→                <div className="text-[0.85rem] font-black text-[#0F766E] mb-0.5">Plateforme de communication pour les grandes entreprises</div>
+   186→                <div className="text-[0.7rem] text-[#115E59] leading-relaxed">
+   187→                  Les grandes entreprises chinoises, japonaises et indiennes vous paient pour regarder leurs vidéos promotionnelles. Gagnez en visibilité pour elles, gagnez de l'argent pour vous !
+   188→                </div>
+   189→              </div>
+   190→            </div>
+   191→          </div>
+   192→        </div>
+   193→
+   194→        {/* 2. Share invite banner */}
+   195→        <div className="px-4 pt-3">
+   196→          <button onClick={() => setShowShareModal(true)} className="w-full rounded-2xl p-3 flex items-center gap-3 cursor-pointer transition-all active:scale-[0.98]" style={{ background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)', border: '1px solid #FCD34D' }}>
+   197→            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)' }}>
+   198→              <i className="fas fa-share-nodes text-white text-[1rem]"></i>
+   199→            </div>
+   200→            <div className="flex-1 text-left">
+   201→              <div className="text-[0.8rem] font-black text-[#92400E]">Invitez vos amis</div>
+   202→              <div className="text-[0.65rem] text-[#B45309]">Partagez Be Rich et gagnez ensemble !</div>
+   203→            </div>
+   204→            <i className="fas fa-chevron-right text-[#92400E] text-[0.7rem]"></i>
+   205→          </button>
+   206→        </div>
+   207→
+   208→        {/* 3. Video account balance card with earnings progress meter (image qui augmente) */}
+   209→        <div className="px-4 pt-3">
+   210→          <div className="rounded-2xl p-4 text-white" style={{ background: 'linear-gradient(135deg, #0F766E, #14B8A6)' }}>
+   211→            <div className="flex items-center justify-between mb-3">
+   212→              <div>
+   213→                <div className="text-[0.6rem] uppercase tracking-widest font-bold text-white/70">Compte Vidéo</div>
+   214→                <div className="text-[1.6rem] font-black leading-none mt-0.5">{formatMoney(videoBalance)}</div>
+   215→              </div>
+   216→              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.2)' }}>
+   217→                <i className="fas fa-video text-white text-[1.2rem]"></i>
+   218→              </div>
+   219→            </div>
+   220→
+   221→            {/* Step-based progress — 5 steps (one per daily video) */}
+   222→            <div className="rounded-xl p-3 mb-3" style={{ background: 'rgba(255,255,255,0.15)' }}>
+   223→              <div className="flex items-center justify-between mb-2">
+   224→                <div className="flex items-center gap-1.5">
+   225→                  <i className="fas fa-list-check text-[#4ADE80] text-[0.85rem]"></i>
+   226→                  <span className="text-[0.7rem] font-bold text-white">Progression quotidienne</span>
+   227→                </div>
+   228→                <span className="text-[0.7rem] font-black text-white">
+   229→                  {watchedCount}/5 vidéos
+   230→                </span>
+   231→              </div>
+   232→              {/* Step progress bar */}
+   233→              <div className="relative h-2.5 rounded-full overflow-hidden mb-2.5" style={{ background: 'rgba(255,255,255,0.25)' }}>
+   234→                <div
+   235→                  className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
+   236→                  style={{ width: `${stepPct}%`, background: 'linear-gradient(90deg, #22C55E, #4ADE80)' }}
+   237→                ></div>
+   238→              </div>
+   239→              {/* 5 step circles with checkmarks */}
+   240→              <div className="flex items-center justify-between px-0.5">
+   241→                {Array.from({ length: 5 }).map((_, i) => {
+   242→                  const done = i < watchedCount;
+   243→                  return (
+   244→                    <div key={i} className="flex flex-col items-center gap-0.5">
+   245→                      <div
+   246→                        className="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300"
+   247→                        style={{
+   248→                          background: done ? '#22C55E' : 'rgba(255,255,255,0.2)',
+   249→                          border: done ? 'none' : '2px solid rgba(255,255,255,0.3)',
+   250→                        }}
+   251→                      >
+   252→                        {done ? (
+   253→                          <i className="fas fa-check text-white text-[0.55rem]"></i>
+   254→                        ) : (
+   255→                          <div className="w-2 h-2 rounded-full bg-white/30"></div>
+   256→                        )}
+   257→                      </div>
+   258→                      <span className="text-[0.45rem] text-white/60">{i + 1}</span>
+   259→                    </div>
+   260→                  );
+   261→                })}
+   262→              </div>
+   263→              <div className="text-[0.6rem] text-white/70 text-center mt-1.5">
+   264→                {remaining > 0
+   265→                  ? `Regardez encore ${remaining} vidéo${remaining > 1 ? 's' : ''} pour atteindre l'objectif quotidien`
+   266→                  : '✨ Objectif quotidien atteint — revenez demain !'}
+   267→              </div>
+   268→            </div>
+   269→
+   270→            {/* Withdraw button ONLY — NO deposit (video account is funded only by watching) */}
+   271→            <button
+   272→              onClick={() => setShowWithdrawModal(true)}
+   273→              className="w-full py-3 rounded-xl font-bold text-[0.85rem] cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-2"
+   274→              style={{ background: 'rgba(255,255,255,0.97)', color: '#0F766E' }}
+   275→            >
+   276→              <i className="fas fa-arrow-up-from-bracket"></i>
+   277→              Retirer
+   278→            </button>
+   279→            <div className="text-[0.55rem] text-white/60 text-center mt-1.5">
+   280→              Minimum de retrait: $1 · Disponible dans les 6h
+   281→            </div>
+   282→          </div>
+   283→        </div>
+   284→
+   285→        {/* 4. 3-day cycle warning banner — withdrawals suspended until cycle cleared */}
+   286→        {videoDepositRequired && (
+   287→          <div className="px-4 pt-3">
+   288→            <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(135deg, #FEF3C7, #FED7AA)', border: '1px solid #F59E0B' }}>
+   289→              <div className="flex items-start gap-2 mb-2">
+   290→                <i className="fas fa-triangle-exclamation text-[#D97706] text-[1.1rem] mt-0.5"></i>
+   291→                <div className="flex-1">
+   292→                  <div className="text-[0.85rem] font-black text-[#92400E]">Action requise pour les retraits</div>
+   293→                  <div className="text-[0.7rem] text-[#92400E] leading-relaxed mt-1">
+   294→                    Après <b>3 jours de vidéos</b> (cycle {currentCycle}, jour {daysWatching}), pour continuer à <b>retirer</b> vos gains vidéo, vous devez :
+   295→                  </div>
+   296→                  <ul className="text-[0.7rem] text-[#92400E] leading-relaxed mt-1.5 ml-1 space-y-1">
+   297→                    <li className="flex items-start gap-1.5">
+   298→                      {hasLevel1Investment
+   299→                        ? <i className="fas fa-circle-check text-[#16A34A] mt-0.5"></i>
+   300→                        : <i className="fas fa-circle-xmark text-[#DC2626] mt-0.5"></i>}
+   301→                      <span>Déposer au <b>Niveau 1 d'investissement</b> (Make Money) — {hasLevel1Investment ? 'investissement actif ✅' : 'aucun investissement Niveau 1 ❌'}</span>
+   302→                    </li>
+   303→                    <li className="flex items-start gap-1.5">
+   304→                      {referralCount >= requiredReferrals
+   305→                        ? <i className="fas fa-circle-check text-[#16A34A] mt-0.5"></i>
+   306→                        : <i className="fas fa-circle-xmark text-[#DC2626] mt-0.5"></i>}
+   307→                      <span>Inviter <b>{requiredReferrals} parrainé(s)</b> — vous avez {referralCount} parrainé(s) {referralCount >= requiredReferrals ? '✅' : `(${requiredReferrals - referralCount} restant)`}</span>
+   308→                    </li>
+   309→                  </ul>
+   310→                  <div className="text-[0.62rem] text-[#B45309] italic mt-2 leading-relaxed">
+   311→                    <i className="fas fa-info-circle mr-1"></i>
+   312→                    Vous pouvez toujours <b>regarder des vidéos</b> et accumuler des gains. Seuls les retraits sont suspendus jusqu'au déblocage.
+   313→                  </div>
+   314→                </div>
+   315→              </div>
+   316→              <div className="grid grid-cols-2 gap-2 mt-3">
+   317→                <button
+   318→                  onClick={() => setPage('home')}
+   319→                  className="py-2.5 rounded-xl font-bold text-[0.72rem] cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-1.5"
+   320→                  style={{ background: '#0F766E', color: '#FFFFFF' }}
+   321→                >
+   322→                  <i className="fas fa-money-bill-trend-up"></i>Aller à Make Money
+   323→                </button>
+   324→                <button
+   325→                  onClick={() => setShowShareModal(true)}
+   326→                  className="py-2.5 rounded-xl font-bold text-[0.72rem] cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-1.5"
+   327→                  style={{ background: '#F59E0B', color: '#FFFFFF' }}
+   328→                >
+   329→                  <i className="fas fa-user-plus"></i>Inviter des amis
+   330→                </button>
+   331→              </div>
+   332→            </div>
+   333→          </div>
+   334→        )}
+   335→
+   336→        {/* 5. Stats row (compact) */}
+   337→        <div className="px-4 pt-3">
+   338→          <div className="grid grid-cols-3 gap-2">
+   339→            <div className="rounded-xl p-2.5 text-center bg-white" style={{ border: '1px solid #E5E7EB' }}>
+   340→              <div className="text-[0.5rem] uppercase tracking-wide font-semibold text-[#6B7280]">Restantes</div>
+   341→              <div className="text-[1.1rem] font-black text-[#14B8A6]">{remaining}/5</div>
+   342→            </div>
+   343→            <div className="rounded-xl p-2.5 text-center bg-white" style={{ border: '1px solid #E5E7EB' }}>
+   344→              <div className="text-[0.5rem] uppercase tracking-wide font-semibold text-[#6B7280]">Vues</div>
+   345→              <div className="text-[1.1rem] font-black text-[#0F766E]">{watchedCount}</div>
+   346→            </div>
+   347→            <div className="rounded-xl p-2.5 text-center bg-white" style={{ border: '1px solid #E5E7EB' }}>
+   348→              <div className="text-[0.5rem] uppercase tracking-wide font-semibold text-[#6B7280]">Gagné</div>
+   349→              <div className="text-[1.1rem] font-black text-[#22C55E]">${totalEarnedToday.toFixed(2)}</div>
+   350→            </div>
+   351→          </div>
+   352→        </div>
+   353→
+   354→        {/* 6. Daily videos header */}
+   355→        <div className="px-4 pt-4 pb-2 flex items-center justify-between">
+   356→          <h3 className="text-[0.9rem] font-black text-[#1F2937]">
+   357→            <i className="fas fa-play-circle mr-1.5 text-[#14B8A6]"></i>Vidéos du jour
+   358→          </h3>
+   359→          <span className="text-[0.65rem] text-[#6B7280]">
+   360→            {new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
+   361→            {source === 'admin' && <span className="ml-1.5 px-1.5 py-0.5 rounded bg-[#ECFDF5] text-[#0F766E] text-[0.55rem] font-bold">admin</span>}
+   362→          </span>
+   363→        </div>
+   364→
+   365→        {/* 7. 2-COLUMN GRID of all 5 video cards */}
+   366→        {videos.length > 0 ? (
+   367→          <div className="px-4 grid grid-cols-2 gap-3">
+   368→            {videos.map((v) => (
+   369→              <button
+   370→                key={v.id}
+   371→                onClick={() => !v.watched && setActiveVideo(v)}
+   372→                disabled={v.watched}
+   373→                className="rounded-2xl overflow-hidden text-left cursor-pointer transition-all active:scale-[0.98] disabled:cursor-default flex flex-col"
+   374→                style={{ background: '#FFFFFF', border: '1px solid #E5E7EB' }}
+   375→              >
+   376→                {/* Thumbnail */}
+   377→                <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
+   378→                  <VideoThumbnail videoId={v.id} category={v.category} durationMin={v.durationMin} />
+   379→                  {v.watched && (
+   380→                    <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.55)' }}>
+   381→                      <i className="fas fa-circle-check text-[#22C55E] text-[1.8rem]" style={{ textShadow: '0 2px 6px rgba(0,0,0,0.5)' }}></i>
+   382→                    </div>
+   383→                  )}
+   384→                </div>
+   385→                {/* Body */}
+   386→                <div className="p-2.5 flex-1 flex flex-col">
+   387→                  <div className="flex items-center gap-1 mb-1 flex-wrap">
+   388→                    <span className="text-[0.5rem] font-bold px-1.5 py-0.5 rounded text-white flex items-center gap-1" style={{ background: THEME_COLOR[v.category] || '#14B8A6' }}>
+   389→                      <i className={`${THEME_ICON[v.category] || 'fas fa-briefcase'} text-[0.4rem]`}></i>
+   390→                      {THEME_LABEL[v.category] || v.category}
+   391→                    </span>
+   392→                  </div>
+   393→                  <div className="text-[0.78rem] font-bold text-[#1F2937] leading-snug mb-1" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+   394→                    {v.title}
+   395→                  </div>
+   396→                  <div className="text-[0.6rem] text-[#6B7280] flex items-center gap-1 mb-2 truncate">
+   397→                    <i className="fas fa-bullhorn text-[0.5rem]" style={{ color: THEME_COLOR[v.category] || '#14B8A6' }}></i>
+   398→                    <span className="truncate">{v.sponsor}</span>
+   399→                  </div>
+   400→                  {/* Reward / status */}
+   401→                  <div className="mt-auto">
+   402→                    {v.watched ? (
+   403→                      <div className="flex items-center gap-1 text-[#22C55E]">
+   404→                        <i className="fas fa-check-circle text-[0.75rem]"></i>
+   405→                        <span className="text-[0.65rem] font-bold">Regardée</span>
+   406→                      </div>
+   407→                    ) : (
+   408→                      <div className="flex items-center justify-between">
+   409→                        <span className="text-[0.6rem] text-[#6B7280] flex items-center gap-0.5">
+   410→                          <i className="fas fa-clock"></i>{v.durationMin}min
+   411→                        </span>
+   412→                        <span className="text-[0.85rem] font-black text-[#22C55E]">+${v.reward.toFixed(2)}</span>
+   413→                      </div>
+   414→                    )}
+   415→                  </div>
+   416→                </div>
+   417→              </button>
+   418→            ))}
+   419→          </div>
+   420→        ) : (
+   421→          <div className="px-4 pt-8 text-center">
+   422→            <i className="fas fa-video text-[#D1D5DB] text-[2rem] mb-2"></i>
+   423→            <div className="text-[0.8rem] text-[#6B7280]">Aucune vidéo disponible aujourd'hui</div>
+   424→          </div>
+   425→        )}
+   426→      </div>
+   427→
+   428→      {/* Video player modal — YouTube embed, no seeking/scrolling, always-available quit button */}
+   429→      {activeVideo && (
+   430→        <VideoPlayerModal
+   431→          video={activeVideo}
+   432→          onClose={() => setActiveVideo(null)}
+   433→          onReward={async (reward) => {
+   434→            const newTodayTotal = totalEarnedToday + reward;
+   435→            setCongratsData({
+   436→              show: true,
+   437→              type: 'video',
+   438→              amount: reward,
+   439→              title: 'Vidéo regardée !',
+   440→              message: `+$${reward.toFixed(2)} crédités sur votre compte vidéo. Total gagné aujourd'hui : $${newTodayTotal.toFixed(2)}.`,
+   441→              onClose: () => setCongratsData({ show: false, type: 'video' }),
+   442→            });
+   443→            await refreshUser();
+   444→            await loadStatus();
+   445→            setActiveVideo(null);
+   446→          }}
+   447→        />
+   448→      )}
+   449→
+   450→      {/* Withdraw modal — $1 minimum, inline error handling */}
+   451→      {showWithdrawModal && (
+   452→        <VideoWithdrawModal
+   453→          videoBalance={videoBalance}
+   454→          onClose={() => setShowWithdrawModal(false)}
+   455→          onSuccess={async () => {
+   456→            await loadStatus();
+   457→            setShowWithdrawModal(false);
+   458→            addToast('Demande de retrait prise en compte. Les fonds seront disponibles dans les 6 heures.', 'success');
+   459→          }}
+   460→          addToast={addToast}
+   461→        />
+   462→      )}
+   463→
+   464→      {/* Share modal (native share sheet) */}
+   465→      {showShareModal && (
+   466→        <ShareModal referralCode={user?.referralCode || ''} addToast={addToast} onClose={() => setShowShareModal(false)} />
+   467→      )}
+   468→
+   469→      <CongratulationsModal data={congratsData} />
+   470→    </>
+   471→  );
+   472→}
+   473→
+   474→// ===== Video thumbnail with YouTube image + onError fallback =====
+   475→function VideoThumbnail({ videoId, category, durationMin }: { videoId: string; category: string; durationMin: number }) {
+   476→  const [failed, setFailed] = useState(false);
+   477→  const bg = THEME_COLOR[category] || '#14B8A6';
+   478→  if (failed) {
+   479→    return (
+   480→      <div className="w-full h-full flex items-center justify-center relative" style={{ background: bg }}>
+   481→        <i className="fas fa-play text-white text-[1.6rem] opacity-80"></i>
+   482→        <div className="absolute bottom-1 right-1 text-[0.5rem] font-bold text-white px-1 rounded" style={{ background: 'rgba(0,0,0,0.65)' }}>{durationMin}min</div>
+   483→      </div>
+   484→    );
+   485→  }
+   486→  return (
+   487→    <div className="w-full h-full relative" style={{ background: bg }}>
+   488→      <img
+   489→        src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
+   490→        alt=""
+   491→        className="w-full h-full object-cover"
+   492→        onError={() => setFailed(true)}
+   493→      />
+   494→      <div className="absolute bottom-1 right-1 text-[0.5rem] font-bold text-white px-1 rounded" style={{ background: 'rgba(0,0,0,0.65)' }}>{durationMin}min</div>
+   495→      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+   496→        <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.55)' }}>
+   497→          <i className="fas fa-play text-white text-[0.85rem] ml-0.5"></i>
+   498→        </div>
+   499→      </div>
+   500→    </div>
+   501→  );
+   502→}
+   503→
+   504→
+   505→// ===== Video player modal — simple iframe + time-based progress (robust, no YT API dependency) =====
+   506→const MIN_WATCH_PCT = 30; // must match /api/videos/reward threshold
+   507→
+   508→function VideoPlayerModal({ video, onClose, onReward }: {
+   509→  video: VideoItem;
+   510→  onClose: () => void;
+   511→  onReward: (reward: number) => Promise<void>;
+   512→}) {
+   513→  const [watchedPercent, setWatchedPercent] = useState(0);
+   514→  const [canClaim, setCanClaim] = useState(false);
+   515→  const [claiming, setClaiming] = useState(false);
+   516→  const [claimed, setClaimed] = useState(false);
+   517→  const [error, setError] = useState<string | null>(null);
+   518→  const [iframeLoaded, setIframeLoaded] = useState(false);
+   519→  const startTimeRef = useRef<number>(Date.now());
+   520→  const claimedRef = useRef(false);
+   521→
+   522→  // Total video duration in seconds (from catalog). Used for time-based progress.
+   523→  const totalSeconds = video.durationMin * 60;
+   524→  const requiredSeconds = totalSeconds * (MIN_WATCH_PCT / 100);
+   525→
+   526→  // Time-based progress tracker: increments watchedPercent based on elapsed time.
+   527→  // This is more reliable than the YouTube IFrame API's getCurrentTime(), which
+   528→  // can fail to report when the API fires spurious onError events.
+   529→  useEffect(() => {
+   530→    startTimeRef.current = Date.now();
+   531→    const interval = setInterval(() => {
+   532→      const elapsed = (Date.now() - startTimeRef.current) / 1000;
+   533→      const pct = Math.min(100, (elapsed / totalSeconds) * 100);
+   534→      setWatchedPercent(pct);
+   535→      if (pct >= MIN_WATCH_PCT) setCanClaim(true);
+   536→    }, 1000);
+   537→    return () => clearInterval(interval);
+   538→  }, [video.id, totalSeconds]);
+   539→
+   540→  // If the iframe doesn't load within 15 seconds, show a fallback error.
+   541→  useEffect(() => {
+   542→    const timeout = setTimeout(() => {
+   543→      if (!iframeLoaded) {
+   544→        setError('La vidéo met trop de temps à charger. Vérifiez votre connexion ou essayez une autre vidéo.');
+   545→      }
+   546→    }, 15000);
+   547→    return () => clearTimeout(timeout);
+   548→  }, [iframeLoaded]);
+   549→
+   550→  const preventScroll = (e: React.WheelEvent | React.TouchEvent) => {
+   551→    e.preventDefault();
+   552→  };
+   553→
+   554→  const handleClaim = async () => {
+   555→    if (claiming || claimedRef.current) return;
+   556→    claimedRef.current = true;
+   557→    setClaiming(true);
+   558→    setError(null);
+   559→    try {
+   560→      const pct = Math.max(watchedPercent, MIN_WATCH_PCT);
+   561→      const res = await authFetch('/api/videos/reward', {
+   562→        method: 'POST',
+   563→        headers: { 'Content-Type': 'application/json' },
+   564→        body: JSON.stringify({ videoId: video.id, watchedPercent: pct }),
+   565→      });
+   566→      const data = await res.json();
+   567→      if (data.success) {
+   568→        setClaimed(true);
+   569→      } else {
+   570→        setError(data.error || 'Erreur lors de la réclamation.');
+   571→        claimedRef.current = false;
+   572→      }
+   573→    } catch {
+   574→      setError('Erreur de connexion. Veuillez réessayer.');
+   575→      claimedRef.current = false;
+   576→    }
+   577→    setClaiming(false);
+   578→  };
+   579→
+   580→  const handleClose = async () => {
+   581→    if (claimed) {
+   582→      await onReward(video.reward);
+   583→    } else {
+   584→      onClose();
+   585→    }
+   586→  };
+   587→
+   588→
+   589→  const remainingPct = Math.max(0, Math.ceil(MIN_WATCH_PCT - watchedPercent));
+   590→  const remainingSec = Math.max(0, Math.ceil(requiredSeconds - (Date.now() - startTimeRef.current) / 1000));
+   591→
+   592→  // Build the YouTube embed URL. Using youtube.com (not nocookie) for maximum
+   593→  // compatibility. autoplay=1, controls=0 (hidden), rel=0, modestbranding=1.
+   594→  const embedUrl = `https://www.youtube.com/embed/${video.id}?autoplay=1&controls=0&disablekb=1&modestbranding=1&rel=0&playsinline=1&fs=0&iv_load_policy=3&enablejsapi=0`;
+   595→
+   596→  return (
+   597→    <div className="fixed inset-0 z-[9000] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.92)' }}>
+   598→      <div className="w-full max-w-[420px]">
+   599→        {/* Header — Quit (X) button ALWAYS visible */}
+   600→        <div className="flex items-center justify-between mb-3 gap-2">
+   601→          <div className="flex items-center gap-2 min-w-0 flex-1">
+   602→            <span className="text-[0.55rem] font-bold px-1.5 py-0.5 rounded text-white flex-shrink-0 flex items-center gap-1" style={{ background: THEME_COLOR[video.category] || '#14B8A6' }}>
+   603→              <i className={`${THEME_ICON[video.category] || 'fas fa-briefcase'} text-[0.45rem]`}></i>
+   604→              {THEME_LABEL[video.category] || video.category}
+   605→            </span>
+   606→            <span className="text-[0.6rem] text-white/60 truncate">Sponsorisé par {video.sponsor}</span>
+   607→          </div>
+   608→          <button
+   609→            onClick={claimed ? handleClose : onClose}
+   610→            aria-label="Quitter la vidéo"
+   611→            title="Quitter la vidéo"
+   612→            className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center cursor-pointer transition-all active:scale-95 border-none"
+   613→            style={{ background: 'rgba(239,68,68,0.95)', color: '#FFFFFF', boxShadow: '0 2px 10px rgba(239,68,68,0.45)' }}
+   614→          >
+   615→            <i className="fas fa-times text-[1.15rem]"></i>
+   616→          </button>
+   617→        </div>
+   618→
+   619→        {/* Title */}
+   620→        <h3 className="text-[0.9rem] font-bold text-white mb-2">{video.title}</h3>
+   621→
+   622→        {/* Player container — simple iframe with pointer-events:none overlay */}
+   623→        <div
+   624→          onWheel={preventScroll}
+   625→          onTouchMove={preventScroll}
+   626→          className="relative w-full rounded-xl overflow-hidden bg-black"
+   627→          style={{ aspectRatio: '16/9' }}
+   628→        >
+   629→          <iframe
+   630→            src={embedUrl}
+   631→            title={video.title}
+   632→            className="absolute inset-0 w-full h-full"
+   633→            style={{ border: 'none', pointerEvents: 'none' }}
+   634→            allow="autoplay; encrypted-media"
+   635→            onLoad={() => setIframeLoaded(true)}
+   636→          />
+   637→
+   638→          {/* Transparent overlay so the user cannot interact with the iframe */}
+   639→          <div className="absolute inset-0" style={{ background: 'transparent' }}></div>
+   640→
+   641→          {/* Error overlay */}
+   642→          {error && (
+   643→            <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
+   644→              <i className="fas fa-triangle-exclamation text-[#F87171] text-[2rem] mb-3"></i>
+   645→              <div className="text-[0.78rem] text-white font-bold mb-1">Vidéo indisponible</div>
+   646→              <div className="text-[0.65rem] text-white/70 mb-4 leading-relaxed">{error}</div>
+   647→              <button
+   648→                onClick={onClose}
+   649→                className="px-4 py-2.5 rounded-xl font-bold text-[0.8rem] cursor-pointer border-none"
+   650→                style={{ background: '#22C55E', color: '#FFFFFF' }}
+   651→              >
+   652→                <i className="fas fa-arrow-left mr-1"></i>Choisir une autre vidéo
+   653→              </button>
+   654→            </div>
+   655→          )}
+   656→
+   657→          {/* Loading indicator */}
+   658→          {!iframeLoaded && !error && (
+   659→            <div className="absolute inset-0 flex flex-col items-center justify-center text-center" style={{ background: 'rgba(0,0,0,0.6)' }}>
+   660→              <div className="w-10 h-10 border-[3px] border-white/20 border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.8s linear infinite' }}></div>
+   661→              <div className="text-[0.7rem] text-white/70 mt-3">Chargement de la vidéo...</div>
+   662→            </div>
+   663→          )}
+   664→
+   665→          {/* Progress bar */}
+   666→          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/20">
+   667→            <div className="h-full transition-all" style={{ width: `${watchedPercent}%`, background: canClaim ? '#22C55E' : '#F59E0B' }}></div>
+   668→          </div>
+   669→
+   670→          {/* Warning if not yet claimable */}
+   671→          {!error && watchedPercent < MIN_WATCH_PCT && (
+   672→            <div className="absolute top-2 left-2 right-2 text-center">
+   673→              <div className="inline-block px-2 py-1 rounded-full text-[0.55rem] font-bold text-white" style={{ background: 'rgba(0,0,0,0.7)' }}>
+   674→                <i className="fas fa-lock mr-1"></i>Encore {remainingSec}s ({remainingPct}%) pour la récompense
+   675→              </div>
+   676→            </div>
+   677→          )}
+   678→        </div>
+   679→
+   680→        {/* Progress text */}
+   681→        <div className="mt-2 flex items-center justify-between text-white/70 text-[0.65rem]">
+   682→          <span>Progression: {Math.floor(watchedPercent)}%</span>
+   683→          <span>Récompense: +${video.reward.toFixed(2)}</span>
+   684→        </div>
+   685→
+   686→        {/* Error text (below player) */}
+   687→        {error && (
+   688→          <div className="mt-2 rounded-lg p-2 text-center text-[0.7rem] text-[#FCA5A5]" style={{ background: 'rgba(239,68,68,0.1)' }}>
+   689→            {error}
+   690→          </div>
+   691→        )}
+   692→
+   693→        {claimed ? (
+   694→          /* ===== Claimed: show success with reward amount ===== */
+   695→          <div className="mt-3">
+   696→            {/* Success banner with reward */}
+   697→            <div className="rounded-xl p-4 text-center" style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)' }}>
+   698→              <i className="fas fa-check-circle text-[#22C55E] text-[1.4rem] mb-1.5"></i>
+   699→              <div className="text-[0.88rem] font-black text-[#22C55E] mb-0.5">Vidéo regardée !</div>
+   700→              <div className="text-[1rem] font-black text-white">+{video.reward.toFixed(2)} $ crédité sur votre compte vidéo</div>
+   701→            </div>
+   702→
+   703→            {/* Close button */}
+   704→            <button
+   705→              onClick={handleClose}
+   706→              className="w-full mt-3 py-3 rounded-xl font-bold text-[0.85rem] border-none cursor-pointer transition-all active:scale-95"
+   707→              style={{ background: 'linear-gradient(135deg, #22C55E, #14B8A6)', color: '#FFFFFF' }}
+   708→            >
+   709→              <i className="fas fa-check mr-1.5"></i>Fermer
+   710→            </button>
+   711→          </div>
+   712→        ) : (
+   713→          <>
+   714→            {/* Claim button */}
+   715→            <button
+   716→              onClick={handleClaim}
+   717→              disabled={!canClaim || claiming || !!error}
+   718→              className="w-full mt-3 py-3 rounded-xl font-bold text-[0.85rem] border-none cursor-pointer disabled:opacity-40 transition-all active:scale-95"
+   719→              style={{ background: canClaim ? 'linear-gradient(135deg, #22C55E, #14B8A6)' : '#4B5563', color: '#FFFFFF' }}
+   720→            >
+   721→              {claiming ? 'Réclamation...' : canClaim ? `Réclamer $${video.reward.toFixed(2)}` : `Regardez encore ${remainingSec}s (${remainingPct}%)`}
+   722→            </button>
+   723→
+   724→            {/* Always-available Quit button */}
+   725→            <button
+   726→              onClick={onClose}
+   727→              className="w-full mt-2 py-3 rounded-xl font-bold text-[0.8rem] cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-2"
+   728→              style={{ background: 'rgba(239,68,68,0.12)', color: '#FCA5A5', border: '1px solid rgba(239,68,68,0.4)' }}
+   729→            >
+   730→              <i className="fas fa-times-circle text-[0.9rem]"></i>
+   731→              Quitter la vidéo
+   732→            </button>
+   733→          </>
+   734→        )}
+   735→      </div>
+   736→    </div>
+   737→  );
+   738→}
+   739→
+   740→// ===== Video withdraw modal — uses shared PaymentDetails (same mechanism as principal account) =====
+   741→function VideoWithdrawModal({ videoBalance, onClose, onSuccess, addToast }: {
+   742→  videoBalance: number;
+   743→  onClose: () => void;
+   744→  onSuccess: () => Promise<void>;
+   745→  addToast: (msg: string, type: 'success' | 'error' | 'info') => void;
+   746→}) {
+   747→  const [amount, setAmount] = useState('1');
+   748→  const [loading, setLoading] = useState(false);
+   749→  const [error, setError] = useState<string | null>(null);
+   750→
+   751→  const amt = parseFloat(amount) || 0;
+   752→  const amountValid = amt >= 1 && amt <= videoBalance;
+   753→
+   754→  const handleSubmit = async (method: 'yas' | 'trx', userAddress: string) => {
+   755→    setError(null);
+   756→    setLoading(true);
+   757→    try {
+   758→      const res = await authFetch('/api/videos/withdraw', {
+   759→        method: 'POST',
+   760→        headers: { 'Content-Type': 'application/json' },
+   761→        body: JSON.stringify({ amount: amt, method, userAddress }),
+   762→      });
+   763→      const data = await res.json();
+   764→      if (data.success) {
+   765→        await onSuccess();
+   766→      } else {
+   767→        const msg = data.error || 'Échec du retrait. Veuillez réessayer.';
+   768→        setError(msg);
+   769→        addToast(msg, 'error');
+   770→      }
+   771→    } catch {
+   772→      const msg = 'Erreur de connexion. Veuillez réessayer.';
+   773→      setError(msg);
+   774→      addToast(msg, 'error');
+   775→    }
+   776→    setLoading(false);
+   777→  };
+   778→
+   779→  return (
+   780→    <div
+   781→      className="fixed inset-0 z-[8500] flex items-end sm:items-center justify-center p-0 sm:p-4"
+   782→      style={{ background: 'rgba(0,0,0,0.8)' }}
+   783→      onClick={onClose}
+   784→    >
+   785→      <div
+   786→        className="w-full max-w-[400px] rounded-t-2xl sm:rounded-2xl bg-[#F6F8F7] p-5 max-h-[92vh] overflow-y-auto"
+   787→        onClick={(e) => e.stopPropagation()}
+   788→      >
+   789→        <div className="flex items-center justify-between mb-3">
+   790→          <h3 className="text-[1rem] font-black text-[#1F2937]">Retrait du compte Vidéo</h3>
+   791→          <button onClick={onClose} className="text-[#6B7280] cursor-pointer w-8 h-8 flex items-center justify-center" aria-label="Fermer">
+   792→            <i className="fas fa-times"></i>
+   793→          </button>
+   794→        </div>
+   795→
+   796→        {/* Available balance */}
+   797→        <div className="rounded-xl p-3 mb-3 text-center" style={{ background: '#F0FDFA', border: '1px solid #A7F3D0' }}>
+   798→          <div className="text-[0.6rem] text-[#0F766E] uppercase tracking-wide font-semibold">Solde vidéo disponible</div>
+   799→          <div className="text-[1.3rem] font-black text-[#0F766E]">{formatMoney(videoBalance)}</div>
+   800→        </div>
+   801→
+   802→        {/* Amount input */}
+   803→        <div className="bg-[#FFFFFF] rounded-2xl p-4 mb-3 border border-[rgba(0,0,0,0.08)]">
+   804→          <label className="text-[0.7rem] font-semibold text-[#374151]">
+   805→            Montant à retirer (USD) <span className="text-[#0F766E] font-bold">— Minimum $1</span>
+   806→          </label>
+   807→          <input
+   808→            type="number"
+   809→            value={amount}
+   810→            onChange={(e) => setAmount(e.target.value)}
+   811→            min="1"
+   812→            step="0.01"
+   813→            max={videoBalance}
+   814→            className="w-full mt-1.5 px-3 py-2.5 rounded-xl border-none text-[0.85rem] focus:outline-none focus:ring-2 focus:ring-[#14B8A6]/40"
+   815→            style={{ background: '#F3F4F6', color: '#1F2937' }}
+   816→          />
+   817→          {amount && !amountValid && (
+   818→            <p className="text-[0.65rem] text-[#EF4444] mt-1 flex items-center gap-1">
+   819→              <i className="fas fa-circle-exclamation"></i>
+   820→              {amt < 1 ? 'Le montant minimum est de $1.' : 'Montant supérieur à votre solde vidéo.'}
+   821→            </p>
+   822→          )}
+   823→        </div>
+   824→
+   825→        {/* Inline error */}
+   826→        {error && (
+   827→          <div className="mb-3 rounded-xl p-2.5 text-[0.7rem] text-[#991B1B] leading-relaxed flex items-start gap-1.5" style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}>
+   828→            <i className="fas fa-circle-exclamation mt-0.5 text-[0.8rem]"></i>
+   829→            <span>{error}</span>
+   830→          </div>
+   831→        )}
+   832→
+   833→        {/* Payment details — same mechanism as principal account deposit/withdraw */}
+   834→        {amountValid ? (
+   835→          <PaymentDetails
+   836→            mode="withdraw"
+   837→            amountUsd={amt}
+   838→            initialMethod="trx"
+   839→            onConfirm={handleSubmit}
+   840→            onCancel={onClose}
+   841→            loading={loading}
+   842→            ctaText="Retirer"
+   843→          />
+   844→        ) : (
+   845→          <div className="text-center py-4 text-[0.75rem] text-[rgba(0,0,0,0.45)]">
+   846→            <i className="fas fa-info-circle mr-1"></i>
+   847→            Saisissez un montant valide ($1 minimum) pour continuer.
+   848→          </div>
+   849→        )}
+   850→      </div>
+   851→    </div>
+   852→  );
+   853→}
+   854→
+   855→// ===== Share modal with native share sheet =====
+   856→function ShareModal({ referralCode, addToast, onClose }: { referralCode: string; addToast: (msg: string, type: 'success' | 'error' | 'info') => void; onClose: () => void }) {
+   857→  const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/?ref=${referralCode}` : '';
+   858→  const shareText = `Rejoins Be Rich, la plateforme de communication pour les grandes entreprises ! Gagne de l'argent en regardant des vidéos. ${shareUrl}`;
+   859→
+   860→  const handleNativeShare = async () => {
+   861→    if (navigator.share) {
+   862→      try {
+   863→        await navigator.share({ title: 'Be Rich', text: shareText, url: shareUrl });
+   864→        onClose();
+   865→      } catch { /* user cancelled */ }
+   866→    } else {
+   867→      // Fallback: copy full share text to clipboard
+   868→      await copyLink(true);
+   869→    }
+   870→  };
+   871→
+   872→  const copyLink = async (copyFullText = false) => {
+   873→    const textToCopy = copyFullText ? shareText : shareUrl;
+   874→    try {
+   875→      if (navigator.clipboard && navigator.clipboard.writeText) {
+   876→        await navigator.clipboard.writeText(textToCopy);
+   877→      } else {
+   878→        // Legacy fallback for non-secure contexts
+   879→        const ta = document.createElement('textarea');
+   880→        ta.value = textToCopy;
+   881→        ta.style.position = 'fixed';
+   882→        ta.style.opacity = '0';
+   883→        document.body.appendChild(ta);
+   884→        ta.select();
+   885→        document.execCommand('copy');
+   886→        document.body.removeChild(ta);
+   887→      }
+   888→      addToast('Lien copié !', 'success');
+   889→    } catch {
+   890→      addToast('Impossible de copier le lien.', 'error');
+   891→    }
+   892→  };
+   893→
+   894→  const shareApps = [
+   895→    { name: 'WhatsApp', icon: 'fab fa-whatsapp', color: '#25D366', url: `https://wa.me/?text=${encodeURIComponent(shareText)}` },
+   896→    { name: 'TikTok', icon: 'fab fa-tiktok', color: '#000000', url: `https://www.tiktok.com/` },
+   897→    { name: 'Instagram', icon: 'fab fa-instagram', color: '#E4405F', url: `https://www.instagram.com/` },
+   898→    { name: 'Facebook', icon: 'fab fa-facebook', color: '#1877F2', url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}` },
+   899→    { name: 'Telegram', icon: 'fab fa-telegram', color: '#0088CC', url: `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}` },
+   900→    { name: 'Messenger', icon: 'fab fa-facebook-messenger', color: '#0084FF', url: `https://m.me/` },
+   901→  ];
+   902→
+   903→  return (
+   904→    <div className="fixed inset-0 z-[8500] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.8)' }} onClick={onClose}>
+   905→      <div className="w-full max-w-[380px] rounded-2xl bg-white p-5" onClick={(e) => e.stopPropagation()}>
+   906→        <div className="flex items-center justify-between mb-4">
+   907→          <h3 className="text-[1rem] font-black text-[#1F2937]">Invitez vos amis</h3>
+   908→          <button onClick={onClose} className="text-[#6B7280] cursor-pointer"><i className="fas fa-times"></i></button>
+   909→        </div>
+   910→
+   911→        {/* Read-only invite link field + copy button */}
+   912→        <div className="rounded-xl p-3 mb-3" style={{ background: '#F0FDFA', border: '1px solid #A7F3D0' }}>
+   913→          <div className="text-[0.6rem] text-[#0F766E] mb-1.5">Votre lien de parrainage</div>
+   914→          <div className="flex items-center gap-2">
+   915→            <input
+   916→              type="text"
+   917→              readOnly
+   918→              value={shareUrl}
+   919→              onFocus={(e) => e.currentTarget.select()}
+   920→              className="flex-1 min-w-0 text-[0.7rem] font-bold text-[#0F766E] bg-white/70 rounded-lg px-2 py-2 outline-none border border-[#A7F3D0] focus:border-[#14B8A6]"
+   921→            />
+   922→            <button
+   923→              onClick={() => copyLink(false)}
+   924→              className="shrink-0 px-3 py-2 rounded-lg font-bold text-[0.7rem] border-none cursor-pointer transition-all active:scale-95 whitespace-nowrap"
+   925→              style={{ background: '#14B8A6', color: '#FFFFFF' }}
+   926→              aria-label="Copier le lien"
+   927→            >
+   928→              <i className="fas fa-copy mr-1"></i>Copier
+   929→            </button>
+   930→          </div>
+   931→        </div>
+   932→
+   933→        {/* Native share button */}
+   934→        <button onClick={handleNativeShare} className="w-full py-3 rounded-xl font-bold text-[0.85rem] border-none cursor-pointer mb-4 transition-all active:scale-95" style={{ background: 'linear-gradient(135deg, #14B8A6, #0F766E)', color: '#FFFFFF' }}>
+   935→          <i className="fas fa-share-nodes mr-1.5"></i>Partager
+   936→        </button>
+   937→
+   938→        {/* App grid */}
+   939→        <div className="grid grid-cols-3 gap-3">
+   940→          {shareApps.map((app) => (
+   941→            <a
+   942→              key={app.name}
+   943→              href={app.url}
+   944→              target="_blank"
+   945→              rel="noopener noreferrer"
+   946→              className="flex flex-col items-center gap-1.5 cursor-pointer"
+   947→            >
+   948→              <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: app.color }}>
+   949→                <i className={`${app.icon} text-white text-[1.3rem]`}></i>
+   950→              </div>
+   951→              <span className="text-[0.6rem] font-semibold text-[#374151]">{app.name}</span>
+   952→            </a>
+   953→          ))}
+   954→        </div>
+   955→      </div>
+   956→    </div>
+   957→  );
+   958→}
+   959→

@@ -36,9 +36,26 @@ export interface AppUser {
   activeEnterprisesCount?: number;
   claimableInvestments?: number;
   unlockedLevel?: number;
-  videoBalance?: number;
-  videoWatchedCount?: number;
-  videoDepositRequired?: boolean;
+  // Espace Jeunes — Mission & Micro-Prêt
+  missionBalance?: number;
+  missionTotalEarned?: number;
+  missionValidatedToday?: number;
+  missionDate?: string;
+  cautionBalance?: number;
+  cautionStatus?: string;
+  personalDepositBalance?: number;
+  userLevel?: number;
+  reputationScore?: number;
+  dateOfBirth?: string;
+  country?: string;
+  city?: string;
+  paymentMethod?: string;
+  paymentAddress?: string;
+  accountVerified?: string;
+  lastActivityAt?: string;
+  validatedReferralCount?: number;
+  hasOverdueLoan?: boolean;
+  // Casino
   gameSpinsUsed?: number;
   gameSpinsDate?: string;
   gameTotalWon?: number;
@@ -115,16 +132,16 @@ export function formatMoney(v: number): string {
   return (v || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $';
 }
 
+export function formatCfa(v: number): string {
+  return (v || 0).toLocaleString('fr-FR') + ' FCFA';
+}
+
 export function esc(s: string): string {
   return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] || c));
 }
 
 export function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
-  // Auth is handled via the br_token cookie (sessionToken) set on login.
-  // Do NOT send X-Auth-Token header — it would override the cookie check
-  // and cause 401s because userId !== sessionToken.
   const headers = new Headers(options.headers || {});
-  // Ensure credentials are sent (cookies) for same-origin requests
   return fetch(url, { ...options, headers, credentials: 'same-origin' });
 }
 
