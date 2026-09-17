@@ -78,7 +78,7 @@ export async function POST(request: Request) {
         jeu: 'balance',
         investissement: 'investBalance',
         projet: 'projectBalance',
-        video: 'videoBalance',
+        mission: 'missionBalance',
       };
       const balanceField = balanceFieldMap[src] || 'balance';
 

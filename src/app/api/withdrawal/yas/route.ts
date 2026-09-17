@@ -33,10 +33,10 @@ export async function POST(request: Request) {
       jeu: freshUser.balance || 0,
       investissement: freshUser.investBalance || 0,
       projet: freshUser.projectBalance || 0,
-      video: freshUser.videoBalance || 0,
+      mission: freshUser.missionBalance || 0,
     };
     const srcBalance = balanceMap[src] ?? freshUser.balance;
-    const srcLabel = src === 'jeu' ? 'compte jeu' : src === 'investissement' ? 'compte investissement' : src === 'projet' ? 'compte projet' : 'compte vidéo';
+    const srcLabel = src === 'jeu' ? 'compte jeu' : src === 'investissement' ? 'compte investissement' : src === 'projet' ? 'compte projet' : src === 'mission' ? 'compte mission' : 'compte jeu';
 
     if (amt > srcBalance) {
       return NextResponse.json({ success: false, error: `Solde insuffisant sur le ${srcLabel}.` });

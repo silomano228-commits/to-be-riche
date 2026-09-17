@@ -94,7 +94,7 @@ export default function WalletScreen() {
   };
 
   if (!user) return null;
-  const videoBalance = user.videoBalance || 0;
+  const missionBalance = user.missionBalance || 0;
   const totalProfit = user.totalProfit || 0;
   const totalPotentialGain = (user as any).totalPotentialGain || 0;
   const projects = (user as any).projects || [];
@@ -242,7 +242,7 @@ export default function WalletScreen() {
         <div className="grid grid-cols-3 gap-2 mb-5">
           {[
             { icon: 'fa-chart-line', color: 'bg-[#DCFCE7] text-[#166534]', val: formatMoney(totalProfit), label: 'Gains' },
-            { icon: 'fa-video', color: 'bg-[#CCFBF1] text-[#0F766E]', val: formatMoney(videoBalance), label: 'Vidéo' },
+            { icon: 'fa-bullhorn', color: 'bg-[#DCFCE7] text-[#22C55E]', val: formatMoney(missionBalance), label: 'Mission' },
             { icon: 'fa-percentage', color: 'bg-[#FEF3C7] text-[#92400E]', val: '5%/j', label: 'Rendement' },
           ].map((s, i) => (
             <div key={i} className="bg-white rounded-xl p-3.5 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.03)] border border-[rgba(0,0,0,0.03)]">

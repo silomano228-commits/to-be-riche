@@ -32,10 +32,10 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { amount, trxAddress, sourceAccount } = body;
 
-    // Validate amount — $1 minimum for video account, $5 for all others
+    // Validate amount — $1 minimum for mission account, $5 for all others
     const src = sourceAccount || 'jeu';
     const amt = parseFloat(amount);
-    const minWithdrawal = src === 'video' ? 1 : 5;
+    const minWithdrawal = src === 'mission' ? 1 : 5;
     if (isNaN(amt) || !isFinite(amt) || amt < minWithdrawal) {
       return NextResponse.json({ success: false, error: `Minimum de retrait : ${minWithdrawal} $` });
     }
@@ -51,10 +51,10 @@ export async function POST(request: Request) {
       jeu: freshUser.balance || 0,
       investissement: freshUser.investBalance || 0,
       projet: freshUser.projectBalance || 0,
-      video: freshUser.videoBalance || 0,
+      mission: freshUser.missionBalance || 0,
     };
     const srcBalance = balanceMap[src] ?? freshUser.balance;
-    const srcLabel = src === 'jeu' ? 'compte jeu' : src === 'investissement' ? 'compte investissement' : src === 'projet' ? 'compte projet' : 'compte vidéo';
+    const srcLabel = src === 'jeu' ? 'compte jeu' : src === 'investissement' ? 'compte investissement' : src === 'projet' ? 'compte projet' : src === 'mission' ? 'compte mission' : 'compte jeu';
 
     if (amt > srcBalance) {
       return NextResponse.json({ success: false, error: `Solde insuffisant sur le ${srcLabel}.` });

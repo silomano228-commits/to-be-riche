@@ -59,7 +59,7 @@ export async function GET(
         phone: r.phone,
         createdAt: r.createdAt.toISOString(),
         balance: r.balance,
-        videoBalance: r.videoBalance,
+        missionBalance: r.missionBalance,
         tradeBalance: r.tradeBalance,
         projectBalance: r.projectBalance,
         investBalance: r.investBalance,
@@ -95,7 +95,7 @@ export async function GET(
       where: { userId: id },
     });
 
-    const videoWatchCount = await db.videoWatch.count({
+    const missionImageCount = await db.missionImage.count({
       where: { userId: id },
     });
 
@@ -166,7 +166,7 @@ export async function GET(
         updatedAt: user.updatedAt.toISOString(),
         // Balances
         balance: user.balance,
-        videoBalance: user.videoBalance,
+        missionBalance: user.missionBalance,
         tradeBalance: user.tradeBalance,
         projectBalance: user.projectBalance,
         investBalance: user.investBalance,
@@ -179,8 +179,8 @@ export async function GET(
         totalProfit: user.totalProfit,
         totalLoss: user.totalLoss,
         gameTotalWon: user.gameTotalWon,
-        videoTotalEarned: user.videoTotalEarned,
-        videoWatchedCount: user.videoWatchedCount,
+        missionTotalEarned: user.missionTotalEarned,
+        missionValidatedToday: user.missionValidatedToday,
         gameSpinsUsed: user.gameSpinsUsed,
       },
       stats: {
@@ -188,7 +188,7 @@ export async function GET(
         totalWithdrawn: totalWithdrawn._sum.amount || 0,
         depositCount: approvedTrxDeposits + approvedYasDeposits,
         investmentCount,
-        videoWatchCount,
+        missionImageCount,
         referralCount: user.referralCount,
       },
       referralTree,

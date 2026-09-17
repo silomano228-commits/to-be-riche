@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ success: true, images, total });
 }
 
-// POST /api/missions/images — Submit or generate an image
+// POST /api/missions/images — Submit an image (uploaded from device, created externally)
 export async function POST(request: NextRequest) {
   const authUser = await getAuthToken(request);
   if (!authUser) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
@@ -43,10 +43,10 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 });
 
   const body = await request.json();
-  const { campaignId, prompt, imageData } = body;
+  const { campaignId, imageData } = body;
 
   if (!campaignId) return NextResponse.json({ error: 'campaignId est requis' }, { status: 400 });
-  if (!prompt && !imageData) return NextResponse.json({ error: 'prompt ou imageData est requis' }, { status: 400 });
+  if (!imageData) return NextResponse.json({ error: 'imageData (base64) est requis — uploadez une image créée avec une IA externe (ChatGPT, DALL-E, Midjourney, etc.)' }, { status: 400 });
 
   const config = await ensureSiteConfig();
   const today = new Date().toISOString().split('T')[0];
@@ -60,12 +60,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Campagne expirée' }, { status: 400 });
   }
 
-  // Check daily limit
+  // Check daily limit (global across all campaigns)
   const dailyCount = await db.missionImage.count({
+    where: { userId, submittedDate: today },
+  });
+  const globalDailyLimit = config.missionDailyLimit || 10;
+  if (dailyCount >= globalDailyLimit) {
+    return NextResponse.json({ error: `Limite quotidienne atteinte (${globalDailyLimit} images/jour). Revenez demain !` }, { status: 400 });
+  }
+
+  // Check campaign-specific daily limit
+  const campDailyCount = await db.missionImage.count({
     where: { userId, campaignId, submittedDate: today },
   });
-  if (dailyCount >= campaign.dailyLimit) {
-    return NextResponse.json({ error: `Limite quotidienne atteinte (${campaign.dailyLimit} images/jour)` }, { status: 400 });
+  if (campDailyCount >= campaign.dailyLimit) {
+    return NextResponse.json({ error: `Limite quotidienne de cette campagne atteinte (${campaign.dailyLimit} images/jour)` }, { status: 400 });
   }
 
   // Check campaign max images
@@ -73,39 +82,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Campagne complète' }, { status: 400 });
   }
 
-  let finalImageData = imageData || '';
-  let generationPrompt = prompt || '';
-
-  // If prompt provided, generate image with AI
-  if (prompt && !imageData) {
-    try {
-      const ZAI = (await import('z-ai-web-dev-sdk')).default;
-      const zai = await ZAI.create();
-      const sizeMap: Record<string, string> = {
-        '16:9': '1344x768',
-        '9:16': '768x1344',
-        '4:3': '1152x864',
-        '1:1': '1024x1024',
-      };
-      const size = sizeMap[campaign.format] || '1344x768';
-      const fullPrompt = `${prompt}. Style: ${campaign.style}. ${campaign.constraints}`;
-      const response = await zai.images.generations.create({ prompt: fullPrompt, size: size as any });
-      finalImageData = response.data[0].base64;
-    } catch (err: any) {
-      return NextResponse.json({ error: 'Erreur de génération IA: ' + (err.message || 'Unknown') }, { status: 500 });
-    }
-  }
-
-  // Compute perceptual hash (simple hash of first 2000 base64 chars for similarity)
-  const hashInput = finalImageData.substring(0, 2000);
+  // Compute hash for similarity detection
+  const hashInput = imageData.substring(0, 2000);
   const imageHash = crypto.createHash('sha256').update(hashInput).digest('hex');
 
-  // Create mission image record
+  // Create mission image record — status starts as pending, AI validates async
   const image = await db.missionImage.create({
     data: {
       userId,
       campaignId,
-      imageData: finalImageData,
+      imageData,
       imageHash,
       rewardCfa: campaign.rewardCfa,
       submittedDate: today,
@@ -126,7 +112,7 @@ export async function POST(request: NextRequest) {
   });
 
   // Fire AI validation asynchronously (don't await)
-  validateImageAsync(image.id, finalImageData, campaign, imageHash).catch(() => {});
+  validateImageAsync(image.id, imageData, campaign, imageHash).catch(() => {});
 
   return NextResponse.json({
     success: true,
@@ -140,15 +126,15 @@ export async function POST(request: NextRequest) {
   });
 }
 
-// Async AI validation
+// Async AI validation — VLM checks if uploaded image matches the campaign brief
 async function validateImageAsync(imageId: string, imageData: string, campaign: any, imageHash: string) {
   try {
     const ZAI = (await import('z-ai-web-dev-sdk')).default;
     const zai = await ZAI.create();
     const config = await ensureSiteConfig();
 
-    // Step 1: VLM - Check if image matches brief
-    const validationPrompt = `Analysez cette image pour une mission de génération de visuels.
+    // VLM - Check if image matches brief
+    const validationPrompt = `Analysez cette image pour une mission de visuels.
 Campagne: ${campaign.name}
 Marque: ${campaign.brand}
 Brief: ${campaign.brief}
@@ -190,13 +176,12 @@ Répondez en JSON avec:
         if (matchesBrand && followsBrief) aiScore = Math.max(aiScore, 70);
       }
     } catch {
-      // Fallback: if analysis text contains positive words, give moderate score
       if (analysisText.toLowerCase().includes('correspond') || analysisText.toLowerCase().includes('conforme')) {
         aiScore = 65;
       }
     }
 
-    // Step 2: Check similarity with existing images
+    // Check similarity with existing images
     let similarityScore = 0;
     let similarToId: string | null = null;
     const existingImages = await db.missionImage.findMany({
@@ -206,7 +191,6 @@ Répondez en JSON avec:
     });
 
     for (const existing of existingImages) {
-      // Simple hash similarity: compare first 40 hex chars
       const hash1 = imageHash.substring(0, 40);
       const hash2 = existing.imageHash.substring(0, 40);
       let matching = 0;
@@ -220,7 +204,7 @@ Répondez en JSON avec:
       }
     }
 
-    // Step 3: Determine final status
+    // Determine final status
     let status = 'pending';
     if (similarityScore > 0.85) {
       status = 'duplicate';
@@ -264,7 +248,6 @@ Répondez en JSON avec:
         data: { rewardCredited: true },
       });
 
-      // Create transaction record
       await db.transaction.create({
         data: {
           userId: updated.userId,
@@ -274,13 +257,11 @@ Répondez en JSON avec:
         },
       });
 
-      // Update campaign validated count
       await db.campaign.update({
         where: { id: campaign.id },
         data: { totalValidated: { increment: 1 } },
       });
 
-      // Create notification
       await db.userNotification.create({
         data: {
           userId: updated.userId,
@@ -312,7 +293,6 @@ Répondez en JSON avec:
       });
     }
   } catch (err) {
-    // If validation fails, leave image as pending for manual review
     console.error('AI validation error:', err);
   }
 }

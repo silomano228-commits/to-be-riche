@@ -15,24 +15,24 @@ export const dynamic = 'force-dynamic';
 //   referralCount
 type BalanceField =
   | 'balance'
-  | 'videoBalance'
+  | 'missionBalance'
   | 'tradeBalance'
   | 'projectBalance'
   | 'investBalance'
   | 'gameTotalWon'
-  | 'videoTotalEarned'
+  | 'missionTotalEarned'
   | 'totalProfit'
   | 'totalLoss'
   | 'referralCount';
 
 const BALANCE_LABELS: Record<BalanceField, string> = {
   balance: 'Solde principal',
-  videoBalance: 'Vidéo',
+  missionBalance: 'Mission',
   tradeBalance: 'Trading',
   projectBalance: 'Projet',
   investBalance: 'Investissement',
   gameTotalWon: 'Gains jeu',
-  videoTotalEarned: 'Gains vidéo totaux',
+  missionTotalEarned: 'Gains missions totaux',
   totalProfit: 'Profit total',
   totalLoss: 'Perte totale',
   referralCount: 'Parrainages',
@@ -43,12 +43,12 @@ const INT_FIELDS: BalanceField[] = ['referralCount'];
 
 const VALID_FIELDS: BalanceField[] = [
   'balance',
-  'videoBalance',
+  'missionBalance',
   'tradeBalance',
   'projectBalance',
   'investBalance',
   'gameTotalWon',
-  'videoTotalEarned',
+  'missionTotalEarned',
   'totalProfit',
   'totalLoss',
   'referralCount',
@@ -133,12 +133,12 @@ export async function POST(request: Request) {
       where: { id: userId },
       select: {
         balance: true,
-        videoBalance: true,
+        missionBalance: true,
         tradeBalance: true,
         projectBalance: true,
         investBalance: true,
         gameTotalWon: true,
-        videoTotalEarned: true,
+        missionTotalEarned: true,
         totalProfit: true,
         totalLoss: true,
         referralCount: true,

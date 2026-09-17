@@ -45,7 +45,7 @@
     45→// Lazy load heavy screen components
     46→const InvestHubScreen = dynamic(() => import('@/components/screens/InvestHubScreen'), { ssr: false, loading: () => <ScreenLoader /> });
     47→const SpinGameScreen = dynamic(() => import('@/components/screens/SpinGameScreen'), { ssr: false, loading: () => <ScreenLoader /> });
-    48→const VideoPlatformScreen = dynamic(() => import('@/components/screens/VideoPlatformScreen'), { ssr: false, loading: () => <ScreenLoader /> });
+    48→const MissionsScreen = dynamic(() => import('@/components/screens/MissionsScreen'), { ssr: false, loading: () => <ScreenLoader /> });
     49→const EnterpriseScreen = dynamic(() => import('@/components/screens/EnterpriseScreen'), { ssr: false, loading: () => <ScreenLoader /> });
     50→const ProfileScreen = dynamic(() => import('@/components/screens/ProfileScreen'), { ssr: false, loading: () => <ScreenLoader /> });
     51→const AnalyticsScreen = dynamic(() => import('@/components/screens/AnalyticsScreen'), { ssr: false, loading: () => <ScreenLoader /> });
@@ -118,7 +118,7 @@
    118→      const res = await fetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }), headers: { 'Content-Type': 'application/json' } });
    119→      const data = await res.json();
    120→      if (data.success) {
-   121→        setUser(data.user); addToast('Bienvenue, ' + data.user.name, 'success'); setPage('videos');
+   121→        setUser(data.user); addToast('Bienvenue, ' + data.user.name, 'success'); setPage('missions');
    122→      } else if (data.needs_verification) {
    123→        // Account exists but email isn't verified — switch to OTP screen.
    124→        setOtpEmail(email);
@@ -145,7 +145,7 @@
    145→      if (data.success && data.user) {
    146→        setUser(data.user);
    147→        addToast('Email vérifié ! Bienvenue, ' + data.user.name, 'success');
-   148→        setPage('videos');
+   148→        setPage('missions');
    149→      } else {
    150→        addToast(data.error || 'Code invalide', 'error');
    151→      }
@@ -200,7 +200,7 @@
    200→          addToast('Code de vérification envoyé à ' + email, 'success');
    201→        }
    202→      } else if (data.success) {
-   203→        setUser(data.user); addToast('Compte créé !', 'success'); setPage('videos');
+   203→        setUser(data.user); addToast('Compte créé !', 'success'); setPage('missions');
    204→      } else {
    205→        addToast(data.error, 'error');
    206→      }
@@ -473,7 +473,7 @@
    473→            </div>
    474→            <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.5px] font-semibold mb-0.5">Solde total</div>
    475→            <div className="flex items-baseline gap-2 mb-3">
-   476→              <div className="text-[1.8rem] font-black tracking-[-1px] text-[#000000]">{formatMoney((user.balance || 0) + (user.investBalance || 0) + (user.projectBalance || 0) + (user.videoBalance || 0))}</div>
+   476→              <div className="text-[1.8rem] font-black tracking-[-1px] text-[#000000]">{formatMoney((user.balance || 0) + (user.investBalance || 0) + (user.projectBalance || 0) + (user.missionBalance || 0))}</div>
    477→              <div className="ml-auto flex gap-1.5">
    478→                <button onClick={() => setPage('deposit-choose')} className="py-2 px-3.5 rounded-xl bg-[rgba(255,255,255,0.25)] hover:bg-[rgba(255,255,255,0.35)] text-[#000000] text-[0.68rem] font-semibold cursor-pointer border-none transition-all active:scale-95 flex items-center gap-1.5 backdrop-blur-sm">
    479→                  <i className="fas fa-arrow-down text-[0.6rem]"></i> Déposer
@@ -507,10 +507,10 @@
    507→                </div>
    508→              </div>
    509→              <div className="glass-card rounded-lg p-2 flex items-center gap-1.5">
-   510→                <div className="w-7 h-7 icon-box bg-[rgba(20,184,166,0.15)] shrink-0"><i className="fas fa-video text-[0.55rem] text-[#14B8A6]"></i></div>
-   511→                <div className="text-[0.45rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Vidéo</div>
-   512→                <div className="text-[0.7rem] font-black text-[#000000] leading-tight ml-auto mr-1">{formatMoney(user.videoBalance || 0)}</div>
-   513→                <button onClick={() => setPage('videos')} className="text-[0.48rem] font-bold px-1.5 py-[2px] rounded-md cursor-pointer border-none text-white shrink-0 transition-transform active:scale-95" style={{ background: '#14B8A6' }}>Regarder</button>
+   510→                <div className="w-7 h-7 icon-box bg-[rgba(34,197,94,0.15)] shrink-0"><i className="fas fa-bullhorn text-[0.55rem] text-[#22C55E]"></i></div>
+   511→                <div className="text-[0.45rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Missions</div>
+   512→                <div className="text-[0.7rem] font-black text-[#000000] leading-tight ml-auto mr-1">{formatMoney(user.missionBalance || 0)}</div>
+   513→                <button onClick={() => setPage('missions')} className="text-[0.48rem] font-bold px-1.5 py-[2px] rounded-md cursor-pointer border-none text-white shrink-0 transition-transform active:scale-95" style={{ background: '#22C55E' }}>Missions</button>
    514→              </div>
    515→            </div>
    516→          </div>
@@ -546,7 +546,7 @@
    546→            { icon: 'fa-compass', label: 'Guide', page: 'guide', color: '#14B8A6', bg: 'rgba(20,184,166,0.12)', borderColor: 'border-[#14B8A6]' },
    547→            { icon: 'fa-gift', label: 'Parrainage', page: 'profile', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', borderColor: 'border-[#F59E0B]' },
    548→            { icon: 'fa-comment', label: 'Messages', page: 'chat', color: '#6366F1', bg: 'rgba(99,102,241,0.12)', borderColor: 'border-[#6366F1]' },
-   549→            { icon: 'fa-video', label: 'Vidéos', page: 'videos', color: '#14B8A6', bg: 'rgba(20,184,166,0.12)', borderColor: 'border-[#14B8A6]' },
+   549→            { icon: 'fa-bullhorn', label: 'Missions', page: 'missions', color: '#22C55E', bg: 'rgba(34,197,94,0.12)', borderColor: 'border-[#22C55E]' },
    550→            { icon: 'fa-newspaper', label: 'Actualités', page: 'guide', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)', borderColor: 'border-[#8B5CF6]' },
    551→          ].map((a, i) => (
    552→            <button key={i} onClick={() => setPage(a.page)} className={`glass-card rounded-xl py-2 px-2 text-center cursor-pointer transition-all active:scale-95 hover:shadow-md border-b-2 ${a.borderColor} shrink-0 min-w-[72px]`}>
@@ -657,16 +657,16 @@
    657→
    658→  if (!user) return null;
    659→
-   660→  // Vidéo account is funded only by watching videos (no deposit/transfer),
+   660→  // Mission account is funded by validated images (no deposit/transfer),
    661→  // so it's a display-only card. Project is transferable to/from Principal.
    662→  const accounts = [
-   663→    { key: 'video', label: 'Compte Vidéo', balance: user.videoBalance || 0, icon: 'fa-video', iconColor: '#14B8A6', iconBg: 'bg-[rgba(20,184,166,0.12)]', borderColor: '#14B8A6', transferable: false },
+   663→    { key: 'mission', label: 'Compte Missions', balance: user.missionBalance || 0, icon: 'fa-bullhorn', iconColor: '#22C55E', iconBg: 'bg-[rgba(34,197,94,0.12)]', borderColor: '#22C55E', transferable: false },
    664→    { key: 'project', label: 'Compte Projet', balance: user.projectBalance, icon: 'fa-building', iconColor: '#8B5CF6', iconBg: 'bg-[rgba(139,92,246,0.12)]', borderColor: '#8B5CF6', transferable: true },
    665→  ] as const;
    666→
    667→  // Label helper for the transfer modal — 'trade' intentionally absent (trading account removed).
    668→  const accountLabel = (k: string) =>
-   669→    k === 'principal' ? 'Principal' : k === 'invest' ? 'Investissement' : k === 'project' ? 'Projets' : k === 'video' ? 'Vidéo' : k;
+   669→    k === 'principal' ? 'Principal' : k === 'invest' ? 'Investissement' : k === 'project' ? 'Projets' : k === 'mission' ? 'Missions' : k;
    670→
    671→  // Derived values from API (silent fallbacks if fetch failed)
    672→  const spinsRemaining = gameStatus?.spinsRemaining ?? 10;
@@ -689,7 +689,7 @@
    689→              <div className="text-[0.7rem] text-white/70 font-semibold uppercase tracking-[1.5px]">Solde Total</div>
    690→              <div className="ml-auto"><button onClick={() => setPage('deposit-choose')} className="py-2 px-3.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-[0.65rem] font-semibold cursor-pointer border-none transition-all active:scale-95 flex items-center gap-1.5"><i className="fas fa-arrow-down text-[0.6rem]"></i> Déposer</button></div>
    691→            </div>
-   692→            <div className="text-[2rem] font-black tracking-[-1px] text-white">{formatMoney((user.balance || 0) + (user.investBalance || 0) + (user.projectBalance || 0) + (user.videoBalance || 0))}</div>
+   692→            <div className="text-[2rem] font-black tracking-[-1px] text-white">{formatMoney((user.balance || 0) + (user.investBalance || 0) + (user.projectBalance || 0) + (user.missionBalance || 0))}</div>
    693→          </div>
    694→        </div>
    695→
@@ -758,21 +758,21 @@
    758→          </div>
    759→        </div>
    760→
-   761→        {/* Compte Vidéo — Teal card with video icon */}
-   762→        <div className="glass-card rounded-2xl p-4 mb-3" style={{ borderLeft: '4px solid #14B8A6' }}>
+   761→        {/* Compte Missions — Green card with bullhorn icon */}
+   762→        <div className="glass-card rounded-2xl p-4 mb-3" style={{ borderLeft: '4px solid #22C55E' }}>
    763→          <div className="flex items-center justify-between mb-2">
    764→            <div className="flex items-center gap-2.5">
-   765→              <div className="w-10 h-10 icon-box bg-[rgba(20,184,166,0.12)]"><i className="fas fa-video text-[0.9rem]" style={{ color: '#14B8A6' }}></i></div>
+   765→              <div className="w-10 h-10 icon-box bg-[rgba(34,197,94,0.12)]"><i className="fas fa-bullhorn text-[0.9rem]" style={{ color: '#22C55E' }}></i></div>
    766→              <div>
-   767→                <div className="text-[0.7rem] text-[rgba(0,0,0,0.5)] font-semibold uppercase tracking-[1.5px]">Compte Vidéo</div>
-   768→                <div className="text-[0.55rem] text-[#14B8A6] font-semibold mt-0.5">Alimenté par les vidéos regardées</div>
+   767→                <div className="text-[0.7rem] text-[rgba(0,0,0,0.5)] font-semibold uppercase tracking-[1.5px]">Compte Missions</div>
+   768→                <div className="text-[0.55rem] text-[#22C55E] font-semibold mt-0.5">Alimenté par les images validées</div>
    769→              </div>
    770→            </div>
-   771→            <div className="text-[1.3rem] font-black text-[#1F2937]">{formatMoney(user.videoBalance || 0)}</div>
+   771→            <div className="text-[1.3rem] font-black text-[#1F2937]">{formatMoney(user.missionBalance || 0)}</div>
    772→          </div>
    773→          <div className="flex gap-2">
-   774→            <button onClick={() => setPage('videos')} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none text-white transition-transform active:scale-95" style={{ background: 'linear-gradient(90deg, #14B8A6 0%, #0D9488 100%)' }}><i className="fas fa-play text-[0.65rem]"></i> Vidéos</button>
-   775→            <button onClick={() => { setWithdrawSource('video'); setPage('withdraw'); }} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(0,0,0,0.04)] text-[rgba(0,0,0,0.7)] transition-transform active:scale-95"><i className="fas fa-arrow-up text-[0.65rem]"></i> Retirer</button>
+   774→            <button onClick={() => setPage('missions')} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none text-white transition-transform active:scale-95" style={{ background: 'linear-gradient(90deg, #22C55E 0%, #16A34A 100%)' }}><i className="fas fa-bullhorn text-[0.65rem]"></i> Missions</button>
+   775→            <button onClick={() => { setWithdrawSource('mission'); setPage('withdraw'); }} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(0,0,0,0.04)] text-[rgba(0,0,0,0.7)] transition-transform active:scale-95"><i className="fas fa-arrow-up text-[0.65rem]"></i> Retirer</button>
    776→          </div>
    777→        </div>
    778→
@@ -817,7 +817,7 @@
    817→          {[
    818→            { icon: 'fa-chart-line', color: '#22C55E', bg: 'bg-[rgba(34,197,94,0.10)]', label: 'Gains totaux', value: formatMoney(user.totalProfit || 0), sub: 'Cumul des gains' },
    819→            { icon: 'fa-arrow-trend-down', color: '#F87171', bg: 'bg-[rgba(248,113,113,0.10)]', label: 'Pertes totales', value: formatMoney(user.totalLoss || 0), sub: 'Cumul des pertes' },
-   820→            { icon: 'fa-video', color: '#14B8A6', bg: 'bg-[rgba(20,184,166,0.10)]', label: 'Solde vidéo', value: formatMoney(user.videoBalance || 0), sub: 'Compte vidéo autonome' },
+   820→            { icon: 'fa-bullhorn', color: '#22C55E', bg: 'bg-[rgba(34,197,94,0.10)]', label: 'Solde missions', value: formatMoney(user.missionBalance || 0), sub: 'Gains images validées' },
    821→            { icon: 'fa-seedling', color: '#14B8A6', bg: 'bg-[rgba(20,184,166,0.10)]', label: 'Solde investissement', value: formatMoney(user.investBalance || 0), sub: 'Compte d\'investissement' },
    822→            { icon: 'fa-building', color: '#8B5CF6', bg: 'bg-[rgba(139,92,246,0.10)]', label: 'Solde projet', value: formatMoney(user.projectBalance || 0), sub: 'Compte de projet' },
    823→          ].map((s, i, arr) => (
@@ -973,7 +973,7 @@
    973→function BottomNav() {
    974→  const { currentPage, setPage } = useAppStore();
    975→  const tabs = [
-   976→    { id: 'videos', icon: 'fa-video', label: 'Vidéos' },
+   976→    { id: 'missions', icon: 'fa-bullhorn', label: 'Missions' },
    977→    { id: 'home', icon: 'fa-coins', label: 'Make Money' },
    978→    { id: 'guide', icon: 'fa-compass', label: 'Guide' },
    979→    { id: 'profile', icon: 'fa-user', label: 'Profil' },
@@ -1019,7 +1019,7 @@
   1019→      try {
   1020→        const res = await authFetch('/api/auth/session');
   1021→        const data = await res.json();
-  1022→        if (data.success && data.user) { setUser(data.user); setPage('videos'); }
+  1022→        if (data.success && data.user) { setUser(data.user); setPage('missions'); }
   1023→        else { setPage('auth'); }
   1024→      } catch { setPage('auth'); }
   1025→      setInitialized(true);
@@ -1059,7 +1059,7 @@
   1059→        {showSplash && <SplashScreen onDone={handleSplashDone} />}
   1060→        <div className="h-full flex flex-col min-h-0">
   1061→          {!user && <AuthScreen />}
-  1062→          {user && currentPage === 'videos' && <VideoPlatformScreen />}
+  1062→          {user && currentPage === 'missions' && <MissionsScreen />}
   1063→          {user && currentPage === 'home' && <HomeScreen />}
   1064→          {user && currentPage === 'wallet' && <WalletScreen />}
   1065→          {user && currentPage === 'finance' && <FinanceScreen />}
@@ -1075,7 +1075,7 @@
   1075→          {user && currentPage === 'deposit-choose' && <DepositChooseScreen />}
   1076→          {user && currentPage === 'guide' && <GuideScreen />}
   1077→          {showNav && <BottomNav />}
-  1078→          {user && (currentPage === 'home' || currentPage === 'videos') && <FloatingGift />}
+  1078→          {user && (currentPage === 'home' || currentPage === 'missions') && <FloatingGift />}
   1079→          <InstallPrompt />
   1080→        </div>
   1081→        <TabChangeAd ad={currentAd} onClose={dismissAd} />

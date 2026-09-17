@@ -129,9 +129,9 @@ export async function POST(request: Request) {
     // Pre-check balance for fast-fail (not authoritative — authoritative check is inside transaction)
     const preBal = Math.max(0, freshUser.balance);
     const preInv = Math.max(0, freshUser.investBalance);
-    const preVid = Math.max(0, freshUser.videoBalance);
+    const preMis = Math.max(0, freshUser.missionBalance);
     const prePrj = Math.max(0, freshUser.projectBalance);
-    const totalAvailable = preBal + preInv + preVid + prePrj;
+    const totalAvailable = preBal + preInv + preMis + prePrj;
 
     if (totalAvailable < SPIN_COST) {
       return NextResponse.json({
@@ -161,13 +161,13 @@ export async function POST(request: Request) {
       // Authoritative balance check inside transaction
       const bal = Math.max(0, txUser.balance);
       const inv = Math.max(0, txUser.investBalance);
-      const vid = Math.max(0, txUser.videoBalance);
+      const mis = Math.max(0, txUser.missionBalance);
       const prj = Math.max(0, txUser.projectBalance);
 
       let remaining = SPIN_COST;
       let fromBalance = 0;
       let fromInvest = 0;
-      let fromVideo = 0;
+      let fromMission = 0;
       let fromProject = 0;
 
       if (remaining > 0 && bal > 0) {
@@ -178,9 +178,9 @@ export async function POST(request: Request) {
         fromInvest = Math.min(inv, remaining);
         remaining -= fromInvest;
       }
-      if (remaining > 0 && vid > 0) {
-        fromVideo = Math.min(vid, remaining);
-        remaining -= fromVideo;
+      if (remaining > 0 && mis > 0) {
+        fromMission = Math.min(mis, remaining);
+        remaining -= fromMission;
       }
       if (remaining > 0 && prj > 0) {
         fromProject = Math.min(prj, remaining);
@@ -207,7 +207,7 @@ export async function POST(request: Request) {
       result.isWin = isWin;
       result.fromBalance = fromBalance;
       result.fromInvest = fromInvest;
-      result.fromVideo = fromVideo;
+      result.fromMission = fromMission;
       result.fromProject = fromProject;
 
       await tx.gameSpin.create({
@@ -223,7 +223,7 @@ export async function POST(request: Request) {
 
       const balanceDelta = (isWin ? winAmount : 0) - fromBalance;
       const investDelta = -fromInvest;
-      const videoDelta = -fromVideo;
+      const missionDelta = -fromMission;
       const projectDelta = -fromProject;
 
       const userUpdate: Record<string, unknown> = {
@@ -233,7 +233,7 @@ export async function POST(request: Request) {
       };
       if (balanceDelta !== 0) userUpdate.balance = { increment: balanceDelta };
       if (investDelta !== 0) userUpdate.investBalance = { increment: investDelta };
-      if (videoDelta !== 0) userUpdate.videoBalance = { increment: videoDelta };
+      if (missionDelta !== 0) userUpdate.missionBalance = { increment: missionDelta };
       if (projectDelta !== 0) userUpdate.projectBalance = { increment: projectDelta };
       if (isWin && winAmount > 0) {
         userUpdate.gameTotalWon = { increment: winAmount };
@@ -247,7 +247,7 @@ export async function POST(request: Request) {
       const costParts: string[] = [];
       if (fromBalance > 0) costParts.push(`${fromBalance.toFixed(2)} $ du compte Jeu`);
       if (fromInvest > 0) costParts.push(`${fromInvest.toFixed(2)} $ de l'investissement`);
-      if (fromVideo > 0) costParts.push(`${fromVideo.toFixed(2)} $ du compte Vidéo`);
+      if (fromMission > 0) costParts.push(`${fromMission.toFixed(2)} $ du compte Mission`);
       if (fromProject > 0) costParts.push(`${fromProject.toFixed(2)} $ du compte Projet`);
       const costDetail = costParts.length > 1
         ? `Tour de roue (0,20 $) — ${costParts.join(' + ')}`

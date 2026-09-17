@@ -111,19 +111,19 @@ export default function AdminScreen() {
   const [transferSending, setTransferSending] = useState(false);
 
   // Edit balance state (Users tab) — full draft editor covering ALL user
-  // amounts: balance (Solde principal), videoBalance (Vidéo), tradeBalance
+  // amounts: balance (Solde principal), missionBalance (Mission), tradeBalance
   // (Trading), projectBalance (Projet), investBalance (Investissement),
-  // gameTotalWon (Gains jeu), videoTotalEarned (Gains vidéo totaux),
+  // gameTotalWon (Gains jeu), missionTotalEarned (Gains missions totaux),
   // totalProfit (Profit total), totalLoss (Perte totale), referralCount
   // (Parrainages). On save we POST one update-balance call per changed field.
   type BalanceDraft = {
     balance: string;
-    videoBalance: string;
+    missionBalance: string;
     tradeBalance: string;
     projectBalance: string;
     investBalance: string;
     gameTotalWon: string;
-    videoTotalEarned: string;
+    missionTotalEarned: string;
     totalProfit: string;
     totalLoss: string;
     referralCount: string;
@@ -506,12 +506,12 @@ export default function AdminScreen() {
     if (editBalanceSending || !editBalanceDraft) return;
     const fieldLabels: Record<string, string> = {
       balance: 'Solde principal',
-      videoBalance: 'Vidéo',
+      missionBalance: 'Mission',
       tradeBalance: 'Jeu',
       projectBalance: 'Projet',
       investBalance: 'Investissement',
       gameTotalWon: 'Gains jeu',
-      videoTotalEarned: 'Gains vidéo totaux',
+      missionTotalEarned: 'Gains missions totaux',
       totalProfit: 'Profit total',
       totalLoss: 'Perte totale',
       referralCount: 'Parrainages',
@@ -811,7 +811,7 @@ export default function AdminScreen() {
             { k: 'withdrawals', l: 'Retraits', icon: 'fas fa-arrow-up' },
             { k: 'messages', l: `Messages${totalUnread > 0 ? ` (${totalUnread})` : ''}`, icon: 'fas fa-comment' },
             { k: 'notif', l: 'Notifs', icon: 'fas fa-bell' },
-            { k: 'videos', l: 'Vidéos', icon: 'fas fa-video' },
+            { k: 'videos', l: 'Missions', icon: 'fas fa-bullhorn' },
             { k: 'config', l: 'Config', icon: 'fas fa-cog' },
           ] as { k: string; l: string; icon: string }[]).map(t => (
             <button
@@ -888,12 +888,12 @@ export default function AdminScreen() {
                                   setEditBalanceUserId(u.id);
                                   setEditBalanceDraft({
                                     balance: String(u.balance ?? 0),
-                                    videoBalance: String(u.videoBalance ?? 0),
+                                    missionBalance: String(u.missionBalance ?? 0),
                                     tradeBalance: String(u.tradeBalance ?? 0),
                                     projectBalance: String(u.projectBalance ?? 0),
                                     investBalance: String(u.investBalance ?? 0),
                                     gameTotalWon: String(u.gameTotalWon ?? 0),
-                                    videoTotalEarned: String(u.videoTotalEarned ?? 0),
+                                    missionTotalEarned: String(u.missionTotalEarned ?? 0),
                                     totalProfit: String(u.totalProfit ?? 0),
                                     totalLoss: String(u.totalLoss ?? 0),
                                     referralCount: String(u.referralCount ?? 0),
@@ -956,7 +956,7 @@ export default function AdminScreen() {
                       <div className="grid grid-cols-2 gap-1.5 mt-2.5">
                         {([
                           { label: 'Solde principal', val: u.balance ?? 0, color: '#22C55E', icon: 'fa-wallet' },
-                          { label: 'Vidéo', val: u.videoBalance ?? 0, color: '#14B8A6', icon: 'fa-video' },
+                          { label: 'Mission', val: u.missionBalance ?? 0, color: '#14B8A6', icon: 'fa-bullhorn' },
                           { label: 'Jeu', val: u.tradeBalance ?? 0, color: '#F59E0B', icon: 'fa-dice' },
                           { label: 'Projet', val: u.projectBalance ?? 0, color: '#8B5CF6', icon: 'fa-building' },
                         ]).map((b) => (
@@ -974,7 +974,7 @@ export default function AdminScreen() {
                         {([
                           { label: 'Invest.', val: formatMoney(u.investBalance ?? 0), color: '#3B82F6', icon: 'fa-chart-line' },
                           { label: 'Jeu', val: formatMoney(u.gameTotalWon ?? 0), color: '#EC4899', icon: 'fa-dice' },
-                          { label: 'Vidéo tot.', val: formatMoney(u.videoTotalEarned ?? 0), color: '#06B6D4', icon: 'fa-film' },
+                          { label: 'Mission tot.', val: formatMoney(u.missionTotalEarned ?? 0), color: '#06B6D4', icon: 'fa-images' },
                           { label: 'Profit', val: formatMoney(u.totalProfit ?? 0), color: '#10B981', icon: 'fa-arrow-trend-up' },
                           { label: 'Perte', val: formatMoney(u.totalLoss ?? 0), color: '#EF4444', icon: 'fa-arrow-trend-down' },
                           { label: 'Parrainages', val: String(u.referralCount ?? 0), color: '#818CF8', icon: 'fa-users' },
@@ -1074,12 +1074,12 @@ export default function AdminScreen() {
                           <div className="grid grid-cols-2 gap-2 mb-3">
                             {([
                               { key: 'balance' as const, label: 'Solde principal', color: '#22C55E', icon: 'fa-wallet' },
-                              { key: 'videoBalance' as const, label: 'Vidéo', color: '#14B8A6', icon: 'fa-video' },
+                              { key: 'missionBalance' as const, label: 'Mission', color: '#14B8A6', icon: 'fa-bullhorn' },
                               { key: 'tradeBalance' as const, label: 'Jeu', color: '#F59E0B', icon: 'fa-dice' },
                               { key: 'projectBalance' as const, label: 'Projet', color: '#8B5CF6', icon: 'fa-building' },
                               { key: 'investBalance' as const, label: 'Investissement', color: '#3B82F6', icon: 'fa-chart-line' },
                               { key: 'gameTotalWon' as const, label: 'Gains jeu', color: '#EC4899', icon: 'fa-dice' },
-                              { key: 'videoTotalEarned' as const, label: 'Gains vidéo totaux', color: '#06B6D4', icon: 'fa-film' },
+                              { key: 'missionTotalEarned' as const, label: 'Gains missions totaux', color: '#06B6D4', icon: 'fa-images' },
                               { key: 'totalProfit' as const, label: 'Profit total', color: '#10B981', icon: 'fa-arrow-trend-up' },
                               { key: 'totalLoss' as const, label: 'Perte totale', color: '#EF4444', icon: 'fa-arrow-trend-down' },
                               { key: 'referralCount' as const, label: 'Parrainages', color: '#818CF8', icon: 'fa-users' },
@@ -2258,8 +2258,8 @@ export default function AdminScreen() {
                       { label: 'Jeu', val: userDetailData.user?.tradeBalance ?? 0, color: '#F59E0B', icon: 'fa-dice' },
                       { label: 'Investissement', val: userDetailData.user?.investBalance ?? 0, color: '#3B82F6', icon: 'fa-chart-line' },
                       { label: 'Projet', val: userDetailData.user?.projectBalance ?? 0, color: '#8B5CF6', icon: 'fa-building' },
-                      { label: 'Vidéo', val: userDetailData.user?.videoBalance ?? 0, color: '#14B8A6', icon: 'fa-video' },
-                      { label: 'Gains vidéo tot.', val: userDetailData.user?.videoTotalEarned ?? 0, color: '#06B6D4', icon: 'fa-film' },
+                      { label: 'Mission', val: userDetailData.user?.missionBalance ?? 0, color: '#14B8A6', icon: 'fa-bullhorn' },
+                      { label: 'Gains missions tot.', val: userDetailData.user?.missionTotalEarned ?? 0, color: '#06B6D4', icon: 'fa-images' },
                     ]).map((b) => (
                       <div key={b.label} className="bg-[#0E0F11] rounded-lg p-2 border-l-[3px]" style={{ borderLeftColor: b.color }}>
                         <div className="flex items-center gap-1 mb-0.5">
@@ -2280,7 +2280,7 @@ export default function AdminScreen() {
                       { label: 'Total déposé', val: formatMoney(userDetailData.stats?.totalDeposited ?? 0), color: '#4ADE80', icon: 'fa-arrow-down' },
                       { label: 'Total retiré', val: formatMoney(userDetailData.stats?.totalWithdrawn ?? 0), color: '#F87171', icon: 'fa-arrow-up' },
                       { label: 'Investissements', val: String(userDetailData.stats?.investmentCount ?? 0), color: '#6366F1', icon: 'fa-chart-line' },
-                      { label: 'Vidéos vues', val: String(userDetailData.stats?.videoWatchCount ?? 0), color: '#14B8A6', icon: 'fa-video' },
+                      { label: 'Images mission', val: String(userDetailData.stats?.missionImageCount ?? 0), color: '#14B8A6', icon: 'fa-bullhorn' },
                       { label: 'Parrainages', val: String(userDetailData.stats?.referralCount ?? 0), color: '#818CF8', icon: 'fa-users' },
                       { label: 'Profit total', val: formatMoney(userDetailData.user?.totalProfit ?? 0), color: '#10B981', icon: 'fa-arrow-trend-up' },
                     ].map((s) => (

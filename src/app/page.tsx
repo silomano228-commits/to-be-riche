@@ -75,7 +75,7 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
       <div className="absolute w-[160px] h-[160px] rounded-full bg-[rgba(20,184,166,0.06)] blur-[80px] bottom-[20%] right-[10%]" style={{ animation: 'orbFloat 6s ease-in-out infinite 3s reverse' }} />
       <div className="absolute w-[120px] h-[120px] rounded-full bg-[rgba(245,158,11,0.05)] blur-[80px] top-[60%] left-[60%]" style={{ animation: 'orbFloat 7s ease-in-out infinite 1.5s' }} />
       <LogoImg className="w-[140px] h-[140px] mb-5" style={{ animation: 'logoPulse 2.4s ease-in-out infinite', filter: 'drop-shadow(0 8px 40px rgba(34,197,94,0.3))' }} />
-      <h1 className="text-[2rem] font-black mb-6 bg-gradient-to-r from-[#22C55E] to-[#16A34A] bg-clip-text text-transparent tracking-[3px]">BE RICH</h1>
+      <h1 className="text-[2rem] font-black mb-6 bg-gradient-to-r from-[#22C55E] to-[#16A34A] bg-clip-text text-transparent tracking-[3px]">ESPACE JEUNES</h1>
       <div className="w-5 h-5 border-[2.5px] border-[rgba(0,0,0,0.08)] border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
       <div className="text-[rgba(0,0,0,0.25)] mt-4 text-[0.6rem] tracking-[5px] uppercase">Chargement</div>
     </div>
@@ -217,7 +217,7 @@ function AuthScreen() {
 
       <div className="w-full max-w-[330px] text-center px-5 relative z-[1] py-6 my-auto">
         <LogoImg className="w-[100px] h-[100px] mx-auto mb-4" style={{ filter: 'drop-shadow(0 8px 32px rgba(34,197,94,0.25))' }} />
-        <h1 className="text-[1.8rem] font-black mb-1 bg-gradient-to-r from-[#22C55E] to-[#16A34A] bg-clip-text text-transparent tracking-[2px]">BE RICH</h1>
+        <h1 className="text-[1.8rem] font-black mb-1 bg-gradient-to-r from-[#22C55E] to-[#16A34A] bg-clip-text text-transparent tracking-[2px]">ESPACE JEUNES</h1>
         {/* Communication platform tagline */}
         <div className="inline-flex items-center gap-1.5 mb-1 px-3 py-1 rounded-full bg-[rgba(20,184,166,0.1)] border border-[rgba(20,184,166,0.2)]">
           <i className="fas fa-globe-asia text-[#14B8A6] text-[0.6rem]"></i>
@@ -325,7 +325,7 @@ function AuthScreen() {
           </>
         ) : (
           <>
-            <p className="text-[rgba(0,0,0,0.35)] text-[0.72rem] mb-6">{mode === 'login' ? 'Connectez-vous à votre compte.' : 'Rejoignez Be Rich.'}</p>
+            <p className="text-[rgba(0,0,0,0.35)] text-[0.72rem] mb-6">{mode === 'login' ? 'Connectez-vous à votre compte.' : 'Rejoignez Espace Jeunes.'}</p>
             <div className="flex bg-[#FFFFFF] rounded-xl p-[3px] mb-6 border border-[rgba(0,0,0,0.08)]">
               <button onClick={() => { setMode('login'); setErrors({}); }} className={`flex-1 py-[11px] text-center text-[0.82rem] font-semibold rounded-lg transition-all border-none cursor-pointer ${mode === 'login' ? 'bg-[#22C55E] text-white shadow-lg' : 'text-[rgba(0,0,0,0.35)]'}`}>Connexion</button>
               <button onClick={() => { setMode('register'); setErrors({}); }} className={`flex-1 py-[11px] text-center text-[0.82rem] font-semibold rounded-lg transition-all border-none cursor-pointer ${mode === 'register' ? 'bg-[#22C55E] text-white shadow-lg' : 'text-[rgba(0,0,0,0.35)]'}`}>Inscription</button>
@@ -974,7 +974,7 @@ function BottomNav() {
   const { currentPage, setPage } = useAppStore();
   const tabs = [
     { id: 'missions', icon: 'fa-bullhorn', label: 'Missions' },
-    { id: 'home', icon: 'fa-coins', label: 'Make Money' },
+    { id: 'home', icon: 'fa-home', label: 'Accueil' },
     { id: 'guide', icon: 'fa-compass', label: 'Guide' },
     { id: 'profile', icon: 'fa-user', label: 'Profil' },
   ];

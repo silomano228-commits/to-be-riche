@@ -137,11 +137,11 @@ export default function WithdrawScreen() {
   if (!user) return null;
 
   // Determine source account label and balance
-  const sourceLabels: Record<string, string> = { jeu: 'Jeu', investissement: 'Investissement', projet: 'Projet', video: 'Vidéo' };
+  const sourceLabels: Record<string, string> = { jeu: 'Jeu', investissement: 'Investissement', projet: 'Projet', mission: 'Mission' };
   const sourceLabel = sourceLabels[withdrawSourceAccount || 'jeu'] || 'Jeu';
   const sourceBalance = withdrawSourceAccount === 'investissement' ? (user.investBalance || 0)
     : withdrawSourceAccount === 'projet' ? (user.projectBalance || 0)
-    : withdrawSourceAccount === 'video' ? (user.videoBalance || 0)
+    : withdrawSourceAccount === 'mission' ? (user.missionBalance || 0)
     : (user.balance || 0);
 
   const backBtn = (
