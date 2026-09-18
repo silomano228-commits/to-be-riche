@@ -435,7 +435,7 @@ function HomeScreen() {
 
   return (
     <>
-      <Header title={<><LogoImg className="w-[26px] h-[26px] rounded-md" style={{ objectFit: 'contain' }} /> <span className="text-[#1F2937] font-black">Be Rich</span></>} rightElement={
+      <Header title={<><LogoImg className="w-[26px] h-[26px] rounded-md" style={{ objectFit: 'contain' }} /> <span className="text-[#1F2937] font-black">Espace Jeunes</span></>} rightElement={
         <div className="flex items-center gap-1.5">
           <NotificationBell />
           <button onClick={refresh} className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.6)] backdrop-blur-sm text-[rgba(0,0,0,0.55)] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90"><i className={`fas fa-sync-alt ${refreshing ? 'animate-spin' : ''}`} /></button>
@@ -534,7 +534,7 @@ function HomeScreen() {
         {/* AI Tip Card — Purple gradient left border + glow */}
         <div className="bg-[rgba(139,92,246,0.04)] border border-[rgba(139,92,246,0.12)] rounded-xl p-3.5 mb-4 flex items-center gap-3" style={{ borderLeft: '5px solid', borderImage: 'linear-gradient(to bottom, #8B5CF6, #6D28D9) 1', boxShadow: '0 0 12px rgba(139,92,246,0.08)' }}>
           <div className="w-10 h-10 icon-box bg-[rgba(139,92,246,0.12)] shrink-0 border border-[rgba(139,92,246,0.15)]"><i className="fas fa-robot text-[#8B5CF6] text-[0.9rem]"></i></div>
-          <div className="flex-1 min-w-0"><div className="text-[0.6rem] text-[#8B5CF6] font-bold uppercase tracking-[1px] mb-0.5">IA Be Rich</div><div className="text-[0.75rem] leading-relaxed text-[rgba(0,0,0,0.7)]">{tip}</div></div>
+          <div className="flex-1 min-w-0"><div className="text-[0.6rem] text-[#8B5CF6] font-bold uppercase tracking-[1px] mb-0.5">IA Espace Jeunes</div><div className="text-[0.75rem] leading-relaxed text-[rgba(0,0,0,0.7)]">{tip}</div></div>
         </div>
 
         {/* Promo Banner */}
