@@ -85,7 +85,8 @@ export default function MissionsScreen() {
     setLoading(false);
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); // eslint-disable-line react-hooks/set-state-in-effect
+  }, []);
 
   const loadElig = async () => {
     try { const r = await authFetch('/api/missions/eligibility'); const d = await r.json(); if (d.success) setElig({ ...d.eligibility, userLevel: d.userLevel, userLevelLabel: d.userLevelLabel, activeLoan: d.activeLoan }); } catch {}

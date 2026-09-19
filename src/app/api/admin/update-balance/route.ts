@@ -8,8 +8,8 @@ export const dynamic = 'force-dynamic';
 // Covers every "amount" the user can hold — not just the 4 wallet balances.
 //
 // Float fields (money amounts):
-//   balance, videoBalance, tradeBalance, projectBalance, investBalance,
-//   gameTotalWon, videoTotalEarned, totalProfit, totalLoss
+//   balance, missionBalance, tradeBalance, projectBalance, investBalance,
+//   gameTotalWon, missionTotalEarned, totalProfit, totalLoss
 //
 // Int fields (counters):
 //   referralCount

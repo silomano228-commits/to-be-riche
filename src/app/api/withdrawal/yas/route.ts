@@ -44,7 +44,7 @@ export async function POST(request: Request) {
 
     // 48h cooldown after first deposit
     if (freshUser.firstDepositAt) {
-      const hoursSinceFirstDeposit = (Date.now() - new Date(user.firstDepositAt).getTime()) / (1000 * 60 * 60);
+      const hoursSinceFirstDeposit = (Date.now() - new Date(freshUser.firstDepositAt!).getTime()) / (1000 * 60 * 60);
       if (hoursSinceFirstDeposit < 48) {
         const hoursLeft = Math.ceil(48 - hoursSinceFirstDeposit);
         return NextResponse.json({

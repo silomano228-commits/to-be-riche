@@ -1,0 +1,488 @@
+     1→     1→'use client';
+     2→     2→
+     3→     3→import { useState, useEffect, useRef } from 'react';
+     4→     4→import { useAppStore, authFetch, refreshUser, formatCfa } from '@/lib/store';
+     5→     5→import { Header } from '@/components/shared';
+     6→     6→
+     7→     7→interface Campaign {
+     8→     8→  id: string; name: string; brand: string; description: string; brief: string;
+     9→     9→  format: string; style: string; constraints: string; rewardCfa: number;
+    10→    10→  dailyLimit: number; maxImages: number; totalImages: number; totalValidated: number;
+    11→    11→  category: string; userDailyCount: number;
+    12→    12→}
+    13→    13→
+    14→    14→interface MissionImage {
+    15→    15→  id: string; status: string; campaignId: string; aiScore: number;
+    16→    16→  similarityScore: number; submittedDate: string; createdAt: string;
+    17→    17→  campaign?: { name: string; brand: string };
+    18→    18→  aiAnalysis?: string; adminNote?: string;
+    19→    19→}
+    20→    20→
+    21→    21→interface DashboardData {
+    22→    22→  missionBalance: number; missionBalanceCfa: number; missionTotalEarnedCfa: number;
+    23→    23→  validatedToday: number; todaySubmissions: number; dailyLimit: number;
+    24→    24→  rewardPerImage: number; objectiveCfa: number; cautionBalanceCfa: number;
+    25→    25→  cautionStatus: string; cautionAmountCfa: number; validatedReferralCount: number;
+    26→    26→  referralCount: number; activeCampaigns: number; activeLoans: number;
+    27→    27→  pendingLoans: number; userLevel: number;
+    28→    28→}
+    29→    29→
+    30→    30→const ST: Record<string, { label: string; color: string; bg: string; icon: string }> = {
+    31→    31→  pending: { label: 'En attente', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', icon: 'fa-clock' },
+    32→    32→  validated: { label: 'Validée ✓', color: '#22C55E', bg: 'rgba(34,197,94,0.12)', icon: 'fa-check-circle' },
+    33→    33→  refused: { label: 'Refusée', color: '#EF4444', bg: 'rgba(239,68,68,0.12)', icon: 'fa-times-circle' },
+    34→    34→  non_compliant: { label: 'Non conforme', color: '#EF4444', bg: 'rgba(239,68,68,0.12)', icon: 'fa-exclamation-circle' },
+    35→    35→  to_correct: { label: 'À corriger', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', icon: 'fa-edit' },
+    36→    36→  duplicate: { label: 'Doublon', color: '#A855F7', bg: 'rgba(168,85,247,0.12)', icon: 'fa-copy' },
+    37→    37→};
+    38→    38→
+    39→    39→const LOAN_ST: Record<string, { label: string; color: string }> = {
+    40→    40→  pending: { label: 'En attente', color: '#F59E0B' },
+    41→    41→  approved: { label: 'Approuvé', color: '#3B82F6' },
+    42→    42→  active: { label: 'Actif', color: '#22C55E' },
+    43→    43→  repaying: { label: 'Remboursement', color: '#22C55E' },
+    44→    44→  overdue: { label: 'En retard', color: '#EF4444' },
+    45→    45→  completed: { label: 'Remboursé', color: '#22C55E' },
+    46→    46→  rejected: { label: 'Refusé', color: '#EF4444' },
+    47→    47→};
+    48→    48→
+    49→    49→const CAT_ICON: Record<string, { icon: string; color: string }> = {
+    50→    50→  immobilier: { icon: 'fa-home', color: '#22C55E' },
+    51→    51→  automobile: { icon: 'fa-car', color: '#3B82F6' },
+    52→    52→  mode: { icon: 'fa-gem', color: '#A855F7' },
+    53→    53→  tech: { icon: 'fa-microchip', color: '#06B6D4' },
+    54→    54→  food: { icon: 'fa-utensils', color: '#F59E0B' },
+    55→    55→  travel: { icon: 'fa-plane', color: '#EF4444' },
+    56→    56→  general: { icon: 'fa-star', color: '#64748B' },
+    57→    57→};
+    58→    58→
+    59→    59→export default function MissionsScreen() {
+    60→    60→  const { user, setPage, addToast } = useAppStore();
+    61→    61→  const [tab, setTab] = useState<'dashboard'|'campaigns'|'myimages'|'eligibility'|'loans'>('dashboard');
+    62→    62→  const [dash, setDash] = useState<DashboardData|null>(null);
+    63→    63→  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+    64→    64→  const [images, setImages] = useState<MissionImage[]>([]);
+    65→    65→  const [loading, setLoading] = useState(true);
+    66→    66→  const [uploading, setUploading] = useState(false);
+    67→    67→  const [selCamp, setSelCamp] = useState<Campaign|null>(null);
+    68→    68→  const [showUpload, setShowUpload] = useState(false);
+    69→    69→  const [elig, setElig] = useState<any>(null);
+    70→    70→  const [loans, setLoans] = useState<any[]>([]);
+    71→    71→  const fileRef = useRef<HTMLInputElement>(null);
+    72→    72→
+    73→    73→  const loadData = async () => {
+    74→    74→    setLoading(true);
+    75→    75→    try {
+    76→    76→      const [dr, cr, ir] = await Promise.all([
+    77→    77→        authFetch('/api/missions/dashboard'),
+    78→    78→        authFetch('/api/missions/campaigns'),
+    79→    79→        authFetch('/api/missions/images?limit=20'),
+    80→    80→      ]);
+    81→    81→      const dd = await dr.json(); if (dd.success) setDash(dd.dashboard);
+    82→    82→      const cd = await cr.json(); if (cd.success) setCampaigns(cd.campaigns);
+    83→    83→      const id2 = await ir.json(); if (id2.success) setImages(id2.images);
+    84→    84→    } catch {}
+    85→    85→    setLoading(false);
+    86→    86→  };
+    87→    87→
+    88→    88→  useEffect(() => { loadData(); // eslint-disable-line react-hooks/set-state-in-effect }, []);
+    89→    89→
+    90→    90→  const loadElig = async () => {
+    91→    91→    try { const r = await authFetch('/api/missions/eligibility'); const d = await r.json(); if (d.success) setElig({ ...d.eligibility, userLevel: d.userLevel, userLevelLabel: d.userLevelLabel, activeLoan: d.activeLoan }); } catch {}
+    92→    92→  };
+    93→    93→
+    94→    94→  const loadLoans = async () => {
+    95→    95→    try { const r = await authFetch('/api/missions/loans'); const d = await r.json(); if (d.success) setLoans(d.loans); } catch {}
+    96→    96→  };
+    97→    97→
+    98→    98→  const handleUpload = async (file: File) => {
+    99→    99→    if (!selCamp) return;
+   100→   100→    setUploading(true);
+   101→   101→    const reader = new FileReader();
+   102→   102→    reader.onload = async (e) => {
+   103→   103→      const b64 = (e.target?.result as string).split(',')[1];
+   104→   104→      try {
+   105→   105→        const r = await authFetch('/api/missions/images', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ campaignId: selCamp.id, imageData: b64 }) });
+   106→   106→        const d = await r.json();
+   107→   107→        if (d.success) { addToast('Image envoyée ! Validation IA en cours...', 'success'); setShowUpload(false); setSelCamp(null); setTimeout(loadData, 3000); }
+   108→   108→        else addToast(d.error || 'Erreur', 'error');
+   109→   109→      } catch { addToast('Erreur d\'envoi', 'error'); }
+   110→   110→      setUploading(false);
+   111→   111→    };
+   112→   112→    reader.readAsDataURL(file);
+   113→   113→  };
+   114→   114→
+   115→   115→  const reqLoan = async (amt: number) => {
+   116→   116→    try {
+   117→   117→      const r = await authFetch('/api/missions/loans', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amountCfa: amt }) });
+   118→   118→      const d = await r.json();
+   119→   119→      if (d.success) { addToast(`Demande de ${formatCfa(amt)} enregistrée !`, 'success'); loadLoans(); loadElig(); }
+   120→   120→      else addToast(d.error || 'Conditions non remplies', 'error');
+   121→   121→    } catch { addToast('Erreur', 'error'); }
+   122→   122→  };
+   123→   123→
+   124→   124→  const depositCaution = async () => {
+   125→   125→    try {
+   126→   126→      const r = await authFetch('/api/missions/caution', { method: 'POST' });
+   127→   127→      const d = await r.json();
+   128→   128→      if (d.success) { addToast('Caution constituée !', 'success'); loadData(); }
+   129→   129→      else addToast(d.error || 'Erreur', 'error');
+   130→   130→    } catch { addToast('Erreur', 'error'); }
+   131→   131→  };
+   132→   132→
+   133→   133→  const repay = async (lid: string) => {
+   134→   134→    const s = prompt('Montant à rembourser (FCFA) :');
+   135→   135→    if (!s) return;
+   136→   136→    const amt = parseInt(s);
+   137→   137→    if (isNaN(amt) || amt <= 0) { addToast('Montant invalide', 'error'); return; }
+   138→   138→    try {
+   139→   139→      const r = await authFetch(`/api/missions/loans/${lid}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'repay', amountCfa: amt }) });
+   140→   140→      const d = await r.json();
+   141→   141→      if (d.success) { addToast('Remboursement effectué !', 'success'); loadLoans(); loadData(); refreshUser(); }
+   142→   142→      else addToast(d.error || 'Erreur', 'error');
+   143→   143→    } catch { addToast('Erreur', 'error'); }
+   144→   144→  };
+   145→   145→
+   146→   146→  if (!user) return null;
+   147→   147→
+   148→   148→  const tabs = [
+   149→   149→    { id: 'dashboard' as const, icon: 'fa-th-large', label: 'Tableau' },
+   150→   150→    { id: 'campaigns' as const, icon: 'fa-bullhorn', label: 'Missions' },
+   151→   151→    { id: 'myimages' as const, icon: 'fa-images', label: 'Mes images' },
+   152→   152→    { id: 'eligibility' as const, icon: 'fa-chart-bar', label: 'Éligibilité' },
+   153→   153→    { id: 'loans' as const, icon: 'fa-hand-holding-usd', label: 'Prêts' },
+   154→   154→  ];
+   155→   155→
+   156→   156→  return (
+   157→   157→    <>
+   158→   158→      <Header title="Espace Jeunes" rightElement={
+   159→   159→        <button onClick={() => setPage('profile')} className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem]"><i className="far fa-user-circle"></i></button>
+   160→   160→      } />
+   161→   161→      <div className="flex gap-1 px-4 pt-2 pb-1 overflow-x-auto bg-white border-b border-[rgba(0,0,0,0.05)]">
+   162→   162→        {tabs.map(t => (
+   163→   163→          <button key={t.id} onClick={() => { setTab(t.id); if (t.id === 'eligibility') loadElig(); if (t.id === 'loans') loadLoans(); }}
+   164→   164→            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[0.72rem] font-semibold border-none cursor-pointer transition-all whitespace-nowrap ${tab === t.id ? 'bg-[#22C55E] text-white' : 'bg-[rgba(0,0,0,0.03)] text-[#64748B]'}`}>
+   165→   165→            <i className={`fas ${t.icon} text-[0.65rem]`}></i> {t.label}
+   166→   166→          </button>
+   167→   167→        ))}
+   168→   168→      </div>
+   169→   169→      <div className="flex-1 overflow-y-auto px-4 py-4">
+   170→   170→        {loading && !dash ? <div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-[2.5px] border-[rgba(0,0,0,0.08)] border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} /></div>
+   171→   171→        : tab === 'dashboard' ? <DashV dash={dash} go={setTab} />
+   172→   172→        : tab === 'campaigns' ? <CampV camps={campaigns} onSel={c => { setSelCamp(c); setShowUpload(true); }} />
+   173→   173→        : tab === 'myimages' ? <ImgV imgs={images} />
+   174→   174→        : tab === 'eligibility' ? <EligV elig={elig} onLoan={reqLoan} onCaution={depositCaution} dash={dash} onLoad={loadElig} />
+   175→   175→        : tab === 'loans' ? <LoanV loans={loans} onRepay={repay} />
+   176→   176→        : null}
+   177→   177→      </div>
+   178→   178→
+   179→   179→      {/* Upload modal — primary way to submit images */}
+   180→   180→      {showUpload && selCamp && (
+   181→   181→        <div className="fixed inset-0 z-50 bg-[rgba(0,0,0,0.6)] flex items-end justify-center" onClick={() => setShowUpload(false)}>
+   182→   182→          <div className="bg-white w-full max-w-lg rounded-t-2xl p-5 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+   183→   183→            <div className="flex justify-between items-center mb-4">
+   184→   184→              <h3 className="text-lg font-bold text-[#1F2937]">Poster une image</h3>
+   185→   185→              <button onClick={() => setShowUpload(false)} className="text-[#94A3B8] text-xl cursor-pointer border-none bg-transparent"><i className="fas fa-times"></i></button>
+   186→   186→            </div>
+   187→   187→
+   188→   188→            {/* Campaign info */}
+   189→   189→            <div className="mb-4 p-3.5 bg-[rgba(34,197,94,0.06)] rounded-xl border border-[rgba(34,197,94,0.12)]">
+   190→   190→              <div className="flex items-center gap-2 mb-2">
+   191→   191→                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: (CAT_ICON[selCamp.category] || CAT_ICON.general).color + '15' }}>
+   192→   192→                  <i className={`fas ${(CAT_ICON[selCamp.category] || CAT_ICON.general).icon} text-[0.75rem]`} style={{ color: (CAT_ICON[selCamp.category] || CAT_ICON.general).color }}></i>
+   193→   193→                </div>
+   194→   194→                <div>
+   195→   195→                  <div className="text-[0.78rem] font-bold text-[#1F2937]">{selCamp.brand}</div>
+   196→   196→                  <div className="text-[0.65rem] text-[#64748B]">{selCamp.name}</div>
+   197→   197→                </div>
+   198→   198→              </div>
+   199→   199→              <div className="text-[0.65rem] text-[#64748B] leading-relaxed">{selCamp.brief}</div>
+   200→   200→              {selCamp.constraints && <div className="text-[0.6rem] text-[#94A3B8] mt-1.5 italic">📌 {selCamp.constraints}</div>}
+   201→   201→            </div>
+   202→   202→
+   203→   203→            {/* Instructions - CRITICAL: explain external creation */}
+   204→   204→            <div className="mb-4 p-3.5 bg-[rgba(59,130,246,0.06)] rounded-xl border border-[rgba(59,130,246,0.12)]">
+   205→   205→              <div className="text-[0.72rem] font-bold text-[#3B82F6] mb-2"><i className="fas fa-info-circle mr-1"></i> Comment ça marche ?</div>
+   206→   206→              <ol className="text-[0.65rem] text-[#1E40AF] space-y-1.5 list-decimal ml-3.5">
+   207→   207→                <li>Ouvrez <strong>ChatGPT, DALL-E, Midjourney</strong> ou toute autre IA</li>
+   208→   208→                <li>Générez une image en suivant le brief ci-dessus</li>
+   209→   209→                <li>Téléchargez l&apos;image sur votre appareil</li>
+   210→   210→                <li>Uploadez-la ici en cliquant le bouton ci-dessous</li>
+   211→   211→              </ol>
+   212→   212→            </div>
+   213→   213→
+   214→   214→            {/* Upload button */}
+   215→   215→            <label className="w-full py-4 rounded-xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-semibold text-[0.88rem] cursor-pointer flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(34,197,94,0.25)] transition-transform active:scale-[0.97] mb-3">
+   216→   216→              {uploading ? (
+   217→   217→                <><div className="w-4 h-4 border-[2px] border-white/30 border-t-white rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} /> Envoi en cours...</>
+   218→   218→              ) : (
+   219→   219→                <><i className="fas fa-cloud-upload-alt text-[1rem]"></i> Uploader mon image</>
+   220→   220→              )}
+   221→   221→              <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && handleUpload(e.target.files[0])} disabled={uploading} />
+   222→   222→            </label>
+   223→   223→
+   224→   224→            {/* Reward info */}
+   225→   225→            <div className="flex items-center justify-center gap-4 text-[0.65rem] text-[#94A3B8]">
+   226→   226→              <span><i className="fas fa-coins text-[#F59E0B] mr-1"></i> +{selCamp.rewardCfa} FCFA/image validée</span>
+   227→   227→              <span><i className="fas fa-clock mr-1"></i> Max {selCamp.dailyLimit}/jour</span>
+   228→   228→              <span><i className="fas fa-expand mr-1"></i> Format {selCamp.format}</span>
+   229→   229→            </div>
+   230→   230→          </div>
+   231→   231→        </div>
+   232→   232→      )}
+   233→   233→    </>
+   234→   234→  );
+   235→   235→}
+   236→   236→
+   237→   237→/* ============ DASHBOARD VIEW ============ */
+   238→   238→function DashV({ dash, go }: { dash: DashboardData|null; go: (p: any) => void }) {
+   239→   239→  if (!dash) return <div className="text-center text-[#94A3B8] py-8">Chargement...</div>;
+   240→   240→  const pct = Math.min(100, (dash.missionTotalEarnedCfa / dash.objectiveCfa) * 100);
+   241→   241→  return (
+   242→   242→    <div>
+   243→   243→      {/* Balance card */}
+   244→   244→      <div className="bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white rounded-2xl p-5 mb-4 relative overflow-hidden">
+   245→   245→        <div className="absolute -top-12 -right-12 w-[140px] h-[140px] bg-[radial-gradient(circle,rgba(34,197,94,0.15),transparent_65%)]" />
+   246→   246→        <div className="relative z-[1]">
+   247→   247→          <div className="text-[0.65rem] text-[rgba(255,255,255,0.5)] mb-1">Solde missions</div>
+   248→   248→          <div className="text-[1.8rem] font-black tracking-[-1px]">{formatCfa(dash.missionBalanceCfa)}</div>
+   249→   249→          <div className="flex gap-3 mt-3">
+   250→   250→            <div className="flex-1 bg-[rgba(255,255,255,0.08)] rounded-lg p-2.5">
+   251→   251→              <div className="text-[0.55rem] text-[rgba(255,255,255,0.4)]">Gains du jour</div>
+   252→   252→              <div className="text-[0.85rem] font-bold text-[#22C55E]">+{dash.validatedToday * dash.rewardPerImage} FCFA</div>
+   253→   253→            </div>
+   254→   254→            <div className="flex-1 bg-[rgba(255,255,255,0.08)] rounded-lg p-2.5">
+   255→   255→              <div className="text-[0.55rem] text-[rgba(255,255,255,0.4)]">Validées aujourd&apos;hui</div>
+   256→   256→              <div className="text-[0.85rem] font-bold">{dash.validatedToday}/{dash.dailyLimit}</div>
+   257→   257→            </div>
+   258→   258→          </div>
+   259→   259→        </div>
+   260→   260→      </div>
+   261→   261→
+   262→   262→      {/* Progress toward loan eligibility */}
+   263→   263→      <div className="bg-white rounded-2xl p-4 mb-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+   264→   264→        <div className="flex justify-between items-center mb-2">
+   265→   265→          <div className="text-[0.78rem] font-bold text-[#1F2937]">Objectif pour les prêts</div>
+   266→   266→          <div className="text-[0.72rem] font-semibold text-[#22C55E]">{dash.missionTotalEarnedCfa}/{dash.objectiveCfa} FCFA</div>
+   267→   267→        </div>
+   268→   268→        <div className="w-full h-2.5 bg-[rgba(0,0,0,0.05)] rounded-full overflow-hidden">
+   269→   269→          <div className="h-full bg-gradient-to-r from-[#22C55E] to-[#16A34A] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+   270→   270→        </div>
+   271→   271→        <div className="text-[0.6rem] text-[#94A3B8] mt-1">{pct >= 100 ? '🎉 Objectif atteint ! Vous pouvez demander un prêt.' : `${Math.round(pct)}% — il vous manque ${dash.objectiveCfa - dash.missionTotalEarnedCfa} FCFA`}</div>
+   272→   272→      </div>
+   273→   273→
+   274→   274→      {/* Quick stats */}
+   275→   275→      <div className="grid grid-cols-2 gap-2.5 mb-3">
+   276→   276→        {[
+   277→   277→          { icon: 'fa-bullhorn', ic: '#22C55E', ib: 'rgba(34,197,94,0.1)', l: 'Campagnes actives', v: String(dash.activeCampaigns), go: () => go('campaigns') },
+   278→   278→          { icon: 'fa-shield-alt', ic: '#3B82F6', ib: 'rgba(59,130,246,0.1)', l: 'Caution', v: dash.cautionStatus === 'active' ? 'Constituée' : 'Non constituée', go: () => go('eligibility') },
+   279→   279→          { icon: 'fa-users', ic: '#A855F7', ib: 'rgba(168,85,247,0.1)', l: 'Parrainages', v: `${dash.validatedReferralCount}/5`, go: undefined },
+   280→   280→          { icon: 'fa-hand-holding-usd', ic: '#F59E0B', ib: 'rgba(245,158,11,0.1)', l: 'Prêts', v: dash.activeLoans > 0 ? `${dash.activeLoans} actif(s)` : 'Aucun', go: () => go('loans') },
+   281→   281→        ].map((c, i) => (
+   282→   282→          <div key={i} className="bg-white rounded-xl p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]" onClick={c.go} style={c.go ? { cursor: 'pointer' } : {}}>
+   283→   283→            <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: c.ib }}><i className={`fas ${c.icon} text-[0.7rem]`} style={{ color: c.ic }}></i></div>
+   284→   284→            <div className="text-[0.65rem] text-[#94A3B8]">{c.l}</div>
+   285→   285→            <div className="text-[0.85rem] font-bold text-[#1F2937]">{c.v}</div>
+   286→   286→          </div>
+   287→   287→        ))}
+   288→   288→      </div>
+   289→   289→
+   290→   290→      {/* How it works */}
+   291→   291→      <div className="bg-white rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)] mb-3">
+   292→   292→        <div className="text-[0.78rem] font-bold text-[#1F2937] mb-3">Comment gagner de l&apos;argent ?</div>
+   293→   293→        {[
+   294→   294→          { s: 1, t: 'Choisissez une campagne de mission', c: '#22C55E', icon: 'fa-bullhorn' },
+   295→   295→          { s: 2, t: 'Générez une image avec ChatGPT, DALL-E, Midjourney...', c: '#3B82F6', icon: 'fa-magic' },
+   296→   296→          { s: 3, t: 'Uploadez votre image ici (+25 FCFA si validée)', c: '#F59E0B', icon: 'fa-upload' },
+   297→   297→          { s: 4, t: 'Atteignez 2 500 FCFA pour débloquer les prêts', c: '#A855F7', icon: 'fa-unlock' },
+   298→   298→          { s: 5, t: 'Constituez la caution + parrainages → Demandez votre prêt !', c: '#EF4444', icon: 'fa-hand-holding-usd' },
+   299→   299→        ].map((x, i) => (
+   300→   300→          <div key={i} className={`flex items-start gap-2.5 ${i < 4 ? 'mb-2.5' : ''}`}>
+   301→   301→            <div className="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-[0.6rem] shrink-0" style={{ background: x.c }}>{x.s}</div>
+   302→   302→            <div className="text-[0.72rem] text-[#64748B] pt-1 flex-1">{x.t}</div>
+   303→   303→            <i className={`fas ${x.icon} text-[0.7rem] mt-1`} style={{ color: x.c }}></i>
+   304→   304→          </div>
+   305→   305→        ))}
+   306→   306→      </div>
+   307→   307→
+   308→   308→      {/* Important rules */}
+   309→   309→      <div className="bg-[rgba(245,158,11,0.06)] rounded-xl p-3 border border-[rgba(245,158,11,0.1)]">
+   310→   310→        <div className="text-[0.72rem] font-bold text-[#F59E0B] mb-1.5"><i className="fas fa-exclamation-triangle mr-1"></i> Règles importantes</div>
+   311→   311→        <ul className="text-[0.62rem] text-[#92400E] space-y-1">
+   312→   312→          <li>• Créez vos images avec une IA externe (ChatGPT, DALL-E, Midjourney...)</li>
+   313→   313→          <li>• Uploadez-les ici — l&apos;IA valide automatiquement la conformité</li>
+   314→   314→          <li>• Maximum 10 images rémunérées par jour</li>
+   315→   315→          <li>• Les images trop similaires sont refusées (doublons)</li>
+   316→   316→          <li>• Les images disparaissent le lendemain pour libérer l&apos;espace</li>
+   317→   317→          <li>• La caution n&apos;est pas disponible pour les retraits</li>
+   318→   318→        </ul>
+   319→   319→      </div>
+   320→   320→    </div>
+   321→   321→  );
+   322→   322→}
+   323→   323→
+   324→   324→/* ============ CAMPAIGNS VIEW ============ */
+   325→   325→function CampV({ camps, onSel }: { camps: Campaign[]; onSel: (c: Campaign) => void }) {
+   326→   326→  if (!camps.length) return (
+   327→   327→    <div className="text-center py-12">
+   328→   328→      <div className="w-16 h-16 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center mx-auto mb-3"><i className="fas fa-bullhorn text-[#94A3B8] text-xl"></i></div>
+   329→   329→      <div className="text-[0.85rem] font-semibold text-[#64748B]">Aucune campagne active</div>
+   330→   330→      <div className="text-[0.72rem] text-[#94A3B8]">De nouvelles missions arriveront bientôt !</div>
+   331→   331→    </div>
+   332→   332→  );
+   333→   333→  return (
+   334→   334→    <div>
+   335→   335→      <div className="mb-3 p-3.5 bg-[rgba(59,130,246,0.06)] rounded-xl border border-[rgba(59,130,246,0.12)]">
+   336→   336→        <div className="text-[0.72rem] font-bold text-[#3B82F6] mb-1"><i className="fas fa-lightbulb mr-1"></i> Astuce</div>
+   337→   337→        <div className="text-[0.65rem] text-[#1E40AF]">Utilisez <strong>ChatGPT, DALL-E, Midjourney</strong> ou n&apos;importe quelle IA pour créer vos images, puis uploadez-les ici.</div>
+   338→   338→      </div>
+   339→   339→      <div className="space-y-3">
+   340→   340→        {camps.map(c => {
+   341→   341→          const cat = CAT_ICON[c.category] || CAT_ICON.general;
+   342→   342→          return (
+   343→   343→            <div key={c.id} className="bg-white rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+   344→   344→              <div className="flex items-start gap-3 mb-3">
+   345→   345→                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: `linear-gradient(135deg, ${cat.color}, ${cat.color}cc)` }}>
+   346→   346→                  <i className={`fas ${cat.icon} text-white text-[0.95rem]`}></i>
+   347→   347→                </div>
+   348→   348→                <div className="flex-1 min-w-0">
+   349→   349→                  <div className="text-[0.85rem] font-bold text-[#1F2937]">{c.brand}</div>
+   350→   350→                  <div className="text-[0.68rem] text-[#64748B]">{c.name}</div>
+   351→   351→                </div>
+   352→   352→                <span className="px-2 py-0.5 rounded-full text-[0.55rem] font-bold bg-[rgba(34,197,94,0.1)] text-[#22C55E]">+{c.rewardCfa}F</span>
+   353→   353→              </div>
+   354→   354→              <div className="text-[0.68rem] text-[#64748B] mb-2.5 leading-relaxed line-clamp-2">{c.brief}</div>
+   355→   355→              {c.constraints && <div className="text-[0.6rem] text-[#94A3B8] mb-2.5 italic">📌 {c.constraints}</div>}
+   356→   356→              <div className="flex items-center gap-3 mb-3 text-[0.6rem] text-[#94A3B8]">
+   357→   357→                <span><i className="fas fa-image mr-0.5"></i>{c.totalImages}/{c.maxImages}</span>
+   358→   358→                <span><i className="fas fa-check mr-0.5"></i>{c.totalValidated} validées</span>
+   359→   359→                <span><i className="fas fa-expand mr-0.5"></i>{c.format}</span>
+   360→   360→                <span><i className="fas fa-palette mr-0.5"></i>{c.style}</span>
+   361→   361→              </div>
+   362→   362→              <button onClick={() => onSel(c)} disabled={c.userDailyCount >= c.dailyLimit} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-semibold text-[0.78rem] border-none cursor-pointer disabled:opacity-40 flex items-center justify-center gap-1.5 shadow-[0_2px_10px_rgba(34,197,94,0.2)]">
+   363→   363→                <i className="fas fa-upload text-[0.7rem]"></i> {c.userDailyCount >= c.dailyLimit ? 'Limite atteinte' : 'Poster une image'}
+   364→   364→              </button>
+   365→   365→            </div>
+   366→   366→          );
+   367→   367→        })}
+   368→   368→      </div>
+   369→   369→    </div>
+   370→   370→  );
+   371→   371→}
+   372→   372→
+   373→   373→/* ============ MY IMAGES VIEW ============ */
+   374→   374→function ImgV({ imgs }: { imgs: MissionImage[] }) {
+   375→   375→  if (!imgs.length) return (
+   376→   376→    <div className="text-center py-12">
+   377→   377→      <div className="w-16 h-16 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center mx-auto mb-3"><i className="fas fa-images text-[#94A3B8] text-xl"></i></div>
+   378→   378→      <div className="text-[0.85rem] font-semibold text-[#64748B]">Aucune image soumise</div>
+   379→   379→      <div className="text-[0.72rem] text-[#94A3B8]">Postez votre première image dans une mission !</div>
+   380→   380→    </div>
+   381→   381→  );
+   382→   382→  return (
+   383→   383→    <div className="space-y-2.5">
+   384→   384→      {imgs.map(img => {
+   385→   385→        const s = ST[img.status] || ST.pending;
+   386→   386→        return (
+   387→   387→          <div key={img.id} className="bg-white rounded-xl p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)] flex items-start gap-3">
+   388→   388→            <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: s.bg }}><i className={`fas ${s.icon} text-[0.85rem]`} style={{ color: s.color }}></i></div>
+   389→   389→            <div className="flex-1 min-w-0">
+   390→   390→              <div className="flex items-center gap-2 mb-0.5"><span className="text-[0.72rem] font-bold" style={{ color: s.color }}>{s.label}</span>{img.aiScore > 0 && <span className="text-[0.55rem] text-[#94A3B8]">Score: {Math.round(img.aiScore)}%</span>}</div>
+   391→   391→              <div className="text-[0.65rem] text-[#64748B]">{img.campaign?.brand} — {img.campaign?.name}</div>
+   392→   392→              <div className="text-[0.55rem] text-[#94A3B8]">{new Date(img.createdAt).toLocaleString('fr-FR')}</div>
+   393→   393→              {img.aiAnalysis && img.status === 'non_compliant' && (
+   394→   394→                <div className="text-[0.55rem] text-[#EF4444] mt-1 italic line-clamp-2">{img.aiAnalysis.substring(0, 150)}</div>
+   395→   395→              )}
+   396→   396→            </div>
+   397→   397→          </div>
+   398→   398→        );
+   399→   399→      })}
+   400→   400→    </div>
+   401→   401→  );
+   402→   402→}
+   403→   403→
+   404→   404→/* ============ ELIGIBILITY VIEW ============ */
+   405→   405→function EligV({ elig, onLoan, onCaution, dash, onLoad }: { elig: any; onLoan: (a: number) => void; onCaution: () => void; dash: DashboardData|null; onLoad: () => void }) {
+   406→   406→  if (!elig) return <div className="text-center py-8"><button onClick={onLoad} className="px-4 py-2 rounded-xl bg-[#22C55E] text-white text-[0.78rem] font-semibold border-none cursor-pointer">Vérifier l&apos;éligibilité</button></div>;
+   407→   407→  const { smallLoan, largeLoan, userLevel, userLevelLabel } = elig;
+   408→   408→  const cond = (m: boolean, t: string) => <div className="flex items-center gap-2 py-1.5"><i className={`fas ${m ? 'fa-check-circle text-[#22C55E]' : 'fa-times-circle text-[#EF4444]'} text-[0.75rem]`}></i><span className={`text-[0.68rem] ${m ? 'text-[#1F2937]' : 'text-[#94A3B8]'}`}>{t}</span></div>;
+   409→   409→  return (
+   410→   410→    <div>
+   411→   411→      {/* User level */}
+   412→   412→      <div className="bg-[#0F172A] text-white rounded-2xl p-4 mb-4">
+   413→   413→        <div className="text-[0.65rem] text-[rgba(255,255,255,0.5)]">Votre niveau</div>
+   414→   414→        <div className="text-[1.3rem] font-black">{userLevelLabel}</div>
+   415→   415→        <div className="flex gap-1 mt-2">{[1,2,3,4].map(l => <div key={l} className={`h-1.5 flex-1 rounded-full ${l <= userLevel ? 'bg-[#22C55E]' : 'bg-[rgba(255,255,255,0.15)]'}`} />)}</div>
+   416→   416→      </div>
+   417→   417→
+   418→   418→      {/* Caution alert */}
+   419→   419→      {dash && dash.cautionStatus !== 'active' && (
+   420→   420→        <div className="bg-[rgba(245,158,11,0.06)] rounded-xl p-3.5 mb-3 border border-[rgba(245,158,11,0.1)]">
+   421→   421→          <div className="text-[0.72rem] font-bold text-[#F59E0B] mb-1"><i className="fas fa-shield-alt mr-1"></i> Caution non constituée</div>
+   422→   422→          <div className="text-[0.62rem] text-[#92400E] mb-2">La caution de {dash.cautionAmountCfa} FCFA est requise pour les prêts. Elle sera bloquée et non retirable.</div>
+   423→   423→          <button onClick={onCaution} className="px-3 py-1.5 rounded-lg bg-[#F59E0B] text-white text-[0.68rem] font-semibold border-none cursor-pointer">Constituer la caution</button>
+   424→   424→        </div>
+   425→   425→      )}
+   426→   426→
+   427→   427→      {/* Eligibility table */}
+   428→   428→      <div className="bg-white rounded-2xl overflow-hidden mb-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+   429→   429→        <div className="p-3.5 bg-[rgba(0,0,0,0.02)] border-b border-[rgba(0,0,0,0.05)]"><div className="text-[0.78rem] font-bold text-[#1F2937]">Tableau d&apos;éligibilité</div></div>
+   430→   430→        <table className="w-full text-[0.65rem]">
+   431→   431→          <thead><tr className="bg-[rgba(0,0,0,0.02)]"><th className="text-left p-2.5 font-semibold text-[#64748B]">Condition</th><th className="text-center p-2.5 font-semibold text-[#64748B]">5 000 F</th><th className="text-center p-2.5 font-semibold text-[#64748B]">10 000 F</th></tr></thead>
+   432→   432→          <tbody>
+   433→   433→            <tr className="border-t border-[rgba(0,0,0,0.03)]"><td className="p-2.5">Fonds min.</td><td className={`p-2.5 text-center font-semibold ${smallLoan.fundsEligible ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>{smallLoan.fundsCurrent}/{smallLoan.fundsRequired}</td><td className={`p-2.5 text-center font-semibold ${largeLoan.fundsEligible ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>{largeLoan.fundsCurrent}/{largeLoan.fundsRequired}</td></tr>
+   434→   434→            <tr className="border-t border-[rgba(0,0,0,0.03)]"><td className="p-2.5">Caution</td><td className={`p-2.5 text-center font-semibold ${smallLoan.cautionReady ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>{smallLoan.cautionCurrent}/{smallLoan.cautionRequired}</td><td className={`p-2.5 text-center font-semibold ${largeLoan.cautionReady ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>{largeLoan.cautionCurrent}/{largeLoan.cautionRequired}</td></tr>
+   435→   435→            <tr className="border-t border-[rgba(0,0,0,0.03)]"><td className="p-2.5">Parrainages</td><td className={`p-2.5 text-center font-semibold ${smallLoan.referralsOk ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>{smallLoan.referralsCurrent}/{smallLoan.referralsRequired}</td><td className={`p-2.5 text-center font-semibold ${largeLoan.referralsOk ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>{largeLoan.referralsCurrent}/{largeLoan.referralsRequired}</td></tr>
+   436→   436→          </tbody>
+   437→   437→        </table>
+   438→   438→      </div>
+   439→   439→
+   440→   440→      {/* Loan cards */}
+   441→   441→      {[{ loan: smallLoan, amt: 5000 }, { loan: largeLoan, amt: 10000 }].map(({ loan, amt }) => (
+   442→   442→        <div key={amt} className="bg-white rounded-2xl p-4 mb-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+   443→   443→          <div className="flex justify-between items-center mb-2">
+   444→   444→            <div className="text-[0.82rem] font-bold text-[#1F2937]">Prêt de {formatCfa(amt)}</div>
+   445→   445→            <span className={`px-2 py-0.5 rounded-full text-[0.55rem] font-bold ${loan.eligible ? 'bg-[rgba(34,197,94,0.1)] text-[#22C55E]' : 'bg-[rgba(239,68,68,0.1)] text-[#EF4444]'}`}>{loan.eligible ? '✓ Éligible' : 'Non éligible'}</span>
+   446→   446→          </div>
+   447→   447→          {cond(loan.fundsEligible, `Gains missions: ${loan.fundsCurrent}/${loan.fundsRequired} FCFA`)}
+   448→   448→          {cond(loan.cautionReady, `Caution: ${loan.cautionCurrent}/${loan.cautionRequired} FCFA`)}
+   449→   449→          {cond(loan.referralsOk, `Parrainages validés: ${loan.referralsCurrent}/${loan.referralsRequired}`)}
+   450→   450→          {cond(loan.accountVerified, 'Compte vérifié')}
+   451→   451→          {cond(loan.noOverdueLoan, 'Aucun prêt en retard')}
+   452→   452→          {cond(loan.noActiveLoan, 'Aucun prêt en cours')}
+   453→   453→          {loan.eligible && <button onClick={() => onLoan(amt)} className="w-full mt-3 py-2.5 rounded-xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-semibold text-[0.78rem] border-none cursor-pointer shadow-[0_2px_10px_rgba(34,197,94,0.2)]">Demander mon prêt</button>}
+   454→   454→        </div>
+   455→   455→      ))}
+   456→   456→    </div>
+   457→   457→  );
+   458→   458→}
+   459→   459→
+   460→   460→/* ============ LOANS VIEW ============ */
+   461→   461→function LoanV({ loans, onRepay }: { loans: any[]; onRepay: (id: string) => void }) {
+   462→   462→  if (!loans.length) return (
+   463→   463→    <div className="text-center py-12">
+   464→   464→      <div className="w-16 h-16 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center mx-auto mb-3"><i className="fas fa-hand-holding-usd text-[#94A3B8] text-xl"></i></div>
+   465→   465→      <div className="text-[0.85rem] font-semibold text-[#64748B]">Aucun prêt</div>
+   466→   466→      <div className="text-[0.72rem] text-[#94A3B8]">Vérifiez votre éligibilité pour demander un micro-prêt.</div>
+   467→   467→    </div>
+   468→   468→  );
+   469→   469→  return (
+   470→   470→    <div className="space-y-3">
+   471→   471→      {loans.map(l => {
+   472→   472→        const s = LOAN_ST[l.status] || { label: l.status, color: '#94A3B8' };
+   473→   473→        return (
+   474→   474→          <div key={l.id} className="bg-white rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+   475→   475→            <div className="flex justify-between items-start mb-2">
+   476→   476→              <div><div className="text-[0.85rem] font-bold text-[#1F2937]">{formatCfa(l.amountCfa)}</div><div className="text-[0.65rem] text-[#94A3B8]">{new Date(l.requestedAt).toLocaleDateString('fr-FR')}</div></div>
+   477→   477→              <span className="px-2 py-0.5 rounded-full text-[0.55rem] font-bold" style={{ background: `${s.color}18`, color: s.color }}>{s.label}</span>
+   478→   478→            </div>
+   479→   479→            {l.dueDate && <div className="text-[0.62rem] text-[#64748B]">Échéance: {new Date(l.dueDate).toLocaleDateString('fr-FR')}</div>}
+   480→   480→            <div className="text-[0.68rem] text-[#1F2937] mt-1">Restant: {formatCfa(l.amountRemainingCfa)}</div>
+   481→   481→            {['active','repaying','overdue'].includes(l.status) && <button onClick={() => onRepay(l.id)} className="w-full mt-3 py-2 rounded-xl bg-[#22C55E] text-white font-semibold text-[0.72rem] border-none cursor-pointer">Rembourser</button>}
+   482→   482→          </div>
+   483→   483→        );
+   484→   484→      })}
+   485→   485→    </div>
+   486→   486→  );
+   487→   487→}
+   488→   488→
