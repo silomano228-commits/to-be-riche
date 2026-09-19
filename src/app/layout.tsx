@@ -16,8 +16,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Be Rich - Investissez. Prospérez.",
-  description: "Plateforme d'investissement et de trading. Investissez, tradez et prospérez.",
+  title: "Espace Jeunes - Mission. Prospérité.",
+  description: "Plateforme de missions et micro-crédits pour les jeunes. Gagnez avec vos créations et accédez au micro-crédit.",
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -29,13 +29,13 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Be Rich",
+    title: "Espace Jeunes",
   },
   openGraph: {
     type: "website",
-    title: "Be Rich - Investissez. Prospérez.",
-    description: "Plateforme d'investissement et de trading. Investissez, tradez et prospérez.",
-    siteName: "Be Rich",
+    title: "Espace Jeunes - Mission. Prospérité.",
+    description: "Plateforme de missions et micro-crédits pour les jeunes. Gagnez avec vos créations et accédez au micro-crédit.",
+    siteName: "Espace Jeunes",
   },
 };
 

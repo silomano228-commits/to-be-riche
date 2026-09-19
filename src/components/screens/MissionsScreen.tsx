@@ -70,8 +70,6 @@ export default function MissionsScreen() {
   const [loans, setLoans] = useState<any[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { loadData(); }, []);
-
   const loadData = async () => {
     setLoading(true);
     try {
@@ -86,6 +84,8 @@ export default function MissionsScreen() {
     } catch {}
     setLoading(false);
   };
+
+  useEffect(() => { loadData(); }, []);
 
   const loadElig = async () => {
     try { const r = await authFetch('/api/missions/eligibility'); const d = await r.json(); if (d.success) setElig({ ...d.eligibility, userLevel: d.userLevel, userLevelLabel: d.userLevelLabel, activeLoan: d.activeLoan }); } catch {}

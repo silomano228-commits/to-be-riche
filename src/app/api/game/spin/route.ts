@@ -142,8 +142,8 @@ export async function POST(request: Request) {
     }
 
     // Mutable result container for transaction output
-    const result: { segmentIdx: number; winAmount: number; isWin: boolean; fromBalance: number; fromInvest: number; fromVideo: number; fromProject: number } = {
-      segmentIdx: 0, winAmount: 0, isWin: false, fromBalance: 0, fromInvest: 0, fromVideo: 0, fromProject: 0,
+    const result: { segmentIdx: number; winAmount: number; isWin: boolean; fromBalance: number; fromInvest: number; fromMission: number; fromProject: number } = {
+      segmentIdx: 0, winAmount: 0, isWin: false, fromBalance: 0, fromInvest: 0, fromMission: 0, fromProject: 0,
     };
 
     const now = new Date();

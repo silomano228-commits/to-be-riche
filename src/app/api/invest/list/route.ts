@@ -1,7 +1,6 @@
 import { db } from '@/lib/db';
 import { getAuthToken } from '@/lib/auth';
 import { NextResponse } from 'next/server';
-import { getDailyVideos, DAILY_VIDEO_LIMIT, getVideoReward, computeDayNumber, type VideoItem } from '@/lib/videos';
 
 export const dynamic = 'force-dynamic';
 

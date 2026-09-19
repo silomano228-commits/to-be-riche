@@ -150,6 +150,7 @@ Répondez en JSON avec:
 - "reason": explication courte en français`;
 
     const visionResponse = await zai.chat.completions.createVision({
+      model: 'qwen2.5-vl-72b-instruct',
       messages: [{
         role: 'user',
         content: [

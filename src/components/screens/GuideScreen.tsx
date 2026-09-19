@@ -6,11 +6,11 @@
  * HYPOTHÈSES :
  * ─ 10 utilisateurs initiaux, solde $0
  * ─ 8 déposent $5 (Niveau 1), 2 déposent $65 (Niveau 2)
- * ─ Tous regardent 5 vidéos/jour pendant 30 jours
+ * ─ Tous accomplissent des missions quotidiennement pendant 30 jours
  * ─ Chaque utilisateur parraine en moyenne 2 personnes → 20 nouveaux utilisateurs au total
  * ─ Niveau 1 : investissement $5–$15, rendement 5 %/jour, collecte immédiate
  * ─ Niveau 2 : investissement $65, rendement 5 %/jour, collecte BLOQUÉE sans 12 parrainages
- * ─ Vidéo : ~$0,20/vidéo × 5 = ~$1/jour/utilisateur (bloqué après 3 jours sans parrainage + dépôt)
+ * ─ Missions : ~$0,20/image × 5 = ~$1/jour/utilisateur (bloqué sans parrainage + dépôt)
  * ─ Jeu de roue : 10 tours/jour × $0,20 = $2/jour, système truqué (~70 % retenu)
  * ─ Taux TRX/USD : affichage uniquement, pas utilisé pour les calculs de rentabilité
  *
@@ -32,7 +32,7 @@
  *   TOTAL PAYOUTS INV.    = $60  (uniquement Niveau 1)
  *
  * ──────────────────────────────────────────────────────────────────────────
- * 3. RÉCOMPENSES VIDÉO
+ * 3. RÉCOMPENSES MISSIONS
  * ──────────────────────────────────────────────────────────────────────────
  *   Jours 1–3 (sans restriction) :
  *     10 utilisateurs × $1/jour × 3 jours = $30
@@ -44,10 +44,10 @@
  *     ne maintiennent les conditions que ~4–5 jours supplémentaires.
  *     10 utilisateurs × $1/jour × 5 jours (moyenne) = $50
  *
- *   Si les vidéos n'étaient PAS bloquées : 10 × $1 × 30 = $300
+ *   Si les missions n'étaient PAS bloquées : 10 × $1 × 30 = $300
  *                          ─────
- *   TOTAL VIDÉO PAYÉ      = $80
- *   ÉCONOMIE (bloqué)     = $220
+ *   TOTAL MISSIONS PAYÉ    = $250
+ *   ÉCONOMIE (bloqué)      = $50
  *
  * ──────────────────────────────────────────────────────────────────────────
  * 4. REVENU NET DU JEU DE ROUE
@@ -79,14 +79,14 @@
  * 6. DEMANDES DE RETRAIT
  * ──────────────────────────────────────────────────────────────────────────
  *   Balances virtuelles totales créées (mois 1) :
- *     Vidéo            : $80
+ *     Mission          : $250
  *     Investissement   : $60 (retours L1)
  *     Jeu (gains roue) : $180
  *     Parrainage       : $37,50
  *                          ─────
  *     TOTAL VIRTUEL    = $357,50
  *
- *   Seuil minimum de retrait : $1 (Vidéo) / $5 (autres comptes).
+ *   Seuil minimum de retrait : $1 (Mission) / $5 (autres comptes).
  *   L'admin contrôle TOUTES les approbations de retrait.
  *   Estimation : ~60 % des demandes approuvées → ~$70–$90 réellement versés.
  *
@@ -107,10 +107,10 @@
  * 8. POURQUOI LE SYSTÈME EST TOUJOURS RENTABLE
  * ──────────────────────────────────────────────────────────────────────────
  *
- *  a) RÉCOMPENSES VIDÉO BLOQUÉES APRÈS 3 JOURS
- *     Sans parrainage + dépôt d'investissement, les vidéos ne rapportent plus.
+ *  a) RÉCOMPENSES MISSION BLOQUÉES SANS CONDITIONS
+ *     Sans parrainage + dépôt d'investissement, les missions ne rapportent plus.
  *     La plupart des utilisateurs actifs n'ont pas assez de parrainages
- *     pour maintenir les gains → $220 économisés sur le scénario (73 % de réduction).
+ *     pour maintenir les gains → $50 économisés sur le scénario.
  *
  *  b) JEU DE ROUE TRUQUÉ (70 %+ retenu)
  *     L'argent dépensé en tours est majoritairement détruit du système.
@@ -140,13 +140,13 @@ import { Header, LogoImg } from '@/components/shared';
 
 // =====================================================================
 // Be Rich — Guide complet
-// 8 sections : Concept, Vidéos, Investissement, Jeu,
+// 8 sections : Concept, Missions, Investissement, Jeu,
 // Comptes, Dépôts/Retraits, Parrainage, Navigation.
 // =====================================================================
 
 type SectionId =
   | 'concept'
-  | 'videos'
+  | 'missions'
   | 'invest'
   | 'game'
   | 'accounts'
@@ -163,14 +163,14 @@ interface SectionDef {
 }
 
 const SECTIONS: SectionDef[] = [
-  { id: 'concept',  label: 'Le Concept',                     icon: 'fa-lightbulb',      color: '#14B8A6', summary: 'Be Rich vous paie pour regarder des vidéos, investir et jouer' },
-  { id: 'videos',   label: 'La Plateforme Vidéo',            icon: 'fa-video',          color: '#14B8A6', summary: '5 vidéos/jour · 3 jours sans restriction · retrait dès $1 dès le jour 1' },
+  { id: 'concept',  label: 'Le Concept',                     icon: 'fa-lightbulb',      color: '#14B8A6', summary: 'Be Rich vous paie pour accomplir des missions, investir et jouer' },
+  { id: 'missions',  label: 'Missions & Images',             icon: 'fa-bullhorn',       color: '#14B8A6', summary: 'Campagnes · soumettez des images · gagnez des récompenses' },
   { id: 'invest',   label: "L'Investissement (Make Money)",  icon: 'fa-chart-line',     color: '#059669', summary: '3 niveaux · 5%/jour · collecte sur compte investissement' },
   { id: 'game',     label: 'Le Jeu de Roue',                 icon: 'fa-dice',           color: '#F59E0B', summary: '10 tours/jour · 0,20 $/tour · arrêt manuel ou auto à 3 s' },
-  { id: 'accounts', label: 'Les Comptes',                    icon: 'fa-wallet',         color: '#22C55E', summary: 'Total (vue) · Jeu · Investissement · Projet · Vidéo' },
+  { id: 'accounts', label: 'Les Comptes',                    icon: 'fa-wallet',         color: '#22C55E', summary: 'Total (vue) · Jeu · Investissement · Projet · Mission' },
   { id: 'payments', label: 'Dépôts et Retraits',             icon: 'fa-credit-card',    color: '#EF4444', summary: 'YAS & TRX · 550 FCFA = 1 USD · retrait depuis tous les comptes' },
   { id: 'referral', label: 'Parrainage',                     icon: 'fa-gift',           color: '#EC4899', summary: '5 % à vie sur les gains de vos filleuls · anti-doublon' },
-  { id: 'nav',      label: 'Navigation',                     icon: 'fa-compass',        color: '#64748B', summary: '4 onglets : Vidéos · Make Money · Guide · Profil' },
+  { id: 'nav',      label: 'Navigation',                     icon: 'fa-compass',        color: '#64748B', summary: '4 onglets : Missions · Make Money · Guide · Profil' },
 ];
 
 export default function GuideScreen() {
@@ -203,12 +203,12 @@ export default function GuideScreen() {
                 <h1 className="text-[1.2rem] font-black text-white leading-tight">Guide Be Rich</h1>
                 <p className="text-[0.72rem] text-white/85 mt-1 leading-relaxed">
                   Tout ce qu&apos;il faut savoir pour gagner de l&apos;argent :
-                  vidéos, investissements, jeu de roue et parrainage.
+                  missions, investissements, jeu de roue et parrainage.
                 </p>
               </div>
             </div>
             <div className="relative mt-3 flex flex-wrap gap-1.5">
-              <Pill icon="fa-video" text="Vidéos" />
+              <Pill icon="fa-bullhorn" text="Missions" />
               <Pill icon="fa-chart-line" text="Investir" />
               <Pill icon="fa-dice" text="Jeu" />
               <Pill icon="fa-share-nodes" text="Parrainage" />
@@ -253,7 +253,7 @@ export default function GuideScreen() {
                   <div className="overflow-hidden">
                     <div className="px-4 pb-4 pt-1 border-t border-[#F3F4F6]">
                       {s.id === 'concept'  && <ConceptContent />}
-                      {s.id === 'videos'   && <VideosContent />}
+                      {s.id === 'missions'  && <MissionsContent />}
                       {s.id === 'invest'   && <InvestContent />}
                       {s.id === 'game'     && <GameContent />}
                       {s.id === 'accounts' && <AccountsContent />}
@@ -342,53 +342,44 @@ function ConceptContent() {
     <>
       <Row icon="fa-handshake" color={teal} title="Le principe">
         Les <strong>entreprises</strong> paient pour leur <strong>visibilité</strong>.
-        Vous regardez leurs vidéos, vous investissez, vous jouez —{' '}
+        Vous accomplissez des missions, vous investissez, vous jouez —{' '}
         <strong>vous gagnez</strong>.
       </Row>
       <Row icon="fa-coins" color="#F59E0B" title="3 façons de gagner">
-        <strong>Vidéos</strong>, <strong>investissements</strong> et{' '}
+        <strong>Missions</strong>, <strong>investissements</strong> et{' '}
         <strong>roue de la fortune</strong>.
       </Row>
     </>
   );
 }
 
-function VideosContent() {
+function MissionsContent() {
   const teal = '#14B8A6';
   return (
     <>
-      <Row icon="fa-th-large" color={teal} title="5 vidéos par jour">
-        <strong>5 vidéos</strong> différentes chaque jour. Regardez au moins{' '}
-        <strong>30 %</strong> de chaque vidéo pour encaisser. La{' '}
-        <strong>barre de progression</strong> indique le nombre de vidéos
-        complétées (pas le montant gagné).
+      <Row icon="fa-bullhorn" color={teal} title="Campagnes de mission">
+        Les <strong>entreprises</strong> créent des <strong>campagnes</strong> avec un cahier des charges.
+        Vous soumettez des <strong>photos preuve</strong> pour chaque campagne active.
       </Row>
-      <Row icon="fa-calendar-check" color="#22C55E" title="3 premiers jours : sans restriction">
-        Pendant les <strong>3 premiers jours</strong> d&apos;inscription, vous regardez
-        les 5 vidéos et gagnez <strong>sans aucune condition</strong>. Les gains sont
-        crédités sur votre <strong>compte Vidéo</strong>.
+      <Row icon="fa-camera" color="#22C55E" title="Soumission d'images">
+        Prenez ou téléchargez une <strong>photo</strong> qui respecte le brief de la campagne.
+        L&apos;image est envoyée pour <strong>validation par l&apos;admin</strong>.
       </Row>
-      <Row icon="fa-arrow-up" color="#EF4444" title="Retrait dès le jour 1 · minimum $1">
-        Vous pouvez retirer vos gains vidéo à partir de <strong>$1</strong> dès le{' '}
-        <strong>jour 1</strong>, via <strong>YAS</strong> ou <strong>TRX</strong>.
+      <Row icon="fa-check-circle" color="#4ADE80" title="Validation &amp; récompense">
+        Si votre image est <strong>validée</strong>, la récompense de la campagne est créditée
+        sur votre <strong>compte Mission</strong>. Les images refusées ne donnent rien.
       </Row>
 
-      <Callout icon="fa-lock" color="#EF4444">
-        <strong>Après 3 jours — conditions obligatoires :</strong> pour continuer
-        à gagner de l&apos;argent en regardant les vidéos, vous devez avoir :
-        <br /><br />
-        1. <strong>Au moins 1 parrainage</strong> (quelqu&apos;un inscrit avec votre code)
-        <br />
-        2. <strong>Un dépôt d&apos;investissement actif</strong> (n&apos;importe quel niveau)
-        <br /><br />
-        <strong>Tous les 2 jours</strong> après le jour 3, vous devez parrainer
-        une <strong>nouvelle personne</strong> pour continuer à gagner.
+      <Callout icon="fa-images" color={teal}>
+        <strong>Statuts possibles :</strong>{' '}
+        <strong>En attente</strong> (à valider),{' '}
+        <strong>Validée</strong> (récompense créditée),{' '}
+        <strong>Refusée</strong> (non conforme),{' '}
+        <strong>Doublon</strong> (image déjà soumise).
       </Callout>
 
-      <Callout icon="fa-ban" color={teal}>
-        <strong>Conditions non remplies ?</strong> La vidéo se lit normalement,
-        mais <strong>aucun argent n&apos;est crédité</strong>. Un message vous
-        informe des conditions manquantes.
+      <Callout icon="fa-arrow-up" color="#EF4444">
+        <strong>Retrait dès $1</strong> depuis le compte Mission via <strong>YAS</strong> ou <strong>TRX</strong>.
       </Callout>
     </>
   );
@@ -485,8 +476,8 @@ function GameContent() {
 
       <Callout icon="fa-coins" color="#EF4444">
         <strong>Coût : 0,20 $/tour.</strong> Prélevé automatiquement dans cet ordre :{' '}
-        <strong>compte Jeu</strong> → <strong>Investissement</strong> →{' '}
-        <strong>Vidéo</strong> → <strong>Projet</strong> si le solde est insuffisant.
+        <strong>Compte Jeu</strong> → <strong>Investissement</strong> →{' '}
+        <strong>Mission</strong> → <strong>Projet</strong> si le solde est insuffisant.
       </Callout>
     </>
   );
@@ -499,7 +490,7 @@ function AccountsContent() {
     { name: 'Compte Jeu',            icon: 'fa-dice',        color: '#F59E0B', desc: 'Roue de la fortune · les tours coûtent 0,20 $ prélevés ici en premier' },
     { name: 'Compte Investissement', icon: 'fa-chart-line',  color: '#059669', desc: 'Investissements par niveau · collectes journalières + commissions parrainage' },
     { name: 'Compte Projet',         icon: 'fa-building',    color: '#0F766E', desc: 'Pour les projets d\'entreprise' },
-    { name: 'Compte Vidéo',          icon: 'fa-video',       color: '#14B8A6', desc: 'Gains de visionnage de vidéos · retrait dès $1' },
+    { name: 'Compte Mission',         icon: 'fa-bullhorn',     color: '#14B8A6', desc: 'Gains de missions · récompenses de campagnes · retrait dès $1' },
   ];
   return (
     <>
@@ -520,7 +511,7 @@ function AccountsContent() {
       <Callout icon="fa-circle-info" color={green}>
         Le <strong>Solde Total</strong> est une vue d&apos;ensemble, pas un vrai compte.
         Les <strong>4 comptes réels</strong> sont : <strong>Jeu</strong>,{' '}
-        <strong>Investissement</strong>, <strong>Projet</strong> et <strong>Vidéo</strong>.
+        <strong>Investissement</strong>, <strong>Projet</strong> et <strong>Mission</strong>.
       </Callout>
 
       <Callout icon="fa-arrow-up-from-bracket" color="#14B8A6">
@@ -598,12 +589,12 @@ function PaymentsContent() {
         <Row icon="fa-arrow-up-from-bracket" color="#14B8A6" title="Retrait depuis tous les comptes">
           Le retrait est possible depuis <strong>tous vos comptes</strong> :{' '}
           <strong>Jeu</strong>, <strong>Investissement</strong>, <strong>Projet</strong>{' '}
-          et <strong>Vidéo</strong>, via <strong>YAS</strong> ou <strong>TRX</strong>.
+          et <strong>Mission</strong>, via <strong>YAS</strong> ou <strong>TRX</strong>.
         </Row>
       </div>
 
       <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-1 mt-2">
-        <StatRow label="Min. retrait Vidéo" value="1 $" valueColor="#14B8A6" />
+        <StatRow label="Min. retrait Mission" value="1 $" valueColor="#14B8A6" />
         <StatRow label="Min. retrait (autres)" value="5 $" valueColor="#EF4444" />
         <StatRow label="Disponibilité des fonds" value="6 heures" valueColor="#F59E0B" />
         <StatRow label="Dépôts" value="Investissement · Jeu · Projet" valueColor="#22C55E" />
@@ -652,11 +643,10 @@ function ReferralContent() {
         <strong>25 parrainés</strong>.
       </Row>
 
-      <Callout icon="fa-video" color="#14B8A6">
-        <strong>Parrainage et vidéos :</strong> après 3 jours, il faut avoir{' '}
-        <strong>au moins 1 parrainage</strong> + un <strong>dépôt d&apos;investissement</strong>{' '}
-        pour continuer à gagner avec les vidéos. Ensuite, <strong>tous les 2 jours</strong>,
-        vous devez parrainer une <strong>nouvelle personne</strong> pour maintenir vos gains vidéo.
+      <Callout icon="fa-bullhorn" color="#14B8A6">
+        <strong>Parrainage et missions :</strong> le parrainage débloque des
+        fonctionnalités et niveaux supérieurs. Plus vous parrainez,
+        plus vous accédez à des opportunités.
       </Callout>
 
       <Callout icon="fa-shield-halved" color="#EF4444">
@@ -671,7 +661,7 @@ function ReferralContent() {
 function NavContent() {
   const slate = '#64748B';
   const tabs = [
-    { icon: 'fa-video',     label: 'Vidéos',     desc: 'Regarder les vidéos du jour',     color: '#14B8A6' },
+    { icon: 'fa-bullhorn',   label: 'Missions',    desc: 'Campagnes · soumettre des images',   color: '#14B8A6' },
     { icon: 'fa-coins',     label: 'Make Money', desc: 'Investir · Jeu · Projets',        color: '#059669' },
     { icon: 'fa-compass',   label: 'Guide',      desc: 'Cette page',                       color: slate },
     { icon: 'fa-user',      label: 'Profil',     desc: 'Compte, parrainage, paramètres',  color: '#F59E0B' },

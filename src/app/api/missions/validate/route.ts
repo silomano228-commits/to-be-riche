@@ -55,6 +55,7 @@ export async function POST(request: Request) {
       const prompt = `Analyze this image for a marketing campaign. Does it match this brief: "${image.campaign.brief}"? Is it high quality? Is the brand "${image.campaign.brand}" clearly visible? Rate compliance from 0 to 100 and explain your rating. Format: SCORE: <number> ANALYSIS: <text>`;
 
       const response = await zai.chat.completions.createVision({
+        model: 'qwen2.5-vl-72b-instruct',
         messages: [{
           role: 'user',
           content: [
