@@ -97,6 +97,23 @@ model User {
   missionImages   MissionImage[]
   microLoans      MicroLoan[]
   gameSpins        GameSpin[]
+
+  // ===== Legacy: projets, gains quotidiens, plateforme vidéo =====
+  // Total des gains accumulés (projets)
+  earnings          Float     @default(0)
+  // Plateforme vidéo — compte autonome
+  videoBalance           Float     @default(0)
+  videoWatchedCount      Int       @default(0)
+  videoWatchedDate       String?
+  videoTotalEarned       Float     @default(0)
+  videoDepositRequired   Boolean   @default(false)
+  videoFirstWatchAt      DateTime?
+  videoLastWatchAt       DateTime?
+  videoCycleNumber       Int       @default(0)
+  videoCycleClearedAt    DateTime?
+  projects        Project[]
+  dailyGains      DailyGain[]
+  videoWatches    VideoWatch[]
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
@@ -106,8 +123,11 @@ model Transaction {
   type      String
   amount    Float
   detail    String?
+  gain      Float    @default(0)
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
 
   @@index([userId])
@@ -524,4 +544,73 @@ model BroadcastMessage {
 
   @@index([createdAt])
   @@index([target])
+}
+
+// ===== Legacy: projets utilisateur + gains quotidiens =====
+model Project {
+  id             String        @id @default(cuid())
+  name           String
+  amount         Float
+  receivedAmount Float         @default(0)
+  description    String
+  status         String        @default("active")
+  dailyRate      Float         @default(10)
+  category       String        @default("general")
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions   Transaction[]
+  dailyGains     DailyGain[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model DailyGain {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  rate      Float
+  amount    Float
+  date      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([date])
+}
+
+// ===== Plateforme vidéo =====
+model VideoWatch {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoId   String
+  title     String
+  reward    Float
+  watchedAt DateTime @default(now())
+  watchDate String
+
+  @@index([userId])
+  @@index([watchDate])
+  @@index([userId, watchDate])
+}
+
+// Liens vidéo gérés par l'admin. Priorité sur le catalogue par défaut.
+model AdminVideoLink {
+  id          String   @id @default(cuid())
+  youtubeId   String
+  title       String
+  sponsor     String
+  category    String   @default("entreprise")
+  durationMin Int      @default(5)
+  reward      Float    @default(0.20)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([active])
 }

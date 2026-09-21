@@ -8,6 +8,15 @@ export interface Transaction {
   createdAt: string;
 }
 
+export interface Project {
+  id: string;
+  name: string;
+  amount: number;
+  receivedAmount: number;
+  description: string;
+  status: string;
+}
+
 export interface AppUser {
   id: string;
   email: string;
@@ -58,6 +67,14 @@ export interface AppUser {
   // Casino
   gameSpinsUsed?: number;
   gameSpinsDate?: string;
+  // Projets & gains
+  earnings?: number;
+  project?: Project | null;
+  // Plateforme vidéo
+  videoBalance?: number;
+  videoDepositRequired?: boolean;
+  videoFirstWatchAt?: string | null;
+  videoCycleNumber?: number;
   gameTotalWon?: number;
 }
 

@@ -1,38 +1,10 @@
-import { spawn } from 'child_process';
-import { resolve } from 'path';
+// app-server is disabled — the main dev server is managed by .zscripts/dev.sh
+// (Next.js on port 3000). This file is intentionally a no-op to prevent port
+// conflicts (EADDRINUSE) and duplicate Next.js processes in this environment.
+// Re-enable by restoring the previous version from git history if needed.
 
-const PROJECT_DIR = resolve('/home/z/my-project');
+console.log('[app-server] DISABLED — Next.js is managed by .zscripts/dev.sh on port 3000.');
 
-function startNext() {
-  console.log('[app-server] Starting Next.js on port 3000...');
-  
-  const child = spawn('bun', ['run', 'dev'], {
-    cwd: PROJECT_DIR,
-    env: { ...process.env, PORT: '3000' },
-    stdio: ['ignore', 'pipe', 'pipe'],
-    detached: true,
-  });
-
-  child.stdout?.on('data', (data: Buffer) => {
-    process.stdout.write(data);
-  });
-
-  child.stderr?.on('data', (data: Buffer) => {
-    process.stderr.write(data);
-  });
-
-  child.on('exit', (code, signal) => {
-    console.log(`[app-server] Next.js exited with code=${code} signal=${signal}. Restarting in 5s...`);
-    setTimeout(startNext, 5000);
-  });
-
-  child.unref();
-  console.log(`[app-server] Next.js spawned with PID=${child.pid}`);
-}
-
-startNext();
-
-// Keep the process alive
 setInterval(() => {
-  // heartbeat
-}, 30000);
+  // heartbeat to keep process alive without starting Next.js
+}, 60000);
