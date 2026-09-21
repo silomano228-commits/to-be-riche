@@ -1,0 +1,1199 @@
+[app-server] Installing dependencies...
+bun install v1.3.14 (0d9b296a)
+No packages! Deleted empty lockfile
+
+[1.00ms] done
+[app-server] Running bun run dev...
+$ bun --hot index.ts
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=1899
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=2016
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=2055
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=2094
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=2134
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=2173
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=2213
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=2269
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=2313
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=2384
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=2423
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=2490
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=2529
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=2573
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=2646
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=2685
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=2757
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=2819
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=2858
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=2918
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=2959
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=3041
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=3106
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=3158
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=3197
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=3249
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=3302
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=3356
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=3408
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=3455
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=3518
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=3569
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=3623
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=3677
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=3754
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=3866
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=3906
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=3968
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=4007
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=4073
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=4180
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=4243
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=4282
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=4348
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=4387
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=4426
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=4468
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=4530
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=4593
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=4632
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=4673
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=4747
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=4861
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=5052
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=5207
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=5279
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=5351
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=5412
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=5544
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=5604
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=5670
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=5757
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=5808
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=5859
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=5929
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=6008
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=6080
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=6124
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=6190
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=6259
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=6312
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=6399
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=6438
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+[app-server] Starting Next.js on port 3000...
+[app-server] Next.js spawned with PID=6506
+$ next dev -p 3000
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+error: script "dev" exited with code 1
+[app-server] Next.js exited with code=1 signal=null. Restarting in 5s...
+===
+{
+  "name": "app-server",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "bun --hot index.ts"
+  }
+}
