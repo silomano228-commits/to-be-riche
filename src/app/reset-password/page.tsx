@@ -127,7 +127,7 @@ function ResetForm({ token }: { token: string }) {
         <div className="w-full max-w-[380px] text-center">
           <img
             src={LOGO_URL}
-            alt="Be Rich"
+            alt="Jeune Élan"
             className="w-[80px] h-[80px] mx-auto mb-4 object-contain"
             style={{ filter: 'drop-shadow(0 4px 20px rgba(0,200,83,0.2))' }}
             onError={(e) => {
@@ -136,7 +136,7 @@ function ResetForm({ token }: { token: string }) {
               if (p) {
                 const div = document.createElement('div');
                 div.className = 'bg-gradient-to-br from-[#00E676] to-[#00C853] rounded-[22px] flex items-center justify-center text-white font-black w-[80px] h-[80px] mx-auto mb-4';
-                div.textContent = 'BR';
+                div.textContent = 'JÉ';
                 p.replaceChild(div, t);
               }
             }}
@@ -169,7 +169,7 @@ function ResetForm({ token }: { token: string }) {
       <div className="w-full max-w-[380px] text-center">
         <img
           src={LOGO_URL}
-          alt="Be Rich"
+          alt="Jeune Élan"
           className="w-[80px] h-[80px] mx-auto mb-4 object-contain"
           style={{ filter: 'drop-shadow(0 4px 20px rgba(251,191,36,0.2))' }}
           onError={(e) => {
@@ -178,13 +178,13 @@ function ResetForm({ token }: { token: string }) {
             if (p) {
               const div = document.createElement('div');
               div.className = 'bg-gradient-to-br from-[#00E676] to-[#00C853] rounded-[22px] flex items-center justify-center text-white font-black w-[80px] h-[80px] mx-auto mb-4';
-              div.textContent = 'BR';
+              div.textContent = 'JÉ';
               p.replaceChild(div, t);
             }
           }}
         />
         <h1 className="text-[1.6rem] font-black mb-1 bg-gradient-to-r from-[#FCD34D] via-[#FBBF24] to-[#F59E0B] bg-[length:200%_auto] text-transparent bg-clip-text tracking-[2px]">
-          BE RICH
+          JEUNE ÉLAN
         </h1>
 
         <div className="w-14 h-14 mx-auto rounded-full bg-[rgba(251,191,36,0.1)] flex items-center justify-center mb-4 mt-6">

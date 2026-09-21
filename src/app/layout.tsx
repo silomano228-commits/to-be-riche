@@ -16,8 +16,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Espace Jeunes - Mission. Prospérité.",
-  description: "Plateforme de missions et micro-crédits pour les jeunes. Gagnez avec vos créations et accédez au micro-crédit.",
+  title: "Jeune Élan - Missions & Micro-prêts",
+  description: "Plateforme de missions rémunérées et de micro-prêts pour les jeunes. Gagnez avec vos créations et accédez au micro-crédit.",
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -29,13 +29,13 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Espace Jeunes",
+    title: "Jeune Élan",
   },
   openGraph: {
     type: "website",
-    title: "Espace Jeunes - Mission. Prospérité.",
-    description: "Plateforme de missions et micro-crédits pour les jeunes. Gagnez avec vos créations et accédez au micro-crédit.",
-    siteName: "Espace Jeunes",
+    title: "Jeune Élan - Missions & Micro-prêts",
+    description: "Plateforme de missions rémunérées et de micro-prêts pour les jeunes. Gagnez avec vos créations et accédez au micro-crédit.",
+    siteName: "Jeune Élan",
   },
 };
 

@@ -42,10 +42,10 @@ export const ENTERPRISE_NAMES = [
 export function LogoImg({ className = '', style = {} }: { className?: string; style?: React.CSSProperties }) {
   const [failed, setFailed] = useState(false);
   if (failed) {
-    return <div className={`bg-[#22C55E] rounded-[22px] flex items-center justify-center text-[#050506] font-black ${className}`} style={style}>BR</div>;
+    return <div className={`bg-[#22C55E] rounded-[22px] flex items-center justify-center text-[#050506] font-black ${className}`} style={style}>JÉ</div>;
   }
   return (
-    <img src={LOGO_URL} alt="Be Rich" className={className} style={{ objectFit: 'contain', ...style }}
+    <img src={LOGO_URL} alt="Jeune Élan" className={className} style={{ objectFit: 'contain', ...style }}
       onError={() => setFailed(true)}
     />
   );

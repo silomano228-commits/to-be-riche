@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 
 function generateReferralCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = 'BR-';
+  let code = 'JÉ-';
   for (let i = 0; i < 6; i++) {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
           name: 'Admin',
           password: 'Admin@2024',
           role: 'admin',
-          referralCode: 'BR-ADMIN',
+          referralCode: 'JÉ-ADMIN',
           emailVerified: true,
         },
       });
@@ -51,12 +51,12 @@ export async function POST(request: Request) {
           password: 'Test1234',
           role: 'user',
           referralCode: testReferral,
-          referredByCode: 'BR-ADMIN',
+          referredByCode: 'JÉ-ADMIN',
           emailVerified: true,
         },
       });
       await db.user.update({
-        where: { referralCode: 'BR-ADMIN' },
+        where: { referralCode: 'JÉ-ADMIN' },
         data: { referralCount: { increment: 1 } },
       });
       results.push('Test user created');
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
         data: [
           {
             name: 'Visuels Immobilier Luxe',
-            brand: 'BeRich Immobilier',
+            brand: 'Immobilier Royale',
             description: 'Créez des visuels haut de gamme pour des propriétés immobilières de luxe',
             brief: 'Générez des images de villas, appartements et propriétés de luxe avec des intérieurs modernes, piscines, vues panoramiques. Les images doivent inspirer le luxe et le confort.',
             format: '16:9',
@@ -94,7 +94,7 @@ export async function POST(request: Request) {
           },
           {
             name: 'Visuels Automobile Sport',
-            brand: 'BeRich Auto',
+            brand: 'Mercedes',
             description: 'Créez des visuels dynamiques pour des voitures sportives',
             brief: 'Générez des images de voitures sportives et de luxe dans des décors urbains ou naturels. Les voitures doivent être mises en valeur avec des éclairages dramatiques.',
             format: '16:9',
@@ -110,7 +110,7 @@ export async function POST(request: Request) {
           },
           {
             name: 'Visuels Mode & Beauté',
-            brand: 'BeRich Fashion',
+            brand: 'Louis Vuitton',
             description: 'Créez des visuels élégants pour la mode et la beauté',
             brief: 'Générez des images de mode avec des tenues élégantes, accessoires de luxe (montres, sacs, bijoux). Style magazine de mode haut de gamme.',
             format: '4:3',
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
           },
           {
             name: 'Visuels Tech & Innovation',
-            brand: 'BeRich Tech',
+            brand: 'TechVision',
             description: 'Créez des visuels futuristes pour la technologie',
             brief: 'Générez des images de gadgets, smartphones, laptops, et technologies futuristes. Style minimaliste et épuré avec des rendus 3D réalistes.',
             format: '1:1',
@@ -142,7 +142,7 @@ export async function POST(request: Request) {
           },
           {
             name: 'Visuels Food & Restaurant',
-            brand: 'BeRich Food',
+            brand: 'Saveurs d\'Afrique',
             description: 'Créez des visuels appétissants pour la restauration',
             brief: 'Générez des images de plats gastronomiques, restaurants élégants, buffets. L\'éclairage doit mettre en valeur les couleurs et textures des plats.',
             format: '1:1',
@@ -158,7 +158,7 @@ export async function POST(request: Request) {
           },
           {
             name: 'Visuels Voyage & Tourisme',
-            brand: 'BeRich Travel',
+            brand: 'Voyages & Rêves',
             description: 'Créez des visuels de destinations de rêve',
             brief: 'Générez des images de plages paradisiaques, montagnes, villes historiques, resorts de luxe. Les images doivent inspirer l\'évasion et le voyage.',
             format: '16:9',

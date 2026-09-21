@@ -1,5 +1,6 @@
 // ==================== GUIDE DATA ====================
-// All guide content for the Be Rich app
+// All guide content for the Jeune Élan app
+// Plateforme de missions rémunérées d'images et micro-prêts pour la jeunesse
 
 export interface GuideStep {
   title: string;
@@ -19,446 +20,332 @@ export interface GuideSection {
   warnings?: string[];
 }
 
-// ==================== WALLET GUIDE ====================
-export const WALLET_GUIDE: GuideSection = {
-  id: 'wallet',
-  title: 'Portefeuille & Comptes',
-  description: 'Gérez vos 4 comptes et vos transferts',
-  icon: 'fa-wallet',
-  color: '#00C853',
-  steps: [
-    {
-      title: '1. Compte Principal',
-      description: 'C\'est votre compte central. Tous les dépôts (TRX ou YAS) arrivent ici et les retraits partent d\'ici. C\'est le hub de vos finances sur Be Rich.',
-      icon: 'fa-wallet',
-      color: '#00C853',
-    },
-    {
-      title: '2. Compte d\'Investissement',
-      description: 'Transférez des fonds ici pour investir dans les niveaux Micro, Standard, Premium, Elite ou VIP. Chaque niveau offre un rendement quotidien de 3.33% à 13.33% pendant 15 jours (rendement total 150%-300%).',
-      icon: 'fa-chart-line',
-      color: '#22C55E',
-    },
-    {
-      title: '3. Compte de Trading',
-      description: 'Alimentez ce compte pour faire du trading binaire (HAUT/BAS). Misez sur la direction du marché et gagnez jusqu\'à 85% en quelques minutes.',
-      icon: 'fa-bolt',
-      color: '#3B82F6',
-    },
-    {
-      title: '4. Compte de Projet',
-      description: 'Investissez dans des projets d\'entreprise virtuels (Court, Moyen, Long ou Ultra terme) avec des rendements potentiels de +15% à +95%.',
-      icon: 'fa-building',
-      color: '#F97316',
-    },
-    {
-      title: '5. Transferts entre comptes',
-      description: 'Cliquez sur "Verser" pour envoyer du Principal vers un autre compte (frais de 2%). Cliquez sur "Retirer" pour ramener les fonds vers le Principal (sans frais).',
-      icon: 'fa-exchange-alt',
-      color: '#8B5CF6',
-    },
-    {
-      title: '6. Déposer des fonds',
-      description: 'Cliquez sur "Déposer" sur le compte Principal. Deux méthodes : TRX (crypto) ou YAS (mobile money). Suivez les instructions et soumettez. L\'admin approuvera votre dépôt.',
-      icon: 'fa-arrow-down',
-      color: '#00C853',
-    },
-  ],
-  tips: [
-    'Les transferts VERS les comptes Investissement/Trading/Projet ont des frais de 2%.',
-    'Les transferts RETOUR vers le Principal sont sans frais.',
-    'Minimum de transfert : 2 $.',
-    'Minimum de dépôt : 5 $ en TRX ou 3 000 FCFA en YAS.',
-  ],
-  warnings: [
-    'Attendez la confirmation de l\'admin avant de considérer un dépôt comme validé.',
-    'Vérifiez bien l\'adresse TRX ou le numéro YAS avant d\'envoyer.',
-  ],
-};
-
-// ==================== INVEST GUIDE ====================
-export const INVEST_GUIDE: GuideSection = {
-  id: 'invest',
-  title: 'Investissements',
-  description: 'Plans de rendement quotidien',
-  icon: 'fa-chart-line',
+// ==================== DÉMARRAGE ====================
+export const DEMARRAGE_GUIDE: GuideSection = {
+  id: 'demarrage',
+  title: 'Démarrage',
+  description: 'Inscription, vérification et accès aux missions',
+  icon: 'fa-rocket',
   color: '#22C55E',
   steps: [
     {
-      title: '1. Choisir un niveau',
-      description: '5 niveaux séquentiels : Micro (5-10$, 3.33%/jour, 150% rendement, libre), Standard (10.5-25$, 4.67%/jour, 170% rendement, 2 parrainés), Premium (25.5-60$, 6.67%/jour, 200% rendement, 5 parrainés), Elite (60.5-150$, 8.67%/jour, 230% rendement, 10 parrainés) et VIP (150.5-500$, 13.33%/jour, 300% rendement, 20 parrainés). Vous devez investir au niveau précédent avant d\'accéder au suivant.',
-      icon: 'fa-layer-group',
+      title: '1. Inscription',
+      description: 'Créez votre compte avec votre numéro de téléphone, votre nom, votre email et un mot de passe sécurisé. Un seul numéro = un seul compte.',
+      icon: 'fa-user-plus',
       color: '#22C55E',
     },
     {
-      title: '2. Alimenter votre compte',
-      description: 'Assurez-vous d\'avoir assez de fonds sur votre Compte d\'Investissement. Si besoin, transférez depuis le Compte Principal via le Portefeuille.',
-      icon: 'fa-wallet',
-      color: '#00C853',
-    },
-    {
-      title: '3. Créer un investissement',
-      description: 'Cliquez sur un niveau, entrez le montant souhaité (entre le min et le max du niveau), et confirmez. Le montant est déduit de votre compte d\'investissement.',
-      icon: 'fa-plus-circle',
+      title: '2. Vérification téléphone (OTP)',
+      description: 'Un code OTP est envoyé par SMS à votre numéro. Entrez ce code pour vérifier votre numéro. Sans vérification, vous ne pouvez pas accéder aux missions.',
+      icon: 'fa-mobile-alt',
       color: '#3B82F6',
     },
     {
-      title: '4. Réclamer vos gains',
-      description: 'Chaque jour (24h), vous pouvez réclamer vos gains. Un bouton "Réclamer" vert apparaît quand c\'est possible. Les gains sont ajoutés à votre Compte d\'Investissement.',
-      icon: 'fa-gift',
-      color: '#FBBF24',
-    },
-    {
-      title: '5. Fin de l\'investissement',
-      description: 'Après les 15 jours, l\'investissement est terminé. Le montant investi est retourné sur votre Compte d\'Investissement automatiquement.',
-      icon: 'fa-check-circle',
-      color: '#00C853',
+      title: '3. Accès aux missions',
+      description: 'Une fois votre téléphone vérifié, vous accédez aux campagnes de missions actives. Vous pouvez commencer à générer et uploader des images pour gagner des FCFA.',
+      icon: 'fa-door-open',
+      color: '#F59E0B',
     },
   ],
   tips: [
-    'Plus le niveau est élevé, plus le taux de rendement est important.',
-    'Vous devez débloquer chaque niveau en ayant investi au niveau précédent + remplir les conditions de parrainés (ou payer).',
-    'Réclamez vos gains chaque jour pour maximiser vos profits.',
-    'Vous pouvez avoir plusieurs investissements actifs en même temps.',
-    'Le gain potentiel maximum = Montant × Taux × Nombre de cycles.',
-    'Si vous avez été parrainé, 5% de vos gains d\'investissement sont reversés au parrain.',
+    'Gardez votre numéro de téléphone en sécurité — il est lié à votre compte de façon permanente.',
+    'Un numéro de téléphone = un seul compte. Ne tentez pas de créer plusieurs comptes.',
+    'Vérifiez votre téléphone dès l\'inscription pour ne pas perdre de temps.',
   ],
   warnings: [
-    'Vous ne pouvez pas annuler un investissement en cours.',
-    'Assurez-vous d\'avoir les fonds nécessaires avant de créer un investissement.',
-    'Les niveaux supérieurs nécessitent des parrainés actifs ou un paiement de débloquage.',
+    'Les faux numéros de téléphone sont détectés automatiquement. Votre compte sera suspendu si le numéro ne peut pas recevoir le code OTP.',
+    'Créer plusieurs comptes avec différents numéros est interdit et détecté par le système anti-fraude.',
   ],
 };
 
-// ==================== TRADING GUIDE ====================
-export const TRADING_GUIDE: GuideSection = {
-  id: 'trading',
-  title: 'Trading Ultra Market',
-  description: 'Misez sur la direction du marché',
-  icon: 'fa-bolt',
-  color: '#3B82F6',
-  steps: [
-    {
-      title: '1. Alimenter votre compte',
-      description: 'Le trading se fait depuis votre Compte de Trading. Transférez des fonds depuis le Compte Principal si nécessaire (frais de 2% sur le transfert).',
-      icon: 'fa-wallet',
-      color: '#00C853',
-    },
-    {
-      title: '2. Choisir le montant',
-      description: 'Entrez le montant de votre mise (entre 1$ et 5$). Ce montant sera déduit de votre Compte de Trading au lancement du trade.',
-      icon: 'fa-dollar-sign',
-      color: '#FBBF24',
-    },
-    {
-      title: '3. Choisir la direction',
-      description: 'Sélectionnez HAUT ↑ si vous pensez que le marché va monter, ou BAS ↓ si vous pensez qu\'il va baisser.',
-      icon: 'fa-arrows-alt-v',
-      color: '#3B82F6',
-    },
-    {
-      title: '4. Choisir la durée',
-      description: 'Sélectionnez la durée du trade : 1 min, 3 min, 5 min ou 10 min. Plus la durée est courte, plus c\'est rapide.',
-      icon: 'fa-clock',
-      color: '#8B5CF6',
-    },
-    {
-      title: '5. Résultat',
-      description: 'À la fin du délai, le résultat est calculé automatiquement. Gagné = +75% à 85% de votre mise. Perdu = -100% de votre mise. Match nul = remboursement intégral.',
-      icon: 'fa-trophy',
-      color: '#FBBF24',
-    },
-  ],
-  tips: [
-    'Le gain est compris entre 75% et 85% de votre mise.',
-    'Commencez par des petites mises pour vous familiariser.',
-    'Vous pouvez avoir plusieurs trades en même temps.',
-    'Le résultat est déterminé par la variation du prix d\'entrée vs le prix de sortie.',
-  ],
-  warnings: [
-    'Le trading comporte des risques importants. Vous pouvez perdre toute votre mise.',
-    'Ne misez jamais plus que ce que vous pouvez vous permettre de perdre.',
-    'Le trading est risqué par nature — la majorité des trades sont perdants.',
-  ],
-};
-
-// ==================== ENTERPRISE GUIDE ====================
-export const ENTERPRISE_GUIDE: GuideSection = {
-  id: 'enterprise',
-  title: 'Projets d\'Entreprise',
-  description: 'Investissez dans des projets virtuels',
-  icon: 'fa-building',
-  color: '#F97316',
-  steps: [
-    {
-      title: '1. Choisir un type de projet',
-      description: '4 types disponibles : Court terme (5j, +15-28%), Moyen terme (10j, +30-48%), Long terme (20j, +50-68%), Ultra long (30j, +70-95%).',
-      icon: 'fa-layer-group',
-      color: '#F97316',
-    },
-    {
-      title: '2. Alimenter votre compte',
-      description: 'Les projets se financent depuis votre Compte de Projet. Transférez des fonds depuis le Compte Principal via le Portefeuille si nécessaire.',
-      icon: 'fa-wallet',
-      color: '#00C853',
-    },
-    {
-      title: '3. Lancer un projet',
-      description: 'Cliquez sur un type de projet, entrez le montant (minimum 5$) et confirmez. Un nom d\'entreprise est généré automatiquement (ex: Alpha Tech Startup).',
-      icon: 'fa-rocket',
-      color: '#EF4444',
-    },
-    {
-      title: '4. Suivre la progression',
-      description: 'Chaque projet a une barre de progression montrant les jours écoulés. Le projet se termine automatiquement quand la durée est atteinte.',
-      icon: 'fa-chart-bar',
-      color: '#3B82F6',
-    },
-    {
-      title: '5. Réclamer les gains',
-      description: 'Quand le projet est terminé, un bouton "Réclamer" apparaît. Le rendement final (entre min et max) est calculé aléatoirement. Le capital + les gains sont ajoutés à votre Compte de Projet.',
-      icon: 'fa-gift',
-      color: '#FBBF24',
-    },
-  ],
-  tips: [
-    'Plus la durée est longue, plus le rendement potentiel est élevé.',
-    'Le rendement final est aléatoire entre le min et le max indiqués.',
-    'Vous pouvez lancer plusieurs projets en même temps.',
-    'Minimum d\'investissement par projet : 5$.',
-    'Tous les projets aboutissent — pas de risque de crash.',
-  ],
-  warnings: [
-    'Vous ne pouvez pas annuler un projet en cours.',
-    'Assurez-vous d\'avoir les fonds nécessaires avant de lancer un projet.',
-    'Pensez à réclamer vos gains une fois le projet terminé.',
-  ],
-};
-
-// ==================== WITHDRAW GUIDE ====================
-export const WITHDRAW_GUIDE: GuideSection = {
-  id: 'withdraw',
-  title: 'Retraits',
-  description: 'Comment retirer vos gains',
-  icon: 'fa-arrow-up',
+// ==================== MISSIONS & IMAGES ====================
+export const MISSIONS_GUIDE: GuideSection = {
+  id: 'missions',
+  title: 'Missions & Images',
+  description: 'Générer, uploader et faire valider des images IA',
+  icon: 'fa-images',
   color: '#F59E0B',
   steps: [
     {
-      title: '1. Conditions préalables',
-      description: 'Avant de pouvoir retirer, vous devez : avoir effectué au moins un dépôt approuvé, attendre 48h après votre premier dépôt, et avoir suffisamment de parrainés selon la formule.',
-      icon: 'fa-shield-alt',
+      title: '1. Consulter les campagnes',
+      description: 'Les administrateurs créent des campagnes avec un cahier des charges précis (ex: "Générez une image de voiture Mercedes"). Consultez les campagnes actives et lisez le brief attentivement.',
+      icon: 'fa-bullhorn',
+      color: '#F59E0B',
+    },
+    {
+      title: '2. Générer l\'image avec une IA externe',
+      description: 'Utilisez un outil IA externe (ChatGPT, DALL-E, Midjourney, etc.) pour générer une image qui correspond au brief de la campagne. L\'image doit être originale et conforme aux instructions.',
+      icon: 'fa-wand-magic-sparkles',
+      color: '#8B5CF6',
+    },
+    {
+      title: '3. Uploader sur Jeune Élan',
+      description: 'Téléchargez l\'image générée sur la plateforme Jeune Élan. Vous pouvez soumettre jusqu\'à 10 images par jour maximum.',
+      icon: 'fa-cloud-upload-alt',
+      color: '#3B82F6',
+    },
+    {
+      title: '4. Validation automatique par IA',
+      description: 'Chaque image uploadée est automatiquement analysée par l\'IA de Jeune Élan. Elle vérifie : correspondance au brief, originalité, absence de doublon, image non téléchargée d\'internet.',
+      icon: 'fa-robot',
+      color: '#22C55E',
+    },
+    {
+      title: '5. +25 FCFA par image validée',
+      description: 'Si l\'image est validée, vous gagnez 25 FCFA. Maximum 10 images/jour = 250 FCFA max/jour. Les images refusées ne rapportent rien.',
+      icon: 'fa-coins',
+      color: '#22C55E',
+    },
+  ],
+  tips: [
+    'Utilisez ChatGPT, DALL-E ou Midjourney pour générer vos images — ce sont les outils les plus efficaces.',
+    'Suivez le brief de la campagne à la lettre. Une image hors sujet sera refusée.',
+    'Maximum 10 images par jour, soit 250 FCFA maximum de gains quotidiens.',
+    'Variez vos prompts pour produire des images différentes et éviter les doublons.',
+  ],
+  warnings: [
+    'Les images trop similaires aux images déjà soumises sont automatiquement refusées (détection de doublon).',
+    'Les images téléchargées directement d\'internet (sans génération IA) sont détectées et refusées.',
+    'Les images soumises disparaissent automatiquement le lendemain pour éviter la saturation du site — générez et uploadez chaque jour.',
+  ],
+};
+
+// ==================== GAINS & PORTEFEUILLE ====================
+export const GAINS_GUIDE: GuideSection = {
+  id: 'gains',
+  title: 'Gains & Portefeuille',
+  description: 'Gains de missions, objectif 2 500 FCFA et caution',
+  icon: 'fa-wallet',
+  color: '#3B82F6',
+  steps: [
+    {
+      title: '1. Gains de missions (25 FCFA/image)',
+      description: 'Chaque image validée vous rapporte 25 FCFA. Ces gains s\'accumulent dans votre portefeuille de gains missions. Suivez votre progression vers l\'objectif.',
+      icon: 'fa-coins',
+      color: '#22C55E',
+    },
+    {
+      title: '2. Objectif 2 500 FCFA',
+      description: 'Vous devez atteindre 2 500 FCFA de gains issus d\'images validées pour débloquer le chemin vers les micro-prêts. C\'est le premier palier important.',
+      icon: 'fa-bullseye',
+      color: '#3B82F6',
+    },
+    {
+      title: '3. Dépôts personnels',
+      description: 'Vous pouvez effectuer des dépôts personnels sur votre portefeuille. Ces dépôts sont tracés séparément des gains de missions.',
+      icon: 'fa-piggy-bank',
+      color: '#F59E0B',
+    },
+    {
+      title: '4. Caution 5 000 FCFA (bloquée)',
+      description: 'Une caution de 5 000 FCFA est requise pour accéder aux micro-prêts. Ce montant est bloqué et ne peut PAS être retiré. Il sert de garantie pour le système.',
+      icon: 'fa-lock',
+      color: '#EF4444',
+    },
+  ],
+  tips: [
+    'Les gains de missions et les dépôts personnels sont suivis séparément dans votre portefeuille.',
+    'La caution de 5 000 FCFA est bloquée — vous ne pouvez pas la retirer, même après remboursement d\'un prêt.',
+    'Atteindre 2 500 FCFA de gains validés prend au minimum 100 images validées (10 jours à 10 images/jour).',
+  ],
+  warnings: [
+    'Ne confondez pas les gains de missions et la caution — ce sont deux montants distincts avec des rôles différents.',
+    'L\'objectif de 2 500 FCFA doit être atteint UNIQUEMENT avec des gains d\'images validées, pas avec des dépôts personnels.',
+    'La caution ne sera jamais restituée — elle fait partie des conditions d\'accès aux micro-prêts.',
+  ],
+};
+
+// ==================== PARRAINAGE ====================
+export const PARRAINAGE_GUIDE: GuideSection = {
+  id: 'parrainage',
+  title: 'Parrainage',
+  description: 'Code de parrainage, filleuls validés et paliers',
+  icon: 'fa-users',
+  color: '#8B5CF6',
+  steps: [
+    {
+      title: '1. Partager votre code JÉ-XXXXXX',
+      description: 'Vous disposez d\'un code de parrainage unique au format JÉ-XXXXXX. Partagez-le avec vos amis pour qu\'ils s\'inscrivent avec votre code.',
+      icon: 'fa-share-alt',
+      color: '#8B5CF6',
+    },
+    {
+      title: '2. Filleul s\'inscrit avec votre code',
+      description: 'Quand un nouvel utilisateur s\'inscrit en entrant votre code de parrainage, il devient votre filleul. Mais ce n\'est pas encore suffisant pour valider le parrainage.',
+      icon: 'fa-user-plus',
+      color: '#3B82F6',
+    },
+    {
+      title: '3. Filleul commence à générer des images',
+      description: 'Pour que le parrainage soit validé, votre filleul doit avoir commencé à générer et uploader des images sur les missions. Un filleul inactif ne compte pas.',
+      icon: 'fa-images',
+      color: '#22C55E',
+    },
+    {
+      title: '4. Parrainage validé',
+      description: 'Une fois que votre filleul a généré au moins une image, le parrainage est validé. 5 filleuls validés = prêt de 5 000 FCFA, 10 = prêt de 10 000 FCFA.',
+      icon: 'fa-check-circle',
+      color: '#F59E0B',
+    },
+  ],
+  tips: [
+    '5 filleuls validés sont nécessaires pour le micro-prêt de 5 000 FCFA.',
+    '10 filleuls validés sont nécessaires pour le micro-prêt de 10 000 FCFA.',
+    'Un filleul doit avoir commencé à générer des images pour que le parrainage compte — l\'inscription seule ne suffit pas.',
+    'Partagez votre code sur WhatsApp, Telegram et les réseaux sociaux pour atteindre plus de personnes.',
+  ],
+  warnings: [
+    'Les faux parrainages (comptes créés par vous-même) sont détectés par le système anti-fraude.',
+    'Créer plusieurs comptes pour augmenter artificiellement votre nombre de filleuls est strictement interdit.',
+    'Tout parrainage frauduleux entraîne la suspension de votre compte et la perte de vos gains.',
+  ],
+};
+
+// ==================== ÉLIGIBILITÉ & MICRO-PRÊTS ====================
+export const ELIGIBILITE_GUIDE: GuideSection = {
+  id: 'eligibilite',
+  title: 'Éligibilité & Micro-prêts',
+  description: 'Conditions, simulateur et demande de prêt',
+  icon: 'fa-check-circle',
+  color: '#EF4444',
+  steps: [
+    {
+      title: '1. Vérifier votre éligibilité',
+      description: 'Consultez le simulateur d\'éligibilité pour voir exactement quelles conditions vous remplissez et ce qui vous manque pour accéder à un micro-prêt.',
+      icon: 'fa-chart-bar',
       color: '#EF4444',
     },
     {
-      title: '2. Solde suffisant',
-      description: 'Les retraits se font depuis le Compte Principal (minimum 10$). Si vos fonds sont sur un autre compte, transférez-les d\'abord vers le Principal (sans frais).',
-      icon: 'fa-wallet',
-      color: '#00C853',
+      title: '2. Micro-prêt de 5 000 FCFA',
+      description: 'Conditions : 2 500 FCFA de gains validés + 5 000 FCFA de caution + 5 filleuls validés + aucun prêt en retard. C\'est le premier palier de prêt.',
+      icon: 'fa-hand-holding-usd',
+      color: '#F59E0B',
     },
     {
-      title: '3. Méthode de retrait TRX',
-      description: 'Entrez le montant à retirer et votre adresse TRX (Trust Wallet, minimum 20 caractères). L\'admin vous enverra les TRX à cette adresse.',
+      title: '3. Micro-prêt de 10 000 FCFA',
+      description: 'Conditions : 5 000 FCFA de gains validés + 5 000 FCFA de caution + 10 filleuls validés + aucun prêt en retard. Le palier supérieur.',
+      icon: 'fa-sack-dollar',
+      color: '#22C55E',
+    },
+    {
+      title: '4. Demande de prêt',
+      description: 'Une fois les conditions remplies, soumettez votre demande. Le système analyse automatiquement votre dossier et, si tout est conforme, le prêt est décaissé.',
       icon: 'fa-paper-plane',
       color: '#3B82F6',
     },
     {
-      title: '4. Méthode de retrait YAS',
-      description: 'Entrez le montant à retirer et votre numéro de compte YAS (8 chiffres, préfixe 90-93 ou 70-73). Le montant sera converti en FCFA et envoyé sur votre compte YAS.',
-      icon: 'fa-mobile-alt',
+      title: '5. Décaissement',
+      description: 'Le montant du prêt est crédité sur votre portefeuille. Vous pouvez l\'utiliser selon vos besoins. Le remboursement se fera automatiquement via vos futures missions.',
+      icon: 'fa-money-bill-wave',
       color: '#22C55E',
-    },
-    {
-      title: '5. Conversion TRX → YAS',
-      description: 'Vous pouvez aussi convertir vos TRX en FCFA via YAS. Indiquez votre adresse TRX (pour envoyer les TRX à l\'admin) et votre numéro YAS (pour recevoir les FCFA).',
-      icon: 'fa-exchange-alt',
-      color: '#8B5CF6',
-    },
-    {
-      title: '6. Approbation admin',
-      description: 'Quel que soit le mode, le retrait est en attente jusqu\'à l\'approbation de l\'admin. Vous serez notifié quand c\'est traité.',
-      icon: 'fa-check-double',
-      color: '#00C853',
     },
   ],
   tips: [
-    'Les transferts des comptes secondaires vers le Principal sont sans frais.',
-    'Vérifiez bien votre adresse TRX ou numéro YAS avant de soumettre.',
-    'Utilisez une adresse TRC-20 (commence par T) pour les retraits TRX.',
-    'Un seul retrait en attente à la fois.',
-    'Minimum de retrait : 10$.',
+    'Le simulateur vous montre exactement ce qu\'il vous manque pour être éligible — utilisez-le régulièrement.',
+    'Construisez votre dossier progressivement : d\'abord les gains (missions), puis la caution, puis les filleuls.',
+    'Prêt 5 000 F = 2 500 F gains + 5 000 F caution + 5 filleuls validés.',
+    'Prêt 10 000 F = 5 000 F gains + 5 000 F caution + 10 filleuls validés.',
   ],
   warnings: [
-    'Délai de 48h obligatoire après le premier dépôt.',
-    'Parrainés requis : 0 pour les 4 premiers retraits, puis 1 parrainé par tranche de 4 retraits supplémentaires.',
-    'Sans parrainés suffisants, vos retraits seront bloqués.',
-    'Assurez-vous que l\'adresse TRX est correcte. Les transactions crypto sont irréversibles.',
+    'Vous ne pouvez pas avoir deux prêts en même temps — terminez le remboursement du premier avant de demander le suivant.',
+    'Un prêt en retard de 5 jours ou plus déclenche un prélèvement automatique sur les fonds de vos filleuls.',
+    'Assurez-vous de pouvoir maintenir une activité régulière de missions avant de demander un prêt.',
   ],
 };
 
-// ==================== REFERRAL GUIDE ====================
-export const REFERRAL_GUIDE: GuideSection = {
-  id: 'referral',
-  title: 'Parrainage',
-  description: 'Parrainez et gagnez ensemble',
-  icon: 'fa-users',
-  color: '#FBBF24',
+// ==================== REMBOURSEMENT ====================
+export const REMBOURSEMENT_GUIDE: GuideSection = {
+  id: 'remboursement',
+  title: 'Remboursement',
+  description: 'Rembourser votre prêt via les missions',
+  icon: 'fa-hand-holding-usd',
+  color: '#06B6D4',
   steps: [
     {
-      title: '1. Votre code de parrainage',
-      description: 'Chaque utilisateur reçoit un code unique (format BR-XXXXXX). Partagez ce code avec vos amis pour qu\'ils s\'inscrivent.',
-      icon: 'fa-key',
-      color: '#FBBF24',
+      title: '1. Continuer les missions',
+      description: 'Pour rembourser votre prêt, continuez à accomplir des missions régulièrement. Chaque image validée génère 25 FCFA qui contribue au remboursement.',
+      icon: 'fa-images',
+      color: '#06B6D4',
     },
     {
-      title: '2. Comment parrainer',
-      description: 'Partagez votre code via le bouton "Partager" ou copiez-le et envoyez-le manuellement. Vos amis entrent ce code lors de l\'inscription.',
-      icon: 'fa-share-alt',
-      color: '#3B82F6',
-    },
-    {
-      title: '3. Bonus de premier dépôt (20%)',
-      description: 'Quand votre parrainé effectue son premier dépôt (TRX ou YAS), vous recevez automatiquement un bonus de 20% du montant sur votre Compte Principal. Ce bonus ne déduit rien du compte de votre parrainé.',
-      icon: 'fa-gift',
-      color: '#00C853',
-    },
-    {
-      title: '4. Bonus sur gains d\'investissement (5%)',
-      description: 'Chaque fois que votre parrainé réclame ses gains d\'investissement, vous recevez 5% de ces gains. Ce bonus est crédité sur le compte de l\'administrateur.',
-      icon: 'fa-chart-line',
-      color: '#22C55E',
-    },
-    {
-      title: '5. Suivre vos parrainés',
-      description: 'Dans votre profil, consultez la liste de vos parrainés et leur statut (actif/inactif). Un parrainé est "actif" s\'il a effectué au moins un dépôt.',
-      icon: 'fa-list',
-      color: '#3B82F6',
-    },
-    {
-      title: '6. Condition de retrait',
-      description: 'Après vos 4 premiers retraits, vous devez avoir au moins 1 parrainé. Puis 1 parrainé supplémentaire chaque 4 retraits.',
-      icon: 'fa-exclamation-circle',
-      color: '#EF4444',
-    },
-  ],
-  tips: [
-    'Partagez votre code sur les réseaux sociaux pour atteindre plus de personnes.',
-    'Le bonus de 20% sur le premier dépôt est automatique — pas besoin de le réclamer.',
-    'Plus vous avez de parrainés actifs, plus vous gagnez de bonus et plus vous pouvez retirer.',
-    'Un parrainé "actif" est quelqu\'un qui a effectué au moins un dépôt approuvé.',
-  ],
-  warnings: [
-    'Sans parrainés suffisants, vos retraits seront bloqués.',
-    'Formule : Parrainés requis = floor(retraits effectués / 4).',
-    'Exemple : Retraits 1-4 = 0 parrainé, 5-8 = 1 parrainé, 9-12 = 2 parrainés.',
-  ],
-};
-
-// ==================== DEPOSIT GUIDE ====================
-export const DEPOSIT_GUIDE: GuideSection = {
-  id: 'deposit',
-  title: 'Dépôts TRX & YAS',
-  description: 'Comment alimenter votre compte',
-  icon: 'fa-arrow-down',
-  color: '#00C853',
-  steps: [
-    {
-      title: '1. Dépôt par TRX (Crypto)',
-      description: 'Cliquez "Déposer" et choisissez TRX. Achetez des TRX sur un exchange (Binance, KuCoin...), envoyez-les à l\'adresse admin affichée, puis soumettez le montant en USD (minimum 10$).',
-      icon: 'fa-coins',
-      color: '#FBBF24',
-    },
-    {
-      title: '2. Vérifier l\'adresse TRX',
-      description: 'L\'adresse TRX de l\'admin s\'affiche dans l\'app. Envoyez uniquement des TRX sur le réseau TRC-20 (TRON) à cette adresse.',
-      icon: 'fa-qrcode',
-      color: '#3B82F6',
-    },
-    {
-      title: '3. Dépôt par YAS (Mobile Money)',
-      description: 'Cliquez "Déposer" et choisissez YAS. Entrez le montant en FCFA (minimum 6 000 FCFA) et votre numéro de compte YAS (8 chiffres, préfixe 90-93 ou 70-73).',
-      icon: 'fa-mobile-alt',
-      color: '#22C55E',
-    },
-    {
-      title: '4. Taux de conversion',
-      description: 'Pour TRX : le taux est automatiquement récupéré depuis Binance. Pour YAS : 1$ = 550 FCFA (taux configuré par l\'admin). Le système calcule l\'équivalent automatiquement.',
+      title: '2. Déduction automatique des gains',
+      description: 'Vos gains de missions sont automatiquement déduits pour rembourser le prêt. Vous n\'avez aucune action manuelle à faire — le système prélève directement.',
       icon: 'fa-calculator',
-      color: '#8B5CF6',
+      color: '#3B82F6',
     },
     {
-      title: '5. Attendre la confirmation',
-      description: 'L\'admin vérifiera la transaction et approuvera votre dépôt. Le solde sera crédité sur votre Compte Principal. Vous ne pouvez avoir qu\'un dépôt en attente à la fois.',
-      icon: 'fa-check-circle',
-      color: '#00C853',
+      title: '3. Prêt entièrement remboursé',
+      description: 'Une fois le montant total du prêt remboursé via les déductions automatiques, votre prêt est clôturé. Vous pouvez alors demander un nouveau prêt si besoin.',
+      icon: 'fa-check-double',
+      color: '#22C55E',
     },
   ],
   tips: [
-    'Deux méthodes de dépôt : TRX (crypto) ou YAS (mobile money).',
-    'Vérifiez que vous envoyez bien sur le réseau TRC-20 (TRON) pour les dépôts TRX.',
-    'Le taux TRX/USD est mis à jour automatiquement depuis Binance.',
-    'Conservez le hash de transaction comme preuve en cas de problème.',
-    'Pour YAS, utilisez un numéro valide (8 chiffres commençant par 90-93 ou 70-73).',
+    'Une activité régulière de missions assure un remboursement fluide et sans stress.',
+    'Chaque image validée contribue 25 FCFA au remboursement — à 10 images/jour, c\'est 250 FCFA/jour.',
+    'Un prêt de 5 000 FCFA peut être remboursé en 20 jours à 250 FCFA/jour.',
+    'Un prêt de 10 000 FCFA peut être remboursé en 40 jours à 250 FCFA/jour.',
   ],
   warnings: [
-    'N\'envoyez QUE des TRX à l\'adresse TRX indiquée.',
-    'Les envois sur un mauvais réseau seront perdus.',
-    'Minimum de dépôt : 5$ en TRX ou 3 000 FCFA en YAS.',
-    'Un seul dépôt en attente à la fois (TRX ou YAS).',
+    'Après 5 jours de retard sur la date limite, le montant restant est automatiquement déduit des fonds de votre réseau de parrainage (filleuls).',
+    'Continuez à générer des images régulièrement pour éviter le retard de remboursement et protéger vos filleuls.',
+    'Un retard de remboursement peut affecter votre niveau de confiance (Fiable → Actif → Nouveau).',
   ],
 };
 
-// ==================== CHAT & SUPPORT GUIDE ====================
-export const CHAT_GUIDE: GuideSection = {
-  id: 'chat',
-  title: 'Assistance & Support',
-  description: 'Chat IA et support admin',
-  icon: 'fa-headset',
-  color: '#8B5CF6',
+// ==================== SÉCURITÉ & ANTI-FRAUDE ====================
+export const SECURITE_GUIDE: GuideSection = {
+  id: 'securite',
+  title: 'Sécurité & Anti-fraude',
+  description: 'Protection, vérifications et sanctions',
+  icon: 'fa-shield-alt',
+  color: '#64748B',
   steps: [
     {
-      title: '1. Chatbot IA',
-      description: 'Besoin d\'aide ? Discutez avec notre assistant IA intégré. Il peut répondre à vos questions sur le fonctionnement de Be Rich, les investissements, les retraits, etc.',
-      icon: 'fa-robot',
-      color: '#8B5CF6',
+      title: '1. Vérification téléphone',
+      description: 'Votre numéro de téléphone est vérifié par OTP à l\'inscription. Cela garantit que chaque compte correspond à une personne réelle avec un numéro valide.',
+      icon: 'fa-mobile-alt',
+      color: '#22C55E',
     },
     {
-      title: '2. Conseils d\'investissement',
-      description: 'Le chatbot peut vous donner des conseils personnalisés sur les stratégies d\'investissement, les plans disponibles et les meilleures pratiques.',
-      icon: 'fa-lightbulb',
-      color: '#FBBF24',
-    },
-    {
-      title: '3. Escalade vers l\'admin',
-      description: 'Si le chatbot ne peut pas résoudre votre problème, il crée automatiquement un ticket de support. Vous pouvez aussi escalader manuellement vers un administrateur.',
-      icon: 'fa-exclamation-triangle',
-      color: '#EF4444',
-    },
-    {
-      title: '4. Conversation avec l\'admin',
-      description: 'Une fois le ticket créé, vous pouvez échanger en direct avec un administrateur via le chat. Les réponses sont envoyées en temps réel.',
-      icon: 'fa-comments',
+      title: '2. Mot de passe sécurisé',
+      description: 'Choisissez un mot de passe fort et unique. Ne le partagez avec personne — Jeune Élan ne vous le demandera jamais.',
+      icon: 'fa-key',
       color: '#3B82F6',
+    },
+    {
+      title: '3. Limitation des tentatives de connexion',
+      description: 'Après plusieurs tentatives de connexion échouées, le compte est temporairement verrouillé pour prévenir les accès non autorisés.',
+      icon: 'fa-lock',
+      color: '#F59E0B',
+    },
+    {
+      title: '4. Surveillance de l\'activité',
+      description: 'Le système surveille en permanence les activités suspectes : comptes multiples, images dupliquées, parrainages fictifs, images téléchargées d\'internet.',
+      icon: 'fa-eye',
+      color: '#EF4444',
     },
   ],
   tips: [
-    'Le chatbot IA est disponible 24h/24 pour répondre à vos questions.',
-    'Décrivez votre problème clairement pour obtenir une meilleure aide.',
-    'L\'escalade automatique se déclenche si le chatbot détecte que vous avez besoin d\'un humain.',
+    'Jeune Élan ne vous demandera JAMAIS votre mot de passe — si quelqu\'un le demande, c\'est une arnaque.',
+    'Utilisez un mot de passe unique et fort (majuscules, minuscules, chiffres, symboles).',
+    'Vérifiez régulièrement l\'activité de votre compte et signalez toute anomalie.',
   ],
   warnings: [
-    'Le chatbot IA peut faire des erreurs — vérifiez les informations importantes.',
-    'Pour les problèmes urgents (retraits bloqués, dépôts manquants), demandez l\'admin directement.',
+    'La création de plusieurs comptes est détectée et entraîne la suspension de tous les comptes concernés.',
+    'Les images dupliquées (soumissions multiples de la même image) sont refusées et peuvent entraîner des sanctions.',
+    'Les parrainages fictifs (faux filleuls) sont détectés par le système anti-fraude.',
+    'Toute tentative de fraude peut résulter en la suspension définitive de votre compte et la perte de vos gains.',
   ],
 };
 
 // ==================== ALL GUIDES ====================
 export const ALL_GUIDES: GuideSection[] = [
-  WALLET_GUIDE,
-  DEPOSIT_GUIDE,
-  INVEST_GUIDE,
-  TRADING_GUIDE,
-  ENTERPRISE_GUIDE,
-  WITHDRAW_GUIDE,
-  REFERRAL_GUIDE,
-  CHAT_GUIDE,
+  DEMARRAGE_GUIDE,
+  MISSIONS_GUIDE,
+  GAINS_GUIDE,
+  PARRAINAGE_GUIDE,
+  ELIGIBILITE_GUIDE,
+  REMBOURSEMENT_GUIDE,
+  SECURITE_GUIDE,
 ];

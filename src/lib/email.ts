@@ -36,7 +36,7 @@ function generateOtpHtml(code: string, userName: string, title: string, subtitle
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <title>Code ${title} - Espace Jeunes</title>
+      <title>Code ${title} - Jeune Élan</title>
     </head>
     <body style="margin:0;padding:0;background:#f4f5f7;font-family:'Inter',Arial,Helvetica,sans-serif;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f7;padding:24px 0;">
@@ -45,8 +45,8 @@ function generateOtpHtml(code: string, userName: string, title: string, subtitle
             <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
               <tr>
                 <td style="background:linear-gradient(135deg,#22C55E,#16A34A);padding:36px 32px;text-align:center;">
-                  <h1 style="color:#ffffff;font-size:26px;font-weight:900;letter-spacing:2px;margin:0;">ESPACE JEUNES</h1>
-                  <p style="color:rgba(255,255,255,0.7);font-size:12px;margin:6px 0 0;text-transform:uppercase;letter-spacing:1px;">Mission &amp; Prospérité</p>
+                  <h1 style="color:#ffffff;font-size:26px;font-weight:900;letter-spacing:2px;margin:0;">JEUNE ÉLAN</h1>
+                  <p style="color:rgba(255,255,255,0.7);font-size:12px;margin:6px 0 0;text-transform:uppercase;letter-spacing:1px;">Missions &amp; Micro-prêts</p>
                 </td>
               </tr>
               <tr>
@@ -71,7 +71,7 @@ function generateOtpHtml(code: string, userName: string, title: string, subtitle
               <tr>
                 <td style="padding:16px 32px;background:#F8F9FA;text-align:center;">
                   <p style="color:#9CA3AF;font-size:11px;margin:0;">
-                    © ${new Date().getFullYear()} Espace Jeunes. Tous droits réservés.
+                    © ${new Date().getFullYear()} Jeune Élan. Tous droits réservés.
                   </p>
                 </td>
               </tr>
@@ -86,7 +86,7 @@ function generateOtpHtml(code: string, userName: string, title: string, subtitle
 
 function generateOtpText(code: string, userName: string, title: string, subtitle: string, expiresInMinutes: number): string {
   return `
-ESPACE JEUNES - Code de ${title}
+JEUNE ÉLAN - Code de ${title}
 
 Bonjour ${userName},
 
@@ -96,7 +96,7 @@ Code : ${code}
 
 Ce code expire dans ${expiresInMinutes} minutes.
 
-© ${new Date().getFullYear()} Espace Jeunes. Tous droits réservés.
+© ${new Date().getFullYear()} Jeune Élan. Tous droits réservés.
   `.trim();
 }
 
@@ -114,7 +114,7 @@ export async function sendOtpEmail({ to, code, userName, purpose, expiresInMinut
   }
 
   const { title, subtitle } = PURPOSE_LABELS[purpose] || PURPOSE_LABELS.email_verification;
-  const subject = `Code ${title} - Espace Jeunes`;
+  const subject = `Code ${title} - Jeune Élan`;
   const html = generateOtpHtml(code, userName, title, subtitle, expiresInMinutes);
   const text = generateOtpText(code, userName, title, subtitle, expiresInMinutes);
 
@@ -125,7 +125,7 @@ export async function sendOtpEmail({ to, code, userName, purpose, expiresInMinut
       const { Resend } = (0, eval)('require')('resend');
       const resend = new Resend(RESEND_API_KEY);
       const { error } = await resend.emails.send({
-        from: 'Espace Jeunes <onboarding@resend.dev>',
+        from: 'Jeune Élan <onboarding@resend.dev>',
         to, subject, html, text,
       });
       if (error) return { sent: false, error: error.message || 'Erreur Resend' };
@@ -146,7 +146,7 @@ export async function sendOtpEmail({ to, code, userName, purpose, expiresInMinut
         pool: true, maxConnections: 1, rateLimit: 5,
       });
       await transporter.sendMail({
-        from: `"Espace Jeunes" <${GMAIL_USER}>`,
+        from: `"Jeune Élan" <${GMAIL_USER}>`,
         to, subject, html, text,
       });
       console.log(`[GMAIL] Email sent to ${to}`);

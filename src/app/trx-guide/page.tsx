@@ -221,7 +221,7 @@ export default function TrxGuidePage() {
 
       {/* Footer */}
       <footer className="text-center py-4 text-[0.65rem] text-[#94A3B8] shrink-0">
-        Be Rich &copy; 2024 &mdash; Guide TRX
+        Jeune Élan &copy; 2024 &mdash; Guide TRX
       </footer>
 
     </div>

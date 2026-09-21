@@ -1,7 +1,7 @@
 {
-  "name": "Be Rich - Investissez. Prospérez.",
-  "short_name": "Be Rich",
-  "description": "Plateforme d'investissement et de trading. Investissez, tradez et prospérez.",
+  "name": "Jeune Élan - Missions & Micro-prêts",
+  "short_name": "Jeune Élan",
+  "description": "Plateforme de missions rémunérées et de micro-prêts pour les jeunes.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F0FDF4",

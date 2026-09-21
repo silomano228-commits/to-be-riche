@@ -75,7 +75,7 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
       <div className="absolute w-[160px] h-[160px] rounded-full bg-[rgba(20,184,166,0.06)] blur-[80px] bottom-[20%] right-[10%]" style={{ animation: 'orbFloat 6s ease-in-out infinite 3s reverse' }} />
       <div className="absolute w-[120px] h-[120px] rounded-full bg-[rgba(245,158,11,0.05)] blur-[80px] top-[60%] left-[60%]" style={{ animation: 'orbFloat 7s ease-in-out infinite 1.5s' }} />
       <LogoImg className="w-[140px] h-[140px] mb-5" style={{ animation: 'logoPulse 2.4s ease-in-out infinite', filter: 'drop-shadow(0 8px 40px rgba(34,197,94,0.3))' }} />
-      <h1 className="text-[2rem] font-black mb-6 bg-gradient-to-r from-[#22C55E] to-[#16A34A] bg-clip-text text-transparent tracking-[3px]">ESPACE JEUNES</h1>
+      <h1 className="text-[2rem] font-black mb-6 bg-gradient-to-r from-[#22C55E] to-[#16A34A] bg-clip-text text-transparent tracking-[3px]">JEUNE ÉLAN</h1>
       <div className="w-5 h-5 border-[2.5px] border-[rgba(0,0,0,0.08)] border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
       <div className="text-[rgba(0,0,0,0.25)] mt-4 text-[0.6rem] tracking-[5px] uppercase">Chargement</div>
     </div>
@@ -217,11 +217,11 @@ function AuthScreen() {
 
       <div className="w-full max-w-[330px] text-center px-5 relative z-[1] py-6 my-auto">
         <LogoImg className="w-[100px] h-[100px] mx-auto mb-4" style={{ filter: 'drop-shadow(0 8px 32px rgba(34,197,94,0.25))' }} />
-        <h1 className="text-[1.8rem] font-black mb-1 bg-gradient-to-r from-[#22C55E] to-[#16A34A] bg-clip-text text-transparent tracking-[2px]">ESPACE JEUNES</h1>
-        {/* Communication platform tagline */}
+        <h1 className="text-[1.8rem] font-black mb-1 bg-gradient-to-r from-[#22C55E] to-[#16A34A] bg-clip-text text-transparent tracking-[2px]">JEUNE ÉLAN</h1>
+        {/* Platform tagline */}
         <div className="inline-flex items-center gap-1.5 mb-1 px-3 py-1 rounded-full bg-[rgba(20,184,166,0.1)] border border-[rgba(20,184,166,0.2)]">
           <i className="fas fa-globe-asia text-[#14B8A6] text-[0.6rem]"></i>
-          <span className="text-[0.58rem] font-bold text-[#0F766E] uppercase tracking-wide">Plateforme de communication des grandes entreprises</span>
+          <span className="text-[0.58rem] font-bold text-[#0F766E] uppercase tracking-wide">Tâches rémunérées & micro-prêts</span>
         </div>
         {/* OTP Verification Step — Registration only */}
         {otpStep ? (
@@ -325,7 +325,7 @@ function AuthScreen() {
           </>
         ) : (
           <>
-            <p className="text-[rgba(0,0,0,0.35)] text-[0.72rem] mb-6">{mode === 'login' ? 'Connectez-vous à votre compte.' : 'Rejoignez Espace Jeunes.'}</p>
+            <p className="text-[rgba(0,0,0,0.35)] text-[0.72rem] mb-6">{mode === 'login' ? 'Connectez-vous à votre compte.' : 'Rejoignez Jeune Élan.'}</p>
             <div className="flex bg-[#FFFFFF] rounded-xl p-[3px] mb-6 border border-[rgba(0,0,0,0.08)]">
               <button onClick={() => { setMode('login'); setErrors({}); }} className={`flex-1 py-[11px] text-center text-[0.82rem] font-semibold rounded-lg transition-all border-none cursor-pointer ${mode === 'login' ? 'bg-[#22C55E] text-white shadow-lg' : 'text-[rgba(0,0,0,0.35)]'}`}>Connexion</button>
               <button onClick={() => { setMode('register'); setErrors({}); }} className={`flex-1 py-[11px] text-center text-[0.82rem] font-semibold rounded-lg transition-all border-none cursor-pointer ${mode === 'register' ? 'bg-[#22C55E] text-white shadow-lg' : 'text-[rgba(0,0,0,0.35)]'}`}>Inscription</button>
@@ -345,7 +345,7 @@ function AuthScreen() {
                 </div>
                 <button type="submit" disabled={loading} className="w-full py-3 rounded-xl btn-gradient-green text-[0.85rem] cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">{loading ? <div className="w-4 h-4 border-2 border-[rgba(255,255,255,0.3)] border-t-white rounded-full" style={{ animation: 'spin 0.6s linear infinite' }} /> : <><i className="fas fa-arrow-right"></i> Se connecter</>}</button>
                 <div className="mt-3"><a href="/forgot-password" className="text-[0.7rem] text-[#22C55E] font-medium hover:underline">Mot de passe oublié ?</a></div>
-                <p className="text-[0.55rem] text-[rgba(0,0,0,0.3)] mt-4 leading-relaxed">Regardez des vidéos d'entreprises et d'industrie de tous horizons à travers le monde — soyez payé et investissez pour gagner beaucoup plus.</p>
+                <p className="text-[0.55rem] text-[rgba(0,0,0,0.3)] mt-4 leading-relaxed">Réalisez des tâches numériques rémunérées, accumulez des gains et accédez progressivement aux micro-prêts.</p>
               </form>
             ) : (
               <form onSubmit={handleRegister}>
@@ -435,7 +435,7 @@ function HomeScreen() {
 
   return (
     <>
-      <Header title={<><LogoImg className="w-[26px] h-[26px] rounded-md" style={{ objectFit: 'contain' }} /> <span className="text-[#1F2937] font-black">Espace Jeunes</span></>} rightElement={
+      <Header title={<><LogoImg className="w-[26px] h-[26px] rounded-md" style={{ objectFit: 'contain' }} /> <span className="text-[#1F2937] font-black">Jeune Élan</span></>} rightElement={
         <div className="flex items-center gap-1.5">
           <NotificationBell />
           <button onClick={refresh} className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.6)] backdrop-blur-sm text-[rgba(0,0,0,0.55)] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90"><i className={`fas fa-sync-alt ${refreshing ? 'animate-spin' : ''}`} /></button>
@@ -508,9 +508,9 @@ function HomeScreen() {
               </div>
               <div className="glass-card rounded-lg p-2 flex items-center gap-1.5">
                 <div className="w-7 h-7 icon-box bg-[rgba(34,197,94,0.15)] shrink-0"><i className="fas fa-bullhorn text-[0.55rem] text-[#22C55E]"></i></div>
-                <div className="text-[0.45rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Missions</div>
+                <div className="text-[0.45rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Tâches</div>
                 <div className="text-[0.7rem] font-black text-[#000000] leading-tight ml-auto mr-1">{formatMoney(user.missionBalance || 0)}</div>
-                <button onClick={() => setPage('missions')} className="text-[0.48rem] font-bold px-1.5 py-[2px] rounded-md cursor-pointer border-none text-white shrink-0 transition-transform active:scale-95" style={{ background: '#22C55E' }}>Missions</button>
+                <button onClick={() => setPage('missions')} className="text-[0.48rem] font-bold px-1.5 py-[2px] rounded-md cursor-pointer border-none text-white shrink-0 transition-transform active:scale-95" style={{ background: '#22C55E' }}>Tâches</button>
               </div>
             </div>
           </div>
@@ -534,7 +534,7 @@ function HomeScreen() {
         {/* AI Tip Card — Purple gradient left border + glow */}
         <div className="bg-[rgba(139,92,246,0.04)] border border-[rgba(139,92,246,0.12)] rounded-xl p-3.5 mb-4 flex items-center gap-3" style={{ borderLeft: '5px solid', borderImage: 'linear-gradient(to bottom, #8B5CF6, #6D28D9) 1', boxShadow: '0 0 12px rgba(139,92,246,0.08)' }}>
           <div className="w-10 h-10 icon-box bg-[rgba(139,92,246,0.12)] shrink-0 border border-[rgba(139,92,246,0.15)]"><i className="fas fa-robot text-[#8B5CF6] text-[0.9rem]"></i></div>
-          <div className="flex-1 min-w-0"><div className="text-[0.6rem] text-[#8B5CF6] font-bold uppercase tracking-[1px] mb-0.5">IA Espace Jeunes</div><div className="text-[0.75rem] leading-relaxed text-[rgba(0,0,0,0.7)]">{tip}</div></div>
+          <div className="flex-1 min-w-0"><div className="text-[0.6rem] text-[#8B5CF6] font-bold uppercase tracking-[1px] mb-0.5">IA Jeune Élan</div><div className="text-[0.75rem] leading-relaxed text-[rgba(0,0,0,0.7)]">{tip}</div></div>
         </div>
 
         {/* Promo Banner */}
@@ -546,7 +546,7 @@ function HomeScreen() {
             { icon: 'fa-compass', label: 'Guide', page: 'guide', color: '#14B8A6', bg: 'rgba(20,184,166,0.12)', borderColor: 'border-[#14B8A6]' },
             { icon: 'fa-gift', label: 'Parrainage', page: 'profile', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', borderColor: 'border-[#F59E0B]' },
             { icon: 'fa-comment', label: 'Messages', page: 'chat', color: '#6366F1', bg: 'rgba(99,102,241,0.12)', borderColor: 'border-[#6366F1]' },
-            { icon: 'fa-bullhorn', label: 'Missions', page: 'missions', color: '#22C55E', bg: 'rgba(34,197,94,0.12)', borderColor: 'border-[#22C55E]' },
+            { icon: 'fa-bullhorn', label: 'Tâches', page: 'missions', color: '#22C55E', bg: 'rgba(34,197,94,0.12)', borderColor: 'border-[#22C55E]' },
             { icon: 'fa-newspaper', label: 'Actualités', page: 'guide', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)', borderColor: 'border-[#8B5CF6]' },
           ].map((a, i) => (
             <button key={i} onClick={() => setPage(a.page)} className={`glass-card rounded-xl py-2 px-2 text-center cursor-pointer transition-all active:scale-95 hover:shadow-md border-b-2 ${a.borderColor} shrink-0 min-w-[72px]`}>
@@ -660,13 +660,13 @@ function WalletScreen() {
   // Mission account is funded by validated images (no deposit/transfer),
   // so it's a display-only card. Project is transferable to/from Principal.
   const accounts = [
-    { key: 'mission', label: 'Compte Missions', balance: user.missionBalance || 0, icon: 'fa-bullhorn', iconColor: '#22C55E', iconBg: 'bg-[rgba(34,197,94,0.12)]', borderColor: '#22C55E', transferable: false },
+    { key: 'mission', label: 'Compte Tâches', balance: user.missionBalance || 0, icon: 'fa-bullhorn', iconColor: '#22C55E', iconBg: 'bg-[rgba(34,197,94,0.12)]', borderColor: '#22C55E', transferable: false },
     { key: 'project', label: 'Compte Projet', balance: user.projectBalance, icon: 'fa-building', iconColor: '#8B5CF6', iconBg: 'bg-[rgba(139,92,246,0.12)]', borderColor: '#8B5CF6', transferable: true },
   ] as const;
 
   // Label helper for the transfer modal — 'trade' intentionally absent (trading account removed).
   const accountLabel = (k: string) =>
-    k === 'principal' ? 'Principal' : k === 'invest' ? 'Investissement' : k === 'project' ? 'Projets' : k === 'mission' ? 'Missions' : k;
+    k === 'principal' ? 'Principal' : k === 'invest' ? 'Investissement' : k === 'project' ? 'Projets' : k === 'mission' ? 'Tâches' : k;
 
   // Derived values from API (silent fallbacks if fetch failed)
   const spinsRemaining = gameStatus?.spinsRemaining ?? 10;
@@ -677,7 +677,7 @@ function WalletScreen() {
 
   return (
     <>
-      <Header title="Portefeuille" icon="fa-wallet" iconColor="#22C55E" leftElement={<button onClick={() => setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(255,255,255,0.6)] backdrop-blur-sm text-[rgba(0,0,0,0.55)] cursor-pointer border-none mr-1"><i className="fas fa-arrow-left text-[0.8rem]"></i></button>} rightElement={<button onClick={refresh} className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.6)] backdrop-blur-sm text-[rgba(0,0,0,0.55)] cursor-pointer border-none"><i className={`fas fa-sync-alt text-[0.7rem] ${refreshing ? 'animate-spin' : ''}`} /></button>} />
+      <Header title="Portefeuille" icon="fa-wallet" iconColor="#22C55E" rightElement={<button onClick={refresh} className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.6)] backdrop-blur-sm text-[rgba(0,0,0,0.55)] cursor-pointer border-none"><i className={`fas fa-sync-alt text-[0.7rem] ${refreshing ? 'animate-spin' : ''}`} /></button>} />
       <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
         {/* Solde Total — Gradient Card (no buttons, display only) */}
         <div className="gradient-card rounded-2xl p-5 mb-3 relative overflow-hidden">
@@ -764,14 +764,14 @@ function WalletScreen() {
             <div className="flex items-center gap-2.5">
               <div className="w-10 h-10 icon-box bg-[rgba(34,197,94,0.12)]"><i className="fas fa-bullhorn text-[0.9rem]" style={{ color: '#22C55E' }}></i></div>
               <div>
-                <div className="text-[0.7rem] text-[rgba(0,0,0,0.5)] font-semibold uppercase tracking-[1.5px]">Compte Missions</div>
+                <div className="text-[0.7rem] text-[rgba(0,0,0,0.5)] font-semibold uppercase tracking-[1.5px]">Compte Tâches</div>
                 <div className="text-[0.55rem] text-[#22C55E] font-semibold mt-0.5">Alimenté par les images validées</div>
               </div>
             </div>
             <div className="text-[1.3rem] font-black text-[#1F2937]">{formatMoney(user.missionBalance || 0)}</div>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setPage('missions')} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none text-white transition-transform active:scale-95" style={{ background: 'linear-gradient(90deg, #22C55E 0%, #16A34A 100%)' }}><i className="fas fa-bullhorn text-[0.65rem]"></i> Missions</button>
+            <button onClick={() => setPage('missions')} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none text-white transition-transform active:scale-95" style={{ background: 'linear-gradient(90deg, #22C55E 0%, #16A34A 100%)' }}><i className="fas fa-bullhorn text-[0.65rem]"></i> Tâches</button>
             <button onClick={() => { setWithdrawSource('mission'); setPage('withdraw'); }} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(0,0,0,0.04)] text-[rgba(0,0,0,0.7)] transition-transform active:scale-95"><i className="fas fa-arrow-up text-[0.65rem]"></i> Retirer</button>
           </div>
         </div>
@@ -817,7 +817,7 @@ function WalletScreen() {
           {[
             { icon: 'fa-chart-line', color: '#22C55E', bg: 'bg-[rgba(34,197,94,0.10)]', label: 'Gains totaux', value: formatMoney(user.totalProfit || 0), sub: 'Cumul des gains' },
             { icon: 'fa-arrow-trend-down', color: '#F87171', bg: 'bg-[rgba(248,113,113,0.10)]', label: 'Pertes totales', value: formatMoney(user.totalLoss || 0), sub: 'Cumul des pertes' },
-            { icon: 'fa-bullhorn', color: '#22C55E', bg: 'bg-[rgba(34,197,94,0.10)]', label: 'Solde missions', value: formatMoney(user.missionBalance || 0), sub: 'Gains images validées' },
+            { icon: 'fa-bullhorn', color: '#22C55E', bg: 'bg-[rgba(34,197,94,0.10)]', label: 'Solde tâches', value: formatMoney(user.missionBalance || 0), sub: 'Gains images validées' },
             { icon: 'fa-seedling', color: '#14B8A6', bg: 'bg-[rgba(20,184,166,0.10)]', label: 'Solde investissement', value: formatMoney(user.investBalance || 0), sub: 'Compte d\'investissement' },
             { icon: 'fa-building', color: '#8B5CF6', bg: 'bg-[rgba(139,92,246,0.10)]', label: 'Solde projet', value: formatMoney(user.projectBalance || 0), sub: 'Compte de projet' },
           ].map((s, i, arr) => (
@@ -973,23 +973,27 @@ function FinanceScreen() {
 function BottomNav() {
   const { currentPage, setPage } = useAppStore();
   const tabs = [
-    { id: 'missions', icon: 'fa-bullhorn', label: 'Missions' },
-    { id: 'home', icon: 'fa-home', label: 'Accueil' },
+    { id: 'missions', icon: 'fa-th-large', label: 'Tableau' },
+    { id: 'finance', icon: 'fa-chart-line', label: 'Finance' },
+    { id: 'wallet', icon: 'fa-wallet', label: 'Portefeuille' },
     { id: 'guide', icon: 'fa-compass', label: 'Guide' },
     { id: 'profile', icon: 'fa-user', label: 'Profil' },
   ];
   const isActive = (tabId: string) => {
-    if (tabId === 'home') return ['home', 'finance', 'invest', 'game', 'enterprise', 'wallet', 'deposit', 'deposit-choose', 'withdraw'].includes(currentPage);
+    if (tabId === 'missions') return ['missions'].includes(currentPage);
+    if (tabId === 'finance') return ['home', 'finance', 'invest', 'game', 'enterprise', 'deposit', 'deposit-choose', 'withdraw'].includes(currentPage);
+    if (tabId === 'wallet') return ['wallet'].includes(currentPage);
     if (tabId === 'guide') return currentPage === 'guide';
+    if (tabId === 'profile') return ['profile', 'analytics', 'admin', 'chat'].includes(currentPage);
     return currentPage === tabId;
   };
   return (
-    <nav className="h-[60px] bg-white/90 backdrop-blur-xl border-t border-[rgba(0,0,0,0.06)] flex items-center justify-around px-2 shrink-0 safe-area-bottom">
+    <nav className="h-[60px] bg-white/90 backdrop-blur-xl border-t border-[rgba(0,0,0,0.06)] flex items-center justify-around px-1 shrink-0 safe-area-bottom">
       {tabs.map(t => (
-        <button key={t.id} onClick={() => setPage(t.id)} className={`flex flex-col items-center justify-center py-1.5 px-2 border-none cursor-pointer transition-all relative ${isActive(t.id) ? 'text-[#22C55E]' : 'text-[rgba(0,0,0,0.3)]'}`}>
+        <button key={t.id} onClick={() => setPage(t.id)} className={`flex flex-col items-center justify-center py-1.5 px-1.5 border-none cursor-pointer transition-all relative ${isActive(t.id) ? 'text-[#22C55E]' : 'text-[rgba(0,0,0,0.3)]'}`}>
           {isActive(t.id) && <div className="absolute -top-0.5 w-5 h-[3px] rounded-full bg-[#22C55E]"></div>}
-          <i className={`fas ${t.icon} text-[0.95rem] mb-0.5`}></i>
-          <span className={`text-[0.55rem] ${isActive(t.id) ? 'font-bold text-[#22C55E]' : 'font-semibold'}`}>{t.label}</span>
+          <i className={`fas ${t.icon} text-[0.9rem] mb-0.5`}></i>
+          <span className={`text-[0.5rem] ${isActive(t.id) ? 'font-bold text-[#22C55E]' : 'font-semibold'}`}>{t.label}</span>
         </button>
       ))}
     </nav>
@@ -1009,7 +1013,7 @@ function ServiceWorkerRegistrar() {
 }
 
 // ==================== MAIN APP ====================
-export default function BeRichApp() {
+export default function JeuneElenApp() {
   const { user, currentPage, setPage, setUser, showSplash, setShowSplash } = useAppStore();
   const { currentAd, dismissAd } = useTabChangeAd(currentPage);
   const [initialized, setInitialized] = useState(false);
@@ -1075,7 +1079,7 @@ export default function BeRichApp() {
           {user && currentPage === 'deposit-choose' && <DepositChooseScreen />}
           {user && currentPage === 'guide' && <GuideScreen />}
           {showNav && <BottomNav />}
-          {user && (currentPage === 'home' || currentPage === 'missions') && <FloatingGift />}
+          {user && ['home', 'missions', 'finance', 'wallet'].includes(currentPage) && <FloatingGift />}
           <InstallPrompt />
         </div>
         <TabChangeAd ad={currentAd} onClose={dismissAd} />

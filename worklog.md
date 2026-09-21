@@ -45,3 +45,46 @@ Stage Summary:
 - MissionsScreen compiles without errors ✅
 - All video references removed from codebase ✅
 - Site branded as "Espace Jeunes" ✅
+---
+Task ID: 2
+Agent: full-stack-developer
+Task: Rewrite MissionsScreen.tsx with complete dashboard using fictive data
+
+Work Log:
+- Rewrote MissionsScreen.tsx with full dashboard per user spec
+- Used fictive data instead of API calls
+- Implemented all 8 dashboard sections
+- Mobile-first responsive design
+
+Stage Summary:
+- Dashboard now shows content immediately after login
+- All cards, progress bars, eligibility checker functional
+- Code structured for easy API data replacement later
+---
+Task ID: 3
+Agent: main
+Task: Update bottom nav label and verify dashboard with Agent Browser
+
+Work Log:
+- Changed bottom nav in page.tsx: "Tâches" → "Tableau", icon fa-bullhorn → fa-th-large
+- Registered new test user "Richard" (richard@test.com) via API
+- Verified email with OTP code 423916
+- Logged in via Agent Browser
+- Dashboard renders correctly with all 8+ sections:
+  - Header with logo, notification bell (count 3), profile dropdown
+  - Sub-tabs: Tableau, Missions, Mes images, Portefeuille, Prêts
+  - Welcome: "Bonjour, Richard 👋"
+  - 4 stat cards: Solde (1 850 F), Gains (+175 F), Images (7/10), Parrainages (3/5)
+  - Progression 2 500 FCFA (74% bar)
+  - Mon éligibilité card with condition checklist
+  - Ma caution card (5 000 FCFA)
+  - Missions disponibles: Mercedes + Immobilier with "Voir la mission" buttons
+  - Comment ça marche ? 5-step block
+  - Activité récente with 3 entries
+- Tab switching works (Tableau ↔ Missions)
+- Bottom nav shows "Tableau" instead of "Tâches"
+
+Stage Summary:
+- Dashboard fully functional after login with fictive data
+- All spec requirements met
+- Browser-verified interactivity confirmed

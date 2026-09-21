@@ -14,7 +14,7 @@ interface Notif {
 }
 
 const REFRESH_REGEX = /actualisez/i;
-const STORAGE_KEY = 'beRich.refreshBanner.dismissedAt';
+const STORAGE_KEY = 'jeuneElan.refreshBanner.dismissedAt';
 const DISMISS_COOLDOWN_MS = 60_000; // re-show after 60s if new refresh notifs arrive
 const POLL_INTERVAL_MS = 30_000;
 

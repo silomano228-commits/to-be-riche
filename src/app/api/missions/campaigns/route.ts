@@ -3,11 +3,74 @@ import { db } from '@/lib/db';
 import { getAuthToken } from '@/lib/auth';
 import { ensureSiteConfig } from '@/lib/site-config';
 
+// Auto-seed campaigns if none exist
+async function ensureCampaigns() {
+  const count = await db.campaign.count();
+  if (count > 0) return;
+  const now = new Date();
+  const future = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+  await db.campaign.createMany({
+    data: [
+      {
+        name: 'Visuels Immobilier Luxe',
+        brand: 'Immobilier Royale',
+        description: 'Créez des visuels haut de gamme pour des propriétés immobilières de luxe',
+        brief: 'Générez des images de villas, appartements et propriétés de luxe avec des intérieurs modernes, piscines, vues panoramiques. Les images doivent inspirer le luxe et le confort.',
+        format: '16:9',
+        style: 'realistic',
+        constraints: 'Pas de texte sur l\'image. Couleurs chaudes et naturelles. Éclairage professionnel.',
+        rewardCfa: 25,
+        dailyLimit: 10,
+        maxImages: 5000,
+        startDate: now,
+        endDate: future,
+        status: 'active',
+        category: 'immobilier',
+      },
+      {
+        name: 'Visuels Automobile Sport',
+        brand: 'Mercedes',
+        description: 'Créez des visuels dynamiques pour des voitures sportives',
+        brief: 'Générez des images de voitures sportives et de luxe dans des décors urbains ou naturels. Les voitures doivent être mises en valeur avec des éclairages dramatiques.',
+        format: '16:9',
+        style: 'realistic',
+        constraints: 'Pas de texte. Fond net et professionnel. Reflets et éclairage réalistes.',
+        rewardCfa: 25,
+        dailyLimit: 10,
+        maxImages: 5000,
+        startDate: now,
+        endDate: future,
+        status: 'active',
+        category: 'automobile',
+      },
+      {
+        name: 'Visuels Mode & Beauté',
+        brand: 'Louis Vuitton',
+        description: 'Créez des visuels élégants pour la mode et la beauté',
+        brief: 'Générez des images de mode avec des tenues élégantes, accessoires de luxe (montres, sacs, bijoux). Style magazine de mode haut de gamme.',
+        format: '4:3',
+        style: 'artistic',
+        constraints: 'Pas de texte. Style éditorial magazine. Couleurs cohérentes.',
+        rewardCfa: 25,
+        dailyLimit: 10,
+        maxImages: 5000,
+        startDate: now,
+        endDate: future,
+        status: 'active',
+        category: 'mode',
+      },
+    ],
+  });
+}
+
 // GET /api/missions/campaigns — List active campaigns
 export async function GET(request: NextRequest) {
   const authUser = await getAuthToken(request);
   const userId = authUser?.id || null;
   const now = new Date();
+
+  // Ensure at least some campaigns exist
+  await ensureCampaigns();
 
   const campaigns = await db.campaign.findMany({
     where: {

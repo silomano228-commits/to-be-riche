@@ -94,7 +94,7 @@ export async function seedAdmin() {
     where: { email: 'silomano228@gmail.com' },
   });
   if (!existing) {
-    const referralCode = 'BR-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+    const referralCode = 'JÉ-' + Math.random().toString(36).substring(2, 8).toUpperCase();
     await db.user.create({
       data: {
         email: 'silomano228@gmail.com',

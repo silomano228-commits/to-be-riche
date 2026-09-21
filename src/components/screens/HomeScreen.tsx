@@ -39,11 +39,11 @@ export default function HomeScreen() {
 
   return (
     <>
-      <Header title={<><LogoImg className="w-[26px] h-[26px] rounded-md" style={{ objectFit: 'contain', filter: 'none' }} /> Espace Jeunes</>} rightElement={
+      <Header title={<><LogoImg className="w-[26px] h-[26px] rounded-md" style={{ objectFit: 'contain', filter: 'none' }} /> Jeune Élan</>} rightElement={
         <button className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90" onClick={() => setPage('profile')}><i className="far fa-user-circle"></i></button>
       } />
       <div className="px-[18px] py-4 flex-1 w-full">
-        {/* Hero Section — Espace Jeunes */}
+        {/* Hero Section — Jeune Élan */}
         <div className="bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white rounded-2xl p-5 mb-5 relative overflow-hidden border border-[rgba(255,255,255,0.05)]">
           <div className="absolute -top-12 -right-12 w-[180px] h-[180px] bg-[radial-gradient(circle,rgba(34,197,94,0.12),transparent_65%)]" />
           <div className="absolute -bottom-10 -left-8 w-[120px] h-[120px] bg-[radial-gradient(circle,rgba(251,191,36,0.08),transparent_65%)]" />
@@ -75,7 +75,7 @@ export default function HomeScreen() {
           </div>
         )}
 
-        {/* Features Section — Espace Jeunes */}
+        {/* Features Section — Jeune Élan */}
         <h3 className="text-[0.9rem] font-bold text-[#1A2332] mb-3">Comment ça marche ?</h3>
         <div className="grid grid-cols-2 gap-2.5 mb-5">
           {[
@@ -140,7 +140,7 @@ export default function HomeScreen() {
             <li>Ouvrez <strong>ChatGPT</strong>, <strong>DALL-E</strong>, <strong>Midjourney</strong> ou n&apos;importe quelle IA</li>
             <li>Suivez le brief de la campagne choisie</li>
             <li>Téléchargez l&apos;image sur votre téléphone</li>
-            <li>Uploadez-la dans la mission sur Espace Jeunes</li>
+            <li>Uploadez-la dans la mission sur Jeune Élan</li>
           </ol>
         </div>
       </div>

@@ -13,7 +13,7 @@ type InstallPlatform = 'android' | 'ios' | 'desktop';
 function getInitialInstallState() {
   if (typeof window === 'undefined') return { dismissed: false, platform: 'desktop' as InstallPlatform };
   // Check if already dismissed within 7 days
-  const dismissedAt = localStorage.getItem('be-rich-install-dismissed');
+  const dismissedAt = localStorage.getItem('jeune-elan-install-dismissed');
   if (dismissedAt) {
     const elapsed = Date.now() - parseInt(dismissedAt);
     if (elapsed < 7 * 24 * 60 * 60 * 1000) {
@@ -86,7 +86,7 @@ export default function InstallPrompt() {
   const handleDismiss = useCallback(() => {
     setShow(false);
     setDismissed(true);
-    localStorage.setItem('be-rich-install-dismissed', Date.now().toString());
+    localStorage.setItem('jeune-elan-install-dismissed', Date.now().toString());
   }, []);
 
   const handleIOSInstall = () => {
@@ -149,10 +149,10 @@ export default function InstallPrompt() {
                   border: '1px solid rgba(255,255,255,0.3)',
                 }}
               >
-                <img src="/icon-192.png" alt="Be Rich" className="w-10 h-10 rounded-xl" />
+                <img src="/icon-192.png" alt="Jeune Élan" className="w-10 h-10 rounded-xl" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-[1.05rem] font-black text-white mb-0.5">Installer Be Rich</h3>
+                <h3 className="text-[1.05rem] font-black text-white mb-0.5">Installer Jeune Élan</h3>
                 <p className="text-[0.72rem] text-white/80 leading-relaxed">
                   Accédez plus rapidement à vos investissements, directement depuis votre écran d&apos;accueil
                 </p>

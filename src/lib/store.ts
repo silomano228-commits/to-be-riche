@@ -36,7 +36,7 @@ export interface AppUser {
   activeEnterprisesCount?: number;
   claimableInvestments?: number;
   unlockedLevel?: number;
-  // Espace Jeunes — Mission & Micro-Prêt
+  // Jeune Élan — Mission & Micro-Prêt
   missionBalance?: number;
   missionTotalEarned?: number;
   missionValidatedToday?: number;

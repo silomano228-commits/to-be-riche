@@ -1,137 +1,3 @@
-/*
- * ═══════════════════════════════════════════════════════════════════════════
- * ANALYSE FINANCIÈRE — Scénario : 10 utilisateurs, premier mois (30 jours)
- * ═══════════════════════════════════════════════════════════════════════════
- *
- * HYPOTHÈSES :
- * ─ 10 utilisateurs initiaux, solde $0
- * ─ 8 déposent $5 (Niveau 1), 2 déposent $65 (Niveau 2)
- * ─ Tous accomplissent des missions quotidiennement pendant 30 jours
- * ─ Chaque utilisateur parraine en moyenne 2 personnes → 20 nouveaux utilisateurs au total
- * ─ Niveau 1 : investissement $5–$15, rendement 5 %/jour, collecte immédiate
- * ─ Niveau 2 : investissement $65, rendement 5 %/jour, collecte BLOQUÉE sans 12 parrainages
- * ─ Missions : ~$0,20/image × 5 = ~$1/jour/utilisateur (bloqué sans parrainage + dépôt)
- * ─ Jeu de roue : 10 tours/jour × $0,20 = $2/jour, système truqué (~70 % retenu)
- * ─ Taux TRX/USD : affichage uniquement, pas utilisé pour les calculs de rentabilité
- *
- * ──────────────────────────────────────────────────────────────────────────
- * 1. DÉPÔTS REÇUS PAR L'ADMIN
- * ──────────────────────────────────────────────────────────────────────────
- *   8 × $5  (Niveau 1)   =  $40
- *   2 × $65 (Niveau 2)   = $130
- *                          ─────
- *   TOTAL DÉPÔTS          = $170
- *
- * ──────────────────────────────────────────────────────────────────────────
- * 2. PAYOUTS INVESTISSEMENT QUOTIDIENS (5 % des investissements actifs)
- * ──────────────────────────────────────────────────────────────────────────
- *   Niveau 1 : 8 × $5 × 5 % = $2/jour → $2 × 30 = $60/mois
- *   Niveau 2 : 2 × $65 × 5 % = $6,50/jour
- *              → COLLECTE BLOQUÉE (aucun n'atteint 12 parrainages au mois 1)
- *                          ─────
- *   TOTAL PAYOUTS INV.    = $60  (uniquement Niveau 1)
- *
- * ──────────────────────────────────────────────────────────────────────────
- * 3. RÉCOMPENSES MISSIONS
- * ──────────────────────────────────────────────────────────────────────────
- *   Jours 1–3 (sans restriction) :
- *     10 utilisateurs × $1/jour × 3 jours = $30
- *
- *   Jours 4–30 (27 jours) :
- *     Condition : ≥ 1 parrainage + dépôt d'investissement actif.
- *     Ensuite, tous les 2 jours, il faut un NOUVEAU parrainage.
- *     Avec ~2 parrainages total par utilisateur sur 30 jours, la plupart
- *     ne maintiennent les conditions que ~4–5 jours supplémentaires.
- *     10 utilisateurs × $1/jour × 5 jours (moyenne) = $50
- *
- *   Si les missions n'étaient PAS bloquées : 10 × $1 × 30 = $300
- *                          ─────
- *   TOTAL MISSIONS PAYÉ    = $250
- *   ÉCONOMIE (bloqué)      = $50
- *
- * ──────────────────────────────────────────────────────────────────────────
- * 4. REVENU NET DU JEU DE ROUE
- * ──────────────────────────────────────────────────────────────────────────
- *   Dépense totale utilisateurs : 10 × $2/jour × 30 jours = $600
- *   Système truqué (~70 % retenu) :
- *     Retenu (détruit du système) : $600 × 70 % = $420
- *     Distribué aux joueurs       : $600 × 30 % = $180
- *
- *   Note : les $420 « retenus » ne sont pas un vrai revenu en argent réel.
- *   C'est de l'argent virtuel qui n'est jamais crédité sur les comptes.
- *   L'effet réel est de DÉTRUIRE $420 de balances virtuelles, ce qui
- *   réduit les demandes de retrait potentielles.
- *                          ─────
- *   GAINS JOUEURS (virtuels) = $180
- *   ARGENT DÉTRUIT           = $420
- *
- * ──────────────────────────────────────────────────────────────────────────
- * 5. COMMISSIONS DE PARRAINAGE (5 % des gains quotidiens des filleuls)
- * ──────────────────────────────────────────────────────────────────────────
- *   20 nouveaux utilisateurs, ~50 % investissent au Niveau 1 ($5).
- *   10 filleuls investisseurs × $5 × 5 % = $0,25/jour chacun.
- *   Arrivée progressive : durée moyenne ~15 jours.
- *   10 × $0,25 × 15 jours = $37,50 crédités sur comptes Investissement.
- *                          ─────
- *   TOTAL COMMISSIONS      = ~$37,50
- *
- * ──────────────────────────────────────────────────────────────────────────
- * 6. DEMANDES DE RETRAIT
- * ──────────────────────────────────────────────────────────────────────────
- *   Balances virtuelles totales créées (mois 1) :
- *     Mission          : $250
- *     Investissement   : $60 (retours L1)
- *     Jeu (gains roue) : $180
- *     Parrainage       : $37,50
- *                          ─────
- *     TOTAL VIRTUEL    = $357,50
- *
- *   Seuil minimum de retrait : $1 (Mission) / $5 (autres comptes).
- *   L'admin contrôle TOUTES les approbations de retrait.
- *   Estimation : ~60 % des demandes approuvées → ~$70–$90 réellement versés.
- *
- * ──────────────────────────────────────────────────────────────────────────
- * 7. BÉNÉFICE NET ADMIN — APRÈS 1 MOIS
- * ──────────────────────────────────────────────────────────────────────────
- *   Argent réel reçu (dépôts)            +$170
- *   Argent réel versé (retraits)          -$80
- *                                          ─────
- *   BÉNÉFICE NET RÉEL                     ≈ +$90
- *
- *   Et ce bénéfice augmente chaque mois car :
- *   • Les dépôts Niveau 2 ($130) restent bloqués (pas de 12 parrainages)
- *   • Les nouveaux utilisateurs apportent de nouveaux dépôts
- *   • Le jeu de roue détruit continuellement les balances virtuelles
- *
- * ──────────────────────────────────────────────────────────────────────────
- * 8. POURQUOI LE SYSTÈME EST TOUJOURS RENTABLE
- * ──────────────────────────────────────────────────────────────────────────
- *
- *  a) RÉCOMPENSES MISSION BLOQUÉES SANS CONDITIONS
- *     Sans parrainage + dépôt d'investissement, les missions ne rapportent plus.
- *     La plupart des utilisateurs actifs n'ont pas assez de parrainages
- *     pour maintenir les gains → $50 économisés sur le scénario.
- *
- *  b) JEU DE ROUE TRUQUÉ (70 %+ retenu)
- *     L'argent dépensé en tours est majoritairement détruit du système.
- *     Cela réduit les balances virtuelles accumulées et limite les retraits.
- *
- *  c) INVESTISSEMENTS NIVEAU 2 : COLLECTE IMPOSSIBLE SANS 12 PARRAINAGES
- *     Les $130 déposés au Niveau 2 génèrent des gains théoriques de
- *     $6,50/jour, mais AUCUN ne peut être collecté au mois 1.
- *     Cet argent reste dans le système indéfiniment.
- *
- *  d) L'ADMIN CONTRÔLE TOUTES LES APPROBATIONS
- *     Dépôts et retraits nécessitent l'approbation de l'admin.
- *     L'admin peut rejeter, retarder ou limiter toute demande de retrait.
- *
- *  e) TAUX DE CHANGE FIXÉ (550 FCFA = 1 USD)
- *     Le taux est défini par l'admin et ne reflète pas forcément le taux réel.
- *     Cela offre une marge supplémentaire sur les conversions.
- *
- * ═══════════════════════════════════════════════════════════════════════════
- */
-
 'use client';
 
 import { useState } from 'react';
@@ -139,20 +5,19 @@ import { useAppStore } from '@/lib/store';
 import { Header, LogoImg } from '@/components/shared';
 
 // =====================================================================
-// Be Rich — Guide complet
-// 8 sections : Concept, Missions, Investissement, Jeu,
-// Comptes, Dépôts/Retraits, Parrainage, Navigation.
+// Jeune Élan — Guide complet
+// 7 sections : Démarrage, Missions & Images, Gains & Portefeuille,
+// Parrainage, Éligibilité & Micro-prêts, Remboursement, Sécurité.
 // =====================================================================
 
 type SectionId =
-  | 'concept'
+  | 'demarrage'
   | 'missions'
-  | 'invest'
-  | 'game'
-  | 'accounts'
-  | 'payments'
-  | 'referral'
-  | 'nav';
+  | 'gains'
+  | 'parrainage'
+  | 'eligibilite'
+  | 'remboursement'
+  | 'securite';
 
 interface SectionDef {
   id: SectionId;
@@ -163,19 +28,18 @@ interface SectionDef {
 }
 
 const SECTIONS: SectionDef[] = [
-  { id: 'concept',  label: 'Le Concept',                     icon: 'fa-lightbulb',      color: '#14B8A6', summary: 'Be Rich vous paie pour accomplir des missions, investir et jouer' },
-  { id: 'missions',  label: 'Missions & Images',             icon: 'fa-bullhorn',       color: '#14B8A6', summary: 'Campagnes · soumettez des images · gagnez des récompenses' },
-  { id: 'invest',   label: "L'Investissement (Make Money)",  icon: 'fa-chart-line',     color: '#059669', summary: '3 niveaux · 5%/jour · collecte sur compte investissement' },
-  { id: 'game',     label: 'Le Jeu de Roue',                 icon: 'fa-dice',           color: '#F59E0B', summary: '10 tours/jour · 0,20 $/tour · arrêt manuel ou auto à 3 s' },
-  { id: 'accounts', label: 'Les Comptes',                    icon: 'fa-wallet',         color: '#22C55E', summary: 'Total (vue) · Jeu · Investissement · Projet · Mission' },
-  { id: 'payments', label: 'Dépôts et Retraits',             icon: 'fa-credit-card',    color: '#EF4444', summary: 'YAS & TRX · 550 FCFA = 1 USD · retrait depuis tous les comptes' },
-  { id: 'referral', label: 'Parrainage',                     icon: 'fa-gift',           color: '#EC4899', summary: '5 % à vie sur les gains de vos filleuls · anti-doublon' },
-  { id: 'nav',      label: 'Navigation',                     icon: 'fa-compass',        color: '#64748B', summary: '4 onglets : Missions · Make Money · Guide · Profil' },
+  { id: 'demarrage',    label: 'Démarrage',                 icon: 'fa-rocket',           color: '#22C55E', summary: 'Inscription · vérification téléphone · accès aux missions' },
+  { id: 'missions',     label: 'Missions & Images',          icon: 'fa-images',           color: '#F59E0B', summary: 'Générer avec IA externe · uploader · validation · +25 FCFA' },
+  { id: 'gains',        label: 'Gains & Portefeuille',       icon: 'fa-wallet',           color: '#3B82F6', summary: '25 FCFA/image · objectif 2 500 F · caution 5 000 F (bloquée)' },
+  { id: 'parrainage',   label: 'Parrainage',                 icon: 'fa-users',            color: '#8B5CF6', summary: 'Code JÉ-XXXXXX · 5 filleuls = prêt 5 000 F · 10 = prêt 10 000 F' },
+  { id: 'eligibilite',  label: 'Éligibilité & Micro-prêts',  icon: 'fa-check-circle',     color: '#EF4444', summary: 'Conditions · simulateur · décaissement 5 000 F ou 10 000 F' },
+  { id: 'remboursement', label: 'Remboursement',             icon: 'fa-hand-holding-usd', color: '#06B6D4', summary: 'Via missions · déduction auto · retard 5j → prélèvement filleuls' },
+  { id: 'securite',     label: 'Sécurité & Anti-fraude',     icon: 'fa-shield-alt',       color: '#64748B', summary: 'Vérification · mot de passe · surveillance · sanctions' },
 ];
 
 export default function GuideScreen() {
   const { user } = useAppStore();
-  const [open, setOpen] = useState<Set<SectionId>>(new Set<SectionId>(['concept']));
+  const [open, setOpen] = useState<Set<SectionId>>(new Set<SectionId>(['demarrage']));
 
   const toggle = (id: SectionId) => {
     setOpen((prev) => {
@@ -190,7 +54,7 @@ export default function GuideScreen() {
 
   return (
     <>
-      <Header title="Guide" icon="fa-compass" iconColor="#14B8A6" />
+      <Header title="Guide" icon="fa-compass" iconColor="#22C55E" />
       <div className="flex-1 overflow-y-auto bg-gradient-to-b from-[#F8FBFA] to-[#F0FDFA]">
         {/* ---------- Hero ---------- */}
         <div className="px-4 pt-4 pb-3">
@@ -200,18 +64,18 @@ export default function GuideScreen() {
             <div className="relative flex items-start gap-3">
               <LogoImg className="w-14 h-14 rounded-2xl bg-white/20 p-1.5 shrink-0" />
               <div className="flex-1 min-w-0">
-                <h1 className="text-[1.2rem] font-black text-white leading-tight">Guide Be Rich</h1>
+                <h1 className="text-[1.2rem] font-black text-white leading-tight">Guide Jeune Élan</h1>
                 <p className="text-[0.72rem] text-white/85 mt-1 leading-relaxed">
-                  Tout ce qu&apos;il faut savoir pour gagner de l&apos;argent :
-                  missions, investissements, jeu de roue et parrainage.
+                  Missions rémunérées d&apos;images IA et micro-prêts pour la jeunesse.
+                  Gagnez, parrainez, empruntez — tout est ici.
                 </p>
               </div>
             </div>
             <div className="relative mt-3 flex flex-wrap gap-1.5">
-              <Pill icon="fa-bullhorn" text="Missions" />
-              <Pill icon="fa-chart-line" text="Investir" />
-              <Pill icon="fa-dice" text="Jeu" />
-              <Pill icon="fa-share-nodes" text="Parrainage" />
+              <Pill icon="fa-rocket" text="Démarrage" />
+              <Pill icon="fa-images" text="Missions" />
+              <Pill icon="fa-wallet" text="Gains" />
+              <Pill icon="fa-hand-holding-usd" text="Micro-prêts" />
             </div>
           </div>
         </div>
@@ -241,7 +105,7 @@ export default function GuideScreen() {
                   aria-expanded={isOpen}
                 >
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${s.color}1A` }}>
-                    <i className={`fas ${s.icon} text-[0.95rem]}`} style={{ color: s.color }} />
+                    <i className={`fas ${s.icon} text-[0.95rem]`} style={{ color: s.color }} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[0.86rem] font-black text-[#1F2937] truncate">{s.label}</div>
@@ -252,14 +116,13 @@ export default function GuideScreen() {
                 <div className={`grid transition-all duration-300 ease-out ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
                   <div className="overflow-hidden">
                     <div className="px-4 pb-4 pt-1 border-t border-[#F3F4F6]">
-                      {s.id === 'concept'  && <ConceptContent />}
-                      {s.id === 'missions'  && <MissionsContent />}
-                      {s.id === 'invest'   && <InvestContent />}
-                      {s.id === 'game'     && <GameContent />}
-                      {s.id === 'accounts' && <AccountsContent />}
-                      {s.id === 'payments' && <PaymentsContent />}
-                      {s.id === 'referral' && <ReferralContent />}
-                      {s.id === 'nav'      && <NavContent />}
+                      {s.id === 'demarrage'    && <DemarrageContent />}
+                      {s.id === 'missions'     && <MissionsContent />}
+                      {s.id === 'gains'        && <GainsContent />}
+                      {s.id === 'parrainage'   && <ParrainageContent />}
+                      {s.id === 'eligibilite'  && <EligibiliteContent />}
+                      {s.id === 'remboursement'&& <RemboursementContent />}
+                      {s.id === 'securite'     && <SecuriteContent />}
                     </div>
                   </div>
                 </div>
@@ -273,9 +136,9 @@ export default function GuideScreen() {
           <div className="rounded-2xl p-4 text-center" style={{ background: 'linear-gradient(135deg, #ECFDF5, #F0FDFA)', border: '1px solid #A7F3D0' }}>
             <i className="fas fa-shield-halved text-[#0F766E] text-[1.1rem] mb-1.5" />
             <p className="text-[0.72rem] text-[#115E59] leading-relaxed">
-              Be Rich ne demande <strong>jamais</strong> votre mot de passe ni votre code
-              PIN. Tous les dépôts et retraits passent par <strong>YAS</strong> ou{' '}
-              <strong>TRX</strong>. Taux de change : <strong>1 USD = 550 FCFA</strong>.
+              Jeune Élan ne demande <strong>jamais</strong> votre mot de passe.
+              Générez vos images avec une IA externe, uploadez-les, gagnez <strong>25 FCFA</strong> par image validée.
+              Objectif <strong>2 500 FCFA</strong> + caution <strong>5 000 FCFA</strong> + filleuls = micro-prêt !
             </p>
           </div>
         </div>
@@ -336,353 +199,314 @@ function StatRow({ label, value, valueColor }: { label: string; value: string; v
 // Section contents
 // =====================================================================
 
-function ConceptContent() {
-  const teal = '#14B8A6';
+function DemarrageContent() {
+  const green = '#22C55E';
   return (
     <>
-      <Row icon="fa-handshake" color={teal} title="Le principe">
-        Les <strong>entreprises</strong> paient pour leur <strong>visibilité</strong>.
-        Vous accomplissez des missions, vous investissez, vous jouez —{' '}
-        <strong>vous gagnez</strong>.
+      <Row icon="fa-user-plus" color={green} title="Inscription">
+        Créez votre compte avec votre <strong>numéro de téléphone</strong>, votre nom, votre email et un mot de passe.
+        Un seul numéro = un seul compte.
       </Row>
-      <Row icon="fa-coins" color="#F59E0B" title="3 façons de gagner">
-        <strong>Missions</strong>, <strong>investissements</strong> et{' '}
-        <strong>roue de la fortune</strong>.
+      <Row icon="fa-mobile-alt" color="#3B82F6" title="Vérification OTP">
+        Un code est envoyé par SMS. Entrez-le pour vérifier votre numéro.
+        Sans vérification, <strong>aucun accès aux missions</strong>.
       </Row>
+      <Row icon="fa-door-open" color="#F59E0B" title="Accès aux missions">
+        Téléphone vérifié = accès aux campagnes actives.
+        Commencez à <strong>générer et uploader des images</strong> pour gagner.
+      </Row>
+
+      <Callout icon="fa-lightbulb" color={green}>
+        <strong>Conseil :</strong> gardez votre numéro de téléphone en sécurité.
+        Il est lié à votre compte de façon permanente.
+      </Callout>
+
+      <Callout icon="fa-exclamation-triangle" color="#EF4444">
+        <strong>Attention :</strong> les faux numéros sont détectés automatiquement.
+        La création de plusieurs comptes est interdite et surveillée.
+      </Callout>
     </>
   );
 }
 
 function MissionsContent() {
-  const teal = '#14B8A6';
-  return (
-    <>
-      <Row icon="fa-bullhorn" color={teal} title="Campagnes de mission">
-        Les <strong>entreprises</strong> créent des <strong>campagnes</strong> avec un cahier des charges.
-        Vous soumettez des <strong>photos preuve</strong> pour chaque campagne active.
-      </Row>
-      <Row icon="fa-camera" color="#22C55E" title="Soumission d'images">
-        Prenez ou téléchargez une <strong>photo</strong> qui respecte le brief de la campagne.
-        L&apos;image est envoyée pour <strong>validation par l&apos;admin</strong>.
-      </Row>
-      <Row icon="fa-check-circle" color="#4ADE80" title="Validation &amp; récompense">
-        Si votre image est <strong>validée</strong>, la récompense de la campagne est créditée
-        sur votre <strong>compte Mission</strong>. Les images refusées ne donnent rien.
-      </Row>
-
-      <Callout icon="fa-images" color={teal}>
-        <strong>Statuts possibles :</strong>{' '}
-        <strong>En attente</strong> (à valider),{' '}
-        <strong>Validée</strong> (récompense créditée),{' '}
-        <strong>Refusée</strong> (non conforme),{' '}
-        <strong>Doublon</strong> (image déjà soumise).
-      </Callout>
-
-      <Callout icon="fa-arrow-up" color="#EF4444">
-        <strong>Retrait dès $1</strong> depuis le compte Mission via <strong>YAS</strong> ou <strong>TRX</strong>.
-      </Callout>
-    </>
-  );
-}
-
-function InvestContent() {
-  const green = '#059669';
-  const LEVELS = [
-    { level: 1, name: 'Débutant', min: 5,   max: 15,   rate: 5, refs: 0,  color: '#22C55E', icon: 'fa-seedling' },
-    { level: 2, name: 'Business', min: 65,  max: 250,  rate: 5, refs: 12, color: '#14B8A6', icon: 'fa-chart-line' },
-    { level: 3, name: 'Elite',    min: 500, max: 3000, rate: 5, refs: 25, color: '#F59E0B', icon: 'fa-crown' },
-  ];
-  return (
-    <>
-      <Row icon="fa-chart-line" color={green} title="3 niveaux · 5 % par jour">
-        Tous les niveaux rapportent <strong>5 %/jour</strong>. Investissez au{' '}
-        <strong>niveau souhaité</strong> et les <strong>collectes journalières</strong>{' '}
-        sont créditées directement sur votre <strong>compte Investissement</strong>.
-      </Row>
-
-      <div className="mt-2 space-y-2">
-        {LEVELS.map((lvl) => (
-          <div key={lvl.level} className="rounded-xl p-3 border" style={{ borderColor: `${lvl.color}33`, background: `${lvl.color}0A` }}>
-            <div className="flex items-center gap-2.5 mb-1.5">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${lvl.color}26` }}>
-                <i className={`fas ${lvl.icon} text-[0.8rem]`} style={{ color: lvl.color }} />
-              </div>
-              <div className="flex-1">
-                <div className="text-[0.78rem] font-black text-[#1F2937]">Niveau {lvl.level} · {lvl.name}</div>
-                <div className="text-[0.62rem] text-[#6B7280]">${lvl.min} – ${lvl.max}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-[0.78rem] font-black" style={{ color: lvl.color }}>+{lvl.rate}%</div>
-                <div className="text-[0.55rem] text-[#6B7280]">par jour</div>
-              </div>
-            </div>
-            <div className="text-[0.66rem] text-[#4B5563] flex items-center gap-1.5">
-              <i className="fas fa-user-group text-[0.6rem]" style={{ color: lvl.color }} />
-              {lvl.refs === 0
-                ? <span><strong>Accès libre</strong></span>
-                : <span>Déblocage : <strong>{lvl.refs} parrainés</strong></span>}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <Callout icon="fa-right-left" color={green}>
-        <strong>Collecte quotidienne versée sur votre compte Investissement.</strong>{' '}
-        Le <strong>retrait est possible directement</strong> depuis ce compte
-        via <strong>YAS</strong> ou <strong>TRX</strong>.
-      </Callout>
-
-      <Callout icon="fa-users" color="#EC4899">
-        <strong>Commission parrainage :</strong> vous recevez <strong>5 %</strong> des
-        gains quotidiens d&apos;investissement de chacun de vos filleuls,{' '}
-        <strong>à vie</strong>, crédités sur votre <strong>compte Investissement</strong>.
-      </Callout>
-
-      <Callout icon="fa-user-shield" color="#F59E0B">
-        <strong>Approbation admin requise.</strong> Le compte à rebours démarre{' '}
-        <strong>après l&apos;approbation</strong>.
-      </Callout>
-
-      <Callout icon="fa-circle-info" color="#64748B">
-        Les niveaux supérieurs nécessitent plus de parrainages pour débloquer
-        la collecte. Plus vous parrainez, plus vous accédez à des niveaux élevés.
-      </Callout>
-    </>
-  );
-}
-
-function GameContent() {
   const amber = '#F59E0B';
   return (
     <>
-      <Row icon="fa-dice" color={amber} title="Principe">
-        Tournez la roue et tentez de gagner de l&apos;argent réel.{' '}
-        <strong>Jackpot de 10 $ possible !</strong>
+      <Row icon="fa-bullhorn" color={amber} title="Consulter les campagnes">
+        Les admins créent des campagnes avec un <strong>cahier des charges</strong> précis
+        (ex : « Générez une image de voiture Mercedes »). Lisez le brief attentivement.
       </Row>
-      <Row icon="fa-clock" color="#22C55E" title="10 tours par jour">
-        <strong>10 tours maximum/jour</strong>, réinitialisés à <strong>minuit</strong>.
+      <Row icon="fa-wand-magic-sparkles" color="#8B5CF6" title="Générer avec IA externe">
+        Utilisez <strong>ChatGPT</strong>, <strong>DALL-E</strong> ou <strong>Midjourney</strong>
+        pour générer une image conforme au brief. L&apos;image doit être <strong>originale</strong>.
       </Row>
-      <Row icon="fa-hand-pointer" color={amber} title="Arrêt manuel ou automatique">
-        <strong>Vous contrôlez l&apos;arrêt :</strong> appuyez sur <strong>ARRÊTER</strong>{' '}
-        quand vous voulez, ou la roue s&apos;arrête automatiquement après{' '}
-        <strong>3 secondes</strong>.
+      <Row icon="fa-cloud-upload-alt" color="#3B82F6" title="Uploader sur Jeune Élan">
+        Téléchargez l&apos;image générée. <strong>Maximum 10 images/jour</strong>.
+      </Row>
+      <Row icon="fa-robot" color="#22C55E" title="Validation automatique IA">
+        L&apos;IA vérifie : <strong>conformité au brief</strong>, <strong>originalité</strong>,
+        pas de doublon, pas d&apos;image internet.
+      </Row>
+      <Row icon="fa-coins" color="#22C55E" title="+25 FCFA par image validée">
+        Image validée = <strong>25 FCFA</strong>. Max 10 images/jour = <strong>250 FCFA max/jour</strong>.
       </Row>
 
       <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-1 mt-2">
-        <StatRow label="Coût par tour" value="0,20 $" valueColor="#EF4444" />
-        <StatRow label="Jackpot maximum" value="10,00 $" valueColor={amber} />
-        <StatRow label="Tours max / jour" value="10" valueColor="#1F2937" />
+        <StatRow label="Gain par image validée" value="25 FCFA" valueColor="#22C55E" />
+        <StatRow label="Max images / jour" value="10" valueColor="#1F2937" />
+        <StatRow label="Max gains / jour" value="250 FCFA" valueColor="#22C55E" />
+        <StatRow label="Objectif gains" value="2 500 FCFA" valueColor="#3B82F6" />
       </div>
 
-      <Callout icon="fa-coins" color="#EF4444">
-        <strong>Coût : 0,20 $/tour.</strong> Prélevé automatiquement dans cet ordre :{' '}
-        <strong>Compte Jeu</strong> → <strong>Investissement</strong> →{' '}
-        <strong>Mission</strong> → <strong>Projet</strong> si le solde est insuffisant.
+      <Callout icon="fa-exclamation-triangle" color="#EF4444">
+        <strong>Images trop similaires</strong> = refusées (doublon).
+        <strong> Images d&apos;internet</strong> = détectées et refusées.
+        Les images disparaissent le <strong>lendemain</strong> pour éviter la saturation.
       </Callout>
     </>
   );
 }
 
-function AccountsContent() {
-  const green = '#22C55E';
-  const ACCOUNTS = [
-    { name: 'Solde Total',           icon: 'fa-layer-group', color: '#6366F1', desc: 'Vue d\'ensemble · affiche la somme de tous vos comptes · pas un vrai compte' },
-    { name: 'Compte Jeu',            icon: 'fa-dice',        color: '#F59E0B', desc: 'Roue de la fortune · les tours coûtent 0,20 $ prélevés ici en premier' },
-    { name: 'Compte Investissement', icon: 'fa-chart-line',  color: '#059669', desc: 'Investissements par niveau · collectes journalières + commissions parrainage' },
-    { name: 'Compte Projet',         icon: 'fa-building',    color: '#0F766E', desc: 'Pour les projets d\'entreprise' },
-    { name: 'Compte Mission',         icon: 'fa-bullhorn',     color: '#14B8A6', desc: 'Gains de missions · récompenses de campagnes · retrait dès $1' },
-  ];
+function GainsContent() {
+  const blue = '#3B82F6';
   return (
     <>
-      <div className="mt-2 space-y-2">
-        {ACCOUNTS.map((a) => (
-          <div key={a.name} className="flex items-center gap-2.5 rounded-xl p-2.5 border" style={{ borderColor: `${a.color}33`, background: `${a.color}0A` }}>
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${a.color}26` }}>
-              <i className={`fas ${a.icon} text-[0.85rem]`} style={{ color: a.color }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[0.78rem] font-black text-[#1F2937]">{a.name}</div>
-              <div className="text-[0.62rem] text-[#6B7280] leading-snug">{a.desc}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <Callout icon="fa-circle-info" color={green}>
-        Le <strong>Solde Total</strong> est une vue d&apos;ensemble, pas un vrai compte.
-        Les <strong>4 comptes réels</strong> sont : <strong>Jeu</strong>,{' '}
-        <strong>Investissement</strong>, <strong>Projet</strong> et <strong>Mission</strong>.
-      </Callout>
-
-      <Callout icon="fa-arrow-up-from-bracket" color="#14B8A6">
-        <strong>Bouton « Retirer »</strong> disponible depuis la carte d&apos;accueil
-        pour <strong>tous les comptes</strong>. Vous choisissez le compte source lors du retrait.
-      </Callout>
-    </>
-  );
-}
-
-function PaymentsContent() {
-  const red = '#EF4444';
-  return (
-    <>
-      {/* ---------- Taux de change ---------- */}
-      <div className="rounded-xl p-3 border border-[#E5E7EB] bg-[#F9FAFB] mb-3">
-        <StatRow label="Taux de change" value="1 USD = 550 FCFA" valueColor="#059669" />
-      </div>
-
-      {/* ---------- Dépôts ---------- */}
-      <Row icon="fa-plus-circle" color="#22C55E" title="Comment déposer">
-        Quand vous cliquez sur <strong>« Déposer »</strong>, vous choisissez{' '}
-        d&apos;abord le <strong>compte destinataire</strong> :
+      <Row icon="fa-coins" color="#22C55E" title="Gains missions (25 FCFA/image)">
+        Chaque image validée = <strong>25 FCFA</strong>. Les gains s&apos;accumulent dans
+        votre portefeuille de missions.
       </Row>
-      <div className="mt-2 space-y-2">
-        <div className="flex items-center gap-2.5 rounded-xl p-2.5 border" style={{ borderColor: '#05966933', background: '#0596690A' }}>
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#05966926' }}>
-            <i className="fas fa-chart-line text-[0.85rem]" style={{ color: '#059669' }} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[0.78rem] font-black text-[#1F2937]">Investissement</div>
-            <div className="text-[0.62rem] text-[#6B7280] leading-snug">Vous accédez directement à la page des <strong>niveaux d&apos;investissement</strong></div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2.5 rounded-xl p-2.5 border" style={{ borderColor: '#F59E0B33', background: '#F59E0B0A' }}>
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#F59E0B26' }}>
-            <i className="fas fa-dice text-[0.85rem]" style={{ color: '#F59E0B' }} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[0.78rem] font-black text-[#1F2937]">Jeu</div>
-            <div className="text-[0.62rem] text-[#6B7280] leading-snug">Le processus habituel avec <strong>YAS</strong> ou <strong>TRX</strong> s&apos;ouvre</div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2.5 rounded-xl p-2.5 border" style={{ borderColor: '#0F766E33', background: '#0F766E0A' }}>
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#0F766E26' }}>
-            <i className="fas fa-building text-[0.85rem]" style={{ color: '#0F766E' }} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[0.78rem] font-black text-[#1F2937]">Projet</div>
-            <div className="text-[0.62rem] text-[#6B7280] leading-snug">Le processus habituel avec <strong>YAS</strong> ou <strong>TRX</strong> s&apos;ouvre</div>
-          </div>
-        </div>
-      </div>
-
-      {/* ---------- Méthodes de paiement ---------- */}
-      <div className="mt-3 grid grid-cols-2 gap-2.5">
-        <div className="rounded-xl p-3 border border-[#FECACA] bg-[#FEF2F2]">
-          <div className="w-9 h-9 rounded-lg bg-[#FEE2E2] flex items-center justify-center mb-2">
-            <i className="fas fa-mobile-screen text-[#EF4444] text-[0.85rem]" />
-          </div>
-          <div className="text-[0.82rem] font-black text-[#1F2937]">YAS</div>
-          <div className="text-[0.62rem] text-[#6B7280] leading-snug">Mobile money (Togo) · 550 FCFA = 1 USD</div>
-        </div>
-        <div className="rounded-xl p-3 border border-[#FECACA] bg-[#FEF2F2]">
-          <div className="w-9 h-9 rounded-lg bg-[#FEE2E2] flex items-center justify-center mb-2">
-            <i className="fas fa-coins text-[#EF4444] text-[0.85rem]" />
-          </div>
-          <div className="text-[0.82rem] font-black text-[#1F2937]">TRX</div>
-          <div className="text-[0.62rem] text-[#6B7280] leading-snug">Crypto (Tron) · min $5</div>
-        </div>
-      </div>
-
-      {/* ---------- Retraits ---------- */}
-      <div className="mt-3">
-        <Row icon="fa-arrow-up-from-bracket" color="#14B8A6" title="Retrait depuis tous les comptes">
-          Le retrait est possible depuis <strong>tous vos comptes</strong> :{' '}
-          <strong>Jeu</strong>, <strong>Investissement</strong>, <strong>Projet</strong>{' '}
-          et <strong>Mission</strong>, via <strong>YAS</strong> ou <strong>TRX</strong>.
-        </Row>
-      </div>
+      <Row icon="fa-bullseye" color={blue} title="Objectif 2 500 FCFA">
+        Atteignez <strong>2 500 FCFA</strong> de gains validés pour débloquer
+        le chemin vers les <strong>micro-prêts</strong>.
+      </Row>
+      <Row icon="fa-piggy-bank" color="#F59E0B" title="Dépôts personnels">
+        Effectuez des dépôts personnels. Ils sont <strong>tracés séparément</strong> des
+        gains de missions.
+      </Row>
+      <Row icon="fa-lock" color="#EF4444" title="Caution 5 000 FCFA (bloquée)">
+        Une caution de <strong>5 000 FCFA</strong> est requise pour les micro-prêts.
+        Elle est <strong>bloquée et non retirable</strong> — elle sert de garantie.
+      </Row>
 
       <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-1 mt-2">
-        <StatRow label="Min. retrait Mission" value="1 $" valueColor="#14B8A6" />
-        <StatRow label="Min. retrait (autres)" value="5 $" valueColor="#EF4444" />
-        <StatRow label="Disponibilité des fonds" value="6 heures" valueColor="#F59E0B" />
-        <StatRow label="Dépôts" value="Investissement · Jeu · Projet" valueColor="#22C55E" />
-        <StatRow label="Retraits" value="Tous les comptes" valueColor="#14B8A6" />
+        <StatRow label="Gain / image validée" value="25 FCFA" valueColor="#22C55E" />
+        <StatRow label="Objectif gains" value="2 500 FCFA" valueColor="#3B82F6" />
+        <StatRow label="Caution requise" value="5 000 FCFA" valueColor="#EF4444" />
+        <StatRow label="Caution retirable ?" value="Non (bloquée)" valueColor="#EF4444" />
       </div>
 
-      <Callout icon="fa-rotate" color="#F59E0B">
-        <strong>Actualisez votre page régulièrement</strong> après une opération pour voir
-        votre solde à jour.
+      <Callout icon="fa-circle-info" color={blue}>
+        <strong>Gains missions</strong> et <strong>dépôts personnels</strong> sont
+        suivis séparément. Ne les confondez pas.
       </Callout>
 
-      <Callout icon="fa-user-shield" color={red}>
-        <strong>Approbation admin requise</strong> pour les dépôts et retraits.
+      <Callout icon="fa-exclamation-triangle" color="#EF4444">
+        L&apos;objectif de <strong>2 500 FCFA</strong> doit venir <strong>uniquement</strong>{' '}
+        des gains d&apos;images validées, pas des dépôts personnels.
       </Callout>
     </>
   );
 }
 
-function ReferralContent() {
-  const pink = '#EC4899';
+function ParrainageContent() {
+  const purple = '#8B5CF6';
   return (
     <>
-      <Row icon="fa-gift" color={pink} title="Votre code BR-XXXXXX">
-        Visible dans votre <strong>Profil</strong>. Partagez-le : vos amis doivent{' '}
-        <strong>s&apos;inscrire</strong> avec pour être comptabilisés.
+      <Row icon="fa-share-alt" color={purple} title="Code JÉ-XXXXXX">
+        Vous avez un code de parrainage unique. <strong>Partagez-le</strong> pour que
+        vos amis s&apos;inscrivent avec.
       </Row>
-      <Row icon="fa-share-nodes" color={pink} title="Partage">
-        Bouton <strong>Invitez vos amis</strong> puis <strong>Copier le lien</strong> ou
-        partage native (WhatsApp, TikTok, Telegram…).
+      <Row icon="fa-user-plus" color="#3B82F6" title="Filleul s'inscrit">
+        Quand un nouvel utilisateur s&apos;inscrit avec votre code, il devient votre filleul.
+        Mais le parrainage n&apos;est <strong>pas encore validé</strong>.
       </Row>
-
-      <Callout icon="fa-percent" color="#059669">
-        <strong>5 % de commission à vie :</strong> vous recevez <strong>5 %</strong> de{' '}
-        <strong>tous les gains quotidiens d&apos;investissement</strong> de chaque filleul,{' '}
-        <strong>indéfiniment</strong>. Cette commission est créditée directement
-        sur votre <strong>compte Investissement</strong>.
-      </Callout>
-
-      <Callout icon="fa-trophy" color={pink}>
-        <strong>12 parrainés = 5 $ de cadeau</strong> sur votre compte principal +{' '}
-        <strong>message de félicitations</strong>.
-      </Callout>
-
-      <Row icon="fa-unlock" color="#F59E0B" title="Débloquer les niveaux">
-        Niveau 2 (Business) = <strong>12 parrainés</strong>. Niveau 3 (Elite) ={' '}
-        <strong>25 parrainés</strong>.
+      <Row icon="fa-images" color="#22C55E" title="Filleul commence à générer">
+        Pour valider le parrainage, le filleul doit <strong>avoir généré au moins une image</strong>.
+        Un filleul inactif ne compte pas.
+      </Row>
+      <Row icon="fa-check-circle" color="#F59E0B" title="Parrainage validé">
+        <strong>5 filleuls validés</strong> = prêt 5 000 FCFA.
+        <strong> 10 filleuls validés</strong> = prêt 10 000 FCFA.
       </Row>
 
-      <Callout icon="fa-bullhorn" color="#14B8A6">
-        <strong>Parrainage et missions :</strong> le parrainage débloque des
-        fonctionnalités et niveaux supérieurs. Plus vous parrainez,
-        plus vous accédez à des opportunités.
+      <div className="mt-2 grid grid-cols-2 gap-2.5">
+        <div className="rounded-xl p-3 border" style={{ borderColor: '#8B5CF633', background: '#8B5CF60A' }}>
+          <div className="text-[0.82rem] font-black text-[#1F2937]">5 filleuls</div>
+          <div className="text-[0.62rem] text-[#6B7280] leading-snug">→ Micro-prêt <strong>5 000 FCFA</strong></div>
+        </div>
+        <div className="rounded-xl p-3 border" style={{ borderColor: '#22C55E33', background: '#22C55E0A' }}>
+          <div className="text-[0.82rem] font-black text-[#1F2937]">10 filleuls</div>
+          <div className="text-[0.62rem] text-[#6B7280] leading-snug">→ Micro-prêt <strong>10 000 FCFA</strong></div>
+        </div>
+      </div>
+
+      <Callout icon="fa-lightbulb" color={purple}>
+        Partagez votre code sur <strong>WhatsApp</strong>, <strong>Telegram</strong> et les
+        réseaux sociaux pour atteindre plus de personnes rapidement.
       </Callout>
 
       <Callout icon="fa-shield-halved" color="#EF4444">
-        <strong>Anti-doublon :</strong> le même nom, email ou numéro de téléphone
-        ne peut pas être utilisé pour créer <strong>plusieurs comptes</strong>.
-        Chaque utilisateur doit avoir des informations uniques.
+        <strong>Anti-fraude :</strong> les faux parrainages et comptes multiples
+        sont détectés et entraînent la <strong>suspension du compte</strong>.
       </Callout>
     </>
   );
 }
 
-function NavContent() {
-  const slate = '#64748B';
-  const tabs = [
-    { icon: 'fa-bullhorn',   label: 'Missions',    desc: 'Campagnes · soumettre des images',   color: '#14B8A6' },
-    { icon: 'fa-coins',     label: 'Make Money', desc: 'Investir · Jeu · Projets',        color: '#059669' },
-    { icon: 'fa-compass',   label: 'Guide',      desc: 'Cette page',                       color: slate },
-    { icon: 'fa-user',      label: 'Profil',     desc: 'Compte, parrainage, paramètres',  color: '#F59E0B' },
+function EligibiliteContent() {
+  const red = '#EF4444';
+  const LOANS = [
+    { amount: '5 000', gains: '2 500', caution: '5 000', refs: 5,  color: '#F59E0B', icon: 'fa-hand-holding-usd' },
+    { amount: '10 000', gains: '5 000', caution: '5 000', refs: 10, color: '#22C55E', icon: 'fa-sack-dollar' },
   ];
   return (
     <>
+      <Row icon="fa-chart-bar" color={red} title="Simulateur d'éligibilité">
+        Consultez le simulateur pour voir <strong>exactement</strong> ce qui vous manque
+        pour accéder à un micro-prêt.
+      </Row>
+
       <div className="mt-2 space-y-2">
-        {tabs.map((t, i) => (
-          <div key={t.label} className="flex items-center gap-3 rounded-xl p-2.5 border border-[#E5E7EB] bg-[#F9FAFB]">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${t.color}1A` }}>
-              <i className={`fas ${t.icon} text-[0.85rem]`} style={{ color: t.color }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[0.78rem] font-black text-[#1F2937]">
-                <span className="text-[#9CA3AF] mr-1.5">{i + 1}.</span>{t.label}
+        {LOANS.map((loan) => (
+          <div key={loan.amount} className="rounded-xl p-3 border" style={{ borderColor: `${loan.color}33`, background: `${loan.color}0A` }}>
+            <div className="flex items-center gap-2.5 mb-1.5">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${loan.color}26` }}>
+                <i className={`fas ${loan.icon} text-[0.8rem]`} style={{ color: loan.color }} />
               </div>
-              <div className="text-[0.62rem] text-[#6B7280] truncate">{t.desc}</div>
+              <div className="flex-1">
+                <div className="text-[0.78rem] font-black text-[#1F2937]">Micro-prêt {loan.amount} FCFA</div>
+              </div>
+            </div>
+            <div className="text-[0.66rem] text-[#4B5563] space-y-0.5">
+              <div className="flex items-center gap-1.5">
+                <i className="fas fa-coins text-[0.55rem]" style={{ color: loan.color }} />
+                <span>Gains validés : <strong>{loan.gains} FCFA</strong></span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <i className="fas fa-lock text-[0.55rem]" style={{ color: loan.color }} />
+                <span>Caution : <strong>{loan.caution} FCFA</strong></span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <i className="fas fa-users text-[0.55rem]" style={{ color: loan.color }} />
+                <span>Filleuls validés : <strong>{loan.refs}</strong></span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <i className="fas fa-ban text-[0.55rem]" style={{ color: loan.color }} />
+                <span>Aucun prêt en retard</span>
+              </div>
             </div>
           </div>
         ))}
       </div>
+
+      <Row icon="fa-paper-plane" color="#3B82F6" title="Demande de prêt">
+        Conditions remplies → soumettez votre demande. Le système analyse
+        automatiquement et <strong>décaisse</strong> si tout est conforme.
+      </Row>
+
+      <Callout icon="fa-lightbulb" color={red}>
+        Construisez votre dossier <strong>progressivement</strong> : d&apos;abord
+        les gains (missions), puis la caution, puis les filleuls.
+      </Callout>
+
+      <Callout icon="fa-exclamation-triangle" color="#EF4444">
+        <strong>Impossible d&apos;avoir deux prêts en même temps.</strong>{' '}
+        Retard 5+ jours → prélèvement automatique sur les fonds de vos filleuls.
+      </Callout>
+    </>
+  );
+}
+
+function RemboursementContent() {
+  const cyan = '#06B6D4';
+  return (
+    <>
+      <Row icon="fa-images" color={cyan} title="Continuer les missions">
+        Pour rembourser, continuez à accomplir des missions.
+        Chaque image validée = <strong>25 FCFA</strong> vers le remboursement.
+      </Row>
+      <Row icon="fa-calculator" color="#3B82F6" title="Déduction automatique">
+        Les gains sont <strong>automatiquement déduits</strong> pour rembourser le prêt.
+        Aucune action manuelle requise.
+      </Row>
+      <Row icon="fa-check-double" color="#22C55E" title="Prêt remboursé">
+        Montant total remboursé → prêt clôturé. Vous pouvez demander un <strong>nouveau prêt</strong>.
+      </Row>
+
+      <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-1 mt-2">
+        <StatRow label="Contribution / image" value="25 FCFA" valueColor="#06B6D4" />
+        <StatRow label="Max / jour (10 images)" value="250 FCFA" valueColor="#06B6D4" />
+        <StatRow label="Prêt 5 000 F → ~20 jours" value="à 250 F/jour" valueColor="#22C55E" />
+        <StatRow label="Prêt 10 000 F → ~40 jours" value="à 250 F/jour" valueColor="#F59E0B" />
+      </div>
+
+      <Callout icon="fa-lightbulb" color={cyan}>
+        Une activité <strong>régulière</strong> de missions assure un remboursement
+        fluide. À 10 images/jour, vous remboursez <strong>250 FCFA/jour</strong>.
+      </Callout>
+
+      <Callout icon="fa-exclamation-triangle" color="#EF4444">
+        <strong>5 jours de retard</strong> → le montant restant est <strong>prélevé
+        sur les fonds de vos filleuls</strong>. Continuez à générer pour l&apos;éviter !
+      </Callout>
+    </>
+  );
+}
+
+function SecuriteContent() {
+  const slate = '#64748B';
+  const LEVELS = [
+    { name: 'Nouveau',  icon: 'fa-seedling',    color: '#9CA3AF', desc: 'Inscription terminée · pas encore de missions' },
+    { name: 'Actif',    icon: 'fa-fire',         color: '#F59E0B', desc: 'A commencé à générer des images' },
+    { name: 'Éligible', icon: 'fa-check-circle', color: '#22C55E', desc: 'Remplit toutes les conditions pour un micro-prêt' },
+    { name: 'Fiable',   icon: 'fa-shield-halved', color: '#3B82F6', desc: 'Historique solide · prêts remboursés à temps' },
+  ];
+  return (
+    <>
+      <Row icon="fa-mobile-alt" color="#22C55E" title="Vérification téléphone">
+        Votre numéro est vérifié par <strong>OTP</strong>. Chaque compte
+        correspond à une personne réelle.
+      </Row>
+      <Row icon="fa-key" color="#3B82F6" title="Mot de passe sécurisé">
+        Choisissez un mot de passe <strong>fort et unique</strong>.
+        Jeune Élan ne vous le demandera <strong>jamais</strong>.
+      </Row>
+      <Row icon="fa-lock" color="#F59E0B" title="Limitation tentatives connexion">
+        Après plusieurs tentatives échouées, le compte est <strong>temporairement verrouillé</strong>.
+      </Row>
+      <Row icon="fa-eye" color="#EF4444" title="Surveillance activité">
+        Le système surveille : <strong>comptes multiples</strong>,
+        <strong> images dupliquées</strong>, <strong>parrainages fictifs</strong>,
+        <strong> images d&apos;internet</strong>.
+      </Row>
+
+      <div className="mt-2">
+        <div className="text-[0.72rem] font-black text-[#1F2937] mb-2">Niveaux de confiance</div>
+        <div className="space-y-2">
+          {LEVELS.map((lvl) => (
+            <div key={lvl.name} className="flex items-center gap-2.5 rounded-xl p-2.5 border" style={{ borderColor: `${lvl.color}33`, background: `${lvl.color}0A` }}>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${lvl.color}26` }}>
+                <i className={`fas ${lvl.icon} text-[0.85rem]`} style={{ color: lvl.color }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[0.78rem] font-black text-[#1F2937]">{lvl.name}</div>
+                <div className="text-[0.62rem] text-[#6B7280] leading-snug">{lvl.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <Callout icon="fa-shield-halved" color={slate}>
+        <strong>Jeune Élan ne demande jamais votre mot de passe.</strong>
+        Si quelqu&apos;un le demande, c&apos;est une arnaque.
+      </Callout>
+
+      <Callout icon="fa-ban" color="#EF4444">
+        <strong>Sanctions :</strong> comptes multiples, images dupliquées,
+        parrainages fictifs → <strong>suspension du compte</strong> et perte des gains.
+      </Callout>
     </>
   );
 }

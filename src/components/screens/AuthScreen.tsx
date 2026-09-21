@@ -73,10 +73,10 @@ export default function AuthScreen() {
     <section className="absolute inset-0 bg-[#0B1120] flex flex-col items-center justify-center z-[200]">
       <div className="w-full max-w-[330px] text-center px-5">
         <LogoImg className="w-[100px] h-[100px] mx-auto mb-4" style={{ filter: 'drop-shadow(0 4px 20px rgba(251,191,36,0.2))', objectFit: 'contain' }} />
-        <h1 className="text-[1.8rem] font-black mb-1 bg-gradient-to-r from-[#FCD34D] via-[#FBBF24] to-[#F59E0B] bg-[length:200%_auto] text-transparent bg-clip-text tracking-[2px]" style={{ animation: 'gs 3s linear infinite' }}>BE RICH</h1>
-        <p className="text-[rgba(255,255,255,0.3)] text-[0.72rem] mb-3">{mode === 'login' ? 'Connectez-vous à votre compte.' : 'Rejoignez Be Rich.'}</p>
+        <h1 className="text-[1.8rem] font-black mb-1 bg-gradient-to-r from-[#FCD34D] via-[#FBBF24] to-[#F59E0B] bg-[length:200%_auto] text-transparent bg-clip-text tracking-[2px]" style={{ animation: 'gs 3s linear infinite' }}>JEUNE ÉLAN</h1>
+        <p className="text-[rgba(255,255,255,0.3)] text-[0.72rem] mb-3">{mode === 'login' ? 'Connectez-vous à votre compte.' : 'Rejoignez Jeune Élan.'}</p>
 
-        {/* Communication platform mention — subtle badge */}
+        {/* Missions & micro-prêts platform mention */}
         <div className="flex flex-col items-center gap-1.5 mb-5">
           <div
             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[0.6rem] font-semibold"
@@ -87,10 +87,10 @@ export default function AuthScreen() {
             }}
           >
             <i className="fas fa-globe text-[0.55rem]"></i>
-            Plateforme de communication des grandes entreprises
+            Missions rémunérées & micro-prêts
           </div>
           <p className="text-[0.62rem] text-[rgba(255,255,255,0.32)] leading-snug max-w-[280px]">
-            Regardez des vidéos d'entreprises chinoises, japonaises et indiennes — soyez payés !
+            Réalisez des missions numériques rémunérées, accumulez des gains et accédez aux micro-prêts.
           </p>
         </div>
 
@@ -147,7 +147,7 @@ export default function AuthScreen() {
             </div>
             <div className="mb-2.5 w-full">
               <label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(255,255,255,0.35)]">Code de parrainage <span className="opacity-50">(optionnel)</span></label>
-              <input name="referralCode" type="text" placeholder="BR-XXXXXX" className="w-full py-2.5 px-3.5 bg-[rgba(255,255,255,0.05)] border-[1.5px] border-[rgba(255,255,255,0.08)] rounded-xl text-[0.85rem] outline-none transition-all font-[Inter] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:bg-[rgba(255,255,255,0.08)] focus:border-[#FBBF24]" />
+              <input name="referralCode" type="text" placeholder="JÉ-XXXXXX" className="w-full py-2.5 px-3.5 bg-[rgba(255,255,255,0.05)] border-[1.5px] border-[rgba(255,255,255,0.08)] rounded-xl text-[0.85rem] outline-none transition-all font-[Inter] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:bg-[rgba(255,255,255,0.08)] focus:border-[#FBBF24]" />
               <p className="text-[0.58rem] mt-0.5 text-left text-[rgba(255,255,255,0.25)]">Si un ami vous a invité, entrez son code</p>
             </div>
             <button type="submit" disabled={loading} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#FCD34D] to-[#FBBF24] text-[#78350F] font-bold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(251,191,36,0.2)] font-[Inter] transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">

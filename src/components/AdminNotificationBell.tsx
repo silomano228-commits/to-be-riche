@@ -52,7 +52,7 @@ export default function AdminNotificationBell({ dark = false }: { dark?: boolean
     if (typeof window === 'undefined' || !('Notification' in window)) return;
     if (Notification.permission !== 'granted') return;
     try {
-      new Notification('Be Rich — Admin', {
+      new Notification('Jeune Élan — Admin', {
         body: `${n.title}\n${n.message}`,
         icon: '/logo.png',
         tag: n.id,

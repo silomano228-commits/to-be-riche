@@ -23,7 +23,7 @@ const STAGE_MESSAGES = [
 ];
 
 // === Drag state helpers ===
-const POS_STORAGE_KEY = 'beRich.floatingGift.pos';
+const POS_STORAGE_KEY = 'jeuneElan.floatingGift.pos';
 const BUTTON_SIZE = 64; // main circle width/height
 const DEFAULT_MARGIN_RIGHT = 18;
 const DEFAULT_MARGIN_BOTTOM = 80;
@@ -560,8 +560,8 @@ export default function FloatingGift() {
                         const link = `http://beriche.duckdns.org/?ref=${user.referralCode}`;
                         if (navigator.share) {
                           navigator.share({
-                            title: 'Be Rich - Investissement & Trading',
-                            text: `Rejoins Be Rich avec mon code de parrainage ${user.referralCode} et commence à investir ! 💰`,
+                            title: 'Jeune Élan - Missions & Micro-prêts',
+                            text: `Rejoins Jeune Élan avec mon code de parrainage ${user.referralCode} et commence les missions ! 💰`,
                             url: link,
                           }).catch(() => {
                             navigator.clipboard?.writeText(link);

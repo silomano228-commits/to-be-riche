@@ -318,7 +318,7 @@ export default function ChatScreen() {
                           <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#22C55E] to-[#16A34A] flex items-center justify-center shadow-sm">
                             <i className="fas fa-headset text-white text-[0.4rem]"></i>
                           </div>
-                          <span className="text-[0.6rem] font-bold text-[rgba(0,0,0,0.4)]">Admin Be Rich</span>
+                          <span className="text-[0.6rem] font-bold text-[rgba(0,0,0,0.4)]">Admin Jeune Élan</span>
                         </div>
                       )}
 

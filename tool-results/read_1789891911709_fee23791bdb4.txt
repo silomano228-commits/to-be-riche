@@ -1,0 +1,688 @@
+     1→/*
+     2→ * ═══════════════════════════════════════════════════════════════════════════
+     3→ * ANALYSE FINANCIÈRE — Scénario : 10 utilisateurs, premier mois (30 jours)
+     4→ * ═══════════════════════════════════════════════════════════════════════════
+     5→ *
+     6→ * HYPOTHÈSES :
+     7→ * ─ 10 utilisateurs initiaux, solde $0
+     8→ * ─ 8 déposent $5 (Niveau 1), 2 déposent $65 (Niveau 2)
+     9→ * ─ Tous accomplissent des missions quotidiennement pendant 30 jours
+    10→ * ─ Chaque utilisateur parraine en moyenne 2 personnes → 20 nouveaux utilisateurs au total
+    11→ * ─ Niveau 1 : investissement $5–$15, rendement 5 %/jour, collecte immédiate
+    12→ * ─ Niveau 2 : investissement $65, rendement 5 %/jour, collecte BLOQUÉE sans 12 parrainages
+    13→ * ─ Missions : ~$0,20/image × 5 = ~$1/jour/utilisateur (bloqué sans parrainage + dépôt)
+    14→ * ─ Jeu de roue : 10 tours/jour × $0,20 = $2/jour, système truqué (~70 % retenu)
+    15→ * ─ Taux TRX/USD : affichage uniquement, pas utilisé pour les calculs de rentabilité
+    16→ *
+    17→ * ──────────────────────────────────────────────────────────────────────────
+    18→ * 1. DÉPÔTS REÇUS PAR L'ADMIN
+    19→ * ──────────────────────────────────────────────────────────────────────────
+    20→ *   8 × $5  (Niveau 1)   =  $40
+    21→ *   2 × $65 (Niveau 2)   = $130
+    22→ *                          ─────
+    23→ *   TOTAL DÉPÔTS          = $170
+    24→ *
+    25→ * ──────────────────────────────────────────────────────────────────────────
+    26→ * 2. PAYOUTS INVESTISSEMENT QUOTIDIENS (5 % des investissements actifs)
+    27→ * ──────────────────────────────────────────────────────────────────────────
+    28→ *   Niveau 1 : 8 × $5 × 5 % = $2/jour → $2 × 30 = $60/mois
+    29→ *   Niveau 2 : 2 × $65 × 5 % = $6,50/jour
+    30→ *              → COLLECTE BLOQUÉE (aucun n'atteint 12 parrainages au mois 1)
+    31→ *                          ─────
+    32→ *   TOTAL PAYOUTS INV.    = $60  (uniquement Niveau 1)
+    33→ *
+    34→ * ──────────────────────────────────────────────────────────────────────────
+    35→ * 3. RÉCOMPENSES MISSIONS
+    36→ * ──────────────────────────────────────────────────────────────────────────
+    37→ *   Jours 1–3 (sans restriction) :
+    38→ *     10 utilisateurs × $1/jour × 3 jours = $30
+    39→ *
+    40→ *   Jours 4–30 (27 jours) :
+    41→ *     Condition : ≥ 1 parrainage + dépôt d'investissement actif.
+    42→ *     Ensuite, tous les 2 jours, il faut un NOUVEAU parrainage.
+    43→ *     Avec ~2 parrainages total par utilisateur sur 30 jours, la plupart
+    44→ *     ne maintiennent les conditions que ~4–5 jours supplémentaires.
+    45→ *     10 utilisateurs × $1/jour × 5 jours (moyenne) = $50
+    46→ *
+    47→ *   Si les missions n'étaient PAS bloquées : 10 × $1 × 30 = $300
+    48→ *                          ─────
+    49→ *   TOTAL MISSIONS PAYÉ    = $250
+    50→ *   ÉCONOMIE (bloqué)      = $50
+    51→ *
+    52→ * ──────────────────────────────────────────────────────────────────────────
+    53→ * 4. REVENU NET DU JEU DE ROUE
+    54→ * ──────────────────────────────────────────────────────────────────────────
+    55→ *   Dépense totale utilisateurs : 10 × $2/jour × 30 jours = $600
+    56→ *   Système truqué (~70 % retenu) :
+    57→ *     Retenu (détruit du système) : $600 × 70 % = $420
+    58→ *     Distribué aux joueurs       : $600 × 30 % = $180
+    59→ *
+    60→ *   Note : les $420 « retenus » ne sont pas un vrai revenu en argent réel.
+    61→ *   C'est de l'argent virtuel qui n'est jamais crédité sur les comptes.
+    62→ *   L'effet réel est de DÉTRUIRE $420 de balances virtuelles, ce qui
+    63→ *   réduit les demandes de retrait potentielles.
+    64→ *                          ─────
+    65→ *   GAINS JOUEURS (virtuels) = $180
+    66→ *   ARGENT DÉTRUIT           = $420
+    67→ *
+    68→ * ──────────────────────────────────────────────────────────────────────────
+    69→ * 5. COMMISSIONS DE PARRAINAGE (5 % des gains quotidiens des filleuls)
+    70→ * ──────────────────────────────────────────────────────────────────────────
+    71→ *   20 nouveaux utilisateurs, ~50 % investissent au Niveau 1 ($5).
+    72→ *   10 filleuls investisseurs × $5 × 5 % = $0,25/jour chacun.
+    73→ *   Arrivée progressive : durée moyenne ~15 jours.
+    74→ *   10 × $0,25 × 15 jours = $37,50 crédités sur comptes Investissement.
+    75→ *                          ─────
+    76→ *   TOTAL COMMISSIONS      = ~$37,50
+    77→ *
+    78→ * ──────────────────────────────────────────────────────────────────────────
+    79→ * 6. DEMANDES DE RETRAIT
+    80→ * ──────────────────────────────────────────────────────────────────────────
+    81→ *   Balances virtuelles totales créées (mois 1) :
+    82→ *     Mission          : $250
+    83→ *     Investissement   : $60 (retours L1)
+    84→ *     Jeu (gains roue) : $180
+    85→ *     Parrainage       : $37,50
+    86→ *                          ─────
+    87→ *     TOTAL VIRTUEL    = $357,50
+    88→ *
+    89→ *   Seuil minimum de retrait : $1 (Mission) / $5 (autres comptes).
+    90→ *   L'admin contrôle TOUTES les approbations de retrait.
+    91→ *   Estimation : ~60 % des demandes approuvées → ~$70–$90 réellement versés.
+    92→ *
+    93→ * ──────────────────────────────────────────────────────────────────────────
+    94→ * 7. BÉNÉFICE NET ADMIN — APRÈS 1 MOIS
+    95→ * ──────────────────────────────────────────────────────────────────────────
+    96→ *   Argent réel reçu (dépôts)            +$170
+    97→ *   Argent réel versé (retraits)          -$80
+    98→ *                                          ─────
+    99→ *   BÉNÉFICE NET RÉEL                     ≈ +$90
+   100→ *
+   101→ *   Et ce bénéfice augmente chaque mois car :
+   102→ *   • Les dépôts Niveau 2 ($130) restent bloqués (pas de 12 parrainages)
+   103→ *   • Les nouveaux utilisateurs apportent de nouveaux dépôts
+   104→ *   • Le jeu de roue détruit continuellement les balances virtuelles
+   105→ *
+   106→ * ──────────────────────────────────────────────────────────────────────────
+   107→ * 8. POURQUOI LE SYSTÈME EST TOUJOURS RENTABLE
+   108→ * ──────────────────────────────────────────────────────────────────────────
+   109→ *
+   110→ *  a) RÉCOMPENSES MISSION BLOQUÉES SANS CONDITIONS
+   111→ *     Sans parrainage + dépôt d'investissement, les missions ne rapportent plus.
+   112→ *     La plupart des utilisateurs actifs n'ont pas assez de parrainages
+   113→ *     pour maintenir les gains → $50 économisés sur le scénario.
+   114→ *
+   115→ *  b) JEU DE ROUE TRUQUÉ (70 %+ retenu)
+   116→ *     L'argent dépensé en tours est majoritairement détruit du système.
+   117→ *     Cela réduit les balances virtuelles accumulées et limite les retraits.
+   118→ *
+   119→ *  c) INVESTISSEMENTS NIVEAU 2 : COLLECTE IMPOSSIBLE SANS 12 PARRAINAGES
+   120→ *     Les $130 déposés au Niveau 2 génèrent des gains théoriques de
+   121→ *     $6,50/jour, mais AUCUN ne peut être collecté au mois 1.
+   122→ *     Cet argent reste dans le système indéfiniment.
+   123→ *
+   124→ *  d) L'ADMIN CONTRÔLE TOUTES LES APPROBATIONS
+   125→ *     Dépôts et retraits nécessitent l'approbation de l'admin.
+   126→ *     L'admin peut rejeter, retarder ou limiter toute demande de retrait.
+   127→ *
+   128→ *  e) TAUX DE CHANGE FIXÉ (550 FCFA = 1 USD)
+   129→ *     Le taux est défini par l'admin et ne reflète pas forcément le taux réel.
+   130→ *     Cela offre une marge supplémentaire sur les conversions.
+   131→ *
+   132→ * ═══════════════════════════════════════════════════════════════════════════
+   133→ */
+   134→
+   135→'use client';
+   136→
+   137→import { useState } from 'react';
+   138→import { useAppStore } from '@/lib/store';
+   139→import { Header, LogoImg } from '@/components/shared';
+   140→
+   141→// =====================================================================
+   142→// Jeune Élan — Guide complet
+   143→// 8 sections : Concept, Missions, Investissement, Jeu,
+   144→// Comptes, Dépôts/Retraits, Parrainage, Navigation.
+   145→// =====================================================================
+   146→
+   147→type SectionId =
+   148→  | 'concept'
+   149→  | 'missions'
+   150→  | 'invest'
+   151→  | 'game'
+   152→  | 'accounts'
+   153→  | 'payments'
+   154→  | 'referral'
+   155→  | 'nav';
+   156→
+   157→interface SectionDef {
+   158→  id: SectionId;
+   159→  label: string;
+   160→  icon: string;
+   161→  color: string;
+   162→  summary: string;
+   163→}
+   164→
+   165→const SECTIONS: SectionDef[] = [
+   166→  { id: 'concept',  label: 'Le Concept',                     icon: 'fa-lightbulb',      color: '#14B8A6', summary: 'Jeune Élan vous paie pour accomplir des missions, investir et jouer' },
+   167→  { id: 'missions',  label: 'Missions & Images',             icon: 'fa-bullhorn',       color: '#14B8A6', summary: 'Campagnes · soumettez des images · gagnez des récompenses' },
+   168→  { id: 'invest',   label: "L'Investissement (Make Money)",  icon: 'fa-chart-line',     color: '#059669', summary: '3 niveaux · 5%/jour · collecte sur compte investissement' },
+   169→  { id: 'game',     label: 'Le Jeu de Roue',                 icon: 'fa-dice',           color: '#F59E0B', summary: '10 tours/jour · 0,20 $/tour · arrêt manuel ou auto à 3 s' },
+   170→  { id: 'accounts', label: 'Les Comptes',                    icon: 'fa-wallet',         color: '#22C55E', summary: 'Total (vue) · Jeu · Investissement · Projet · Mission' },
+   171→  { id: 'payments', label: 'Dépôts et Retraits',             icon: 'fa-credit-card',    color: '#EF4444', summary: 'YAS & TRX · 550 FCFA = 1 USD · retrait depuis tous les comptes' },
+   172→  { id: 'referral', label: 'Parrainage',                     icon: 'fa-gift',           color: '#EC4899', summary: '5 % à vie sur les gains de vos filleuls · anti-doublon' },
+   173→  { id: 'nav',      label: 'Navigation',                     icon: 'fa-compass',        color: '#64748B', summary: '4 onglets : Missions · Make Money · Guide · Profil' },
+   174→];
+   175→
+   176→export default function GuideScreen() {
+   177→  const { user } = useAppStore();
+   178→  const [open, setOpen] = useState<Set<SectionId>>(new Set<SectionId>(['concept']));
+   179→
+   180→  const toggle = (id: SectionId) => {
+   181→    setOpen((prev) => {
+   182→      const next = new Set(prev);
+   183→      if (next.has(id)) next.delete(id);
+   184→      else next.add(id);
+   185→      return next;
+   186→    });
+   187→  };
+   188→
+   189→  if (!user) return null;
+   190→
+   191→  return (
+   192→    <>
+   193→      <Header title="Guide" icon="fa-compass" iconColor="#14B8A6" />
+   194→      <div className="flex-1 overflow-y-auto bg-gradient-to-b from-[#F8FBFA] to-[#F0FDFA]">
+   195→        {/* ---------- Hero ---------- */}
+   196→        <div className="px-4 pt-4 pb-3">
+   197→          <div className="rounded-3xl p-5 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #22C55E 0%, #14B8A6 100%)' }}>
+   198→            <div className="absolute -right-6 -top-6 w-28 h-28 rounded-full bg-white/10" />
+   199→            <div className="absolute -right-2 bottom-2 w-16 h-16 rounded-full bg-white/10" />
+   200→            <div className="relative flex items-start gap-3">
+   201→              <LogoImg className="w-14 h-14 rounded-2xl bg-white/20 p-1.5 shrink-0" />
+   202→              <div className="flex-1 min-w-0">
+   203→                <h1 className="text-[1.2rem] font-black text-white leading-tight">Guide Jeune Élan</h1>
+   204→                <p className="text-[0.72rem] text-white/85 mt-1 leading-relaxed">
+   205→                  Tout ce qu&apos;il faut savoir pour gagner de l&apos;argent :
+   206→                  missions, investissements, jeu de roue et parrainage.
+   207→                </p>
+   208→              </div>
+   209→            </div>
+   210→            <div className="relative mt-3 flex flex-wrap gap-1.5">
+   211→              <Pill icon="fa-bullhorn" text="Missions" />
+   212→              <Pill icon="fa-chart-line" text="Investir" />
+   213→              <Pill icon="fa-dice" text="Jeu" />
+   214→              <Pill icon="fa-share-nodes" text="Parrainage" />
+   215→            </div>
+   216→          </div>
+   217→        </div>
+   218→
+   219→        {/* ---------- Quick help ---------- */}
+   220→        <div className="px-4 pb-2">
+   221→          <div className="rounded-2xl bg-white p-3.5 border border-[#E5E7EB] flex items-center gap-3">
+   222→            <div className="w-9 h-9 rounded-xl bg-[#ECFDF5] flex items-center justify-center shrink-0">
+   223→              <i className="fas fa-lightbulb text-[#0F766E] text-[0.85rem]" />
+   224→            </div>
+   225→            <p className="text-[0.72rem] text-[#4B5563] leading-snug">
+   226→              Touchez une section pour la déplier. Trouvez vite la réponse à votre question.
+   227→            </p>
+   228→          </div>
+   229→        </div>
+   230→
+   231→        {/* ---------- Accordion ---------- */}
+   232→        <div className="px-4 pb-8 pt-2 space-y-2.5">
+   233→          {SECTIONS.map((s) => {
+   234→            const isOpen = open.has(s.id);
+   235→            return (
+   236→              <div key={s.id} className="rounded-2xl bg-white border border-[#E5E7EB] overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+   237→                <button
+   238→                  type="button"
+   239→                  onClick={() => toggle(s.id)}
+   240→                  className="w-full px-4 py-3.5 flex items-center gap-3 text-left cursor-pointer transition-colors hover:bg-[#F9FAFB] active:bg-[#F3F4F6]"
+   241→                  aria-expanded={isOpen}
+   242→                >
+   243→                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${s.color}1A` }}>
+   244→                    <i className={`fas ${s.icon} text-[0.95rem]}`} style={{ color: s.color }} />
+   245→                  </div>
+   246→                  <div className="flex-1 min-w-0">
+   247→                    <div className="text-[0.86rem] font-black text-[#1F2937] truncate">{s.label}</div>
+   248→                    <div className="text-[0.66rem] text-[#6B7280] truncate">{s.summary}</div>
+   249→                  </div>
+   250→                  <i className={`fas fa-chevron-down text-[0.7rem] text-[#9CA3AF] transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+   251→                </button>
+   252→                <div className={`grid transition-all duration-300 ease-out ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+   253→                  <div className="overflow-hidden">
+   254→                    <div className="px-4 pb-4 pt-1 border-t border-[#F3F4F6]">
+   255→                      {s.id === 'concept'  && <ConceptContent />}
+   256→                      {s.id === 'missions'  && <MissionsContent />}
+   257→                      {s.id === 'invest'   && <InvestContent />}
+   258→                      {s.id === 'game'     && <GameContent />}
+   259→                      {s.id === 'accounts' && <AccountsContent />}
+   260→                      {s.id === 'payments' && <PaymentsContent />}
+   261→                      {s.id === 'referral' && <ReferralContent />}
+   262→                      {s.id === 'nav'      && <NavContent />}
+   263→                    </div>
+   264→                  </div>
+   265→                </div>
+   266→              </div>
+   267→            );
+   268→          })}
+   269→        </div>
+   270→
+   271→        {/* ---------- Footer note ---------- */}
+   272→        <div className="px-4 pb-6">
+   273→          <div className="rounded-2xl p-4 text-center" style={{ background: 'linear-gradient(135deg, #ECFDF5, #F0FDFA)', border: '1px solid #A7F3D0' }}>
+   274→            <i className="fas fa-shield-halved text-[#0F766E] text-[1.1rem] mb-1.5" />
+   275→            <p className="text-[0.72rem] text-[#115E59] leading-relaxed">
+   276→              Jeune Élan ne demande <strong>jamais</strong> votre mot de passe ni votre code
+   277→              PIN. Tous les dépôts et retraits passent par <strong>YAS</strong> ou{' '}
+   278→              <strong>TRX</strong>. Taux de change : <strong>1 USD = 550 FCFA</strong>.
+   279→            </p>
+   280→          </div>
+   281→        </div>
+   282→      </div>
+   283→    </>
+   284→  );
+   285→}
+   286→
+   287→// =====================================================================
+   288→// Reusable pieces
+   289→// =====================================================================
+   290→
+   291→function Pill({ icon, text }: { icon: string; text: string }) {
+   292→  return (
+   293→    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[0.62rem] font-semibold">
+   294→      <i className={`fas ${icon} text-[0.55rem]`} />
+   295→      {text}
+   296→    </span>
+   297→  );
+   298→}
+   299→
+   300→/** A bullet row with a colored icon. */
+   301→function Row({ icon, color, title, children }: { icon: string; color: string; title?: string; children: React.ReactNode }) {
+   302→  return (
+   303→    <div className="flex items-start gap-2.5 py-1.5">
+   304→      <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ background: `${color}1A` }}>
+   305→        <i className={`fas ${icon} text-[0.7rem]`} style={{ color }} />
+   306→      </div>
+   307→      <div className="flex-1 text-[0.73rem] text-[#374151] leading-relaxed">
+   308→        {title && <span className="font-bold text-[#1F2937]">{title} · </span>}
+   309→        {children}
+   310→      </div>
+   311→    </div>
+   312→  );
+   313→}
+   314→
+   315→/** A highlighted callout box. */
+   316→function Callout({ icon, color, children }: { icon: string; color: string; children: React.ReactNode }) {
+   317→  return (
+   318→    <div className="mt-3 rounded-xl p-3 flex items-start gap-2.5" style={{ background: `${color}12`, border: `1px solid ${color}33` }}>
+   319→      <i className={`fas ${icon} text-[0.8rem] mt-0.5 shrink-0`} style={{ color }} />
+   320→      <div className="text-[0.7rem] text-[#374151] leading-relaxed">{children}</div>
+   321→    </div>
+   322→  );
+   323→}
+   324→
+   325→/** A simple key/value badge row. */
+   326→function StatRow({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
+   327→  return (
+   328→    <div className="flex items-center justify-between py-1.5 text-[0.72rem]">
+   329→      <span className="text-[#6B7280]">{label}</span>
+   330→      <span className="font-bold" style={{ color: valueColor || '#1F2937' }}>{value}</span>
+   331→    </div>
+   332→  );
+   333→}
+   334→
+   335→// =====================================================================
+   336→// Section contents
+   337→// =====================================================================
+   338→
+   339→function ConceptContent() {
+   340→  const teal = '#14B8A6';
+   341→  return (
+   342→    <>
+   343→      <Row icon="fa-handshake" color={teal} title="Le principe">
+   344→        Les <strong>entreprises</strong> paient pour leur <strong>visibilité</strong>.
+   345→        Vous accomplissez des missions, vous investissez, vous jouez —{' '}
+   346→        <strong>vous gagnez</strong>.
+   347→      </Row>
+   348→      <Row icon="fa-coins" color="#F59E0B" title="3 façons de gagner">
+   349→        <strong>Missions</strong>, <strong>investissements</strong> et{' '}
+   350→        <strong>roue de la fortune</strong>.
+   351→      </Row>
+   352→    </>
+   353→  );
+   354→}
+   355→
+   356→function MissionsContent() {
+   357→  const teal = '#14B8A6';
+   358→  return (
+   359→    <>
+   360→      <Row icon="fa-bullhorn" color={teal} title="Campagnes de mission">
+   361→        Les <strong>entreprises</strong> créent des <strong>campagnes</strong> avec un cahier des charges.
+   362→        Vous soumettez des <strong>photos preuve</strong> pour chaque campagne active.
+   363→      </Row>
+   364→      <Row icon="fa-camera" color="#22C55E" title="Soumission d'images">
+   365→        Prenez ou téléchargez une <strong>photo</strong> qui respecte le brief de la campagne.
+   366→        L&apos;image est envoyée pour <strong>validation par l&apos;admin</strong>.
+   367→      </Row>
+   368→      <Row icon="fa-check-circle" color="#4ADE80" title="Validation &amp; récompense">
+   369→        Si votre image est <strong>validée</strong>, la récompense de la campagne est créditée
+   370→        sur votre <strong>compte Mission</strong>. Les images refusées ne donnent rien.
+   371→      </Row>
+   372→
+   373→      <Callout icon="fa-images" color={teal}>
+   374→        <strong>Statuts possibles :</strong>{' '}
+   375→        <strong>En attente</strong> (à valider),{' '}
+   376→        <strong>Validée</strong> (récompense créditée),{' '}
+   377→        <strong>Refusée</strong> (non conforme),{' '}
+   378→        <strong>Doublon</strong> (image déjà soumise).
+   379→      </Callout>
+   380→
+   381→      <Callout icon="fa-arrow-up" color="#EF4444">
+   382→        <strong>Retrait dès $1</strong> depuis le compte Mission via <strong>YAS</strong> ou <strong>TRX</strong>.
+   383→      </Callout>
+   384→    </>
+   385→  );
+   386→}
+   387→
+   388→function InvestContent() {
+   389→  const green = '#059669';
+   390→  const LEVELS = [
+   391→    { level: 1, name: 'Débutant', min: 5,   max: 15,   rate: 5, refs: 0,  color: '#22C55E', icon: 'fa-seedling' },
+   392→    { level: 2, name: 'Business', min: 65,  max: 250,  rate: 5, refs: 12, color: '#14B8A6', icon: 'fa-chart-line' },
+   393→    { level: 3, name: 'Elite',    min: 500, max: 3000, rate: 5, refs: 25, color: '#F59E0B', icon: 'fa-crown' },
+   394→  ];
+   395→  return (
+   396→    <>
+   397→      <Row icon="fa-chart-line" color={green} title="3 niveaux · 5 % par jour">
+   398→        Tous les niveaux rapportent <strong>5 %/jour</strong>. Investissez au{' '}
+   399→        <strong>niveau souhaité</strong> et les <strong>collectes journalières</strong>{' '}
+   400→        sont créditées directement sur votre <strong>compte Investissement</strong>.
+   401→      </Row>
+   402→
+   403→      <div className="mt-2 space-y-2">
+   404→        {LEVELS.map((lvl) => (
+   405→          <div key={lvl.level} className="rounded-xl p-3 border" style={{ borderColor: `${lvl.color}33`, background: `${lvl.color}0A` }}>
+   406→            <div className="flex items-center gap-2.5 mb-1.5">
+   407→              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${lvl.color}26` }}>
+   408→                <i className={`fas ${lvl.icon} text-[0.8rem]`} style={{ color: lvl.color }} />
+   409→              </div>
+   410→              <div className="flex-1">
+   411→                <div className="text-[0.78rem] font-black text-[#1F2937]">Niveau {lvl.level} · {lvl.name}</div>
+   412→                <div className="text-[0.62rem] text-[#6B7280]">${lvl.min} – ${lvl.max}</div>
+   413→              </div>
+   414→              <div className="text-right">
+   415→                <div className="text-[0.78rem] font-black" style={{ color: lvl.color }}>+{lvl.rate}%</div>
+   416→                <div className="text-[0.55rem] text-[#6B7280]">par jour</div>
+   417→              </div>
+   418→            </div>
+   419→            <div className="text-[0.66rem] text-[#4B5563] flex items-center gap-1.5">
+   420→              <i className="fas fa-user-group text-[0.6rem]" style={{ color: lvl.color }} />
+   421→              {lvl.refs === 0
+   422→                ? <span><strong>Accès libre</strong></span>
+   423→                : <span>Déblocage : <strong>{lvl.refs} parrainés</strong></span>}
+   424→            </div>
+   425→          </div>
+   426→        ))}
+   427→      </div>
+   428→
+   429→      <Callout icon="fa-right-left" color={green}>
+   430→        <strong>Collecte quotidienne versée sur votre compte Investissement.</strong>{' '}
+   431→        Le <strong>retrait est possible directement</strong> depuis ce compte
+   432→        via <strong>YAS</strong> ou <strong>TRX</strong>.
+   433→      </Callout>
+   434→
+   435→      <Callout icon="fa-users" color="#EC4899">
+   436→        <strong>Commission parrainage :</strong> vous recevez <strong>5 %</strong> des
+   437→        gains quotidiens d&apos;investissement de chacun de vos filleuls,{' '}
+   438→        <strong>à vie</strong>, crédités sur votre <strong>compte Investissement</strong>.
+   439→      </Callout>
+   440→
+   441→      <Callout icon="fa-user-shield" color="#F59E0B">
+   442→        <strong>Approbation admin requise.</strong> Le compte à rebours démarre{' '}
+   443→        <strong>après l&apos;approbation</strong>.
+   444→      </Callout>
+   445→
+   446→      <Callout icon="fa-circle-info" color="#64748B">
+   447→        Les niveaux supérieurs nécessitent plus de parrainages pour débloquer
+   448→        la collecte. Plus vous parrainez, plus vous accédez à des niveaux élevés.
+   449→      </Callout>
+   450→    </>
+   451→  );
+   452→}
+   453→
+   454→function GameContent() {
+   455→  const amber = '#F59E0B';
+   456→  return (
+   457→    <>
+   458→      <Row icon="fa-dice" color={amber} title="Principe">
+   459→        Tournez la roue et tentez de gagner de l&apos;argent réel.{' '}
+   460→        <strong>Jackpot de 10 $ possible !</strong>
+   461→      </Row>
+   462→      <Row icon="fa-clock" color="#22C55E" title="10 tours par jour">
+   463→        <strong>10 tours maximum/jour</strong>, réinitialisés à <strong>minuit</strong>.
+   464→      </Row>
+   465→      <Row icon="fa-hand-pointer" color={amber} title="Arrêt manuel ou automatique">
+   466→        <strong>Vous contrôlez l&apos;arrêt :</strong> appuyez sur <strong>ARRÊTER</strong>{' '}
+   467→        quand vous voulez, ou la roue s&apos;arrête automatiquement après{' '}
+   468→        <strong>3 secondes</strong>.
+   469→      </Row>
+   470→
+   471→      <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-1 mt-2">
+   472→        <StatRow label="Coût par tour" value="0,20 $" valueColor="#EF4444" />
+   473→        <StatRow label="Jackpot maximum" value="10,00 $" valueColor={amber} />
+   474→        <StatRow label="Tours max / jour" value="10" valueColor="#1F2937" />
+   475→      </div>
+   476→
+   477→      <Callout icon="fa-coins" color="#EF4444">
+   478→        <strong>Coût : 0,20 $/tour.</strong> Prélevé automatiquement dans cet ordre :{' '}
+   479→        <strong>Compte Jeu</strong> → <strong>Investissement</strong> →{' '}
+   480→        <strong>Mission</strong> → <strong>Projet</strong> si le solde est insuffisant.
+   481→      </Callout>
+   482→    </>
+   483→  );
+   484→}
+   485→
+   486→function AccountsContent() {
+   487→  const green = '#22C55E';
+   488→  const ACCOUNTS = [
+   489→    { name: 'Solde Total',           icon: 'fa-layer-group', color: '#6366F1', desc: 'Vue d\'ensemble · affiche la somme de tous vos comptes · pas un vrai compte' },
+   490→    { name: 'Compte Jeu',            icon: 'fa-dice',        color: '#F59E0B', desc: 'Roue de la fortune · les tours coûtent 0,20 $ prélevés ici en premier' },
+   491→    { name: 'Compte Investissement', icon: 'fa-chart-line',  color: '#059669', desc: 'Investissements par niveau · collectes journalières + commissions parrainage' },
+   492→    { name: 'Compte Projet',         icon: 'fa-building',    color: '#0F766E', desc: 'Pour les projets d\'entreprise' },
+   493→    { name: 'Compte Mission',         icon: 'fa-bullhorn',     color: '#14B8A6', desc: 'Gains de missions · récompenses de campagnes · retrait dès $1' },
+   494→  ];
+   495→  return (
+   496→    <>
+   497→      <div className="mt-2 space-y-2">
+   498→        {ACCOUNTS.map((a) => (
+   499→          <div key={a.name} className="flex items-center gap-2.5 rounded-xl p-2.5 border" style={{ borderColor: `${a.color}33`, background: `${a.color}0A` }}>
+   500→            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${a.color}26` }}>
+   501→              <i className={`fas ${a.icon} text-[0.85rem]`} style={{ color: a.color }} />
+   502→            </div>
+   503→            <div className="flex-1 min-w-0">
+   504→              <div className="text-[0.78rem] font-black text-[#1F2937]">{a.name}</div>
+   505→              <div className="text-[0.62rem] text-[#6B7280] leading-snug">{a.desc}</div>
+   506→            </div>
+   507→          </div>
+   508→        ))}
+   509→      </div>
+   510→
+   511→      <Callout icon="fa-circle-info" color={green}>
+   512→        Le <strong>Solde Total</strong> est une vue d&apos;ensemble, pas un vrai compte.
+   513→        Les <strong>4 comptes réels</strong> sont : <strong>Jeu</strong>,{' '}
+   514→        <strong>Investissement</strong>, <strong>Projet</strong> et <strong>Mission</strong>.
+   515→      </Callout>
+   516→
+   517→      <Callout icon="fa-arrow-up-from-bracket" color="#14B8A6">
+   518→        <strong>Bouton « Retirer »</strong> disponible depuis la carte d&apos;accueil
+   519→        pour <strong>tous les comptes</strong>. Vous choisissez le compte source lors du retrait.
+   520→      </Callout>
+   521→    </>
+   522→  );
+   523→}
+   524→
+   525→function PaymentsContent() {
+   526→  const red = '#EF4444';
+   527→  return (
+   528→    <>
+   529→      {/* ---------- Taux de change ---------- */}
+   530→      <div className="rounded-xl p-3 border border-[#E5E7EB] bg-[#F9FAFB] mb-3">
+   531→        <StatRow label="Taux de change" value="1 USD = 550 FCFA" valueColor="#059669" />
+   532→      </div>
+   533→
+   534→      {/* ---------- Dépôts ---------- */}
+   535→      <Row icon="fa-plus-circle" color="#22C55E" title="Comment déposer">
+   536→        Quand vous cliquez sur <strong>« Déposer »</strong>, vous choisissez{' '}
+   537→        d&apos;abord le <strong>compte destinataire</strong> :
+   538→      </Row>
+   539→      <div className="mt-2 space-y-2">
+   540→        <div className="flex items-center gap-2.5 rounded-xl p-2.5 border" style={{ borderColor: '#05966933', background: '#0596690A' }}>
+   541→          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#05966926' }}>
+   542→            <i className="fas fa-chart-line text-[0.85rem]" style={{ color: '#059669' }} />
+   543→          </div>
+   544→          <div className="flex-1 min-w-0">
+   545→            <div className="text-[0.78rem] font-black text-[#1F2937]">Investissement</div>
+   546→            <div className="text-[0.62rem] text-[#6B7280] leading-snug">Vous accédez directement à la page des <strong>niveaux d&apos;investissement</strong></div>
+   547→          </div>
+   548→        </div>
+   549→        <div className="flex items-center gap-2.5 rounded-xl p-2.5 border" style={{ borderColor: '#F59E0B33', background: '#F59E0B0A' }}>
+   550→          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#F59E0B26' }}>
+   551→            <i className="fas fa-dice text-[0.85rem]" style={{ color: '#F59E0B' }} />
+   552→          </div>
+   553→          <div className="flex-1 min-w-0">
+   554→            <div className="text-[0.78rem] font-black text-[#1F2937]">Jeu</div>
+   555→            <div className="text-[0.62rem] text-[#6B7280] leading-snug">Le processus habituel avec <strong>YAS</strong> ou <strong>TRX</strong> s&apos;ouvre</div>
+   556→          </div>
+   557→        </div>
+   558→        <div className="flex items-center gap-2.5 rounded-xl p-2.5 border" style={{ borderColor: '#0F766E33', background: '#0F766E0A' }}>
+   559→          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#0F766E26' }}>
+   560→            <i className="fas fa-building text-[0.85rem]" style={{ color: '#0F766E' }} />
+   561→          </div>
+   562→          <div className="flex-1 min-w-0">
+   563→            <div className="text-[0.78rem] font-black text-[#1F2937]">Projet</div>
+   564→            <div className="text-[0.62rem] text-[#6B7280] leading-snug">Le processus habituel avec <strong>YAS</strong> ou <strong>TRX</strong> s&apos;ouvre</div>
+   565→          </div>
+   566→        </div>
+   567→      </div>
+   568→
+   569→      {/* ---------- Méthodes de paiement ---------- */}
+   570→      <div className="mt-3 grid grid-cols-2 gap-2.5">
+   571→        <div className="rounded-xl p-3 border border-[#FECACA] bg-[#FEF2F2]">
+   572→          <div className="w-9 h-9 rounded-lg bg-[#FEE2E2] flex items-center justify-center mb-2">
+   573→            <i className="fas fa-mobile-screen text-[#EF4444] text-[0.85rem]" />
+   574→          </div>
+   575→          <div className="text-[0.82rem] font-black text-[#1F2937]">YAS</div>
+   576→          <div className="text-[0.62rem] text-[#6B7280] leading-snug">Mobile money (Togo) · 550 FCFA = 1 USD</div>
+   577→        </div>
+   578→        <div className="rounded-xl p-3 border border-[#FECACA] bg-[#FEF2F2]">
+   579→          <div className="w-9 h-9 rounded-lg bg-[#FEE2E2] flex items-center justify-center mb-2">
+   580→            <i className="fas fa-coins text-[#EF4444] text-[0.85rem]" />
+   581→          </div>
+   582→          <div className="text-[0.82rem] font-black text-[#1F2937]">TRX</div>
+   583→          <div className="text-[0.62rem] text-[#6B7280] leading-snug">Crypto (Tron) · min $5</div>
+   584→        </div>
+   585→      </div>
+   586→
+   587→      {/* ---------- Retraits ---------- */}
+   588→      <div className="mt-3">
+   589→        <Row icon="fa-arrow-up-from-bracket" color="#14B8A6" title="Retrait depuis tous les comptes">
+   590→          Le retrait est possible depuis <strong>tous vos comptes</strong> :{' '}
+   591→          <strong>Jeu</strong>, <strong>Investissement</strong>, <strong>Projet</strong>{' '}
+   592→          et <strong>Mission</strong>, via <strong>YAS</strong> ou <strong>TRX</strong>.
+   593→        </Row>
+   594→      </div>
+   595→
+   596→      <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-1 mt-2">
+   597→        <StatRow label="Min. retrait Mission" value="1 $" valueColor="#14B8A6" />
+   598→        <StatRow label="Min. retrait (autres)" value="5 $" valueColor="#EF4444" />
+   599→        <StatRow label="Disponibilité des fonds" value="6 heures" valueColor="#F59E0B" />
+   600→        <StatRow label="Dépôts" value="Investissement · Jeu · Projet" valueColor="#22C55E" />
+   601→        <StatRow label="Retraits" value="Tous les comptes" valueColor="#14B8A6" />
+   602→      </div>
+   603→
+   604→      <Callout icon="fa-rotate" color="#F59E0B">
+   605→        <strong>Actualisez votre page régulièrement</strong> après une opération pour voir
+   606→        votre solde à jour.
+   607→      </Callout>
+   608→
+   609→      <Callout icon="fa-user-shield" color={red}>
+   610→        <strong>Approbation admin requise</strong> pour les dépôts et retraits.
+   611→      </Callout>
+   612→    </>
+   613→  );
+   614→}
+   615→
+   616→function ReferralContent() {
+   617→  const pink = '#EC4899';
+   618→  return (
+   619→    <>
+   620→      <Row icon="fa-gift" color={pink} title="Votre code JÉ-XXXXXX">
+   621→        Visible dans votre <strong>Profil</strong>. Partagez-le : vos amis doivent{' '}
+   622→        <strong>s&apos;inscrire</strong> avec pour être comptabilisés.
+   623→      </Row>
+   624→      <Row icon="fa-share-nodes" color={pink} title="Partage">
+   625→        Bouton <strong>Invitez vos amis</strong> puis <strong>Copier le lien</strong> ou
+   626→        partage native (WhatsApp, TikTok, Telegram…).
+   627→      </Row>
+   628→
+   629→      <Callout icon="fa-percent" color="#059669">
+   630→        <strong>5 % de commission à vie :</strong> vous recevez <strong>5 %</strong> de{' '}
+   631→        <strong>tous les gains quotidiens d&apos;investissement</strong> de chaque filleul,{' '}
+   632→        <strong>indéfiniment</strong>. Cette commission est créditée directement
+   633→        sur votre <strong>compte Investissement</strong>.
+   634→      </Callout>
+   635→
+   636→      <Callout icon="fa-trophy" color={pink}>
+   637→        <strong>12 parrainés = 5 $ de cadeau</strong> sur votre compte principal +{' '}
+   638→        <strong>message de félicitations</strong>.
+   639→      </Callout>
+   640→
+   641→      <Row icon="fa-unlock" color="#F59E0B" title="Débloquer les niveaux">
+   642→        Niveau 2 (Business) = <strong>12 parrainés</strong>. Niveau 3 (Elite) ={' '}
+   643→        <strong>25 parrainés</strong>.
+   644→      </Row>
+   645→
+   646→      <Callout icon="fa-bullhorn" color="#14B8A6">
+   647→        <strong>Parrainage et missions :</strong> le parrainage débloque des
+   648→        fonctionnalités et niveaux supérieurs. Plus vous parrainez,
+   649→        plus vous accédez à des opportunités.
+   650→      </Callout>
+   651→
+   652→      <Callout icon="fa-shield-halved" color="#EF4444">
+   653→        <strong>Anti-doublon :</strong> le même nom, email ou numéro de téléphone
+   654→        ne peut pas être utilisé pour créer <strong>plusieurs comptes</strong>.
+   655→        Chaque utilisateur doit avoir des informations uniques.
+   656→      </Callout>
+   657→    </>
+   658→  );
+   659→}
+   660→
+   661→function NavContent() {
+   662→  const slate = '#64748B';
+   663→  const tabs = [
+   664→    { icon: 'fa-bullhorn',   label: 'Missions',    desc: 'Campagnes · soumettre des images',   color: '#14B8A6' },
+   665→    { icon: 'fa-coins',     label: 'Make Money', desc: 'Investir · Jeu · Projets',        color: '#059669' },
+   666→    { icon: 'fa-compass',   label: 'Guide',      desc: 'Cette page',                       color: slate },
+   667→    { icon: 'fa-user',      label: 'Profil',     desc: 'Compte, parrainage, paramètres',  color: '#F59E0B' },
+   668→  ];
+   669→  return (
+   670→    <>
+   671→      <div className="mt-2 space-y-2">
+   672→        {tabs.map((t, i) => (
+   673→          <div key={t.label} className="flex items-center gap-3 rounded-xl p-2.5 border border-[#E5E7EB] bg-[#F9FAFB]">
+   674→            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${t.color}1A` }}>
+   675→              <i className={`fas ${t.icon} text-[0.85rem]`} style={{ color: t.color }} />
+   676→            </div>
+   677→            <div className="flex-1 min-w-0">
+   678→              <div className="text-[0.78rem] font-black text-[#1F2937]">
+   679→                <span className="text-[#9CA3AF] mr-1.5">{i + 1}.</span>{t.label}
+   680→              </div>
+   681→              <div className="text-[0.62rem] text-[#6B7280] truncate">{t.desc}</div>
+   682→            </div>
+   683→          </div>
+   684→        ))}
+   685→      </div>
+   686→    </>
+   687→  );
+   688→}

@@ -77,7 +77,7 @@ export default function ProfileScreen() {
   const referralLink = `${shareUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://beriche.duckdns.org')}/?ref=${user?.referralCode || ''}`;
 
   const buildShareText = () =>
-    `Rejoins Be Rich et gagne de l'argent ! Utilise mon code: ${user?.referralCode || ''}. Inscris-toi: ${referralLink}`;
+    `Rejoins Jeune Élan et gagne avec les missions ! Utilise mon code: ${user?.referralCode || ''}. Inscris-toi: ${referralLink}`;
 
   const handleCopyCode = async () => {
     if (!user?.referralCode) return;
@@ -102,7 +102,7 @@ export default function ProfileScreen() {
   const handleShare = async () => {
     if (!user?.referralCode) return;
     const shareData = {
-      title: 'Be Rich',
+      title: 'Jeune Élan',
       text: buildShareText(),
       url: referralLink,
     };
@@ -786,7 +786,7 @@ export default function ProfileScreen() {
           >
             {/* Header */}
             <div className="flex items-center justify-between mb-1">
-              <h3 className="text-[1rem] font-extrabold" style={{ color: '#1F2937' }}>Partager Be Rich</h3>
+              <h3 className="text-[1rem] font-extrabold" style={{ color: '#1F2937' }}>Partager Jeune Élan</h3>
               <button
                 onClick={() => setShareSheetOpen(false)}
                 className="w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer"
@@ -797,7 +797,7 @@ export default function ProfileScreen() {
               </button>
             </div>
             <p className="text-[0.72rem] mb-4" style={{ color: 'rgba(0,0,0,0.5)' }}>
-              Partage ton code <strong style={{ color: '#F59E0B' }}>{user?.referralCode}</strong> et invite tes amis à rejoindre Be Rich.
+              Partage ton code <strong style={{ color: '#F59E0B' }}>{user?.referralCode}</strong> et invite tes amis à rejoindre Jeune Élan.
             </p>
 
             {/* Referral link preview */}

@@ -5,7 +5,7 @@ import ZAI from 'z-ai-web-dev-sdk';
 export const dynamic = 'force-dynamic';
 
 // Short system prompt for generating quick tips
-const TIP_PROMPT = `Tu es l'IA de "Be Rich", une app d'investissement. Génère UN conseil court (1 phrase, max 15 mots) en français pour un investisseur. Varie entre: investissement, trading, projets d'entreprise, parrainage, gestion de portefeuille. Sois encourageant et dynamique. Utilise 1 emoji au début. Réponds SEULEMENT avec le conseil, rien d'autre.`;
+const TIP_PROMPT = `Tu es l'IA de "Jeune Élan", une app d'investissement. Génère UN conseil court (1 phrase, max 15 mots) en français pour un investisseur. Varie entre: investissement, trading, projets d'entreprise, parrainage, gestion de portefeuille. Sois encourageant et dynamique. Utilise 1 emoji au début. Réponds SEULEMENT avec le conseil, rien d'autre.`;
 
 // Fallback tips when AI is unavailable
 const FALLBACK_TIPS = [

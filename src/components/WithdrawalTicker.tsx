@@ -6,7 +6,7 @@ import { useAppStore } from '@/lib/store';
 // Generate fake withdrawal entries with realistic codes and amounts
 function generateFakeEntries(): Array<{ code: string; type: 'jeu' | 'investissement' | 'projet'; amount: number; icon: string }> {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const genCode = () => 'BR-' + Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  const genCode = () => 'JÉ-' + Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 
   const entries: Array<{ code: string; type: 'jeu' | 'investissement' | 'projet'; amount: number; icon: string }> = [];
 

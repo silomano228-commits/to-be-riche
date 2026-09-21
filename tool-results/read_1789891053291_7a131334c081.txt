@@ -1,0 +1,861 @@
+     1→'use client';
+     2→
+     3→import { useState, useEffect, useCallback } from 'react';
+     4→import { useAppStore, formatMoney, esc, authFetch, type AppUser } from '@/lib/store';
+     5→import { Header, LogoImg, Modal, INVEST_LEVELS, ENTERPRISE_TYPES, ENTERPRISE_NAMES } from '@/components/shared';
+     6→
+     7→const REQUIRED_REFERRALS = 10;
+     8→
+     9→// Daily spin limit (kept in sync with /api/game/status)
+    10→const DAILY_SPINS = 10;
+    11→
+    12→interface GameStats {
+    13→  spinsUsed: number;
+    14→  spinsRemaining: number;
+    15→  dailySpins: number;
+    16→  totalWonToday: number;
+    17→}
+    18→
+    19→export default function ProfileScreen() {
+    20→  const { user, clearUser, setPage, addToast } = useAppStore();
+    21→  const [modalOpen, setModalOpen] = useState(false);
+    22→  const [referrals, setReferrals] = useState<any[]>([]);
+    23→  const [showReferrals, setShowReferrals] = useState(false);
+    24→  const [copied, setCopied] = useState(false);
+    25→  const [shared, setShared] = useState(false);
+    26→  const [shareSheetOpen, setShareSheetOpen] = useState(false);
+    27→  const [worldLink, setWorldLink] = useState<string | null>(null);
+    28→  const [worldLinkSeen, setWorldLinkSeen] = useState(false);
+    29→  const [gameStats, setGameStats] = useState<GameStats | null>(null);
+    30→
+    31→  // shareUrl is only the window origin — safe to compute lazily on the client.
+    32→  const shareUrl = typeof window !== 'undefined' ? window.location.origin : 'https://beriche.duckdns.org';
+    33→
+    34→  const loadReferrals = async () => {
+    35→    try {
+    36→      const res = await authFetch('/api/referral/list');
+    37→      const data = await res.json();
+    38→      if (data.success) { setReferrals(data.referrals || []); setShowReferrals(true); }
+    39→    } catch { /* */ }
+    40→  };
+    41→
+    42→  // Fetch world link if user has 10+ referrals
+    43→  useEffect(() => {
+    44→    if (!user) return;
+    45→    const referralCount = user.referralCount || 0;
+    46→    if (referralCount < REQUIRED_REFERRALS) return;
+    47→
+    48→    authFetch('/api/user/world-link')
+    49→      .then(res => res.json())
+    50→      .then(data => {
+    51→        if (data.success && data.data?.link) {
+    52→          setWorldLink(data.data.link);
+    53→          setWorldLinkSeen(data.data.seen || false);
+    54→        }
+    55→      })
+    56→      .catch(() => { /* */ });
+    57→  }, [user]);
+    58→
+    59→  // Fetch wheel game stats (spins used / total won today)
+    60→  useEffect(() => {
+    61→    if (!user) return;
+    62→    authFetch('/api/game/status')
+    63→      .then(res => res.json())
+    64→      .then(data => {
+    65→        if (data.success) {
+    66→          setGameStats({
+    67→            spinsUsed: data.spinsUsed ?? 0,
+    68→            spinsRemaining: data.spinsRemaining ?? DAILY_SPINS,
+    69→            dailySpins: data.dailySpins ?? DAILY_SPINS,
+    70→            totalWonToday: data.totalWonToday || 0,
+    71→          });
+    72→        }
+    73→      })
+    74→      .catch(() => { /* */ });
+    75→  }, [user?.id]);
+    76→
+    77→  const referralLink = `${shareUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://beriche.duckdns.org')}/?ref=${user?.referralCode || ''}`;
+    78→
+    79→  const buildShareText = () =>
+    80→    `Rejoins Be Rich et gagne de l'argent ! Utilise mon code: ${user?.referralCode || ''}. Inscris-toi: ${referralLink}`;
+    81→
+    82→  const handleCopyCode = async () => {
+    83→    if (!user?.referralCode) return;
+    84→    try {
+    85→      await navigator.clipboard.writeText(user.referralCode);
+    86→      setCopied(true);
+    87→      addToast('Code copié !', 'success');
+    88→      setTimeout(() => setCopied(false), 2000);
+    89→    } catch {
+    90→      const ta = document.createElement('textarea');
+    91→      ta.value = user.referralCode;
+    92→      document.body.appendChild(ta);
+    93→      ta.select();
+    94→      document.execCommand('copy');
+    95→      document.body.removeChild(ta);
+    96→      setCopied(true);
+    97→      addToast('Code copié !', 'success');
+    98→      setTimeout(() => setCopied(false), 2000);
+    99→    }
+   100→  };
+   101→
+   102→  const handleShare = async () => {
+   103→    if (!user?.referralCode) return;
+   104→    const shareData = {
+   105→      title: 'Be Rich',
+   106→      text: buildShareText(),
+   107→      url: referralLink,
+   108→    };
+   109→    // Try native share sheet first (mostly mobile)
+   110→    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+   111→      try {
+   112→        await navigator.share(shareData);
+   113→        setShared(true);
+   114→        setTimeout(() => setShared(false), 2000);
+   115→        return;
+   116→      } catch (err: any) {
+   117→        // If the user explicitly cancelled, do NOT show the fallback
+   118→        if (err && err.name === 'AbortError') return;
+   119→        // For any other error, fall through to custom sheet
+   120→      }
+   121→    }
+   122→    // Fallback custom share sheet (desktop / unsupported browsers)
+   123→    setShareSheetOpen(true);
+   124→  };
+   125→
+   126→  // Open a share URL in a new tab and give feedback
+   127→  const openShareUrl = (url: string, label: string) => {
+   128→    try {
+   129→      if (url.startsWith('sms:') || url.startsWith('mailto:')) {
+   130→        // Use window.open with _self to navigate on the same tab for SMS / mail
+   131→        window.open(url, '_self');
+   132→      } else {
+   133→        window.open(url, '_blank', 'noopener,noreferrer');
+   134→      }
+   135→      addToast(`Partage via ${label} ouvert`, 'success');
+   136→    } catch {
+   137→      addToast(`Impossible d'ouvrir ${label}`, 'error');
+   138→    }
+   139→  };
+   140→
+   141→  const handleShareVia = (platform: string) => {
+   142→    if (!user?.referralCode) return;
+   143→    const text = buildShareText();
+   144→    const url = referralLink;
+   145→    const enc = encodeURIComponent;
+   146→
+   147→    switch (platform) {
+   148→      case 'whatsapp':
+   149→        openShareUrl(`https://wa.me/?text=${enc(text)}`, 'WhatsApp');
+   150→        break;
+   151→      case 'whatsapp_business':
+   152→        openShareUrl(`https://api.whatsapp.com/send?text=${enc(text)}`, 'WhatsApp Business');
+   153→        break;
+   154→      case 'telegram':
+   155→        openShareUrl(`https://t.me/share/url?url=${enc(url)}&text=${enc(text)}`, 'Telegram');
+   156→        break;
+   157→      case 'facebook':
+   158→        openShareUrl(`https://www.facebook.com/sharer/sharer.php?u=${enc(url)}&quote=${enc(text)}`, 'Facebook');
+   159→        break;
+   160→      case 'sms':
+   161→        openShareUrl(`sms:?&body=${enc(text)}`, 'SMS');
+   162→        break;
+   163→      case 'tiktok':
+   164→      case 'instagram':
+   165→      case 'snapchat':
+   166→        // These platforms have no direct share URL — copy link + open the app/site
+   167→        copyLinkThenOpen(platform);
+   168→        break;
+   169→      case 'copy':
+   170→        copyLinkOnly();
+   171→        break;
+   172→      default:
+   173→        break;
+   174→    }
+   175→    setShareSheetOpen(false);
+   176→  };
+   177→
+   178→  const copyLinkOnly = async () => {
+   179→    try {
+   180→      await navigator.clipboard.writeText(referralLink);
+   181→    } catch {
+   182→      const ta = document.createElement('textarea');
+   183→      ta.value = referralLink;
+   184→      document.body.appendChild(ta);
+   185→      ta.select();
+   186→      try { document.execCommand('copy'); } catch { /* */ }
+   187→      document.body.removeChild(ta);
+   188→    }
+   189→    setShared(true);
+   190→    addToast('Lien copié !', 'success');
+   191→    setTimeout(() => setShared(false), 2000);
+   192→  };
+   193→
+   194→  const copyLinkThenOpen = async (platform: string) => {
+   195→    const target: Record<string, { url: string; label: string }> = {
+   196→      tiktok: { url: 'https://www.tiktok.com/', label: 'TikTok' },
+   197→      instagram: { url: 'https://www.instagram.com/', label: 'Instagram' },
+   198→      snapchat: { url: 'https://www.snapchat.com/', label: 'Snapchat' },
+   199→    };
+   200→    const t = target[platform];
+   201→    if (!t) return;
+   202→    // Copy the referral link first, then open the app/site so the user can paste
+   203→    try {
+   204→      await navigator.clipboard.writeText(referralLink);
+   205→      addToast(`Lien copié — collez-le sur ${t.label}`, 'success');
+   206→    } catch {
+   207→      const ta = document.createElement('textarea');
+   208→      ta.value = referralLink;
+   209→      document.body.appendChild(ta);
+   210→      ta.select();
+   211→      try { document.execCommand('copy'); } catch { /* */ }
+   212→      document.body.removeChild(ta);
+   213→      addToast(`Lien copié — collez-le sur ${t.label}`, 'success');
+   214→    }
+   215→    setTimeout(() => window.open(t.url, '_blank', 'noopener,noreferrer'), 300);
+   216→  };
+   217→
+   218→  const handleWorldLinkClick = async () => {
+   219→    if (!worldLink) return;
+   220→    try {
+   221→      await authFetch('/api/user/world-link', { method: 'POST' });
+   222→      setWorldLinkSeen(true);
+   223→    } catch { /* */ }
+   224→    window.open(worldLink, '_blank', 'noopener');
+   225→  };
+   226→
+   227→  const handleLogout = async () => {
+   228→    try { await fetch('/api/auth/logout'); } catch { /* */ }
+   229→    clearUser();
+   230→    addToast('Déconnecté', 'info');
+   231→  };
+   232→
+   233→  if (!user) return null;
+   234→
+   235→  const requiredReferrals = user.requiredReferrals || 0;
+   236→  const currentReferrals = user.referralCount || 0;
+   237→  const needsMore = Math.max(0, requiredReferrals - currentReferrals);
+   238→  const referralProgress = requiredReferrals > 0 ? Math.min(100, (currentReferrals / requiredReferrals) * 100) : 100;
+   239→
+   240→  // Determine investment level based on unlockedLevel
+   241→  const investLevelIdx = Math.max(0, Math.min(INVEST_LEVELS.length - 1, (user.unlockedLevel || 1) - 1));
+   242→  const currentInvestLevel = INVEST_LEVELS[investLevelIdx];
+   243→  const nextInvestLevel = investLevelIdx < INVEST_LEVELS.length - 1 ? INVEST_LEVELS[investLevelIdx + 1] : null;
+   244→
+   245→  // Referral next level
+   246→  const referralNextLevel = INVEST_LEVELS.find(l => (user.referralCount || 0) < l.requiredReferrals);
+   247→  const referralRemaining = referralNextLevel ? referralNextLevel.requiredReferrals - (user.referralCount || 0) : 0;
+   248→
+   249→  // Wheel game helpers
+   250→  const spinsRemaining = gameStats?.spinsRemaining ?? (DAILY_SPINS - (user.gameSpinsUsed ?? 0));
+   251→  const spinsUsed = gameStats?.spinsUsed ?? (user.gameSpinsUsed ?? 0);
+   252→  const dailySpins = gameStats?.dailySpins ?? DAILY_SPINS;
+   253→  const totalWonToday = gameStats?.totalWonToday ?? 0;
+   254→  const spinsProgress = dailySpins > 0 ? Math.min(100, (spinsRemaining / dailySpins) * 100) : 0;
+   255→
+   256→  return (
+   257→    <>
+   258→      <style>{`
+   259→        @keyframes avatarBreathe {
+   260→          0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.3); }
+   261→          50% { box-shadow: 0 0 25px 6px rgba(34,197,94,0.18); }
+   262→        }
+   263→        @keyframes slideUp {
+   264→          from { opacity: 0; transform: translateY(8px); }
+   265→          to { opacity: 1; transform: translateY(0); }
+   266→        }
+   267→        @keyframes progressShine {
+   268→          from { background-position: -200% center; }
+   269→          to { background-position: 200% center; }
+   270→        }
+   271→      `}</style>
+   272→
+   273→      <Header title="Profil" icon="fa-user" iconColor="#22C55E" leftElement={<button onClick={() => setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer border-none mr-1" style={{ background: 'rgba(0,0,0,0.06)', color: 'rgba(0,0,0,0.55)' }}><i className="fas fa-arrow-left text-[0.8rem]"></i></button>} />
+   274→      <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0" style={{ background: '#F8F9FA' }}>
+   275→
+   276→        {/* User Card — impressive gradient header */}
+   277→        <div
+   278→          className="relative overflow-hidden rounded-2xl p-6 mb-4"
+   279→          style={{
+   280→            background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 40%, #15803D 100%)',
+   281→          }}
+   282→        >
+   283→          {/* Decorative elements */}
+   284→          <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }}></div>
+   285→          <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full" style={{ background: 'rgba(255,255,255,0.05)' }}></div>
+   286→          <div className="absolute top-2 right-2 w-20 h-20 rounded-full" style={{ background: 'rgba(255,255,255,0.04)' }}></div>
+   287→
+   288→          <div className="flex items-center gap-4 mb-5 relative">
+   289→            {/* Larger avatar with stronger glow */}
+   290→            <div className="relative">
+   291→              <div
+   292→                className="w-20 h-20 rounded-full flex items-center justify-center font-bold text-[1.6rem]"
+   293→                style={{
+   294→                  background: 'rgba(255,255,255,0.2)',
+   295→                  color: '#FFFFFF',
+   296→                  border: '3px solid rgba(255,255,255,0.3)',
+   297→                  boxShadow: '0 0 30px rgba(255,255,255,0.15)',
+   298→                  animation: 'avatarBreathe 3s ease-in-out infinite',
+   299→                }}
+   300→              >
+   301→                {esc(user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2))}
+   302→              </div>
+   303→              {/* Online indicator */}
+   304→              <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full" style={{ background: '#4ADE80', border: '3px solid #22C55E' }}></div>
+   305→            </div>
+   306→            <div className="flex-1 min-w-0">
+   307→              <div className="text-[1.2rem] font-black text-white truncate">{esc(user.name)}</div>
+   308→              <div className="text-[0.78rem] text-white/70">{esc(user.email)}</div>
+   309→              <div className="flex items-center gap-2 mt-1.5">
+   310→                {user.role === 'admin' && (
+   311→                  <span className="inline-flex items-center gap-1 text-[0.6rem] px-2 py-0.5 rounded-full font-semibold bg-white/20 text-white">
+   312→                    <i className="fas fa-shield-alt text-[0.5rem]"></i>Admin
+   313→                  </span>
+   314→                )}
+   315→                <span className="inline-flex items-center gap-1 text-[0.6rem] px-2 py-0.5 rounded-full font-semibold bg-white/20 text-white">
+   316→                  <i className="fas fa-star text-[0.5rem]"></i>{currentInvestLevel.name}
+   317→                </span>
+   318→              </div>
+   319→            </div>
+   320→          </div>
+   321→
+   322→          {/* Account grid on gradient background */}
+   323→          <div className="grid grid-cols-3 gap-2">
+   324→            <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)' }}>
+   325→              <div className="text-[0.6rem] uppercase text-white/60">Principal</div>
+   326→              <div className="text-[0.95rem] font-black text-white">{formatMoney(user.balance)}</div>
+   327→            </div>
+   328→            <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)' }}>
+   329→              <div className="text-[0.6rem] uppercase text-white/60">Jeu</div>
+   330→              <div className="text-[0.95rem] font-black text-white">{formatMoney(user.gameTotalWon ?? 0)}</div>
+   331→            </div>
+   332→            <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)' }}>
+   333→              <div className="text-[0.6rem] uppercase text-white/60">Projet</div>
+   334→              <div className="text-[0.95rem] font-black text-white">{formatMoney(user.projectBalance)}</div>
+   335→            </div>
+   336→          </div>
+   337→        </div>
+   338→
+   339→        {/* Niveau d'Investissement Section */}
+   340→        <div
+   341→          className="rounded-2xl p-4 mb-4"
+   342→          style={{
+   343→            background: '#FFFFFF',
+   344→            border: '1px solid rgba(0,0,0,0.08)',
+   345→          }}
+   346→        >
+   347→          <div className="flex items-center gap-2.5 mb-3">
+   348→            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.12)' }}>
+   349→              <i className={`fas ${currentInvestLevel.icon} text-[0.75rem]`} style={{ color: currentInvestLevel.color }}></i>
+   350→            </div>
+   351→            <div className="flex-1">
+   352→              <h4 className="text-[0.88rem] font-bold" style={{ color: '#1F2937' }}>Niveau d'Investissement</h4>
+   353→              <div className="text-[0.65rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>Votre niveau actuel de placement</div>
+   354→            </div>
+   355→            <span
+   356→              className="text-[0.75rem] font-bold px-3 py-1 rounded-full"
+   357→              style={{ background: `${currentInvestLevel.color}20`, color: currentInvestLevel.color }}
+   358→            >
+   359→              {currentInvestLevel.name}
+   360→            </span>
+   361→          </div>
+   362→
+   363→          {/* Progress bar to next level */}
+   364→          <div className="relative">
+   365→            <div className="flex items-center justify-between mb-1.5">
+   366→              <span className="text-[0.68rem]" style={{ color: 'rgba(0,0,0,0.4)' }}>Niveau {currentInvestLevel.level}/{INVEST_LEVELS.length}</span>
+   367→              {nextInvestLevel && (
+   368→                <span className="text-[0.68rem] font-semibold" style={{ color: nextInvestLevel.color }}>→ {nextInvestLevel.name}</span>
+   369→              )}
+   370→            </div>
+   371→            <div className="w-full h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.08)' }}>
+   372→              <div
+   373→                className="h-full rounded-full transition-all duration-500"
+   374→                style={{
+   375→                  width: `${(currentInvestLevel.level / INVEST_LEVELS.length) * 100}%`,
+   376→                  background: `linear-gradient(90deg, ${currentInvestLevel.color}, ${nextInvestLevel?.color || currentInvestLevel.color})`,
+   377→                }}
+   378→              ></div>
+   379→            </div>
+   380→            <div className="flex justify-between mt-1.5">
+   381→              {INVEST_LEVELS.map((lvl, i) => (
+   382→                <div key={i} className="flex flex-col items-center">
+   383→                  <div
+   384→                    className="w-2 h-2 rounded-full"
+   385→                    style={{
+   386→                      background: i <= investLevelIdx ? lvl.color : 'rgba(0,0,0,0.15)',
+   387→                      boxShadow: i <= investLevelIdx ? `0 0 4px ${lvl.color}40` : 'none',
+   388→                    }}
+   389→                  />
+   390→                </div>
+   391→              ))}
+   392→            </div>
+   393→          </div>
+   394→
+   395→          {nextInvestLevel && nextInvestLevel.requiredReferrals > (user.referralCount || 0) && (
+   396→            <div className="mt-3 rounded-lg p-2.5 flex items-center gap-2" style={{ background: 'rgba(0,0,0,0.03)' }}>
+   397→              <i className="fas fa-info-circle text-[0.6rem]" style={{ color: nextInvestLevel.color }}></i>
+   398→              <span className="text-[0.62rem]" style={{ color: 'rgba(0,0,0,0.5)' }}>
+   399→                Encore <strong>{nextInvestLevel.requiredReferrals - (user.referralCount || 0)}</strong> parrainé{nextInvestLevel.requiredReferrals - (user.referralCount || 0) > 1 ? 's' : ''} ou frais de {nextInvestLevel.unlockFee}$ pour débloquer {nextInvestLevel.name}
+   400→              </span>
+   401→            </div>
+   402→          )}
+   403→        </div>
+   404→
+   405→        {/* Niveau de Jeu / Jeu de Roue Section */}
+   406→        <div
+   407→          className="rounded-2xl p-4 mb-4"
+   408→          style={{
+   409→            background: '#FFFFFF',
+   410→            border: '1px solid rgba(0,0,0,0.08)',
+   411→          }}
+   412→        >
+   413→          <div className="flex items-center gap-2.5 mb-3">
+   414→            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(248,113,113,0.12)' }}>
+   415→              <i className="fas fa-circle-notch text-[0.75rem]" style={{ color: '#F87171' }}></i>
+   416→            </div>
+   417→            <div className="flex-1">
+   418→              <h4 className="text-[0.88rem] font-bold" style={{ color: '#1F2937' }}>Jeu de Roue</h4>
+   419→              <div className="text-[0.65rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>Vos parties de roue quotidienne</div>
+   420→            </div>
+   421→            <span
+   422→              className="text-[0.75rem] font-bold px-3 py-1 rounded-full"
+   423→              style={{ background: 'rgba(248,113,113,0.12)', color: '#F87171' }}
+   424→            >
+   425→              {spinsRemaining}/{dailySpins}
+   426→            </span>
+   427→          </div>
+   428→
+   429→          {/* Stats grid */}
+   430→          <div className="grid grid-cols-3 gap-2 mb-3">
+   431→            <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.08)' }}>
+   432→              <div className="text-[0.6rem]" style={{ color: 'rgba(0,0,0,0.35)' }}>Parties jouées</div>
+   433→              <div className="text-[1rem] font-black" style={{ color: '#F87171' }}>{spinsUsed}</div>
+   434→            </div>
+   435→            <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.08)' }}>
+   436→              <div className="text-[0.6rem]" style={{ color: 'rgba(0,0,0,0.35)' }}>Gagné aujourd'hui</div>
+   437→              <div className="text-[1rem] font-black" style={{ color: '#22C55E' }}>{formatMoney(totalWonToday)}</div>
+   438→            </div>
+   439→            <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.08)' }}>
+   440→              <div className="text-[0.6rem]" style={{ color: 'rgba(0,0,0,0.35)' }}>Total cumulé</div>
+   441→              <div className="text-[1rem] font-black" style={{ color: '#6366F1' }}>{formatMoney(user.gameTotalWon ?? 0)}</div>
+   442→            </div>
+   443→          </div>
+   444→
+   445→          {/* Progress bar: tours restants aujourd'hui */}
+   446→          <div className="relative mb-3">
+   447→            <div className="flex items-center justify-between mb-1.5">
+   448→              <span className="text-[0.68rem]" style={{ color: 'rgba(0,0,0,0.4)' }}>Tours restants aujourd'hui</span>
+   449→              <span className="text-[0.68rem] font-semibold" style={{ color: '#F87171' }}>{spinsRemaining}/{dailySpins}</span>
+   450→            </div>
+   451→            <div className="w-full h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.08)' }}>
+   452→              <div
+   453→                className="h-full rounded-full transition-all duration-500"
+   454→                style={{
+   455→                  width: `${spinsProgress}%`,
+   456→                  background: 'linear-gradient(90deg, #F87171, #EF4444)',
+   457→                  maxWidth: '100%',
+   458→                }}
+   459→              ></div>
+   460→            </div>
+   461→          </div>
+   462→
+   463→          <button
+   464→            onClick={() => setPage('game')}
+   465→            className="w-full py-2.5 rounded-xl font-semibold text-[0.82rem] border-none cursor-pointer flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+   466→            style={{
+   467→              background: 'linear-gradient(135deg, #F87171, #EF4444)',
+   468→              color: '#FFFFFF',
+   469→              boxShadow: '0 2px 12px rgba(248,113,113,0.25)',
+   470→            }}
+   471→          >
+   472→            <i className="fas fa-play text-[0.6rem]"></i>
+   473→            {spinsRemaining > 0 ? 'Jouer maintenant' : 'Voir le jeu'}
+   474→          </button>
+   475→        </div>
+   476→
+   477→        {/* Referral Stats — prominent section */}
+   478→        <div
+   479→          className="rounded-2xl p-4 mb-4"
+   480→          style={{
+   481→            background: '#FFFFFF',
+   482→            border: '1px solid rgba(0,0,0,0.08)',
+   483→          }}
+   484→        >
+   485→          <div className="flex items-center gap-2.5 mb-3">
+   486→            <i className="fas fa-gift" style={{ color: '#F59E0B' }}></i>
+   487→            <h4 className="text-[0.88rem] font-bold" style={{ color: '#1F2937' }}>Parrainage</h4>
+   488→            <span
+   489→              className="ml-auto text-[0.7rem] font-bold px-2.5 py-1 rounded-full"
+   490→              style={{
+   491→                background: (user.referralCount || 0) >= REQUIRED_REFERRALS ? 'rgba(34,197,94,0.12)' : 'rgba(245,158,11,0.12)',
+   492→                color: (user.referralCount || 0) >= REQUIRED_REFERRALS ? '#22C55E' : '#F59E0B',
+   493→              }}
+   494→            >
+   495→              {user.referralCount || 0}/{REQUIRED_REFERRALS}
+   496→            </span>
+   497→          </div>
+   498→
+   499→          {/* Referral Code — light bg, gold accent */}
+   500→          <div
+   501→            className="rounded-xl p-3 mb-3 flex items-center justify-between"
+   502→            style={{
+   503→              background: 'rgba(245,158,11,0.08)',
+   504→              border: '1px solid rgba(245,158,11,0.1)',
+   505→            }}
+   506→          >
+   507→            <div>
+   508→              <div className="text-[0.68rem] mb-0.5" style={{ color: 'rgba(0,0,0,0.45)' }}>Votre code</div>
+   509→              <div className="text-[1.1rem] font-mono font-black" style={{ color: '#F59E0B' }}>{user.referralCode}</div>
+   510→            </div>
+   511→            <div className="flex items-center gap-2">
+   512→              <button
+   513→                onClick={handleShare}
+   514→                className="w-10 h-10 rounded-xl flex items-center justify-center border-none cursor-pointer transition-all"
+   515→                style={{
+   516→                  background: shared ? 'rgba(34,197,94,0.3)' : 'rgba(34,197,94,0.15)',
+   517→                  color: shared ? '#22C55E' : '#22C55E',
+   518→                  boxShadow: shared ? 'none' : '0 2px 12px rgba(34,197,94,0.15)',
+   519→                }}
+   520→                title="Partager le lien"
+   521→              >
+   522→                <i className={`fas ${shared ? 'fa-check' : 'fa-share-alt'} text-[0.85rem]`}></i>
+   523→              </button>
+   524→              <button
+   525→                onClick={handleCopyCode}
+   526→                className="w-10 h-10 rounded-xl flex items-center justify-center border-none cursor-pointer transition-all"
+   527→                style={{
+   528→                  background: copied ? 'rgba(245,158,11,0.3)' : '#F59E0B',
+   529→                  color: copied ? '#F59E0B' : '#050506',
+   530→                  boxShadow: copied ? 'none' : '0 2px 12px rgba(245,158,11,0.25)',
+   531→                }}
+   532→                title="Copier le code"
+   533→              >
+   534→                <i className={`fas ${copied ? 'fa-check' : 'fa-copy'} text-[0.85rem]`}></i>
+   535→              </button>
+   536→            </div>
+   537→          </div>
+   538→
+   539→          {/* Referral Progress — prominent */}
+   540→          {requiredReferrals > 0 && (
+   541→            <div
+   542→              className="rounded-xl p-3 mb-3"
+   543→              style={{
+   544→                background: 'rgba(0,0,0,0.04)',
+   545→                border: '1px solid rgba(0,0,0,0.05)',
+   546→              }}
+   547→            >
+   548→              <div className="flex items-center justify-between mb-1.5">
+   549→                <span className="text-[0.72rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>Progrès pour retrait</span>
+   550→                <span className="text-[0.72rem] font-bold" style={{ color: '#F59E0B' }}>{currentReferrals}/{requiredReferrals}</span>
+   551→              </div>
+   552→              <div className="w-full h-2.5 rounded-full overflow-hidden mb-1.5" style={{ background: 'rgba(0,0,0,0.08)' }}>
+   553→                <div
+   554→                  className="h-full rounded-full transition-all duration-500"
+   555→                  style={{
+   556→                    width: `${referralProgress}%`,
+   557→                    background: referralProgress >= 100
+   558→                      ? 'linear-gradient(90deg, #22C55E, #4ADE80)'
+   559→                      : 'linear-gradient(90deg, #F59E0B, #FBBF24)',
+   560→                  }}
+   561→                ></div>
+   562→              </div>
+   563→              {needsMore > 0 ? (
+   564→                <p className="text-[0.65rem]" style={{ color: 'rgba(34,197,94,0.7)' }}>
+   565→                  <i className="fas fa-info-circle mr-1"></i>Encore <strong>{needsMore}</strong> parrainé{needsMore > 1 ? 's' : ''} requis pour le retrait
+   566→                </p>
+   567→              ) : (
+   568→                <p className="text-[0.65rem]" style={{ color: '#22C55E' }}>
+   569→                  <i className="fas fa-check-circle mr-1"></i>Condition de parrainage remplie !
+   570→                </p>
+   571→              )}
+   572→            </div>
+   573→          )}
+   574→
+   575→          {/* Referral stats row */}
+   576→          <div className="grid grid-cols-2 gap-2 mb-3">
+   577→            <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.08)' }}>
+   578→              <div className="text-[0.6rem]" style={{ color: 'rgba(0,0,0,0.35)' }}>Parrainés actifs</div>
+   579→              <div className="text-[1rem] font-black" style={{ color: '#F59E0B' }}>{user.referralCount || 0}</div>
+   580→            </div>
+   581→            <div className="rounded-lg p-2.5 text-center" style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.08)' }}>
+   582→              <div className="text-[0.6rem]" style={{ color: 'rgba(0,0,0,0.35)' }}>Prochain niveau</div>
+   583→              <div className="text-[1rem] font-black" style={{ color: referralNextLevel ? '#8B5CF6' : '#22C55E' }}>
+   584→                {referralNextLevel ? `+${referralRemaining}` : '✓'}
+   585→              </div>
+   586→            </div>
+   587→          </div>
+   588→
+   589→          <button
+   590→            onClick={loadReferrals}
+   591→            className="w-full py-2.5 rounded-xl font-semibold text-[0.82rem] border-none cursor-pointer transition-all active:scale-[0.98]"
+   592→            style={{
+   593→              background: 'rgba(245,158,11,0.1)',
+   594→              color: '#F59E0B',
+   595→              border: '1px solid rgba(245,158,11,0.15)',
+   596→            }}
+   597→          >
+   598→            <i className="fas fa-list mr-1"></i>Voir mes parrainés
+   599→          </button>
+   600→        </div>
+   601→
+   602→        {/* World Link Section — shown when 10+ referrals */}
+   603→        {(user.referralCount || 0) >= REQUIRED_REFERRALS && worldLink && (
+   604→          <div
+   605→            className="rounded-2xl p-4 mb-4 relative overflow-hidden"
+   606→            style={{
+   607→              background: 'linear-gradient(135deg, rgba(139,92,246,0.06), rgba(59,130,246,0.06))',
+   608→              border: '1px solid rgba(139,92,246,0.12)',
+   609→            }}
+   610→          >
+   611→            <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full" style={{ background: 'rgba(139,92,246,0.05)' }} />
+   612→            <div className="flex items-center gap-2.5 mb-2">
+   613→              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(139,92,246,0.12)' }}>
+   614→                <i className="fas fa-globe text-[0.75rem]" style={{ color: '#8B5CF6' }}></i>
+   615→              </div>
+   616→              <div className="flex-1">
+   617→                <h4 className="text-[0.85rem] font-bold" style={{ color: '#8B5CF6' }}>Un nouvel horizon</h4>
+   618→                <div className="text-[0.6rem]" style={{ color: 'rgba(0,0,0,0.45)' }}>Accès exclusif pour les membres fidèles</div>
+   619→              </div>
+   620→            </div>
+   621→            <p className="text-[0.65rem] mb-3" style={{ color: 'rgba(0,0,0,0.5)' }}>
+   622→              Découvrez des opportunités étendues réservées aux parrains les plus actifs.
+   623→            </p>
+   624→            <button
+   625→              onClick={handleWorldLinkClick}
+   626→              className="w-full py-2.5 rounded-xl font-semibold text-[0.82rem] border-none cursor-pointer flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
+   627→              style={{
+   628→                background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
+   629→                color: '#FFFFFF',
+   630→                boxShadow: '0 2px 12px rgba(139,92,246,0.3)',
+   631→              }}
+   632→            >
+   633→              <i className="fas fa-external-link-alt text-[0.6rem]"></i>
+   634→              Découvrir
+   635→            </button>
+   636→          </div>
+   637→        )}
+   638→
+   639→        {/* Referral List — white cards */}
+   640→        {showReferrals && (
+   641→          <div
+   642→            className="rounded-2xl p-4 mb-4"
+   643→            style={{
+   644→              background: '#FFFFFF',
+   645→              border: '1px solid rgba(0,0,0,0.08)',
+   646→            }}
+   647→          >
+   648→            <h4 className="text-[0.82rem] font-bold mb-2" style={{ color: '#1F2937' }}>Mes parrainés ({referrals.length})</h4>
+   649→            {referrals.length === 0 ? (
+   650→              <p className="text-[0.75rem]" style={{ color: 'rgba(0,0,0,0.35)' }}>Aucun parrainé pour le moment.</p>
+   651→            ) : referrals.map((r, i) => (
+   652→              <div
+   653→                key={i}
+   654→                className="flex items-center justify-between py-2"
+   655→                style={{ borderBottom: i < referrals.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}
+   656→              >
+   657→                <div>
+   658→                  <div className="text-[0.78rem] font-semibold" style={{ color: '#1F2937' }}>{esc(r.name)}</div>
+   659→                  <div className="text-[0.65rem]" style={{ color: 'rgba(0,0,0,0.35)' }}>{esc(r.email)}</div>
+   660→                </div>
+   661→                <span
+   662→                  className="text-[0.65rem] font-semibold px-2 py-0.5 rounded-full"
+   663→                  style={{
+   664→                    background: r.hasInvested ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.08)',
+   665→                    color: r.hasInvested ? '#22C55E' : 'rgba(239,68,68,0.6)',
+   666→                  }}
+   667→                >
+   668→                  {r.hasInvested ? 'Actif' : 'Inactif'}
+   669→                </span>
+   670→              </div>
+   671→            ))}
+   672→          </div>
+   673→        )}
+   674→
+   675→        {/* Analytics Button — white bg with gold icon */}
+   676→        <button
+   677→          onClick={() => setPage('analytics')}
+   678→          className="w-full py-3.5 rounded-xl font-bold text-[0.88rem] border-none cursor-pointer mb-3 flex items-center justify-center gap-2.5 transition-all active:scale-[0.98]"
+   679→          style={{
+   680→            background: '#FFFFFF',
+   681→            color: '#1F2937',
+   682→            border: '1px solid rgba(0,0,0,0.08)',
+   683→            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+   684→          }}
+   685→        >
+   686→          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.12)' }}>
+   687→            <i className="fas fa-chart-bar text-[0.75rem]" style={{ color: '#6366F1' }}></i>
+   688→          </div>
+   689→          Analyses
+   690→        </button>
+   691→
+   692→        {/* Admin Button — white bg with gold icon */}
+   693→        {user.role === 'admin' && (
+   694→          <button
+   695→            onClick={() => setPage('admin')}
+   696→            className="w-full py-3.5 rounded-xl font-bold text-[0.88rem] border-none cursor-pointer mb-3 flex items-center justify-center gap-2.5 transition-all active:scale-[0.98]"
+   697→            style={{
+   698→              background: '#FFFFFF',
+   699→              color: '#1F2937',
+   700→              border: '1px solid rgba(0,0,0,0.08)',
+   701→              boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+   702→            }}
+   703→          >
+   704→            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.12)' }}>
+   705→              <i className="fas fa-shield-alt text-[0.75rem]" style={{ color: '#6366F1' }}></i>
+   706→            </div>
+   707→            Panneau Admin
+   708→          </button>
+   709→        )}
+   710→
+   711→        {/* Logout — light bg with subtle red text */}
+   712→        <button
+   713→          onClick={() => setModalOpen(true)}
+   714→          className="w-full py-3.5 rounded-xl font-semibold text-[0.88rem] cursor-pointer flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+   715→          style={{
+   716→            background: 'rgba(0,0,0,0.04)',
+   717→            border: '1.5px solid rgba(239,68,68,0.12)',
+   718→            color: 'rgba(239,68,68,0.6)',
+   719→          }}
+   720→        >
+   721→          <i className="fas fa-sign-out-alt"></i> Déconnexion
+   722→        </button>
+   723→      </div>
+   724→
+   725→      {modalOpen && (
+   726→        <div
+   727→          className="fixed inset-0 backdrop-blur-sm z-[6000] flex items-center justify-center"
+   728→          style={{ background: 'rgba(0,0,0,0.3)' }}
+   729→          onClick={() => setModalOpen(false)}
+   730→        >
+   731→          <div
+   732→            className="rounded-2xl p-7 w-[88%] max-w-[320px] text-center"
+   733→            style={{
+   734→              background: '#FFFFFF',
+   735→              border: '1px solid rgba(0,0,0,0.08)',
+   736→              boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+   737→              animation: 'modalIn 0.25s ease-out',
+   738→            }}
+   739→            onClick={(e) => e.stopPropagation()}
+   740→          >
+   741→            <h3 className="mb-2 text-[1.05rem] font-extrabold" style={{ color: '#1F2937' }}>Déconnexion</h3>
+   742→            <p className="text-[0.82rem] mb-5 leading-relaxed" style={{ color: 'rgba(0,0,0,0.55)' }}>Voulez-vous vous déconnecter ?</p>
+   743→            <div className="flex gap-2">
+   744→              <button
+   745→                onClick={() => setModalOpen(false)}
+   746→                className="flex-1 py-3 rounded-xl font-semibold text-[0.82rem] cursor-pointer transition-all active:scale-95"
+   747→                style={{
+   748→                  background: 'rgba(0,0,0,0.05)',
+   749→                  border: '1.5px solid rgba(0,0,0,0.1)',
+   750→                  color: 'rgba(0,0,0,0.55)',
+   751→                }}
+   752→              >
+   753→                Annuler
+   754→              </button>
+   755→              <button
+   756→                onClick={handleLogout}
+   757→                className="flex-1 py-3 rounded-xl text-white font-semibold text-[0.82rem] cursor-pointer transition-all active:scale-95"
+   758→                style={{
+   759→                  background: 'rgba(239,68,68,0.2)',
+   760→                  border: '1px solid rgba(239,68,68,0.2)',
+   761→                  color: '#F87171',
+   762→                }}
+   763→              >
+   764→                Se déconnecter
+   765→              </button>
+   766→            </div>
+   767→          </div>
+   768→        </div>
+   769→      )}
+   770→
+   771→      {/* Custom Share Sheet — fallback when navigator.share is unavailable */}
+   772→      {shareSheetOpen && (
+   773→        <div
+   774→          className="fixed inset-0 z-[7000] flex items-end sm:items-center justify-center"
+   775→          style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)' }}
+   776→          onClick={() => setShareSheetOpen(false)}
+   777→        >
+   778→          <div
+   779→            className="w-full sm:w-[420px] max-h-[85vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl p-5"
+   780→            style={{
+   781→              background: '#FFFFFF',
+   782→              boxShadow: '0 -8px 30px rgba(0,0,0,0.18)',
+   783→              animation: 'slideUp 0.25s ease-out',
+   784→            }}
+   785→            onClick={(e) => e.stopPropagation()}
+   786→          >
+   787→            {/* Header */}
+   788→            <div className="flex items-center justify-between mb-1">
+   789→              <h3 className="text-[1rem] font-extrabold" style={{ color: '#1F2937' }}>Partager Be Rich</h3>
+   790→              <button
+   791→                onClick={() => setShareSheetOpen(false)}
+   792→                className="w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer"
+   793→                style={{ background: 'rgba(0,0,0,0.05)', color: 'rgba(0,0,0,0.55)' }}
+   794→                aria-label="Fermer"
+   795→              >
+   796→                <i className="fas fa-times text-[0.85rem]"></i>
+   797→              </button>
+   798→            </div>
+   799→            <p className="text-[0.72rem] mb-4" style={{ color: 'rgba(0,0,0,0.5)' }}>
+   800→              Partage ton code <strong style={{ color: '#F59E0B' }}>{user?.referralCode}</strong> et invite tes amis à rejoindre Be Rich.
+   801→            </p>
+   802→
+   803→            {/* Referral link preview */}
+   804→            <div
+   805→              className="rounded-xl p-3 mb-4 flex items-center gap-2"
+   806→              style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.12)' }}
+   807→            >
+   808→              <i className="fas fa-link text-[0.8rem]" style={{ color: '#F59E0B' }}></i>
+   809→              <span className="flex-1 text-[0.72rem] truncate font-mono" style={{ color: 'rgba(0,0,0,0.7)' }} title={referralLink}>{referralLink}</span>
+   810→            </div>
+   811→
+   812→            {/* Platform grid */}
+   813→            <div className="grid grid-cols-4 gap-3">
+   814→              {[
+   815→                { id: 'whatsapp', label: 'WhatsApp', icon: 'fab fa-whatsapp', color: '#25D366' },
+   816→                { id: 'whatsapp_business', label: 'WhatsApp Business', icon: 'fab fa-whatsapp', color: '#0B5A3E' },
+   817→                { id: 'telegram', label: 'Telegram', icon: 'fab fa-telegram-plane', color: '#0088CC' },
+   818→                { id: 'facebook', label: 'Facebook', icon: 'fab fa-facebook-f', color: '#1877F2' },
+   819→                { id: 'tiktok', label: 'TikTok', icon: 'fab fa-tiktok', color: '#000000' },
+   820→                { id: 'instagram', label: 'Instagram', icon: 'fab fa-instagram', color: '#E1306C' },
+   821→                { id: 'snapchat', label: 'Snapchat', icon: 'fab fa-snapchat-ghost', color: '#FFFC00' },
+   822→                { id: 'sms', label: 'SMS', icon: 'fas fa-comment-sms', color: '#22C55E' },
+   823→              ].map((p) => (
+   824→                <button
+   825→                  key={p.id}
+   826→                  onClick={() => handleShareVia(p.id)}
+   827→                  className="flex flex-col items-center gap-1.5 cursor-pointer border-none bg-transparent"
+   828→                  title={p.label}
+   829→                >
+   830→                  <span
+   831→                    className="w-12 h-12 rounded-2xl flex items-center justify-center transition-transform"
+   832→                    style={{ background: `${p.color}1A`, color: p.color }}
+   833→                    onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
+   834→                    onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+   835→                  >
+   836→                    <i className={`${p.icon} text-[1.1rem]`}></i>
+   837→                  </span>
+   838→                  <span className="text-[0.62rem] text-center leading-tight" style={{ color: 'rgba(0,0,0,0.6)' }}>{p.label}</span>
+   839→                </button>
+   840→              ))}
+   841→            </div>
+   842→
+   843→            {/* Copy link action */}
+   844→            <button
+   845→              onClick={() => handleShareVia('copy')}
+   846→              className="w-full mt-4 py-3 rounded-xl font-semibold text-[0.85rem] cursor-pointer transition-all active:scale-[0.98] flex items-center justify-center gap-2 border-none"
+   847→              style={{
+   848→                background: shared ? 'rgba(34,197,94,0.15)' : 'linear-gradient(135deg, #FBBF24, #F59E0B)',
+   849→                color: shared ? '#22C55E' : '#0F172A',
+   850→              }}
+   851→            >
+   852→              <i className={`fas ${shared ? 'fa-check' : 'fa-copy'} text-[0.85rem]`}></i>
+   853→              {shared ? 'Lien copié !' : 'Copier le lien'}
+   854→            </button>
+   855→          </div>
+   856→        </div>
+   857→      )}
+   858→    </>
+   859→  );
+   860→}
+   861→

@@ -124,10 +124,10 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-[380px] text-center relative z-[1]">
         {/* Logo */}
         <div className="w-[80px] h-[80px] mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#22C55E] to-[#16A34A] flex items-center justify-center shadow-lg" style={{ boxShadow: '0 8px 24px rgba(34,197,94,0.25)' }}>
-          <span className="text-white font-black text-[1.5rem] tracking-[1px]">BR</span>
+          <span className="text-white font-black text-[1.5rem] tracking-[1px]">JÉ</span>
         </div>
         <h1 className="text-[1.6rem] font-black mb-1 bg-gradient-to-r from-[#22C55E] to-[#16A34A] bg-clip-text text-transparent tracking-[2px]">
-          BE RICH
+          JEUNE ÉLAN
         </h1>
 
         {/* Step 1: Email */}
