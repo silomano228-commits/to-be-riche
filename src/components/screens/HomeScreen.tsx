@@ -75,6 +75,37 @@ export default function HomeScreen() {
           </div>
         )}
 
+        {/* Quick Actions — accès direct aux sections */}
+        <div className="flex gap-2 mb-4">
+          {[
+            { icon: 'fa-wallet', label: 'Wallet', page: 'wallet', color: '#22C55E', bg: 'rgba(34,197,94,0.12)', borderColor: 'border-[#22C55E]' },
+            { icon: 'fa-chart-line', label: 'Investir', page: 'finance', color: '#3B82F6', bg: 'rgba(59,130,246,0.12)', borderColor: 'border-[#3B82F6]' },
+            { icon: 'fa-dice', label: 'Jeu', page: 'game', color: '#F87171', bg: 'rgba(248,113,113,0.12)', borderColor: 'border-[#F87171]' },
+            { icon: 'fa-building', label: 'Projets', page: 'enterprise', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)', borderColor: 'border-[#8B5CF6]' },
+          ].map((a, i) => (
+            <button key={i} onClick={() => setPage(a.page)} className={`flex-1 bg-white rounded-xl py-2 px-1 text-center cursor-pointer transition-all active:scale-95 hover:shadow-md hover:scale-[1.04] border-b-2 ${a.borderColor} shadow-[0_1px_3px_rgba(0,0,0,0.04)]`}>
+              <div className="w-9 h-9 rounded-lg mx-auto mb-1 flex items-center justify-center" style={{ backgroundColor: a.bg }}><i className={`fas ${a.icon} text-[0.8rem]`} style={{ color: a.color }}></i></div>
+              <div className="text-[0.6rem] font-semibold text-[rgba(0,0,0,0.55)] leading-tight">{a.label}</div>
+            </button>
+          ))}
+        </div>
+
+        {/* Quick access — Guide, Parrainage, Messages, Tâches, Actualités */}
+        <div className="flex gap-2 mb-5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+          {[
+            { icon: 'fa-compass', label: 'Guide', page: 'guide', color: '#14B8A6', bg: 'rgba(20,184,166,0.12)', borderColor: 'border-[#14B8A6]' },
+            { icon: 'fa-gift', label: 'Parrainage', page: 'profile', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', borderColor: 'border-[#F59E0B]' },
+            { icon: 'fa-comment', label: 'Messages', page: 'chat', color: '#6366F1', bg: 'rgba(99,102,241,0.12)', borderColor: 'border-[#6366F1]' },
+            { icon: 'fa-bullhorn', label: 'Tâches', page: 'missions', color: '#22C55E', bg: 'rgba(34,197,94,0.12)', borderColor: 'border-[#22C55E]' },
+            { icon: 'fa-shield-alt', label: 'Admin', page: 'admin', color: '#6366F1', bg: 'rgba(99,102,241,0.12)', borderColor: 'border-[#6366F1]', adminOnly: true },
+          ].filter(a => !a.adminOnly || user.role === 'admin').map((a, i) => (
+            <button key={i} onClick={() => setPage(a.page)} className={`bg-white rounded-xl py-2 px-2.5 text-center cursor-pointer transition-all active:scale-95 hover:shadow-md border-b-2 ${a.borderColor} shrink-0 min-w-[68px] shadow-[0_1px_3px_rgba(0,0,0,0.04)]`}>
+              <div className="w-8 h-8 rounded-lg mx-auto mb-1 flex items-center justify-center" style={{ backgroundColor: a.bg }}><i className={`fas ${a.icon} text-[0.75rem]`} style={{ color: a.color }}></i></div>
+              <div className="text-[0.58rem] font-semibold text-[rgba(0,0,0,0.55)] leading-tight">{a.label}</div>
+            </button>
+          ))}
+        </div>
+
         {/* Features Section — Jeune Élan */}
         <h3 className="text-[0.9rem] font-bold text-[#1A2332] mb-3">Comment ça marche ?</h3>
         <div className="grid grid-cols-2 gap-2.5 mb-5">

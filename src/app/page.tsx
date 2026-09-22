@@ -974,6 +974,7 @@ function BottomNav() {
   const { currentPage, setPage } = useAppStore();
   const tabs = [
     { id: 'missions', icon: 'fa-th-large', label: 'Tableau' },
+    { id: 'home', icon: 'fa-home', label: 'Accueil' },
     { id: 'finance', icon: 'fa-chart-line', label: 'Finance' },
     { id: 'wallet', icon: 'fa-wallet', label: 'Portefeuille' },
     { id: 'guide', icon: 'fa-compass', label: 'Guide' },
@@ -981,19 +982,20 @@ function BottomNav() {
   ];
   const isActive = (tabId: string) => {
     if (tabId === 'missions') return ['missions'].includes(currentPage);
-    if (tabId === 'finance') return ['home', 'finance', 'invest', 'game', 'enterprise', 'deposit', 'deposit-choose', 'withdraw'].includes(currentPage);
+    if (tabId === 'home') return currentPage === 'home';
+    if (tabId === 'finance') return ['finance', 'invest', 'game', 'enterprise', 'deposit', 'deposit-choose', 'withdraw'].includes(currentPage);
     if (tabId === 'wallet') return ['wallet'].includes(currentPage);
     if (tabId === 'guide') return currentPage === 'guide';
     if (tabId === 'profile') return ['profile', 'analytics', 'admin', 'chat'].includes(currentPage);
     return currentPage === tabId;
   };
   return (
-    <nav className="h-[60px] bg-white/90 backdrop-blur-xl border-t border-[rgba(0,0,0,0.06)] flex items-center justify-around px-1 shrink-0 safe-area-bottom">
+    <nav className="h-[60px] bg-white/90 backdrop-blur-xl border-t border-[rgba(0,0,0,0.06)] flex items-center justify-around px-0.5 shrink-0 safe-area-bottom">
       {tabs.map(t => (
-        <button key={t.id} onClick={() => setPage(t.id)} className={`flex flex-col items-center justify-center py-1.5 px-1.5 border-none cursor-pointer transition-all relative ${isActive(t.id) ? 'text-[#22C55E]' : 'text-[rgba(0,0,0,0.3)]'}`}>
+        <button key={t.id} onClick={() => setPage(t.id)} className={`flex flex-col items-center justify-center py-1.5 px-1 border-none cursor-pointer transition-all relative ${isActive(t.id) ? 'text-[#22C55E]' : 'text-[rgba(0,0,0,0.3)]'}`}>
           {isActive(t.id) && <div className="absolute -top-0.5 w-5 h-[3px] rounded-full bg-[#22C55E]"></div>}
-          <i className={`fas ${t.icon} text-[0.9rem] mb-0.5`}></i>
-          <span className={`text-[0.5rem] ${isActive(t.id) ? 'font-bold text-[#22C55E]' : 'font-semibold'}`}>{t.label}</span>
+          <i className={`fas ${t.icon} text-[0.85rem] mb-0.5`}></i>
+          <span className={`text-[0.48rem] ${isActive(t.id) ? 'font-bold text-[#22C55E]' : 'font-semibold'}`}>{t.label}</span>
         </button>
       ))}
     </nav>
