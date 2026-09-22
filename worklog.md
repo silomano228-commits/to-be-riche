@@ -112,3 +112,24 @@ Stage Summary:
 - Serveur stable sur port 3000, DB connectée, chat-service actif (3003)
 - Flux complet auth + dashboard vérifié dans le navigateur
 - 5 fichiers modifiés : prisma/schema.prisma (+89), src/lib/store.ts (+17), tsconfig.json, eslint.config.mjs, mini-services/app-server/index.ts
+
+---
+Task ID: 2
+Agent: main (Super Z)
+Task: Restaurer les onglets supprimés (« investir, guide et administrateur » + tous les autres) sans rien supprimer
+
+Work Log:
+- Diagnostic : le serveur dev était tombé (processus zombie sur port 3000) → nettoyé + redémarrage propre
+- Analyse git complète : le MissionsScreen « fictif » (commit f5cfc95) avait remplacé l'appli réelle par 4 onglets vides (« sera disponible prochainement ») ; l'onglet Accueil avait disparu de la bottom nav
+- Restauré MissionsScreen.tsx depuis f76f814 : 5 onglets réels avec intégration API complète (Tableau, Missions+upload, Mes images, Éligibilité+caution, Prêts+remboursement), branding « Jeune Élan »
+- Restauré l'onglet « Accueil » dans la bottom nav (6 onglets : Tableau, Accueil, Finance, Portefeuille, Guide, Profil)
+- Ajouté sur l'Accueil les actions rapides : Wallet, Investir, Jeu, Projets + accès rapides : Guide, Parrainage, Messages, Tâches, Admin (admin uniquement)
+- Vérifié toutes les APIs missions en direct (dashboard/campaigns/eligibility/loans → toutes OK avec données réelles : 3 campagnes actives)
+- Tests navigateur complets : 5 sous-onglets MissionsScreen OK, Investir → Niveaux d'investissement OK, Guide OK, Panneau Admin (Users/Dépôts/Retraits/Messages/Notifs/Missions/Config) OK
+- tsc --noEmit : 0 erreur ; lint : 0 problème
+- Commit 2099cb1 + push GitHub réussi (f5cfc95..2099cb1)
+
+Stage Summary:
+- Tous les onglets restaurés et fonctionnels avec données réelles
+- Rien supprimé : Invest (Finance), Guide, Admin (Profil), Accueil, Portefeuille, Jeu, Projets tous accessibles
+- Serveur stable sur port 3000, projet poussé sur GitHub
