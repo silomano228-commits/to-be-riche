@@ -974,123 +974,125 @@
    974→  const { currentPage, setPage } = useAppStore();
    975→  const tabs = [
    976→    { id: 'missions', icon: 'fa-th-large', label: 'Tableau' },
-   977→    { id: 'finance', icon: 'fa-chart-line', label: 'Finance' },
-   978→    { id: 'wallet', icon: 'fa-wallet', label: 'Portefeuille' },
-   979→    { id: 'guide', icon: 'fa-compass', label: 'Guide' },
-   980→    { id: 'profile', icon: 'fa-user', label: 'Profil' },
-   981→  ];
-   982→  const isActive = (tabId: string) => {
-   983→    if (tabId === 'missions') return ['missions'].includes(currentPage);
-   984→    if (tabId === 'finance') return ['home', 'finance', 'invest', 'game', 'enterprise', 'deposit', 'deposit-choose', 'withdraw'].includes(currentPage);
-   985→    if (tabId === 'wallet') return ['wallet'].includes(currentPage);
-   986→    if (tabId === 'guide') return currentPage === 'guide';
-   987→    if (tabId === 'profile') return ['profile', 'analytics', 'admin', 'chat'].includes(currentPage);
-   988→    return currentPage === tabId;
-   989→  };
-   990→  return (
-   991→    <nav className="h-[60px] bg-white/90 backdrop-blur-xl border-t border-[rgba(0,0,0,0.06)] flex items-center justify-around px-1 shrink-0 safe-area-bottom">
-   992→      {tabs.map(t => (
-   993→        <button key={t.id} onClick={() => setPage(t.id)} className={`flex flex-col items-center justify-center py-1.5 px-1.5 border-none cursor-pointer transition-all relative ${isActive(t.id) ? 'text-[#22C55E]' : 'text-[rgba(0,0,0,0.3)]'}`}>
-   994→          {isActive(t.id) && <div className="absolute -top-0.5 w-5 h-[3px] rounded-full bg-[#22C55E]"></div>}
-   995→          <i className={`fas ${t.icon} text-[0.9rem] mb-0.5`}></i>
-   996→          <span className={`text-[0.5rem] ${isActive(t.id) ? 'font-bold text-[#22C55E]' : 'font-semibold'}`}>{t.label}</span>
-   997→        </button>
-   998→      ))}
-   999→    </nav>
-  1000→  );
-  1001→}
-  1002→
-  1003→// ==================== SERVICE WORKER REGISTRAR ====================
-  1004→function ServiceWorkerRegistrar() {
-  1005→  useEffect(() => {
-  1006→    if ('serviceWorker' in navigator) {
-  1007→      navigator.serviceWorker.register('/sw.js').catch(() => {
-  1008→        // SW registration failed silently
-  1009→      });
-  1010→    }
-  1011→  }, []);
-  1012→  return null;
-  1013→}
-  1014→
-  1015→// ==================== MAIN APP ====================
-  1016→export default function JeuneElenApp() {
-  1017→  const { user, currentPage, setPage, setUser, showSplash, setShowSplash } = useAppStore();
-  1018→  const { currentAd, dismissAd } = useTabChangeAd(currentPage);
-  1019→  const [initialized, setInitialized] = useState(false);
-  1020→
-  1021→  useEffect(() => {
-  1022→    const init = async () => {
-  1023→      try {
-  1024→        const res = await authFetch('/api/auth/session');
-  1025→        const data = await res.json();
-  1026→        if (data.success && data.user) { setUser(data.user); setPage('missions'); }
-  1027→        else { setPage('auth'); }
-  1028→      } catch { setPage('auth'); }
-  1029→      setInitialized(true);
-  1030→      setShowSplash(false);
-  1031→    };
-  1032→    init();
-  1033→  }, []);
-  1034→
-  1035→  const handleSplashDone = useCallback(() => { setShowSplash(false); }, [setShowSplash]);
+   977→    { id: 'home', icon: 'fa-home', label: 'Accueil' },
+   978→    { id: 'finance', icon: 'fa-chart-line', label: 'Finance' },
+   979→    { id: 'wallet', icon: 'fa-wallet', label: 'Portefeuille' },
+   980→    { id: 'guide', icon: 'fa-compass', label: 'Guide' },
+   981→    { id: 'profile', icon: 'fa-user', label: 'Profil' },
+   982→  ];
+   983→  const isActive = (tabId: string) => {
+   984→    if (tabId === 'missions') return ['missions'].includes(currentPage);
+   985→    if (tabId === 'home') return currentPage === 'home';
+   986→    if (tabId === 'finance') return ['finance', 'invest', 'game', 'enterprise', 'deposit', 'deposit-choose', 'withdraw'].includes(currentPage);
+   987→    if (tabId === 'wallet') return ['wallet'].includes(currentPage);
+   988→    if (tabId === 'guide') return currentPage === 'guide';
+   989→    if (tabId === 'profile') return ['profile', 'analytics', 'admin', 'chat'].includes(currentPage);
+   990→    return currentPage === tabId;
+   991→  };
+   992→  return (
+   993→    <nav className="h-[60px] bg-white/90 backdrop-blur-xl border-t border-[rgba(0,0,0,0.06)] flex items-center justify-around px-0.5 shrink-0 safe-area-bottom">
+   994→      {tabs.map(t => (
+   995→        <button key={t.id} onClick={() => setPage(t.id)} className={`flex flex-col items-center justify-center py-1.5 px-1 border-none cursor-pointer transition-all relative ${isActive(t.id) ? 'text-[#22C55E]' : 'text-[rgba(0,0,0,0.3)]'}`}>
+   996→          {isActive(t.id) && <div className="absolute -top-0.5 w-5 h-[3px] rounded-full bg-[#22C55E]"></div>}
+   997→          <i className={`fas ${t.icon} text-[0.85rem] mb-0.5`}></i>
+   998→          <span className={`text-[0.48rem] ${isActive(t.id) ? 'font-bold text-[#22C55E]' : 'font-semibold'}`}>{t.label}</span>
+   999→        </button>
+  1000→      ))}
+  1001→    </nav>
+  1002→  );
+  1003→}
+  1004→
+  1005→// ==================== SERVICE WORKER REGISTRAR ====================
+  1006→function ServiceWorkerRegistrar() {
+  1007→  useEffect(() => {
+  1008→    if ('serviceWorker' in navigator) {
+  1009→      navigator.serviceWorker.register('/sw.js').catch(() => {
+  1010→        // SW registration failed silently
+  1011→      });
+  1012→    }
+  1013→  }, []);
+  1014→  return null;
+  1015→}
+  1016→
+  1017→// ==================== MAIN APP ====================
+  1018→export default function JeuneElenApp() {
+  1019→  const { user, currentPage, setPage, setUser, showSplash, setShowSplash } = useAppStore();
+  1020→  const { currentAd, dismissAd } = useTabChangeAd(currentPage);
+  1021→  const [initialized, setInitialized] = useState(false);
+  1022→
+  1023→  useEffect(() => {
+  1024→    const init = async () => {
+  1025→      try {
+  1026→        const res = await authFetch('/api/auth/session');
+  1027→        const data = await res.json();
+  1028→        if (data.success && data.user) { setUser(data.user); setPage('missions'); }
+  1029→        else { setPage('auth'); }
+  1030→      } catch { setPage('auth'); }
+  1031→      setInitialized(true);
+  1032→      setShowSplash(false);
+  1033→    };
+  1034→    init();
+  1035→  }, []);
   1036→
-  1037→  if (!initialized) {
-  1038→    return (<div className="bg-gradient-to-b from-[#F8F9FA] to-[#F1F5F9] h-screen flex items-center justify-center"><div className="w-8 h-8 border-[3px] border-[rgba(0,0,0,0.08)] border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} /></div>);
-  1039→  }
-  1040→
-  1041→  const showNav = user && !['auth'].includes(currentPage);
+  1037→  const handleSplashDone = useCallback(() => { setShowSplash(false); }, [setShowSplash]);
+  1038→
+  1039→  if (!initialized) {
+  1040→    return (<div className="bg-gradient-to-b from-[#F8F9FA] to-[#F1F5F9] h-screen flex items-center justify-center"><div className="w-8 h-8 border-[3px] border-[rgba(0,0,0,0.08)] border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} /></div>);
+  1041→  }
   1042→
-  1043→  return (
-  1044→    <ErrorBoundary>
-  1045→    <div className="bg-gradient-to-b from-[#F8F9FA] to-[#F1F5F9] min-h-screen flex items-center justify-center">
-  1046→      <div id="app" className="w-full max-w-[430px] h-[100dvh] max-h-[932px] bg-gradient-to-b from-[#F8F9FA] to-[#F1F5F9] relative overflow-hidden shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_4px_16px_rgba(0,0,0,0.04)] noise-bg">
-  1047→        <style>{`
-  1048→          @keyframes spin { to { transform: rotate(360deg); } }
-  1049→          @keyframes gs { 0% { background-position: 0% center; } 100% { background-position: 200% center; } }
-  1050→          @keyframes spFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
-  1051→          @keyframes orbFloat { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(20px, -20px); } }
-  1052→          @keyframes tIn { from { opacity: 0; transform: translateY(12px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
-  1053→          @keyframes nIn { from { opacity: 0; transform: translateY(-12px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
-  1054→          @keyframes modalIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-  1055→          @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-  1056→          @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-  1057→          @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-  1058→          @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); } 50% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); } }
-  1059→          @keyframes claimPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); transform: scale(1); } 50% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); transform: scale(1.03); } }
-  1060→          @keyframes logoPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-  1061→          .overflow-x-auto::-webkit-scrollbar { display: none; }
-  1062→        `}</style>
-  1063→        {showSplash && <SplashScreen onDone={handleSplashDone} />}
-  1064→        <div className="h-full flex flex-col min-h-0">
-  1065→          {!user && <AuthScreen />}
-  1066→          {user && currentPage === 'missions' && <MissionsScreen />}
-  1067→          {user && currentPage === 'home' && <HomeScreen />}
-  1068→          {user && currentPage === 'wallet' && <WalletScreen />}
-  1069→          {user && currentPage === 'finance' && <FinanceScreen />}
-  1070→          {user && currentPage === 'invest' && <InvestHubScreen />}
-  1071→          {user && currentPage === 'game' && <SpinGameScreen />}
-  1072→          {user && currentPage === 'enterprise' && <EnterpriseScreen />}
-  1073→          {user && currentPage === 'profile' && <ProfileScreen />}
-  1074→          {user && currentPage === 'analytics' && <AnalyticsScreen />}
-  1075→          {user && currentPage === 'withdraw' && <WithdrawScreen />}
-  1076→          {user && currentPage === 'admin' && <AdminScreen />}
-  1077→          {user && currentPage === 'chat' && <ChatScreen />}
-  1078→          {user && currentPage === 'deposit' && <DepositScreen />}
-  1079→          {user && currentPage === 'deposit-choose' && <DepositChooseScreen />}
-  1080→          {user && currentPage === 'guide' && <GuideScreen />}
-  1081→          {showNav && <BottomNav />}
-  1082→          {user && ['home', 'missions', 'finance', 'wallet'].includes(currentPage) && <FloatingGift />}
-  1083→          <InstallPrompt />
-  1084→        </div>
-  1085→        <TabChangeAd ad={currentAd} onClose={dismissAd} />
-  1086→        <ToastContainer />
-  1087→        <NotificationContainer />
-  1088→        {user && <RefreshReminderBanner />}
-  1089→        {user && <WithdrawalTicker />}
-  1090→      </div>
-  1091→      <ServiceWorkerRegistrar />
-  1092→    </div>
-  1093→    </ErrorBoundary>
-  1094→  );
-  1095→}
-  1096→
+  1043→  const showNav = user && !['auth'].includes(currentPage);
+  1044→
+  1045→  return (
+  1046→    <ErrorBoundary>
+  1047→    <div className="bg-gradient-to-b from-[#F8F9FA] to-[#F1F5F9] min-h-screen flex items-center justify-center">
+  1048→      <div id="app" className="w-full max-w-[430px] h-[100dvh] max-h-[932px] bg-gradient-to-b from-[#F8F9FA] to-[#F1F5F9] relative overflow-hidden shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_4px_16px_rgba(0,0,0,0.04)] noise-bg">
+  1049→        <style>{`
+  1050→          @keyframes spin { to { transform: rotate(360deg); } }
+  1051→          @keyframes gs { 0% { background-position: 0% center; } 100% { background-position: 200% center; } }
+  1052→          @keyframes spFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+  1053→          @keyframes orbFloat { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(20px, -20px); } }
+  1054→          @keyframes tIn { from { opacity: 0; transform: translateY(12px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  1055→          @keyframes nIn { from { opacity: 0; transform: translateY(-12px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  1056→          @keyframes modalIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+  1057→          @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+  1058→          @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  1059→          @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  1060→          @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); } 50% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); } }
+  1061→          @keyframes claimPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); transform: scale(1); } 50% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); transform: scale(1.03); } }
+  1062→          @keyframes logoPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+  1063→          .overflow-x-auto::-webkit-scrollbar { display: none; }
+  1064→        `}</style>
+  1065→        {showSplash && <SplashScreen onDone={handleSplashDone} />}
+  1066→        <div className="h-full flex flex-col min-h-0">
+  1067→          {!user && <AuthScreen />}
+  1068→          {user && currentPage === 'missions' && <MissionsScreen />}
+  1069→          {user && currentPage === 'home' && <HomeScreen />}
+  1070→          {user && currentPage === 'wallet' && <WalletScreen />}
+  1071→          {user && currentPage === 'finance' && <FinanceScreen />}
+  1072→          {user && currentPage === 'invest' && <InvestHubScreen />}
+  1073→          {user && currentPage === 'game' && <SpinGameScreen />}
+  1074→          {user && currentPage === 'enterprise' && <EnterpriseScreen />}
+  1075→          {user && currentPage === 'profile' && <ProfileScreen />}
+  1076→          {user && currentPage === 'analytics' && <AnalyticsScreen />}
+  1077→          {user && currentPage === 'withdraw' && <WithdrawScreen />}
+  1078→          {user && currentPage === 'admin' && <AdminScreen />}
+  1079→          {user && currentPage === 'chat' && <ChatScreen />}
+  1080→          {user && currentPage === 'deposit' && <DepositScreen />}
+  1081→          {user && currentPage === 'deposit-choose' && <DepositChooseScreen />}
+  1082→          {user && currentPage === 'guide' && <GuideScreen />}
+  1083→          {showNav && <BottomNav />}
+  1084→          {user && ['home', 'missions', 'finance', 'wallet'].includes(currentPage) && <FloatingGift />}
+  1085→          <InstallPrompt />
+  1086→        </div>
+  1087→        <TabChangeAd ad={currentAd} onClose={dismissAd} />
+  1088→        <ToastContainer />
+  1089→        <NotificationContainer />
+  1090→        {user && <RefreshReminderBanner />}
+  1091→        {user && <WithdrawalTicker />}
+  1092→      </div>
+  1093→      <ServiceWorkerRegistrar />
+  1094→    </div>
+  1095→    </ErrorBoundary>
+  1096→  );
+  1097→}
+  1098→

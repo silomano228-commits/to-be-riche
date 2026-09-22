@@ -133,3 +133,25 @@ Stage Summary:
 - Tous les onglets restaurés et fonctionnels avec données réelles
 - Rien supprimé : Invest (Finance), Guide, Admin (Profil), Accueil, Portefeuille, Jeu, Projets tous accessibles
 - Serveur stable sur port 3000, projet poussé sur GitHub
+
+---
+Task ID: 3
+Agent: main (Super Z)
+Task: Supprimer les publicités de changement d'onglet + reconstruire le tableau de bord selon la spec ÉTAPE 1 + dépôt git + document Word complet (système + viabilité)
+
+Work Log:
+- Publicités supprimées : useTabChangeAd/TabChangeAd retirés de src/app/page.tsx (hook, import dynamique et rendu) — 0 publicité après 40 changements d'onglets testés
+- MissionsScreen.tsx reconstruit selon la spec « ÉTAPE 1 — TABLEAU DE BORD DU JEUNE » : header Jeune Élan + cloche notifications + profil ; sous-onglets Tableau/Missions/Mes images/Portefeuille (raccourci)/Éligibilité/Mes prêts/Parrainage (nouveau)
+- Dashboard : Bonjour {prénom}, 4 cartes stats, objectif 2 500 F (74 %), carte éligibilité prêt 5 000 F, carte caution verrouillée, missions disponibles (bouton « Voir la mission », jamais « Générer »), Comment gagner 5 étapes, activité récente
+- Données fictives MOCK_* structurées à l'identique des réponses API (missions/dashboard, missions/campaigns, referral/list) pour remplacement direct
+- Nouvelle vue Parrainage : code copiable, progression 3/5, liste filleuls
+- Aucune section supprimée : Accueil, Finance, Portefeuille, Guide, Invest, Admin, Jeu intacts (vérifiés au navigateur)
+- tsc --noEmit 0 erreur ; lint 0 problème ; commit 2d139b0 poussé sur GitHub
+- Document Word généré via skill docx (recette R1 + palette IG-1, TDM champ + placeholders, 3 sections couverture/romains/arabes, 2 graphiques matplotlib, 5 tableaux, postcheck 0 erreur) : download/Jeune_Elan_Dossier_Systeme_et_Viabilite.docx (+ PDF bonus)
+- Contenu du document : résumé exécutif, méthode, présentation, parcours d'entrée (OTP/session), 9 modules détaillés, analyse de sécurité (2 failles critiques : admin codé en dur + mots de passe en clair ; 9 autres vulnérabilités avec correctifs), analyse de viabilité (31,9 M FCFA/an de passif à 500 actifs, 3 scénarios chiffrés, risques réglementaires BCEAO, verdict), plan d'action priorisé, annexe cartographie API
+
+Stage Summary:
+- Publicités désactivées, tableau de bord conforme spec, tout le reste préservé
+- 2d139b0 poussé sur GitHub
+- Document Word + PDF livrés dans download/
+- Failles critiques à corriger en priorité signalées à l'utilisateur (admin en dur, mots de passe en clair, jeton GitHub à révoquer)
