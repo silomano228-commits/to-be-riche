@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic';
 import { useAppStore, formatMoney, esc, authFetch, refreshUser } from '@/lib/store';
 
 import { LogoImg, ToastContainer, NotificationContainer, Header, AI_TIPS } from '@/components/shared';
-import { useTabChangeAd } from '@/lib/useTabChangeAd';
 
 // ==================== ERROR BOUNDARY ====================
 class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean; error?: string }> {
@@ -55,7 +54,6 @@ const ChatScreen = dynamic(() => import('@/components/screens/ChatScreen'), { ss
 const DepositScreen = dynamic(() => import('@/components/screens/DepositScreen'), { ssr: false, loading: () => <ScreenLoader /> });
 const GuideScreen = dynamic(() => import('@/components/screens/GuideScreen'), { ssr: false, loading: () => <ScreenLoader /> });
 const FloatingGift = dynamic(() => import('@/components/FloatingGift'), { ssr: false, loading: () => <ScreenLoader /> });
-const TabChangeAd = dynamic(() => import('@/components/TabChangeAd').then(m => ({ default: m.TabChangeAd })), { ssr: false, loading: () => <ScreenLoader /> });
 const InstallPrompt = dynamic(() => import('@/components/InstallPrompt'), { ssr: false, loading: () => <ScreenLoader /> });
 const NotificationBell = dynamic(() => import('@/components/NotificationBell'), { ssr: false, loading: () => <ScreenLoader /> });
 const WithdrawalTicker = dynamic(() => import('@/components/WithdrawalTicker'), { ssr: false, loading: () => <ScreenLoader /> });
@@ -1017,7 +1015,6 @@ function ServiceWorkerRegistrar() {
 // ==================== MAIN APP ====================
 export default function JeuneElenApp() {
   const { user, currentPage, setPage, setUser, showSplash, setShowSplash } = useAppStore();
-  const { currentAd, dismissAd } = useTabChangeAd(currentPage);
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
@@ -1084,7 +1081,6 @@ export default function JeuneElenApp() {
           {user && ['home', 'missions', 'finance', 'wallet'].includes(currentPage) && <FloatingGift />}
           <InstallPrompt />
         </div>
-        <TabChangeAd ad={currentAd} onClose={dismissAd} />
         <ToastContainer />
         <NotificationContainer />
         {user && <RefreshReminderBanner />}

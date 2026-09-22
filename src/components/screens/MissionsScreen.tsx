@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAppStore, authFetch, refreshUser, formatCfa } from '@/lib/store';
-import { Header } from '@/components/shared';
+import { Header, LogoImg } from '@/components/shared';
+import NotificationBell from '@/components/NotificationBell';
 
 interface Campaign {
   id: string; name: string; brand: string; description: string; brief: string;
@@ -56,9 +57,100 @@ const CAT_ICON: Record<string, { icon: string; color: string }> = {
   general: { icon: 'fa-star', color: '#64748B' },
 };
 
+/* ================================================================
+   ÉTAPE 1 — DONNÉES FICTIVES (visualisation du design uniquement)
+   ----------------------------------------------------------------
+   Ces constantes servent uniquement à visualiser le tableau de bord.
+   Plus tard, elles seront remplacées par les vraies données :
+     • GET /api/missions/dashboard → stats (solde, gains, images…)
+     • GET /api/missions/campaigns → missions disponibles
+     • GET /api/referral/list      → filleuls + code de parrainage
+   Les interfaces ci-dessous reprennent la forme des réponses API
+   afin que le remplacement soit direct, sans refonte de l'UI.
+   ⚠️ Aucun système financier réel n'est branché à cette étape.
+   ================================================================ */
+
+type TabId = 'dashboard' | 'campaigns' | 'myimages' | 'eligibility' | 'loans' | 'referral';
+
+interface DashboardStats {
+  balanceCfa: number;         // Solde disponible (CAUTION NON INCLUSE)
+  todayEarnedCfa: number;     // Gains du jour (missions)
+  todayValidated: number;     // Images validées aujourd'hui
+  todaySubmissions: number;   // Soumissions utilisées aujourd'hui
+  dailyLimit: number;         // Limite de soumissions/jour (10)
+  missionGainsCfa: number;    // Gains TOTAUX issus des missions validées
+  objectiveCfa: number;       // Objectif de gains (2 500 F)
+  cautionRequiredCfa: number; // Caution requise (5 000 F)
+  cautionBalanceCfa: number;  // Caution déjà constituée
+  referralCount: number;      // Parrainages validés
+  referralRequired: number;   // Seuil de parrainages requis (5)
+  accountVerified: boolean;   // Compte vérifié (OTP)
+}
+
+const MOCK_STATS: DashboardStats = {
+  balanceCfa: 1850,
+  todayEarnedCfa: 175,
+  todayValidated: 7,
+  todaySubmissions: 7,
+  dailyLimit: 10,
+  missionGainsCfa: 1850,
+  objectiveCfa: 2500,
+  cautionRequiredCfa: 5000,
+  cautionBalanceCfa: 0,
+  referralCount: 3,
+  referralRequired: 5,
+  accountVerified: true,
+};
+
+interface MissionCardData {
+  id: string;
+  name: string;
+  category: string;        // clé CAT_ICON (automobile, immobilier…)
+  rewardCfa: number;       // gain par image validée
+  userDailyCount: number;  // soumissions perso aujourd'hui
+  dailyLimit: number;      // limite quotidienne
+}
+
+const MOCK_MISSIONS: MissionCardData[] = [
+  { id: 'm-mercedes', name: 'Mercedes', category: 'automobile', rewardCfa: 25, userDailyCount: 7, dailyLimit: 10 },
+  { id: 'm-immobilier', name: 'Immobilier', category: 'immobilier', rewardCfa: 25, userDailyCount: 2, dailyLimit: 10 },
+];
+
+interface ActivityItem {
+  id: string;
+  when: string;
+  label: string;
+  detail?: string;
+  amountCfa: number;
+  ok: boolean;
+}
+
+const MOCK_ACTIVITY: ActivityItem[] = [
+  { id: 'a-1', when: "Aujourd'hui — 10:42", label: 'Image Mercedes validée', amountCfa: 25, ok: true },
+  { id: 'a-2', when: "Aujourd'hui — 10:35", label: 'Image Mercedes refusée', detail: 'Image trop similaire', amountCfa: 0, ok: false },
+  { id: 'a-3', when: 'Hier — 18:21', label: 'Image Immobilier validée', amountCfa: 25, ok: true },
+];
+
+interface ReferralData {
+  code: string;
+  required: number;
+  referrals: { id: string; name: string; date: string; validated: boolean }[];
+}
+
+const MOCK_REFERRALS: ReferralData = {
+  code: 'JEA-7K2M9',
+  required: 5,
+  referrals: [
+    { id: 'r-1', name: 'Aminata D.', date: '18 sept. 2026', validated: true },
+    { id: 'r-2', name: 'Kossi A.', date: '15 sept. 2026', validated: true },
+    { id: 'r-3', name: 'Fatou B.', date: '12 sept. 2026', validated: true },
+  ],
+};
+/* ================ FIN DES DONNÉES FICTIVES ================ */
+
 export default function MissionsScreen() {
   const { user, setPage, addToast } = useAppStore();
-  const [tab, setTab] = useState<'dashboard'|'campaigns'|'myimages'|'eligibility'|'loans'>('dashboard');
+  const [tab, setTab] = useState<TabId>('dashboard');
   const [dash, setDash] = useState<DashboardData|null>(null);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [images, setImages] = useState<MissionImage[]>([]);
@@ -146,34 +238,47 @@ export default function MissionsScreen() {
 
   if (!user) return null;
 
-  const tabs = [
-    { id: 'dashboard' as const, icon: 'fa-th-large', label: 'Tableau' },
-    { id: 'campaigns' as const, icon: 'fa-bullhorn', label: 'Missions' },
-    { id: 'myimages' as const, icon: 'fa-images', label: 'Mes images' },
-    { id: 'eligibility' as const, icon: 'fa-chart-bar', label: 'Éligibilité' },
-    { id: 'loans' as const, icon: 'fa-hand-holding-usd', label: 'Prêts' },
+  // Menu principal du tableau de bord (spec §4)
+  // « Portefeuille » est un raccourci vers l'écran portefeuille (nav),
+  // les autres entrées restent des sous-onglets locaux.
+  const tabs: { id: string; icon: string; label: string; nav?: string }[] = [
+    { id: 'dashboard', icon: 'fa-th-large', label: 'Tableau' },
+    { id: 'campaigns', icon: 'fa-bullhorn', label: 'Missions' },
+    { id: 'myimages', icon: 'fa-images', label: 'Mes images' },
+    { id: 'wallet', icon: 'fa-wallet', label: 'Portefeuille', nav: 'wallet' },
+    { id: 'eligibility', icon: 'fa-chart-bar', label: 'Éligibilité' },
+    { id: 'loans', icon: 'fa-hand-holding-usd', label: 'Mes prêts' },
+    { id: 'referral', icon: 'fa-users', label: 'Parrainage' },
   ];
+
+  const firstName = (user.name || '').trim().split(/\s+/)[0] || (user.email || '').split('@')[0] || 'vous';
 
   return (
     <>
-      <Header title="Jeune Élan" rightElement={
-        <button onClick={() => setPage('profile')} className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem]"><i className="far fa-user-circle"></i></button>
+      <Header title={<><LogoImg className="w-[26px] h-[26px] rounded-md" style={{ objectFit: 'contain' }} /> <span className="text-[#1F2937] font-black">Jeune Élan</span></>} rightElement={
+        <div className="flex items-center gap-1.5">
+          <NotificationBell />
+          <button onClick={() => setPage('profile')} className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem]"><i className="far fa-user-circle"></i></button>
+        </div>
       } />
       <div className="flex gap-1 px-4 pt-2 pb-1 overflow-x-auto bg-white border-b border-[rgba(0,0,0,0.05)]">
         {tabs.map(t => (
-          <button key={t.id} onClick={() => { setTab(t.id); if (t.id === 'eligibility') loadElig(); if (t.id === 'loans') loadLoans(); }}
+          <button key={t.id} onClick={() => { if (t.nav) { setPage(t.nav); return; } setTab(t.id as TabId); if (t.id === 'eligibility') loadElig(); if (t.id === 'loans') loadLoans(); }}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[0.72rem] font-semibold border-none cursor-pointer transition-all whitespace-nowrap ${tab === t.id ? 'bg-[#22C55E] text-white' : 'bg-[rgba(0,0,0,0.03)] text-[#64748B]'}`}>
             <i className={`fas ${t.icon} text-[0.65rem]`}></i> {t.label}
           </button>
         ))}
       </div>
       <div className="flex-1 overflow-y-auto px-4 py-4">
-        {loading && !dash ? <div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-[2.5px] border-[rgba(0,0,0,0.08)] border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} /></div>
-        : tab === 'dashboard' ? <DashV dash={dash} go={setTab} />
+        {/* Le tableau de bord s'affiche immédiatement (données fictives ÉTAPE 1).
+            Les autres onglets continuent d'utiliser les vraies APIs. */}
+        {tab === 'dashboard' ? <DashV firstName={firstName} setPage={setPage} go={setTab} />
+        : loading && !dash ? <div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-[2.5px] border-[rgba(0,0,0,0.08)] border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} /></div>
         : tab === 'campaigns' ? <CampV camps={campaigns} onSel={c => { setSelCamp(c); setShowUpload(true); }} />
         : tab === 'myimages' ? <ImgV imgs={images} />
         : tab === 'eligibility' ? <EligV elig={elig} onLoan={reqLoan} onCaution={depositCaution} dash={dash} onLoad={loadElig} />
         : tab === 'loans' ? <LoanV loans={loans} onRepay={repay} />
+        : tab === 'referral' ? <ParrainV code={user.referralCode || MOCK_REFERRALS.code} required={MOCK_REFERRALS.required} referrals={MOCK_REFERRALS.referrals} />
         : null}
       </div>
 
@@ -235,88 +340,212 @@ export default function MissionsScreen() {
   );
 }
 
-/* ============ DASHBOARD VIEW ============ */
-function DashV({ dash, go }: { dash: DashboardData|null; go: (p: any) => void }) {
-  if (!dash) return <div className="text-center text-[#94A3B8] py-8">Chargement...</div>;
-  const pct = Math.min(100, (dash.missionTotalEarnedCfa / dash.objectiveCfa) * 100);
+/* ============================================================
+   DASHBOARD VIEW — ÉTAPE 1 : TABLEAU DE BORD DU JEUNE
+   Design conforme à la spec (§5 à §18). Données fictives
+   (MOCK_*) structurées comme les futures réponses API.
+   ============================================================ */
+function DashV({ firstName, setPage, go }: { firstName: string; setPage: (p: string) => void; go: (t: TabId) => void }) {
+  const s = MOCK_STATS;
+
+  /* Valeurs calculées — resteront exactes quand les vraies données
+     remplaceront les données fictives. IMPORTANT (spec §11) : la
+     progression vers 2 500 F se base sur les gains issus des missions
+     validées, PAS sur le solde (dépôts, caution et prêts exclus). */
+  const pctObjective = Math.min(100, Math.round((s.missionGainsCfa / s.objectiveCfa) * 100));
+  const restObjective = Math.max(0, s.objectiveCfa - s.missionGainsCfa);
+  const pctSubs = Math.min(100, Math.round((s.todaySubmissions / s.dailyLimit) * 100));
+  const restSubs = Math.max(0, s.dailyLimit - s.todaySubmissions);
+  const pctRef = Math.min(100, Math.round((s.referralCount / s.referralRequired) * 100));
+  const restRef = Math.max(0, s.referralRequired - s.referralCount);
+  const cautionReady = s.cautionBalanceCfa >= s.cautionRequiredCfa;
+  const gainsOk = s.missionGainsCfa >= s.objectiveCfa;
+  const referralsOk = s.referralCount >= s.referralRequired;
+  const eligible = cautionReady && gainsOk && referralsOk && s.accountVerified;
+  const missing: string[] = [];
+  if (!gainsOk) missing.push(`${formatCfa(restObjective)} de gains`);
+  if (!cautionReady) missing.push('la caution');
+  if (!referralsOk) missing.push(`${restRef} parrainage${restRef > 1 ? 's' : ''}`);
+
+  const cond = (ok: boolean, label: string) => (
+    <div className="flex items-center gap-2 py-1">
+      <i className={`fas ${ok ? 'fa-check-circle text-[#22C55E]' : 'fa-times-circle text-[#EF4444]'} text-[0.72rem] w-4 text-center shrink-0`}></i>
+      <span className={`text-[0.68rem] flex-1 ${ok ? 'text-[#1F2937]' : 'text-[#94A3B8]'}`}>{label}</span>
+    </div>
+  );
+
   return (
     <div>
-      {/* Balance card */}
-      <div className="bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white rounded-2xl p-5 mb-4 relative overflow-hidden">
-        <div className="absolute -top-12 -right-12 w-[140px] h-[140px] bg-[radial-gradient(circle,rgba(34,197,94,0.15),transparent_65%)]" />
-        <div className="relative z-[1]">
-          <div className="text-[0.65rem] text-[rgba(255,255,255,0.5)] mb-1">Solde missions</div>
-          <div className="text-[1.8rem] font-black tracking-[-1px]">{formatCfa(dash.missionBalanceCfa)}</div>
-          <div className="flex gap-3 mt-3">
-            <div className="flex-1 bg-[rgba(255,255,255,0.08)] rounded-lg p-2.5">
-              <div className="text-[0.55rem] text-[rgba(255,255,255,0.4)]">Gains du jour</div>
-              <div className="text-[0.85rem] font-bold text-[#22C55E]">+{dash.validatedToday * dash.rewardPerImage} FCFA</div>
-            </div>
-            <div className="flex-1 bg-[rgba(255,255,255,0.08)] rounded-lg p-2.5">
-              <div className="text-[0.55rem] text-[rgba(255,255,255,0.4)]">Validées aujourd&apos;hui</div>
-              <div className="text-[0.85rem] font-bold">{dash.validatedToday}/{dash.dailyLimit}</div>
-            </div>
-          </div>
-        </div>
+      {/* ===== Présentation du compte (spec §5) ===== */}
+      <div className="mb-4">
+        <div className="text-[1.15rem] font-black text-[#1F2937]">Bonjour, {firstName} 👋</div>
+        <div className="text-[0.72rem] text-[#64748B] mt-0.5">Voici l&apos;état de votre activité aujourd&apos;hui.</div>
       </div>
 
-      {/* Progress toward loan eligibility */}
-      <div className="bg-white rounded-2xl p-4 mb-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
-        <div className="flex justify-between items-center mb-2">
-          <div className="text-[0.78rem] font-bold text-[#1F2937]">Objectif pour les prêts</div>
-          <div className="text-[0.72rem] font-semibold text-[#22C55E]">{dash.missionTotalEarnedCfa}/{dash.objectiveCfa} FCFA</div>
-        </div>
-        <div className="w-full h-2.5 bg-[rgba(0,0,0,0.05)] rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-[#22C55E] to-[#16A34A] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
-        </div>
-        <div className="text-[0.6rem] text-[#94A3B8] mt-1">{pct >= 100 ? '🎉 Objectif atteint ! Vous pouvez demander un prêt.' : `${Math.round(pct)}% — il vous manque ${dash.objectiveCfa - dash.missionTotalEarnedCfa} FCFA`}</div>
-      </div>
-
-      {/* Quick stats */}
+      {/* ===== Quatre cartes statistiques (spec §6-§9) ===== */}
       <div className="grid grid-cols-2 gap-2.5 mb-3">
-        {[
-          { icon: 'fa-bullhorn', ic: '#22C55E', ib: 'rgba(34,197,94,0.1)', l: 'Campagnes actives', v: String(dash.activeCampaigns), go: () => go('campaigns') },
-          { icon: 'fa-shield-alt', ic: '#3B82F6', ib: 'rgba(59,130,246,0.1)', l: 'Caution', v: dash.cautionStatus === 'active' ? 'Constituée' : 'Non constituée', go: () => go('eligibility') },
-          { icon: 'fa-users', ic: '#A855F7', ib: 'rgba(168,85,247,0.1)', l: 'Parrainages', v: `${dash.validatedReferralCount}/5`, go: undefined },
-          { icon: 'fa-hand-holding-usd', ic: '#F59E0B', ib: 'rgba(245,158,11,0.1)', l: 'Prêts', v: dash.activeLoans > 0 ? `${dash.activeLoans} actif(s)` : 'Aucun', go: () => go('loans') },
-        ].map((c, i) => (
-          <div key={i} className="bg-white rounded-xl p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]" onClick={c.go} style={c.go ? { cursor: 'pointer' } : {}}>
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: c.ib }}><i className={`fas ${c.icon} text-[0.7rem]`} style={{ color: c.ic }}></i></div>
-            <div className="text-[0.65rem] text-[#94A3B8]">{c.l}</div>
-            <div className="text-[0.85rem] font-bold text-[#1F2937]">{c.v}</div>
+        {/* 1. SOLDE */}
+        <div className="bg-white rounded-2xl p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)] flex flex-col">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2 bg-[rgba(34,197,94,0.1)]"><i className="fas fa-wallet text-[0.7rem] text-[#22C55E]"></i></div>
+          <div className="text-[0.58rem] text-[#94A3B8] font-bold uppercase tracking-wide">Solde disponible</div>
+          <div className="text-[1.05rem] font-black text-[#1F2937] mt-0.5">{formatCfa(s.balanceCfa)}</div>
+          <div className="text-[0.55rem] text-[#94A3B8] mt-1 leading-relaxed flex-1">Montant actuellement disponible selon les règles du programme.</div>
+          <button onClick={() => setPage('wallet')} className="mt-2.5 w-full py-1.5 rounded-lg bg-[rgba(34,197,94,0.08)] text-[#16A34A] text-[0.62rem] font-bold border border-[rgba(34,197,94,0.15)] cursor-pointer transition-transform active:scale-95">Voir mon portefeuille</button>
+        </div>
+
+        {/* 2. GAINS DU JOUR */}
+        <div className="bg-white rounded-2xl p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)] flex flex-col">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2 bg-[rgba(245,158,11,0.1)]"><i className="fas fa-coins text-[0.7rem] text-[#F59E0B]"></i></div>
+          <div className="text-[0.58rem] text-[#94A3B8] font-bold uppercase tracking-wide">Gains aujourd&apos;hui</div>
+          <div className="text-[1.05rem] font-black text-[#22C55E] mt-0.5">+{formatCfa(s.todayEarnedCfa)}</div>
+          <div className="text-[0.55rem] text-[#94A3B8] mt-1 leading-relaxed flex-1">{s.todayValidated} image{s.todayValidated > 1 ? 's' : ''} validée{s.todayValidated > 1 ? 's' : ''} aujourd&apos;hui.</div>
+        </div>
+
+        {/* 3. ACTIVITÉ DU JOUR (compteur 10/jour) */}
+        <div className="bg-white rounded-2xl p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)] flex flex-col">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2 bg-[rgba(59,130,246,0.1)]"><i className="fas fa-images text-[0.7rem] text-[#3B82F6]"></i></div>
+          <div className="text-[0.58rem] text-[#94A3B8] font-bold uppercase tracking-wide">Images aujourd&apos;hui</div>
+          <div className="text-[1.05rem] font-black text-[#1F2937] mt-0.5">{s.todaySubmissions} / {s.dailyLimit}</div>
+          <div className="w-full h-1.5 bg-[rgba(0,0,0,0.05)] rounded-full overflow-hidden my-1.5">
+            <div className="h-full bg-gradient-to-r from-[#3B82F6] to-[#06B6D4] rounded-full transition-all duration-500" style={{ width: `${pctSubs}%` }} />
           </div>
-        ))}
+          <div className="text-[0.55rem] text-[#94A3B8] mt-0.5 leading-relaxed flex-1">Il vous reste {restSubs} soumission{restSubs > 1 ? 's' : ''} aujourd&apos;hui.</div>
+        </div>
+
+        {/* 4. PARRAINAGE */}
+        <div className="bg-white rounded-2xl p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)] flex flex-col">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2 bg-[rgba(168,85,247,0.1)]"><i className="fas fa-users text-[0.7rem] text-[#A855F7]"></i></div>
+          <div className="text-[0.58rem] text-[#94A3B8] font-bold uppercase tracking-wide">Parrainages validés</div>
+          <div className="text-[1.05rem] font-black text-[#1F2937] mt-0.5">{s.referralCount} / {s.referralRequired}</div>
+          <div className="w-full h-1.5 bg-[rgba(0,0,0,0.05)] rounded-full overflow-hidden my-1.5">
+            <div className="h-full bg-gradient-to-r from-[#A855F7] to-[#7C3AED] rounded-full transition-all duration-500" style={{ width: `${pctRef}%` }} />
+          </div>
+          <div className="text-[0.55rem] text-[#94A3B8] mt-0.5 leading-relaxed flex-1">Encore {restRef} pour le seuil du prêt de 5 000 FCFA.</div>
+          <button onClick={() => go('referral')} className="mt-2.5 w-full py-1.5 rounded-lg bg-[rgba(168,85,247,0.08)] text-[#7C3AED] text-[0.62rem] font-bold border border-[rgba(168,85,247,0.15)] cursor-pointer transition-transform active:scale-95">Voir mon parrainage</button>
+        </div>
       </div>
 
-      {/* How it works */}
-      <div className="bg-white rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)] mb-3">
-        <div className="text-[0.78rem] font-bold text-[#1F2937] mb-3">Comment gagner de l&apos;argent ?</div>
-        {[
-          { s: 1, t: 'Choisissez une campagne de mission', c: '#22C55E', icon: 'fa-bullhorn' },
-          { s: 2, t: 'Générez une image avec ChatGPT, DALL-E, Midjourney...', c: '#3B82F6', icon: 'fa-magic' },
-          { s: 3, t: 'Uploadez votre image ici (+25 FCFA si validée)', c: '#F59E0B', icon: 'fa-upload' },
-          { s: 4, t: 'Atteignez 2 500 FCFA pour débloquer les prêts', c: '#A855F7', icon: 'fa-unlock' },
-          { s: 5, t: 'Constituez la caution + parrainages → Demandez votre prêt !', c: '#EF4444', icon: 'fa-hand-holding-usd' },
-        ].map((x, i) => (
-          <div key={i} className={`flex items-start gap-2.5 ${i < 4 ? 'mb-2.5' : ''}`}>
-            <div className="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-[0.6rem] shrink-0" style={{ background: x.c }}>{x.s}</div>
-            <div className="text-[0.72rem] text-[#64748B] pt-1 flex-1">{x.t}</div>
-            <i className={`fas ${x.icon} text-[0.7rem] mt-1`} style={{ color: x.c }}></i>
-          </div>
-        ))}
+      {/* ===== Objectif 2 500 FCFA (spec §10) — basé sur les gains de missions, pas le solde ===== */}
+      <div className="bg-white rounded-2xl p-4 mb-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+        <div className="flex items-center gap-2 mb-1">
+          <i className="fas fa-bullseye text-[#22C55E] text-[0.8rem]"></i>
+          <div className="text-[0.82rem] font-bold text-[#1F2937]">Objectif : 2 500 FCFA</div>
+        </div>
+        <div className="text-[0.62rem] text-[#94A3B8] mb-3 leading-relaxed">Accumulez au moins {formatCfa(s.objectiveCfa)} grâce aux missions validées pour débloquer cette étape de votre parcours.</div>
+        <div className="flex justify-between items-end mb-1.5">
+          <div className="text-[0.95rem] font-black text-[#1F2937]">{formatCfa(s.missionGainsCfa)} <span className="text-[#94A3B8] font-semibold text-[0.68rem]">/ {formatCfa(s.objectiveCfa)}</span></div>
+          <div className="text-[0.72rem] font-black text-[#22C55E]">{pctObjective} %</div>
+        </div>
+        <div className="w-full h-3 bg-[rgba(0,0,0,0.05)] rounded-full overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-[#22C55E] to-[#16A34A] rounded-full transition-all duration-500" style={{ width: `${pctObjective}%` }} />
+        </div>
+        <div className="text-[0.62rem] text-[#64748B] mt-2">
+          {gainsOk
+            ? '🎉 Objectif atteint ! Cette étape de votre parcours est débloquée.'
+            : <>Il vous reste <strong className="text-[#1F2937]">{formatCfa(restObjective)}</strong> pour atteindre cet objectif.</>}
+        </div>
       </div>
 
-      {/* Important rules */}
-      <div className="bg-[rgba(245,158,11,0.06)] rounded-xl p-3 border border-[rgba(245,158,11,0.1)]">
-        <div className="text-[0.72rem] font-bold text-[#F59E0B] mb-1.5"><i className="fas fa-exclamation-triangle mr-1"></i> Règles importantes</div>
-        <ul className="text-[0.62rem] text-[#92400E] space-y-1">
-          <li>• Créez vos images avec une IA externe (ChatGPT, DALL-E, Midjourney...)</li>
-          <li>• Uploadez-les ici — l&apos;IA valide automatiquement la conformité</li>
-          <li>• Maximum 10 images rémunérées par jour</li>
-          <li>• Les images trop similaires sont refusées (doublons)</li>
-          <li>• Les images disparaissent le lendemain pour libérer l&apos;espace</li>
-          <li>• La caution n&apos;est pas disponible pour les retraits</li>
-        </ul>
+      {/* ===== Mon éligibilité (spec §12-§13) ===== */}
+      <div className={`rounded-2xl p-4 mb-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border ${eligible ? 'bg-[rgba(34,197,94,0.05)] border-[rgba(34,197,94,0.2)]' : 'bg-white border-[rgba(0,0,0,0.03)]'}`}>
+        <div className="text-[0.82rem] font-bold text-[#1F2937] mb-0.5">Mon éligibilité</div>
+        <div className="text-[0.65rem] text-[#64748B] mb-2.5">Prêt de 5 000 FCFA</div>
+        {cond(gainsOk, `Gains minimum — ${formatCfa(s.missionGainsCfa)} / ${formatCfa(s.objectiveCfa)}`)}
+        {cond(cautionReady, `Caution — ${formatCfa(s.cautionBalanceCfa)} / ${formatCfa(s.cautionRequiredCfa)}`)}
+        {cond(referralsOk, `Parrainages — ${s.referralCount} / ${s.referralRequired}`)}
+        {cond(s.accountVerified, 'Compte vérifié')}
+        <div className={`mt-3 rounded-xl p-2.5 ${eligible ? 'bg-[rgba(34,197,94,0.1)]' : 'bg-[rgba(0,0,0,0.03)]'}`}>
+          {eligible ? (
+            <>
+              <div className="text-[0.7rem] font-bold text-[#16A34A]">🟢 Conditions remplies</div>
+              <div className="text-[0.6rem] text-[#64748B] mt-0.5 leading-relaxed">Vous pouvez maintenant soumettre une demande de prêt.</div>
+            </>
+          ) : (
+            <>
+              <div className="text-[0.7rem] font-bold text-[#F59E0B]">Pas encore éligible</div>
+              <div className="text-[0.6rem] text-[#64748B] mt-0.5 leading-relaxed">Il vous manque : {missing.join(', ')}.</div>
+            </>
+          )}
+        </div>
+        <button onClick={() => go('eligibility')} className="w-full mt-3 py-2.5 rounded-xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-semibold text-[0.75rem] border-none cursor-pointer shadow-[0_2px_10px_rgba(34,197,94,0.2)] transition-transform active:scale-[0.97]">
+          {eligible ? 'Demander un prêt' : 'Voir les conditions'}
+        </button>
+      </div>
+
+      {/* ===== Ma caution (spec §14) — visuellement distincte, hors solde ===== */}
+      <div className="bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white rounded-2xl p-4 mb-3 relative overflow-hidden">
+        <div className="absolute -top-10 -right-10 w-[120px] h-[120px] bg-[radial-gradient(circle,rgba(245,158,11,0.15),transparent_65%)]" />
+        <div className="relative z-[1]">
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-[rgba(245,158,11,0.15)] flex items-center justify-center"><i className="fas fa-lock text-[#FBBF24] text-[0.75rem]"></i></div>
+              <div className="text-[0.82rem] font-bold">🔒 Ma caution</div>
+            </div>
+            <span className={`px-2 py-0.5 rounded-full text-[0.55rem] font-bold ${cautionReady ? 'bg-[rgba(34,197,94,0.2)] text-[#4ADE80]' : 'bg-[rgba(245,158,11,0.15)] text-[#FBBF24]'}`}>{cautionReady ? 'Constituée ✓' : 'À constituer'}</span>
+          </div>
+          <div className="text-[1.25rem] font-black mt-1">{formatCfa(s.cautionRequiredCfa)}</div>
+          <div className="text-[0.62rem] text-[rgba(255,255,255,0.55)] mt-1 leading-relaxed">Montant réservé comme caution selon les conditions du programme.</div>
+          <div className="text-[0.6rem] text-[#FBBF24] mt-1.5 flex items-center gap-1.5"><i className="fas fa-shield-alt"></i> Ce montant n&apos;est pas inclus dans votre solde disponible.</div>
+        </div>
+      </div>
+
+      {/* ===== Missions disponibles (spec §15-§16) — bouton « Voir la mission », JAMAIS « Générer » ===== */}
+      <div className="text-[0.82rem] font-black text-[#1F2937] mb-2 mt-1">Missions disponibles</div>
+      <div className="grid grid-cols-2 gap-2.5 mb-3">
+        {MOCK_MISSIONS.map(m => {
+          const cat = CAT_ICON[m.category] || CAT_ICON.general;
+          return (
+            <div key={m.id} className="bg-white rounded-2xl p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)] flex flex-col">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: cat.color + '15' }}><i className={`fas ${cat.icon} text-[0.7rem]`} style={{ color: cat.color }}></i></div>
+              <div className="text-[0.78rem] font-bold text-[#1F2937]">Mission {m.name}</div>
+              <div className="text-[0.65rem] text-[#22C55E] font-bold mt-0.5">{m.rewardCfa} FCFA / image</div>
+              <div className="text-[0.58rem] text-[#94A3B8] mt-1 flex-1">{m.userDailyCount} / {m.dailyLimit} aujourd&apos;hui</div>
+              <button onClick={() => go('campaigns')} className="mt-2.5 w-full py-2 rounded-lg bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white text-[0.65rem] font-bold border-none cursor-pointer shadow-[0_2px_8px_rgba(34,197,94,0.2)] transition-transform active:scale-95">Voir la mission</button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ===== Comment ça marche ? (spec §17) ===== */}
+      <div className="bg-white rounded-2xl p-4 mb-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+        <div className="text-[0.82rem] font-bold text-[#1F2937] mb-3">Comment gagner ?</div>
+        {[
+          { n: 1, t: 'Choisissez une mission', c: '#22C55E' },
+          { n: 2, t: 'Créez votre image avec une IA externe', c: '#3B82F6' },
+          { n: 3, t: 'Importez votre image ici', c: '#A855F7' },
+          { n: 4, t: "Notre système vérifie l'image", c: '#F59E0B' },
+          { n: 5, t: 'Si elle est validée : +25 FCFA', c: '#EF4444' },
+        ].map((x, i, arr) => (
+          <div key={x.n}>
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-[0.6rem] shrink-0" style={{ background: x.c }}>{x.n}</div>
+              <div className="text-[0.7rem] text-[#64748B] flex-1">{x.t}</div>
+            </div>
+            {i < arr.length - 1 && <div className="text-[#CBD5E1] text-[0.7rem] leading-none my-1 pl-2.5">↓</div>}
+          </div>
+        ))}
+        <div className="text-[0.6rem] text-[#94A3B8] mt-3 italic leading-relaxed">La génération se fait à l&apos;extérieur du site : consultez le brief, créez votre image avec l&apos;outil de votre choix, puis revenez ici pour l&apos;importer.</div>
+      </div>
+
+      {/* ===== Activité récente (spec §18) ===== */}
+      <div className="bg-white rounded-2xl p-4 mb-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+        <div className="text-[0.82rem] font-bold text-[#1F2937] mb-3">Activité récente</div>
+        <div className="space-y-2.5">
+          {MOCK_ACTIVITY.map(a => (
+            <div key={a.id} className="flex items-start gap-2.5 pb-2.5 border-b border-[rgba(0,0,0,0.04)] last:border-0 last:pb-0">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: a.ok ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)' }}>
+                <i className={`fas ${a.ok ? 'fa-check-circle text-[#22C55E]' : 'fa-times-circle text-[#EF4444]'} text-[0.75rem]`}></i>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[0.55rem] text-[#94A3B8]">{a.when}</div>
+                <div className={`text-[0.7rem] font-semibold ${a.ok ? 'text-[#1F2937]' : 'text-[#64748B]'}`}>{a.label}</div>
+                {a.detail && <div className="text-[0.58rem] text-[#94A3B8] italic">{a.detail}</div>}
+              </div>
+              <div className={`text-[0.72rem] font-black shrink-0 ${a.ok ? 'text-[#22C55E]' : 'text-[#CBD5E1]'}`}>{a.amountCfa > 0 ? `+${a.amountCfa} F` : '0 F'}</div>
+            </div>
+          ))}
+        </div>
+        <button onClick={() => go('myimages')} className="w-full mt-3 py-2 rounded-xl bg-[rgba(0,0,0,0.03)] text-[#64748B] text-[0.68rem] font-semibold border border-[rgba(0,0,0,0.04)] cursor-pointer transition-transform active:scale-[0.97]">Voir tout l&apos;historique</button>
       </div>
     </div>
   );
@@ -483,6 +712,99 @@ function LoanV({ loans, onRepay }: { loans: any[]; onRepay: (id: string) => void
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/* ============================================================
+   PARRAINAGE VIEW (spec §4 — « voir les filleuls et le code »)
+   Données fictives (MOCK_REFERRALS) structurées comme la réponse
+   de GET /api/referral/list → remplacement direct plus tard.
+   ============================================================ */
+function ParrainV({ code, required, referrals }: { code: string; required: number; referrals: { id: string; name: string; date: string; validated: boolean }[] }) {
+  const [copied, setCopied] = useState(false);
+  const valides = referrals.filter(r => r.validated).length;
+  const rest = Math.max(0, required - valides);
+  const pct = Math.min(100, Math.round((valides / required) * 100));
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard indisponible */ }
+  };
+
+  return (
+    <div>
+      {/* Code de parrainage */}
+      <div className="bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white rounded-2xl p-5 mb-3 relative overflow-hidden">
+        <div className="absolute -top-12 -right-12 w-[140px] h-[140px] bg-[radial-gradient(circle,rgba(168,85,247,0.18),transparent_65%)]" />
+        <div className="relative z-[1]">
+          <div className="text-[0.65rem] text-[rgba(255,255,255,0.5)] mb-1.5">Mon code de parrainage</div>
+          <div className="flex items-center gap-2.5">
+            <div className="text-[1.5rem] font-black tracking-[2px]">{code}</div>
+            <button onClick={copy} className={`px-3 py-1.5 rounded-lg text-[0.62rem] font-bold border-none cursor-pointer transition-all active:scale-95 ${copied ? 'bg-[#22C55E] text-white' : 'bg-white/10 text-white'}`}>
+              <i className={`fas ${copied ? 'fa-check' : 'fa-copy'} mr-1`}></i>{copied ? 'Copié !' : 'Copier'}
+            </button>
+          </div>
+          <div className="text-[0.6rem] text-[rgba(255,255,255,0.45)] mt-2 leading-relaxed">Partagez ce code à vos amis lors de leur inscription.</div>
+        </div>
+      </div>
+
+      {/* Progression */}
+      <div className="bg-white rounded-2xl p-4 mb-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+        <div className="flex justify-between items-center mb-2">
+          <div className="text-[0.82rem] font-bold text-[#1F2937]">Parrainages validés</div>
+          <div className="text-[0.72rem] font-semibold text-[#A855F7]">{valides} / {required}</div>
+        </div>
+        <div className="w-full h-2.5 bg-[rgba(0,0,0,0.05)] rounded-full overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-[#A855F7] to-[#7C3AED] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+        </div>
+        <div className="text-[0.62rem] text-[#94A3B8] mt-1.5">
+          {rest === 0
+            ? '🎉 Seuil de parrainages atteint !'
+            : `Encore ${rest} parrainage${rest > 1 ? 's' : ''} validé${rest > 1 ? 's' : ''} pour atteindre le seuil requis pour le prêt de 5 000 FCFA.`}
+        </div>
+      </div>
+
+      {/* Liste des filleuls */}
+      <div className="bg-white rounded-2xl p-4 mb-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+        <div className="text-[0.82rem] font-bold text-[#1F2937] mb-3">Mes filleuls</div>
+        {referrals.length ? (
+          <div className="space-y-2.5">
+            {referrals.map(r => (
+              <div key={r.id} className="flex items-center gap-2.5 pb-2.5 border-b border-[rgba(0,0,0,0.04)] last:border-0 last:pb-0">
+                <div className="w-9 h-9 rounded-full bg-[rgba(168,85,247,0.1)] flex items-center justify-center shrink-0 text-[#7C3AED] text-[0.7rem] font-bold">
+                  {r.name.substring(0, 2).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[0.72rem] font-semibold text-[#1F2937]">{r.name}</div>
+                  <div className="text-[0.58rem] text-[#94A3B8]">Inscrit le {r.date}</div>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-[0.55rem] font-bold ${r.validated ? 'bg-[rgba(34,197,94,0.1)] text-[#22C55E]' : 'bg-[rgba(245,158,11,0.1)] text-[#F59E0B]'}`}>
+                  {r.validated ? '✓ Validé' : 'En attente'}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-6">
+            <div className="w-14 h-14 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center mx-auto mb-2"><i className="fas fa-users text-[#94A3B8] text-lg"></i></div>
+            <div className="text-[0.75rem] font-semibold text-[#64748B]">Aucun filleul pour l&apos;instant</div>
+            <div className="text-[0.65rem] text-[#94A3B8]">Partagez votre code pour commencer !</div>
+          </div>
+        )}
+      </div>
+
+      {/* Explication */}
+      <div className="bg-[rgba(59,130,246,0.06)] rounded-xl p-3.5 border border-[rgba(59,130,246,0.12)]">
+        <div className="text-[0.72rem] font-bold text-[#3B82F6] mb-1"><i className="fas fa-info-circle mr-1"></i> Comment ça marche ?</div>
+        <div className="text-[0.62rem] text-[#1E40AF] leading-relaxed">
+          Partagez votre code à vos amis. Lorsqu&apos;ils s&apos;inscrivent avec votre code et deviennent actifs, ils comptent comme parrainages validés.
+          {required} parrainages validés font partie des conditions pour accéder au prêt de 5 000 FCFA.
+        </div>
+      </div>
     </div>
   );
 }
