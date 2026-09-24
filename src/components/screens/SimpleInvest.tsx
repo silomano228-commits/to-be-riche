@@ -3,28 +3,37 @@
 import { useState } from 'react';
 import { useAppStore, formatCfa } from '@/lib/store';
 import { Header } from '@/components/shared';
-import { useSimpleStore, INVEST_RATE } from '@/lib/simple-store';
+import {
+  useSimpleStore, investRateFor, INVEST_BOOST_REFERRALS, REFERRAL_BONUS,
+} from '@/lib/simple-store';
 
 /* ================================================================
-   INVESTIR (épuré) — déposez de l'argent, gagnez chaque jour.
-   Taux : 5 % par jour, réclamable une fois par jour.
+   INVESTIR — convaincant :
+   projection temps réel, taux boosté via parrainages (recrutement),
+   gains journaliers réclamables une fois par jour.
    ================================================================ */
 
 const PRESETS = [500, 1000, 2500];
 
 export default function SimpleInvest() {
-  const { addToast } = useAppStore();
+  const { addToast, setPage } = useAppStore();
   const s = useSimpleStore();
   const [amount, setAmount] = useState('');
   const inv = s.invest;
-  const dailyGain = Math.round(inv.invested * INVEST_RATE);
+  const rate = investRateFor(s.referralCount);
+  const ratePct = Math.round(rate * 100);
+  const dailyGain = Math.round(inv.invested * rate);
   const value = parseInt(amount, 10) || 0;
+
+  /* Projection temps réel pour le montant saisi */
+  const projDaily = Math.round(value * rate);
+  const projMonthly = projDaily * 30;
 
   const handleDeposit = () => {
     if (value <= 0) { addToast('Choisissez un montant à déposer', 'error'); return; }
     if (value > s.balance) { addToast('Solde disponible insuffisant', 'error'); return; }
     s.deposit(value);
-    addToast(`${formatCfa(value)} déposés — gains actifs dès demain`, 'success');
+    addToast(`${formatCfa(value)} déposés — +${Math.round(value * rate)} F dès demain (+20 XP)`, 'success');
     setAmount('');
   };
 
@@ -38,7 +47,7 @@ export default function SimpleInvest() {
 
   const handleClaim = () => {
     const r = s.claimDailyGains();
-    if (r.ok) addToast(`+${formatCfa(r.gain || 0)} crédités sur votre solde ✓`, 'success');
+    if (r.ok) addToast(`+${formatCfa(r.gain || 0)} crédités sur votre solde ✓ (+5 XP)`, 'success');
     else addToast(r.reason || 'Impossible', 'info');
   };
 
@@ -63,8 +72,8 @@ export default function SimpleInvest() {
                 <div className="text-[0.85rem] font-black">+{formatCfa(inv.totalEarned)}</div>
               </div>
               <div>
-                <div className="text-[0.55rem] text-white/60 font-bold uppercase">Taux</div>
-                <div className="text-[0.85rem] font-black">{Math.round(INVEST_RATE * 100)} %/jour</div>
+                <div className="text-[0.55rem] text-white/60 font-bold uppercase">Votre taux</div>
+                <div className="text-[0.85rem] font-black">{ratePct} %/jour</div>
               </div>
             </div>
             <button
@@ -81,12 +90,36 @@ export default function SimpleInvest() {
         <div className="bg-white rounded-2xl p-3.5 mb-3 border border-[rgba(0,0,0,0.04)] shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex items-start gap-2.5">
           <i className="fas fa-circle-info text-[#14B8A6] text-[0.8rem] mt-0.5"></i>
           <div className="text-[0.65rem] text-[#475569] leading-relaxed flex-1">
-            Déposez de l’argent depuis votre solde : il vous rapporte <strong>{Math.round(INVEST_RATE * 100)} % chaque jour</strong>.
+            Déposez de l’argent depuis votre solde : il vous rapporte <strong>{ratePct} % chaque jour</strong>.
             Les gains sont ajoutés à votre solde et visibles dans votre portefeuille. Vous pouvez retirer votre investissement à tout moment.
           </div>
         </div>
 
-        {/* Déposer / Retirer */}
+        {/* Booster 7 % : verrouillé à 10 filleuls (moteur de recrutement) */}
+        <div className="bg-white rounded-2xl p-4 mb-3 border border-[rgba(245,158,11,0.3)] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-2">
+              <i className="fas fa-bolt text-[#F59E0B] text-[0.85rem]"></i>
+              <div className="text-[0.78rem] font-bold text-[#1F2937]">Booster 7 %/jour</div>
+            </div>
+            {s.referralCount >= INVEST_BOOST_REFERRALS
+              ? <span className="px-2 py-0.5 rounded-full text-[0.55rem] font-black bg-[rgba(34,197,94,0.1)] text-[#22C55E]">DÉBLOQUÉ</span>
+              : <span className="px-2 py-0.5 rounded-full text-[0.55rem] font-black bg-[rgba(245,158,11,0.1)] text-[#B45309]"><i className="fas fa-lock mr-1"></i>VERROUILLÉ</span>}
+          </div>
+          <div className="text-[0.6rem] text-[#64748B] mb-2 leading-relaxed">
+            Passez de 5 % à <strong>7 % de gains quotidiens</strong> en invitant <strong>{INVEST_BOOST_REFERRALS} filleuls validés</strong>.
+            Et chaque filleul validé vous rapporte <strong>+{REFERRAL_BONUS} F</strong> immédiatement.
+          </div>
+          <div className="flex items-center gap-2.5">
+            <div className="flex-1 h-2 bg-[rgba(0,0,0,0.05)] rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-[#F59E0B] to-[#D97706] rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (s.referralCount / INVEST_BOOST_REFERRALS) * 100)}%` }} />
+            </div>
+            <div className="text-[0.6rem] font-black text-[#B45309] shrink-0">{s.referralCount}/{INVEST_BOOST_REFERRALS}</div>
+            <button onClick={() => setPage('profile')} className="px-3 py-1.5 rounded-lg bg-[rgba(245,158,11,0.1)] text-[#B45309] font-black text-[0.58rem] border border-[rgba(245,158,11,0.2)] cursor-pointer shrink-0 transition-transform active:scale-95">Inviter</button>
+          </div>
+        </div>
+
+        {/* Déposer / Retirer + projection */}
         <div className="bg-white rounded-2xl p-4 mb-3 border border-[rgba(0,0,0,0.04)] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <div className="text-[0.7rem] font-black text-[#1F2937] uppercase tracking-wide mb-2">Déposer / Retirer</div>
           <div className="text-[0.55rem] text-[#94A3B8] mb-2">Solde disponible : <strong className="text-[#16A34A]">{formatCfa(s.balance)}</strong></div>
@@ -105,6 +138,19 @@ export default function SimpleInvest() {
             placeholder="Montant en FCFA"
             className="w-full py-3 px-4 rounded-xl bg-[rgba(0,0,0,0.03)] border border-[rgba(0,0,0,0.05)] text-[0.8rem] font-bold text-[#1F2937] outline-none focus:border-[rgba(20,184,166,0.5)] mb-3"
           />
+
+          {/* Projection temps réel */}
+          {value > 0 && (
+            <div className="flex items-center gap-3 py-3 px-3.5 rounded-xl bg-[rgba(20,184,166,0.06)] border border-[rgba(20,184,166,0.15)] mb-3" style={{ animation: 'tIn 0.25s ease' }}>
+              <i className="fas fa-chart-simple text-[#0D9488] text-[0.8rem]"></i>
+              <div className="flex-1 min-w-0">
+                <div className="text-[0.62rem] font-bold text-[#1F2937]">Si vous déposez {formatCfa(value)} :</div>
+                <div className="text-[0.58rem] text-[#64748B]">+{formatCfa(projDaily)} chaque jour · +{formatCfa(projMonthly)} par mois</div>
+              </div>
+              <div className="text-[0.72rem] font-black text-[#0D9488] shrink-0">+{ratePct} %/j</div>
+            </div>
+          )}
+
           <div className="flex gap-2">
             <button onClick={handleDeposit} className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#14B8A6] to-[#0D9488] text-white font-bold text-[0.78rem] border-none cursor-pointer transition-transform active:scale-95">
               Déposer
@@ -119,7 +165,7 @@ export default function SimpleInvest() {
         <div className="bg-white rounded-2xl p-4 border border-[rgba(0,0,0,0.04)] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <div className="text-[0.7rem] font-black text-[#1F2937] uppercase tracking-wide mb-2">Historique</div>
           {s.transactions.filter((t) => t.kind === 'invest' || t.kind === 'daily').length === 0 && (
-            <div className="text-center text-[0.65rem] text-[#94A3B8] py-5">Aucune opération d’investissement pour l’instant.</div>
+            <div className="text-center text-[0.65rem] text-[#94A3B8] py-5">Aucune opération d’investissement pour l’instant. Déposez pour démarrer vos gains journaliers.</div>
           )}
           {s.transactions.filter((t) => t.kind === 'invest' || t.kind === 'daily').slice(0, 5).map((t) => (
             <div key={t.id} className="flex items-center gap-2.5 py-2 border-b border-[rgba(0,0,0,0.04)] last:border-0">

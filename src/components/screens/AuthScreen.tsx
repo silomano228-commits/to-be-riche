@@ -76,7 +76,7 @@ export default function AuthScreen() {
         <h1 className="text-[1.8rem] font-black mb-1 bg-gradient-to-r from-[#FCD34D] via-[#FBBF24] to-[#F59E0B] bg-[length:200%_auto] text-transparent bg-clip-text tracking-[2px]" style={{ animation: 'gs 3s linear infinite' }}>JEUNE ÉLAN</h1>
         <p className="text-[rgba(255,255,255,0.3)] text-[0.72rem] mb-3">{mode === 'login' ? 'Connectez-vous à votre compte.' : 'Rejoignez Jeune Élan.'}</p>
 
-        {/* Missions & micro-prêts platform mention */}
+        {/* Propositions de valeur — la promesse dès l'entrée */}
         <div className="flex flex-col items-center gap-1.5 mb-5">
           <div
             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[0.6rem] font-semibold"
@@ -89,8 +89,13 @@ export default function AuthScreen() {
             <i className="fas fa-globe text-[0.55rem]"></i>
             Missions rémunérées & micro-prêts
           </div>
+          <div className="flex gap-1.5 mt-1 mb-1">
+            <span className="px-2 py-0.5 rounded-full text-[0.52rem] font-bold bg-[rgba(0,200,83,0.08)] text-[#00E676] border border-[rgba(0,200,83,0.15)]"><i className="fas fa-image mr-1"></i>Jusqu’à 30 F / image</span>
+            <span className="px-2 py-0.5 rounded-full text-[0.52rem] font-bold bg-[rgba(34,211,238,0.08)] text-[#22D3EE] border border-[rgba(34,211,238,0.15)]"><i className="fas fa-chart-line mr-1"></i>5 % / jour</span>
+            <span className="px-2 py-0.5 rounded-full text-[0.52rem] font-bold bg-[rgba(251,191,36,0.08)] text-[#FBBF24] border border-[rgba(251,191,36,0.15)]"><i className="fas fa-hand-holding-dollar mr-1"></i>Prêt jusqu’à 25 000 F</span>
+          </div>
           <p className="text-[0.62rem] text-[rgba(255,255,255,0.32)] leading-snug max-w-[280px]">
-            Réalisez des missions numériques rémunérées, accumulez des gains et accédez aux micro-prêts.
+            Créez avec l’IA de votre choix, gagnez à chaque image validée, gravissez les niveaux et débloquez les micro-prêts.
           </p>
         </div>
 

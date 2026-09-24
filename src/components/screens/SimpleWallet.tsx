@@ -2,7 +2,7 @@
 
 import { useAppStore, formatCfa } from '@/lib/store';
 import { Header } from '@/components/shared';
-import { useSimpleStore, CAUTION_REQUIRED } from '@/lib/simple-store';
+import { useSimpleStore, levelFor, LOAN_TIERS } from '@/lib/simple-store';
 
 /* ================================================================
    PORTEFEUILLE DE MISSION (épuré) — le portefeuille du « gagné » :
@@ -14,6 +14,7 @@ export default function SimpleWallet() {
   const { user } = useAppStore();
   if (!user) return null;
 
+  const { level } = levelFor(s.xp);
   const total = s.balance + s.invest.invested;
 
   const rows = [
@@ -34,9 +35,10 @@ export default function SimpleWallet() {
             <div className="text-[0.58rem] text-white/70 font-bold uppercase tracking-wide mb-1">Valeur totale</div>
             <div className="text-[1.6rem] font-black leading-none">{formatCfa(total)}</div>
             <div className="text-[0.6rem] text-white/70 mt-2">Solde disponible : {formatCfa(s.balance)} · Investi : {formatCfa(s.invest.invested)}</div>
+            <div className="text-[0.55rem] text-white/60 mt-1"><i className={`fas ${level.icon} mr-1`}></i>Niveau {level.name} · {level.perk} · série {s.streak} jours</div>
             {s.cautionBalance > 0 && (
               <div className="text-[0.58rem] text-[#FBBF24] mt-1.5 flex items-center gap-1.5">
-                <i className="fas fa-lock"></i> Caution verrouillée : {formatCfa(s.cautionBalance)} / {formatCfa(CAUTION_REQUIRED)}
+                <i className="fas fa-lock"></i> Caution verrouillée : {formatCfa(s.cautionBalance)} / {formatCfa(LOAN_TIERS[Math.min(s.loansTaken, LOAN_TIERS.length - 1)].caution)}
               </div>
             )}
           </div>
