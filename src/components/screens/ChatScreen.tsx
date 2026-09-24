@@ -24,7 +24,7 @@ const QUICK_REPLIES = [
 ];
 
 export default function ChatScreen() {
-  const { user, setPage, addToast } = useAppStore();
+  const { user, addToast } = useAppStore();
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -233,17 +233,12 @@ export default function ChatScreen() {
               <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${adminOnline ? 'bg-[#22C55E]' : 'bg-[#F59E0B]'}`} style={adminOnline ? { animation: 'pulse 2s infinite' } : {}} />
             </div>
             <div>
-              <div className="text-[0.92rem] font-black text-[#1F2937] leading-tight">Support Admin</div>
+              <div className="text-[0.92rem] font-black text-[#1F2937] leading-tight">Communauté</div>
               <div className="text-[0.6rem] font-medium text-[#22C55E] leading-tight">
                 {adminOnline ? `En ligne · Répond rapidement` : 'Hors ligne · Répond sous 24h'}
               </div>
             </div>
           </div>
-        }
-        leftElement={
-          <button onClick={() => setPage('home')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(255,255,255,0.6)] backdrop-blur-sm text-[rgba(0,0,0,0.55)] cursor-pointer border-none mr-1">
-            <i className="fas fa-arrow-left text-[0.8rem]"></i>
-          </button>
         }
       />
 
@@ -266,7 +261,7 @@ export default function ChatScreen() {
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#22C55E] to-[#16A34A] flex items-center justify-center mx-auto mb-3 shadow-lg" style={{ boxShadow: '0 8px 24px rgba(34,197,94,0.25)' }}>
                   <i className="fas fa-comments text-white text-[1.5rem]"></i>
                 </div>
-                <h3 className="text-[1.05rem] font-black text-[#1F2937] mb-1">Chat Support</h3>
+                <h3 className="text-[1.05rem] font-black text-[#1F2937] mb-1">Communauté</h3>
                 <p className="text-[0.72rem] text-[rgba(0,0,0,0.5)] leading-relaxed mb-4">
                   Besoin d&apos;aide ? Écrivez-nous et notre équipe vous répondra rapidement.
                 </p>

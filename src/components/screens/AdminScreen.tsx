@@ -46,7 +46,7 @@ interface Conversation {
 
 export default function AdminScreen() {
   const { user, addToast } = useAppStore();
-  const [tab, setTab] = useState<'users' | 'deposits' | 'withdrawals' | 'messages' | 'notif' | 'missions' | 'config'>('users');
+  const [tab, setTab] = useState<'users' | 'activity' | 'deposits' | 'withdrawals' | 'messages' | 'notif' | 'missions' | 'config'>('users');
   // Merged deposits state
   const [depositFilter, setDepositFilter] = useState<'all' | 'trx' | 'yas'>('all');
   const [depositsExpanded, setDepositsExpanded] = useState(true);
@@ -78,6 +78,9 @@ export default function AdminScreen() {
   const [missionStats, setMissionStats] = useState<{ total: number; pending: number; validated: number; refused: number; duplicate: number } | null>(null);
   const [missionImages, setMissionImages] = useState<any[]>([]);
   const [missionFilter, setMissionFilter] = useState<string>('all');
+
+  // Activité tab state — surveillance de ce que fait chaque utilisateur
+  const [activityFilter, setActivityFilter] = useState<'all' | 'missions' | 'invest'>('all');
 
   // Quick message state (Users tab)
   const [messageUserId, setMessageUserId] = useState<string | null>(null);
@@ -725,6 +728,7 @@ export default function AdminScreen() {
         <div className="flex gap-1.5 bg-[#0E0F11] border-b border-[rgba(255,255,255,0.06)] px-[10px] py-1.5 overflow-x-auto" style={{ scrollbarWidth: 'thin' }}>
           {([
             { k: 'users', l: 'Users', icon: 'fas fa-users' },
+            { k: 'activity', l: 'Activité', icon: 'fas fa-bolt' },
             { k: 'deposits', l: `Dépôts (${(pendingDeposits.filter(d => d.status === 'pending').length) + (yasDeposits.filter(d => d.status === 'pending').length)})`, icon: 'fas fa-arrow-down' },
             { k: 'withdrawals', l: 'Retraits', icon: 'fas fa-arrow-up' },
             { k: 'messages', l: `Messages${totalUnread > 0 ? ` (${totalUnread})` : ''}`, icon: 'fas fa-comment' },
@@ -1844,6 +1848,127 @@ export default function AdminScreen() {
                   </button>
                 </div>
               )}
+
+              {/* Activité Tab — voir et analyser ce que chaque utilisateur
+                  fait concrètement : missions (images) ET investissements
+                  (gains journaliers), comme demandé par l'administrateur. */}
+              {tab === 'activity' && (() => {
+                // Regroupe les images de mission par utilisateur (activité récente)
+                const imgByUser = new Map<string, { total: number; pending: number; validated: number; refused: number; last: Date | null }>();
+                for (const img of missionImages) {
+                  const uid = img.user?.id || img.userId;
+                  if (!uid) continue;
+                  const e = imgByUser.get(uid) || { total: 0, pending: 0, validated: 0, refused: 0, last: null };
+                  e.total++;
+                  if (img.status === 'pending') e.pending++;
+                  if (img.status === 'validated') e.validated++;
+                  if (img.status === 'non_compliant' || img.status === 'duplicate') e.refused++;
+                  const d = new Date(img.createdAt);
+                  if (!e.last || d > e.last) e.last = d;
+                  imgByUser.set(uid, e);
+                }
+                const stats = adminData?.stats || {};
+                const activeUsers = usersList.filter((u: any) => ((imgByUser.get(u.id)?.total || 0) > 0) || u.investGains?.dailyGain > 0 || u.hasInvested || (u.missionValidatedToday || 0) > 0).length;
+                const validatedToday = usersList.reduce((s: number, u: any) => s + (u.missionValidatedToday || 0), 0);
+                const dailyInvestGain = usersList.reduce((s: number, u: any) => s + (u.investGains?.dailyGain || 0), 0);
+                // Tri : l'activité la plus récente en premier (image ou claim)
+                const sorted = [...usersList].sort((a: any, b: any) => {
+                  const la = imgByUser.get(a.id)?.last?.getTime() || (a.lastClaimAt ? new Date(a.lastClaimAt).getTime() : 0);
+                  const lb = imgByUser.get(b.id)?.last?.getTime() || (b.lastClaimAt ? new Date(b.lastClaimAt).getTime() : 0);
+                  return lb - la;
+                }).filter((u: any) => {
+                  if (activityFilter === 'missions') return ((imgByUser.get(u.id)?.total || 0) > 0) || (u.missionValidatedToday || 0) > 0;
+                  if (activityFilter === 'invest') return u.hasInvested || (u.investGains?.dailyGain || 0) > 0;
+                  return true;
+                });
+                return (
+                  <>
+                    {/* Header card */}
+                    <div className="bg-[#0E0F11] border border-[rgba(52,211,153,0.15)] rounded-2xl p-3 mb-4 flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-[rgba(52,211,153,0.12)] flex items-center justify-center shrink-0">
+                        <i className="fas fa-bolt text-[#34D399] text-[0.9rem]"></i>
+                      </div>
+                      <div>
+                        <div className="text-[#EDEDEF] text-[0.85rem] font-bold">Activité des utilisateurs</div>
+                        <div className="text-[rgba(255,255,255,0.45)] text-[0.65rem]">Voyez ce que chaque jeune fait : missions, investissements, gains journaliers</div>
+                      </div>
+                    </div>
+
+                    {/* Stats cards */}
+                    <div className="grid grid-cols-4 gap-2 mb-4">
+                      {([
+                        { label: 'Actifs', value: activeUsers, color: '#34D399', icon: 'fa-user-check' },
+                        { label: 'Images validées /j', value: validatedToday, color: '#4ADE80', icon: 'fa-check-circle' },
+                        { label: 'Investissements actifs', value: stats.active_investments ?? 0, color: '#6366F1', icon: 'fa-seedling' },
+                        { label: `Gains/jour (invest)`, value: `${Math.round(dailyInvestGain * 100) / 100} $`, color: '#FBBF24', icon: 'fa-chart-line' },
+                      ]).map(s => (
+                        <div key={s.label} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-xl p-2 text-center">
+                          <i className={`fas ${s.icon} text-[0.6rem]`} style={{ color: s.color }}></i>
+                          <div className="text-[0.9rem] font-bold text-[#EDEDEF] mt-0.5">{s.value}</div>
+                          <div className="text-[0.52rem] text-[rgba(255,255,255,0.35)]">{s.label}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Filtres */}
+                    <div className="flex gap-1.5 mb-3">
+                      {([
+                        { k: 'all', l: 'Tout le monde' },
+                        { k: 'missions', l: 'Activité missions' },
+                        { k: 'invest', l: 'Activité investir' },
+                      ] as const).map(f => (
+                        <button key={f.k} onClick={() => setActivityFilter(f.k)} className={`shrink-0 px-3 py-1.5 rounded-lg text-[0.6rem] font-semibold border-none cursor-pointer transition-all ${activityFilter === f.k ? 'bg-[rgba(52,211,153,0.15)] text-[#34D399]' : 'bg-[rgba(255,255,255,0.04)] text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.07)]'}`} style={{ border: `1px solid ${activityFilter === f.k ? 'rgba(52,211,153,0.3)' : 'rgba(255,255,255,0.08)'}` }}>{f.l}</button>
+                      ))}
+                    </div>
+
+                    {/* Par utilisateur */}
+                    <div className="space-y-2">
+                      {sorted.length === 0 && (
+                        <div className="text-center py-8 text-[rgba(255,255,255,0.35)] text-[0.7rem]">Aucune activité pour ce filtre.</div>
+                      )}
+                      {sorted.map((u: any) => {
+                        const act = imgByUser.get(u.id) || { total: 0, pending: 0, validated: 0, refused: 0, last: null };
+                        const lastTxt = act.last ? act.last.toLocaleString('fr-FR') : (u.lastClaimAt ? new Date(u.lastClaimAt).toLocaleString('fr-FR') : '—');
+                        const daily = u.investGains?.dailyGain || 0;
+                        return (
+                          <div key={u.id} className="bg-[#0E0F11] border border-[rgba(255,255,255,0.06)] rounded-xl p-2.5">
+                            <div className="flex items-center justify-between gap-2 mb-1.5">
+                              <div className="min-w-0">
+                                <div className="text-[0.75rem] font-bold text-[#EDEDEF] truncate">{u.name}</div>
+                                <div className="text-[0.55rem] text-[rgba(255,255,255,0.35)] truncate">{u.email} · dernière activité : {lastTxt}</div>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {act.total > 0 && <span className="px-1.5 py-0.5 rounded-md bg-[rgba(52,211,153,0.12)] text-[#34D399] text-[0.5rem] font-bold">{act.total} image{act.total > 1 ? 's' : ''}</span>}
+                                {daily > 0 && <span className="px-1.5 py-0.5 rounded-md bg-[rgba(99,102,241,0.12)] text-[#818CF8] text-[0.5rem] font-bold">invest</span>}
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              {/* Activité missions */}
+                              <div className="rounded-lg bg-[rgba(52,211,153,0.05)] border border-[rgba(52,211,153,0.12)] p-2">
+                                <div className="text-[0.5rem] font-bold text-[#34D399] uppercase tracking-wide mb-1"><i className="fas fa-bullhorn mr-1"></i> Missions</div>
+                                <div className="text-[0.6rem] text-[rgba(255,255,255,0.65)] leading-relaxed">
+                                  Aujourd'hui : <strong className="text-[#EDEDEF]">{u.missionValidatedToday || 0}</strong> validée(s)<br />
+                                  Historique : <strong className="text-[#EDEDEF]">{act.validated}</strong> validée(s), <strong className="text-[#EDEDEF]">{act.pending}</strong> en attente, <strong className="text-[#EDEDEF]">{act.refused}</strong> refusée(s)<br />
+                                  Solde mission : <strong className="text-[#4ADE80]">{Math.round((u.missionBalance || 0) * 100) / 100} $</strong>
+                                </div>
+                              </div>
+                              {/* Activité investir */}
+                              <div className="rounded-lg bg-[rgba(99,102,241,0.05)] border border-[rgba(99,102,241,0.12)] p-2">
+                                <div className="text-[0.5rem] font-bold text-[#818CF8] uppercase tracking-wide mb-1"><i className="fas fa-seedling mr-1"></i> Investir</div>
+                                <div className="text-[0.6rem] text-[rgba(255,255,255,0.65)] leading-relaxed">
+                                  Solde investi : <strong className="text-[#EDEDEF]">{Math.round((u.investBalance || 0) * 100) / 100} $</strong><br />
+                                  Gain journalier : <strong className="text-[#FBBF24]">{Math.round(daily * 100) / 100} $/j</strong><br />
+                                  Gains totaux invest. : <strong className="text-[#4ADE80]">{Math.round((u.investGains?.totalEarned || 0) * 100) / 100} $</strong>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                );
+              })()}
 
               {/* Missions Tab */}
               {tab === 'missions' && (

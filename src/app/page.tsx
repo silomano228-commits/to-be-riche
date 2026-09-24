@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, Component } from 'react';
 import dynamic from 'next/dynamic';
 import { useAppStore, formatMoney, esc, authFetch, refreshUser } from '@/lib/store';
 
-import { LogoImg, ToastContainer, NotificationContainer, Header, AI_TIPS } from '@/components/shared';
+import { LogoImg, ToastContainer, NotificationContainer, Header } from '@/components/shared';
 
 // ==================== ERROR BOUNDARY ====================
 class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean; error?: string }> {
@@ -42,6 +42,7 @@ function ScreenLoader() {
 }
 
 // Lazy load heavy screen components
+const AccueilScreen = dynamic(() => import('@/components/screens/AccueilScreen'), { ssr: false, loading: () => <ScreenLoader /> });
 const InvestHubScreen = dynamic(() => import('@/components/screens/InvestHubScreen'), { ssr: false, loading: () => <ScreenLoader /> });
 const SpinGameScreen = dynamic(() => import('@/components/screens/SpinGameScreen'), { ssr: false, loading: () => <ScreenLoader /> });
 const MissionsScreen = dynamic(() => import('@/components/screens/MissionsScreen'), { ssr: false, loading: () => <ScreenLoader /> });
@@ -116,7 +117,7 @@ function AuthScreen() {
       const res = await fetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }), headers: { 'Content-Type': 'application/json' } });
       const data = await res.json();
       if (data.success) {
-        setUser(data.user); addToast('Bienvenue, ' + data.user.name, 'success'); setPage('missions');
+        setUser(data.user); addToast('Bienvenue, ' + data.user.name, 'success'); setPage('home');
       } else if (data.needs_verification) {
         // Account exists but email isn't verified — switch to OTP screen.
         setOtpEmail(email);
@@ -143,7 +144,7 @@ function AuthScreen() {
       if (data.success && data.user) {
         setUser(data.user);
         addToast('Email vérifié ! Bienvenue, ' + data.user.name, 'success');
-        setPage('missions');
+        setPage('home');
       } else {
         addToast(data.error || 'Code invalide', 'error');
       }
@@ -198,7 +199,7 @@ function AuthScreen() {
           addToast('Code de vérification envoyé à ' + email, 'success');
         }
       } else if (data.success) {
-        setUser(data.user); addToast('Compte créé !', 'success'); setPage('missions');
+        setUser(data.user); addToast('Compte créé !', 'success'); setPage('home');
       } else {
         addToast(data.error, 'error');
       }
@@ -395,193 +396,8 @@ function AuthScreen() {
 }
 
 // ==================== HOME SCREEN ====================
-function HomeScreen() {
-  const { user, setPage, setUser, addToast } = useAppStore();
-  const [tip] = useState(() => AI_TIPS[Math.floor(Math.random() * AI_TIPS.length)]);
-  const [refreshing, setRefreshing] = useState(false);
-  const [dailyNotif, setDailyNotif] = useState<{ message: string; referrals: number; required: number; code: string } | null>(null);
-  const [dailyNotifShown, setDailyNotifShown] = useState(false);
-
-  // Fetch daily notification once per session
-  useEffect(() => {
-    if (!user) return;
-    const today = new Date().toDateString();
-    const lastShown = typeof window !== 'undefined' ? localStorage.getItem('br_daily_notif_date') : '';
-    if (lastShown === today || dailyNotifShown) return;
-    (async () => {
-      try {
-        const res = await authFetch('/api/notifications/daily');
-        const data = await res.json();
-        if (data.success && data.data) {
-          setDailyNotif({ message: data.data.message, referrals: data.data.referralCount || 0, required: data.data.requiredReferrals || 10, code: data.data.referralCode || '' });
-          localStorage.setItem('br_daily_notif_date', today);
-        }
-      } catch { /* */ }
-    })();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDailyNotifShown(true);
-  }, [user, dailyNotifShown]);
-
-  const refresh = async () => {
-    setRefreshing(true);
-    try { await refreshUser(); } catch { /* */ }
-    setRefreshing(false);
-  };
-
-  if (!user) return null;
-  const txs = user.transactions?.slice(0, 5) || [];
-
-  return (
-    <>
-      <Header title={<><LogoImg className="w-[26px] h-[26px] rounded-md" style={{ objectFit: 'contain' }} /> <span className="text-[#1F2937] font-black">Jeune Élan</span></>} rightElement={
-        <div className="flex items-center gap-1.5">
-          <NotificationBell />
-          <button onClick={refresh} className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.6)] backdrop-blur-sm text-[rgba(0,0,0,0.55)] cursor-pointer border-none text-[0.85rem] transition-transform active:scale-90"><i className={`fas fa-sync-alt ${refreshing ? 'animate-spin' : ''}`} /></button>
-        </div>
-      } />
-      <div className="px-[18px] py-4 flex-1 w-full overflow-y-auto min-h-0">
-        {/* Daily Notification Popup */}
-        {dailyNotif && (
-          <div className="mb-4 rounded-2xl p-4 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #22C55E, #16A34A)', animation: 'modalIn 0.4s cubic-bezier(0.34,1.56,0.64,1)' }}>
-            <button onClick={() => setDailyNotif(null)} className="absolute top-2 right-3 bg-transparent border-none text-white/60 cursor-pointer text-[0.75rem]"><i className="fas fa-times"></i></button>
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0"><i className="fas fa-bullhorn text-white text-[0.85rem]"></i></div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[0.68rem] text-white/70 font-bold uppercase tracking-[1px] mb-1">Notification du jour</div>
-                <div className="text-[0.78rem] text-white font-semibold leading-snug mb-2">{dailyNotif.message}</div>
-                <div className="flex items-center gap-3 text-[0.65rem] text-white/80">
-                  <span><i className="fas fa-users mr-1"></i>{dailyNotif.referrals}/{dailyNotif.required} parrainés</span>
-                  <span><i className="fas fa-key mr-1"></i>{dailyNotif.code}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        {/* Welcome + Balance Card — Premium Gradient */}
-        <div className="gradient-card rounded-2xl p-5 mb-4 relative overflow-hidden">
-          {/* Decorative orbs */}
-          <div className="absolute -top-20 -right-20 w-[200px] h-[200px] bg-[radial-gradient(circle,rgba(255,255,255,0.15),transparent_60%)]" style={{ animation: 'orbFloat 8s ease-in-out infinite' }} />
-          <div className="absolute -bottom-10 -left-10 w-[140px] h-[140px] bg-[radial-gradient(circle,rgba(255,255,255,0.1),transparent_60%)]" style={{ animation: 'orbFloat 8s ease-in-out infinite 4s reverse' }} />
-          <div className="relative z-[1]">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-[rgba(0,0,0,0.7)] text-[0.75rem]">Bienvenue, <span className="text-[#000000] font-semibold">{esc(user.name)}</span></p>
-              {user.depositCount > 0 && (
-                <span className="bg-[rgba(0,0,0,0.1)] text-[#000000] text-[0.6rem] font-bold px-2.5 py-[3px] rounded-full">{user.depositCount} dépôt{user.depositCount > 1 ? 's' : ''}</span>
-              )}
-            </div>
-            <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.5px] font-semibold mb-0.5">Solde total</div>
-            <div className="flex items-baseline gap-2 mb-3">
-              <div className="text-[1.8rem] font-black tracking-[-1px] text-[#000000]">{formatMoney((user.balance || 0) + (user.investBalance || 0) + (user.projectBalance || 0) + (user.missionBalance || 0))}</div>
-              <div className="ml-auto flex gap-1.5">
-                <button onClick={() => setPage('deposit-choose')} className="py-2 px-3.5 rounded-xl bg-[rgba(255,255,255,0.25)] hover:bg-[rgba(255,255,255,0.35)] text-[#000000] text-[0.68rem] font-semibold cursor-pointer border-none transition-all active:scale-95 flex items-center gap-1.5 backdrop-blur-sm">
-                  <i className="fas fa-arrow-down text-[0.6rem]"></i> Déposer
-                </button>
-                <button onClick={() => setPage('withdraw')} className="py-2 px-3.5 rounded-xl bg-[rgba(255,255,255,0.25)] hover:bg-[rgba(255,255,255,0.35)] text-[#000000] text-[0.68rem] font-semibold cursor-pointer border-none transition-all active:scale-95 flex items-center gap-1.5 backdrop-blur-sm">
-                  <i className="fas fa-arrow-up text-[0.6rem]"></i> Retirer
-                </button>
-              </div>
-            </div>
-            {/* Compact 2x2 Account Grid — Glass Cards */}
-            <div className="grid grid-cols-2 gap-1.5">
-              <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
-                <div className="w-8 h-8 icon-box bg-[rgba(245,158,11,0.15)] shrink-0"><i className="fas fa-dice text-[0.65rem] text-[#F59E0B]"></i></div>
-                <div className="min-w-0">
-                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Jeu</div>
-                  <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.gameTotalWon || 0)}</div>
-                </div>
-              </div>
-              <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
-                <div className="w-8 h-8 icon-box bg-[rgba(20,184,166,0.15)] shrink-0"><i className="fas fa-seedling text-[0.65rem] text-[#14B8A6]"></i></div>
-                <div className="min-w-0">
-                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Investissement</div>
-                  <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.investBalance || 0)}</div>
-                </div>
-              </div>
-              <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
-                <div className="w-8 h-8 icon-box bg-[rgba(139,92,246,0.15)] shrink-0"><i className="fas fa-building text-[0.65rem] text-[#8B5CF6]"></i></div>
-                <div className="min-w-0">
-                  <div className="text-[0.5rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Projets</div>
-                  <div className="text-[0.8rem] font-black text-[#000000] leading-tight">{formatMoney(user.projectBalance)}</div>
-                </div>
-              </div>
-              <div className="glass-card rounded-lg p-2 flex items-center gap-1.5">
-                <div className="w-7 h-7 icon-box bg-[rgba(34,197,94,0.15)] shrink-0"><i className="fas fa-bullhorn text-[0.55rem] text-[#22C55E]"></i></div>
-                <div className="text-[0.45rem] text-[rgba(0,0,0,0.45)] uppercase tracking-[0.3px] leading-tight">Tâches</div>
-                <div className="text-[0.7rem] font-black text-[#000000] leading-tight ml-auto mr-1">{formatMoney(user.missionBalance || 0)}</div>
-                <button onClick={() => setPage('missions')} className="text-[0.48rem] font-bold px-1.5 py-[2px] rounded-md cursor-pointer border-none text-white shrink-0 transition-transform active:scale-95" style={{ background: '#22C55E' }}>Tâches</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions — Colored bottom borders */}
-        <div className="flex gap-2 mb-4">
-          {[
-            { icon: 'fa-wallet', label: 'Wallet', page: 'wallet', color: '#22C55E', bg: 'rgba(34,197,94,0.12)', borderColor: 'border-[#22C55E]' },
-            { icon: 'fa-chart-line', label: 'Investir', page: 'invest', color: '#3B82F6', bg: 'rgba(59,130,246,0.12)', borderColor: 'border-[#3B82F6]' },
-            { icon: 'fa-dice', label: 'Jeu', page: 'game', color: '#F87171', bg: 'rgba(248,113,113,0.12)', borderColor: 'border-[#F87171]' },
-            { icon: 'fa-building', label: 'Projets', page: 'enterprise', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)', borderColor: 'border-[#8B5CF6]' },
-          ].map((a, i) => (
-            <button key={i} onClick={() => setPage(a.page)} className={`flex-1 glass-card rounded-xl py-2 px-1 text-center cursor-pointer transition-all active:scale-95 hover:shadow-md hover:scale-[1.04] border-b-2 ${a.borderColor}`}>
-              <div className="w-9 h-9 icon-box mx-auto mb-1" style={{ backgroundColor: a.bg }}><i className={`fas ${a.icon} text-[0.8rem]`} style={{ color: a.color }}></i></div>
-              <div className="text-[0.6rem] font-semibold text-[rgba(0,0,0,0.55)] leading-tight">{a.label}</div>
-            </button>
-          ))}
-        </div>
-
-        {/* AI Tip Card — Purple gradient left border + glow */}
-        <div className="bg-[rgba(139,92,246,0.04)] border border-[rgba(139,92,246,0.12)] rounded-xl p-3.5 mb-4 flex items-center gap-3" style={{ borderLeft: '5px solid', borderImage: 'linear-gradient(to bottom, #8B5CF6, #6D28D9) 1', boxShadow: '0 0 12px rgba(139,92,246,0.08)' }}>
-          <div className="w-10 h-10 icon-box bg-[rgba(139,92,246,0.12)] shrink-0 border border-[rgba(139,92,246,0.15)]"><i className="fas fa-robot text-[#8B5CF6] text-[0.9rem]"></i></div>
-          <div className="flex-1 min-w-0"><div className="text-[0.6rem] text-[#8B5CF6] font-bold uppercase tracking-[1px] mb-0.5">IA Jeune Élan</div><div className="text-[0.75rem] leading-relaxed text-[rgba(0,0,0,0.7)]">{tip}</div></div>
-        </div>
-
-        {/* Promo Banner */}
-        <PromoBanner />
-
-        {/* Shortcuts — Small cards with horizontal scroll */}
-        <div className="flex gap-2 mb-4 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          {[
-            { icon: 'fa-compass', label: 'Guide', page: 'guide', color: '#14B8A6', bg: 'rgba(20,184,166,0.12)', borderColor: 'border-[#14B8A6]' },
-            { icon: 'fa-gift', label: 'Parrainage', page: 'profile', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', borderColor: 'border-[#F59E0B]' },
-            { icon: 'fa-comment', label: 'Messages', page: 'chat', color: '#6366F1', bg: 'rgba(99,102,241,0.12)', borderColor: 'border-[#6366F1]' },
-            { icon: 'fa-bullhorn', label: 'Tâches', page: 'missions', color: '#22C55E', bg: 'rgba(34,197,94,0.12)', borderColor: 'border-[#22C55E]' },
-            { icon: 'fa-newspaper', label: 'Actualités', page: 'guide', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)', borderColor: 'border-[#8B5CF6]' },
-          ].map((a, i) => (
-            <button key={i} onClick={() => setPage(a.page)} className={`glass-card rounded-xl py-2 px-2 text-center cursor-pointer transition-all active:scale-95 hover:shadow-md border-b-2 ${a.borderColor} shrink-0 min-w-[72px]`}>
-              <div className="w-8 h-8 icon-box mx-auto mb-1" style={{ backgroundColor: a.bg }}><i className={`fas ${a.icon} text-[0.75rem]`} style={{ color: a.color }}></i></div>
-              <div className="text-[0.55rem] font-semibold text-[rgba(0,0,0,0.55)] leading-tight whitespace-nowrap">{a.label}</div>
-            </button>
-          ))}
-        </div>
-
-        {/* Recent Activity */}
-        {txs.length > 0 && (
-          <>
-            <h3 className="text-[0.88rem] font-bold text-[#1F2937] mb-2.5 flex items-center gap-2"><span className="w-1 h-4 rounded-full bg-[#22C55E] inline-block"></span>Activité récente</h3>
-            <div className="glass-card rounded-2xl p-4 mb-4">
-              {txs.map((tx, i) => {
-                const isD = tx.type === 'deposit' || tx.type === 'claim' || tx.type === 'enterprise_claim' || tx.type === 'trade_win';
-                const isW = tx.type === 'withdrawal' || tx.type === 'trade_lose' || tx.type === 'enterprise_crash';
-                return (
-                  <div key={tx.id || i} className={`flex items-center gap-3 py-2.5 stagger-${i + 1} rounded-lg px-1 -mx-1 transition-all hover:bg-[rgba(34,197,94,0.04)] ${i < txs.length - 1 ? 'border-b border-[rgba(0,0,0,0.08)]' : ''}`}>
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[0.7rem] shrink-0 ${isD ? 'bg-[rgba(74,222,128,0.12)] text-[#4ADE80]' : isW ? 'bg-[rgba(248,113,113,0.12)] text-[#F87171]' : 'bg-[rgba(34,197,94,0.12)] text-[#22C55E]'}`}>
-                      <i className={`fas fa-${isW ? 'arrow-up' : isD ? 'arrow-down' : 'exchange-alt'}`}></i>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[0.75rem] font-semibold text-[#1F2937]">{tx.detail || tx.type}</div>
-                      <div className="text-[0.6rem] text-[rgba(0,0,0,0.35)]">{new Date(tx.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</div>
-                    </div>
-                    <div className={`text-[0.82rem] font-bold ${isW ? 'text-[#F87171]' : 'text-[#4ADE80]'}`}>{isW ? '-' : '+'}{formatMoney(Math.abs(tx.amount))}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
-      </div>
-    </>
-  );
-}
+// L'ancien HomeScreen local a été remplacé par AccueilScreen.tsx
+// (nouveau tableau de bord « Bonjour {prénom} » — design maquette).
 
 // ==================== WALLET SCREEN ====================
 type TransferTarget = { from: string; to: string; label: string; fee: boolean; fromColor: string; toColor: string; fromIcon: string; toIcon: string };
@@ -658,13 +474,13 @@ function WalletScreen() {
   // Mission account is funded by validated images (no deposit/transfer),
   // so it's a display-only card. Project is transferable to/from Principal.
   const accounts = [
-    { key: 'mission', label: 'Compte Tâches', balance: user.missionBalance || 0, icon: 'fa-bullhorn', iconColor: '#22C55E', iconBg: 'bg-[rgba(34,197,94,0.12)]', borderColor: '#22C55E', transferable: false },
+    { key: 'mission', label: 'Compte Missions', balance: user.missionBalance || 0, icon: 'fa-bullhorn', iconColor: '#22C55E', iconBg: 'bg-[rgba(34,197,94,0.12)]', borderColor: '#22C55E', transferable: false },
     { key: 'project', label: 'Compte Projet', balance: user.projectBalance, icon: 'fa-building', iconColor: '#8B5CF6', iconBg: 'bg-[rgba(139,92,246,0.12)]', borderColor: '#8B5CF6', transferable: true },
   ] as const;
 
   // Label helper for the transfer modal — 'trade' intentionally absent (trading account removed).
   const accountLabel = (k: string) =>
-    k === 'principal' ? 'Principal' : k === 'invest' ? 'Investissement' : k === 'project' ? 'Projets' : k === 'mission' ? 'Tâches' : k;
+    k === 'principal' ? 'Principal' : k === 'invest' ? 'Investissement' : k === 'project' ? 'Projets' : k === 'mission' ? 'Missions' : k;
 
   // Derived values from API (silent fallbacks if fetch failed)
   const spinsRemaining = gameStatus?.spinsRemaining ?? 10;
@@ -762,14 +578,14 @@ function WalletScreen() {
             <div className="flex items-center gap-2.5">
               <div className="w-10 h-10 icon-box bg-[rgba(34,197,94,0.12)]"><i className="fas fa-bullhorn text-[0.9rem]" style={{ color: '#22C55E' }}></i></div>
               <div>
-                <div className="text-[0.7rem] text-[rgba(0,0,0,0.5)] font-semibold uppercase tracking-[1.5px]">Compte Tâches</div>
-                <div className="text-[0.55rem] text-[#22C55E] font-semibold mt-0.5">Alimenté par les images validées</div>
+                <div className="text-[0.7rem] text-[rgba(0,0,0,0.5)] font-semibold uppercase tracking-[1.5px]">Compte Missions</div>
+                <div className="text-[0.55rem] text-[#22C55E] font-semibold mt-0.5">Gains des images validées + investissements</div>
               </div>
             </div>
             <div className="text-[1.3rem] font-black text-[#1F2937]">{formatMoney(user.missionBalance || 0)}</div>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setPage('missions')} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none text-white transition-transform active:scale-95" style={{ background: 'linear-gradient(90deg, #22C55E 0%, #16A34A 100%)' }}><i className="fas fa-bullhorn text-[0.65rem]"></i> Tâches</button>
+            <button onClick={() => setPage('missions')} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none text-white transition-transform active:scale-95" style={{ background: 'linear-gradient(90deg, #22C55E 0%, #16A34A 100%)' }}><i className="fas fa-bullhorn text-[0.65rem]"></i> Missions</button>
             <button onClick={() => { setWithdrawSource('mission'); setPage('withdraw'); }} className="flex-1 py-[9px] rounded-xl text-[0.72rem] font-semibold cursor-pointer flex items-center justify-center gap-1 border-none bg-[rgba(0,0,0,0.04)] text-[rgba(0,0,0,0.7)] transition-transform active:scale-95"><i className="fas fa-arrow-up text-[0.65rem]"></i> Retirer</button>
           </div>
         </div>
@@ -813,9 +629,9 @@ function WalletScreen() {
         {/* Stats — Vertical readable list (replaces previous cramped 2-col grid) */}
         <div className="glass-card rounded-2xl p-1.5 mb-4">
           {[
-            { icon: 'fa-chart-line', color: '#22C55E', bg: 'bg-[rgba(34,197,94,0.10)]', label: 'Gains totaux', value: formatMoney(user.totalProfit || 0), sub: 'Cumul des gains' },
+            { icon: 'fa-chart-line', color: '#22C55E', bg: 'bg-[rgba(34,197,94,0.10)]', label: 'Gains totaux', value: formatMoney(user.totalProfit || 0), sub: 'Cumul des gains (missions + investissements)' },
             { icon: 'fa-arrow-trend-down', color: '#F87171', bg: 'bg-[rgba(248,113,113,0.10)]', label: 'Pertes totales', value: formatMoney(user.totalLoss || 0), sub: 'Cumul des pertes' },
-            { icon: 'fa-bullhorn', color: '#22C55E', bg: 'bg-[rgba(34,197,94,0.10)]', label: 'Solde tâches', value: formatMoney(user.missionBalance || 0), sub: 'Gains images validées' },
+            { icon: 'fa-bullhorn', color: '#22C55E', bg: 'bg-[rgba(34,197,94,0.10)]', label: 'Solde missions', value: formatMoney(user.missionBalance || 0), sub: 'Gains images validées' },
             { icon: 'fa-seedling', color: '#14B8A6', bg: 'bg-[rgba(20,184,166,0.10)]', label: 'Solde investissement', value: formatMoney(user.investBalance || 0), sub: 'Compte d\'investissement' },
             { icon: 'fa-building', color: '#8B5CF6', bg: 'bg-[rgba(139,92,246,0.10)]', label: 'Solde projet', value: formatMoney(user.projectBalance || 0), sub: 'Compte de projet' },
           ].map((s, i, arr) => (
@@ -971,29 +787,31 @@ function FinanceScreen() {
 function BottomNav() {
   const { currentPage, setPage } = useAppStore();
   const tabs = [
-    { id: 'missions', icon: 'fa-th-large', label: 'Tableau' },
     { id: 'home', icon: 'fa-home', label: 'Accueil' },
-    { id: 'finance', icon: 'fa-chart-line', label: 'Finance' },
+    { id: 'missions', icon: 'fa-bullhorn', label: 'Mission' },
+    { id: 'finance', icon: 'fa-chart-line', label: 'Investir' },
+    { id: 'chat', icon: 'fa-comments', label: 'Communauté' },
     { id: 'wallet', icon: 'fa-wallet', label: 'Portefeuille' },
     { id: 'guide', icon: 'fa-compass', label: 'Guide' },
     { id: 'profile', icon: 'fa-user', label: 'Profil' },
   ];
   const isActive = (tabId: string) => {
-    if (tabId === 'missions') return ['missions'].includes(currentPage);
     if (tabId === 'home') return currentPage === 'home';
+    if (tabId === 'missions') return ['missions'].includes(currentPage);
     if (tabId === 'finance') return ['finance', 'invest', 'game', 'enterprise', 'deposit', 'deposit-choose', 'withdraw'].includes(currentPage);
+    if (tabId === 'chat') return currentPage === 'chat';
     if (tabId === 'wallet') return ['wallet'].includes(currentPage);
     if (tabId === 'guide') return currentPage === 'guide';
-    if (tabId === 'profile') return ['profile', 'analytics', 'admin', 'chat'].includes(currentPage);
+    if (tabId === 'profile') return ['profile', 'analytics', 'admin'].includes(currentPage);
     return currentPage === tabId;
   };
   return (
     <nav className="h-[60px] bg-white/90 backdrop-blur-xl border-t border-[rgba(0,0,0,0.06)] flex items-center justify-around px-0.5 shrink-0 safe-area-bottom">
       {tabs.map(t => (
-        <button key={t.id} onClick={() => setPage(t.id)} className={`flex flex-col items-center justify-center py-1.5 px-1 border-none cursor-pointer transition-all relative ${isActive(t.id) ? 'text-[#22C55E]' : 'text-[rgba(0,0,0,0.3)]'}`}>
+        <button key={t.id} onClick={() => setPage(t.id)} className={`flex flex-col items-center justify-center py-1.5 px-0.5 border-none cursor-pointer transition-all relative min-w-0 flex-1 ${isActive(t.id) ? 'text-[#22C55E]' : 'text-[rgba(0,0,0,0.3)]'}`}>
           {isActive(t.id) && <div className="absolute -top-0.5 w-5 h-[3px] rounded-full bg-[#22C55E]"></div>}
-          <i className={`fas ${t.icon} text-[0.85rem] mb-0.5`}></i>
-          <span className={`text-[0.48rem] ${isActive(t.id) ? 'font-bold text-[#22C55E]' : 'font-semibold'}`}>{t.label}</span>
+          <i className={`fas ${t.icon} text-[0.78rem] mb-0.5`}></i>
+          <span className={`text-[0.42rem] ${isActive(t.id) ? 'font-bold text-[#22C55E]' : 'font-semibold'} truncate max-w-full`}>{t.label}</span>
         </button>
       ))}
     </nav>
@@ -1022,7 +840,7 @@ export default function JeuneElenApp() {
       try {
         const res = await authFetch('/api/auth/session');
         const data = await res.json();
-        if (data.success && data.user) { setUser(data.user); setPage('missions'); }
+        if (data.success && data.user) { setUser(data.user); setPage('home'); }
         else { setPage('auth'); }
       } catch { setPage('auth'); }
       setInitialized(true);
@@ -1063,7 +881,7 @@ export default function JeuneElenApp() {
         <div className="h-full flex flex-col min-h-0">
           {!user && <AuthScreen />}
           {user && currentPage === 'missions' && <MissionsScreen />}
-          {user && currentPage === 'home' && <HomeScreen />}
+          {user && currentPage === 'home' && <AccueilScreen />}
           {user && currentPage === 'wallet' && <WalletScreen />}
           {user && currentPage === 'finance' && <FinanceScreen />}
           {user && currentPage === 'invest' && <InvestHubScreen />}
@@ -1078,7 +896,7 @@ export default function JeuneElenApp() {
           {user && currentPage === 'deposit-choose' && <DepositChooseScreen />}
           {user && currentPage === 'guide' && <GuideScreen />}
           {showNav && <BottomNav />}
-          {user && ['home', 'missions', 'finance', 'wallet'].includes(currentPage) && <FloatingGift />}
+          {user && ['home', 'missions', 'finance', 'wallet', 'chat', 'guide'].includes(currentPage) && <FloatingGift />}
           <InstallPrompt />
         </div>
         <ToastContainer />
