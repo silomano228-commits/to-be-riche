@@ -196,3 +196,24 @@ Stage Summary:
 - Investir garde son nom (fonctionnalité 5%/jour), Communauté ajouté, Mission avec détail + soumission
 - Admin : vue utilisateur + onglet Activité de surveillance
 - 89450c2 poussé sur GitHub
+
+---
+Task ID: 6
+Agent: main (Super Z)
+Task: Simplification radicale du site (même système, interface épurée) + dépôt git
+
+Work Log:
+- Diagnostic du « touffu » : 21 écrans (13 271 lignes) + 12 composants parasites (trading, jeu, vidéos, bannières promo, cadeaux flottants, prompts d'installation) → interface surchargée
+- Créé src/lib/simple-store.ts : source de vérité unique (zustand) — missions (5, max 10 images/j, 30 F max), investir (5 %/jour, réclamation quotidienne), solde/file active/gains synchronisés partout, prêt 5 000 F (seuil 2 500 F, caution 2 500 F = 50 %, parrainages 3/5), utilisateurs admin
+- 6 nouveaux écrans épurés : SimpleHome (salutation + 4 stats + objectif du mois), SimpleMissions (liste → détail → import image → soumission → confirmation ; segment Mes images), SimpleInvest (dépôt/retrait + réclamer gains du jour), SimpleWallet (valeur totale + répartition + historique), SimpleProfile (parrainage, déconnexion), SimpleAdmin (stats globales, file de validation, activité par utilisateur)
+- page.tsx réécrit (~140 lignes) : 5 onglets bas (Accueil, Missions, Investir, Portefeuille, Communauté) + Admin si rôle admin + Profil via avatar ; unregister SW pour purge cache périmé
+- Supprimé : 19 écrans + 12 composants + useTabChangeAd.ts ; conservés : AuthScreen, ChatScreen, shared.tsx, APIs backend
+- Tests navigateur (agent-browser) : login admin → dashboard → mission détail → upload image simulé → soumission → confirmation → Mes images (EN ATTENTE) → Admin valide → solde 1 850→1 875 F, gains 175→200 F → Investir dépôt 500 F → réclame +25 F → Portefeuille 1 400 F solde + 500 F investi, historique complet → Communauté → Profil → 0 erreur console
+- Analyse visuelle VLM : « épuré et moderne, proportions équilibrées, lisibilité excellente, aucun défaut »
+- tsc --noEmit 0 erreur ; eslint 0 problème ; commit 1781d4b poussé sur GitHub
+
+Stage Summary:
+- Le site est passé de 21 écrans à 8 écrans épurés, même système fonctionnel
+- Un clic = une suite logique partout (cartes cliquables, flux mission complet, admin qui crédite réellement)
+- Preview : https://preview-chat-22a8267e-7545-4ea8-a9c0-08397f681c05.space-z.ai/
+- Commit 1781d4b poussé sur main
