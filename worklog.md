@@ -217,3 +217,19 @@ Stage Summary:
 - Un clic = une suite logique partout (cartes cliquables, flux mission complet, admin qui crédite réellement)
 - Preview : https://preview-chat-22a8267e-7545-4ea8-a9c0-08397f681c05.space-z.ai/
 - Commit 1781d4b poussé sur main
+
+---
+Task ID: 7
+Agent: main
+Task: Restaurer la preview (sandbox réinitialisé) et resynchroniser la version engageante
+
+Work Log:
+- Serveur dev bloqué (CPU saturé, aucune réponse HTTP) : kill des processus + purge .next
+- Sandbox restauré à un état antérieur (commit 5ab9e81) : le travail de simplification/engagement avait disparu localement
+- git fetch origin : tout le travail était sur GitHub (1781d4b simplification, 167ae29 version engageante gamification)
+- Fast-forward local vers 167ae29 + restauration stash scripts
+- Redémarrage serveur propre + tests navigateur : connexion admin OK, 5 onglets + Admin OK, 0 erreur console
+- Captures : preview-1-connexion, preview-2-accueil, preview-3-missions, preview-4-investir, preview-5-admin
+
+Stage Summary:
+- Preview https://preview-chat-22a8267e-7545-4ea8-a9c0-08397f681c05.space-z.ai/ de nouveau accessible sur la dernière version (167ae29)
