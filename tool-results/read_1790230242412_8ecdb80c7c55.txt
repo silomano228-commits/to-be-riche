@@ -1,0 +1,811 @@
+     1→'use client';
+     2→
+     3→import { useState, useEffect, useRef } from 'react';
+     4→import { useAppStore, authFetch, refreshUser, formatCfa } from '@/lib/store';
+     5→import { Header, LogoImg } from '@/components/shared';
+     6→import NotificationBell from '@/components/NotificationBell';
+     7→
+     8→interface Campaign {
+     9→  id: string; name: string; brand: string; description: string; brief: string;
+    10→  format: string; style: string; constraints: string; rewardCfa: number;
+    11→  dailyLimit: number; maxImages: number; totalImages: number; totalValidated: number;
+    12→  category: string; userDailyCount: number;
+    13→}
+    14→
+    15→interface MissionImage {
+    16→  id: string; status: string; campaignId: string; aiScore: number;
+    17→  similarityScore: number; submittedDate: string; createdAt: string;
+    18→  campaign?: { name: string; brand: string };
+    19→  aiAnalysis?: string; adminNote?: string;
+    20→}
+    21→
+    22→interface DashboardData {
+    23→  missionBalance: number; missionBalanceCfa: number; missionTotalEarnedCfa: number;
+    24→  validatedToday: number; todaySubmissions: number; dailyLimit: number;
+    25→  rewardPerImage: number; objectiveCfa: number; cautionBalanceCfa: number;
+    26→  cautionStatus: string; cautionAmountCfa: number; validatedReferralCount: number;
+    27→  referralCount: number; activeCampaigns: number; activeLoans: number;
+    28→  pendingLoans: number; userLevel: number;
+    29→}
+    30→
+    31→const ST: Record<string, { label: string; color: string; bg: string; icon: string }> = {
+    32→  pending: { label: 'En attente', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', icon: 'fa-clock' },
+    33→  validated: { label: 'Validée ✓', color: '#22C55E', bg: 'rgba(34,197,94,0.12)', icon: 'fa-check-circle' },
+    34→  refused: { label: 'Refusée', color: '#EF4444', bg: 'rgba(239,68,68,0.12)', icon: 'fa-times-circle' },
+    35→  non_compliant: { label: 'Non conforme', color: '#EF4444', bg: 'rgba(239,68,68,0.12)', icon: 'fa-exclamation-circle' },
+    36→  to_correct: { label: 'À corriger', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', icon: 'fa-edit' },
+    37→  duplicate: { label: 'Doublon', color: '#A855F7', bg: 'rgba(168,85,247,0.12)', icon: 'fa-copy' },
+    38→};
+    39→
+    40→const LOAN_ST: Record<string, { label: string; color: string }> = {
+    41→  pending: { label: 'En attente', color: '#F59E0B' },
+    42→  approved: { label: 'Approuvé', color: '#3B82F6' },
+    43→  active: { label: 'Actif', color: '#22C55E' },
+    44→  repaying: { label: 'Remboursement', color: '#22C55E' },
+    45→  overdue: { label: 'En retard', color: '#EF4444' },
+    46→  completed: { label: 'Remboursé', color: '#22C55E' },
+    47→  rejected: { label: 'Refusé', color: '#EF4444' },
+    48→};
+    49→
+    50→const CAT_ICON: Record<string, { icon: string; color: string }> = {
+    51→  immobilier: { icon: 'fa-home', color: '#22C55E' },
+    52→  automobile: { icon: 'fa-car', color: '#3B82F6' },
+    53→  mode: { icon: 'fa-gem', color: '#A855F7' },
+    54→  tech: { icon: 'fa-microchip', color: '#06B6D4' },
+    55→  food: { icon: 'fa-utensils', color: '#F59E0B' },
+    56→  travel: { icon: 'fa-plane', color: '#EF4444' },
+    57→  general: { icon: 'fa-star', color: '#64748B' },
+    58→};
+    59→
+    60→/* ================================================================
+    61→   ÉTAPE 1 — DONNÉES FICTIVES (visualisation du design uniquement)
+    62→   ----------------------------------------------------------------
+    63→   Ces constantes servent uniquement à visualiser le tableau de bord.
+    64→   Plus tard, elles seront remplacées par les vraies données :
+    65→     • GET /api/missions/dashboard → stats (solde, gains, images…)
+    66→     • GET /api/missions/campaigns → missions disponibles
+    67→     • GET /api/referral/list      → filleuls + code de parrainage
+    68→   Les interfaces ci-dessous reprennent la forme des réponses API
+    69→   afin que le remplacement soit direct, sans refonte de l'UI.
+    70→   ⚠️ Aucun système financier réel n'est branché à cette étape.
+    71→   ================================================================ */
+    72→
+    73→type TabId = 'dashboard' | 'campaigns' | 'myimages' | 'eligibility' | 'loans' | 'referral';
+    74→
+    75→interface DashboardStats {
+    76→  balanceCfa: number;         // Solde disponible (CAUTION NON INCLUSE)
+    77→  todayEarnedCfa: number;     // Gains du jour (missions)
+    78→  todayValidated: number;     // Images validées aujourd'hui
+    79→  todaySubmissions: number;   // Soumissions utilisées aujourd'hui
+    80→  dailyLimit: number;         // Limite de soumissions/jour (10)
+    81→  missionGainsCfa: number;    // Gains TOTAUX issus des missions validées
+    82→  objectiveCfa: number;       // Objectif de gains (2 500 F)
+    83→  cautionRequiredCfa: number; // Caution requise (5 000 F)
+    84→  cautionBalanceCfa: number;  // Caution déjà constituée
+    85→  referralCount: number;      // Parrainages validés
+    86→  referralRequired: number;   // Seuil de parrainages requis (5)
+    87→  accountVerified: boolean;   // Compte vérifié (OTP)
+    88→}
+    89→
+    90→const MOCK_STATS: DashboardStats = {
+    91→  balanceCfa: 1850,
+    92→  todayEarnedCfa: 175,
+    93→  todayValidated: 7,
+    94→  todaySubmissions: 7,
+    95→  dailyLimit: 10,
+    96→  missionGainsCfa: 1850,
+    97→  objectiveCfa: 2500,
+    98→  cautionRequiredCfa: 5000,
+    99→  cautionBalanceCfa: 0,
+   100→  referralCount: 3,
+   101→  referralRequired: 5,
+   102→  accountVerified: true,
+   103→};
+   104→
+   105→interface MissionCardData {
+   106→  id: string;
+   107→  name: string;
+   108→  category: string;        // clé CAT_ICON (automobile, immobilier…)
+   109→  rewardCfa: number;       // gain par image validée
+   110→  userDailyCount: number;  // soumissions perso aujourd'hui
+   111→  dailyLimit: number;      // limite quotidienne
+   112→}
+   113→
+   114→const MOCK_MISSIONS: MissionCardData[] = [
+   115→  { id: 'm-mercedes', name: 'Mercedes', category: 'automobile', rewardCfa: 25, userDailyCount: 7, dailyLimit: 10 },
+   116→  { id: 'm-immobilier', name: 'Immobilier', category: 'immobilier', rewardCfa: 25, userDailyCount: 2, dailyLimit: 10 },
+   117→];
+   118→
+   119→interface ActivityItem {
+   120→  id: string;
+   121→  when: string;
+   122→  label: string;
+   123→  detail?: string;
+   124→  amountCfa: number;
+   125→  ok: boolean;
+   126→}
+   127→
+   128→const MOCK_ACTIVITY: ActivityItem[] = [
+   129→  { id: 'a-1', when: "Aujourd'hui — 10:42", label: 'Image Mercedes validée', amountCfa: 25, ok: true },
+   130→  { id: 'a-2', when: "Aujourd'hui — 10:35", label: 'Image Mercedes refusée', detail: 'Image trop similaire', amountCfa: 0, ok: false },
+   131→  { id: 'a-3', when: 'Hier — 18:21', label: 'Image Immobilier validée', amountCfa: 25, ok: true },
+   132→];
+   133→
+   134→interface ReferralData {
+   135→  code: string;
+   136→  required: number;
+   137→  referrals: { id: string; name: string; date: string; validated: boolean }[];
+   138→}
+   139→
+   140→const MOCK_REFERRALS: ReferralData = {
+   141→  code: 'JEA-7K2M9',
+   142→  required: 5,
+   143→  referrals: [
+   144→    { id: 'r-1', name: 'Aminata D.', date: '18 sept. 2026', validated: true },
+   145→    { id: 'r-2', name: 'Kossi A.', date: '15 sept. 2026', validated: true },
+   146→    { id: 'r-3', name: 'Fatou B.', date: '12 sept. 2026', validated: true },
+   147→  ],
+   148→};
+   149→/* ================ FIN DES DONNÉES FICTIVES ================ */
+   150→
+   151→export default function MissionsScreen() {
+   152→  const { user, setPage, addToast } = useAppStore();
+   153→  const [tab, setTab] = useState<TabId>('dashboard');
+   154→  const [dash, setDash] = useState<DashboardData|null>(null);
+   155→  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+   156→  const [images, setImages] = useState<MissionImage[]>([]);
+   157→  const [loading, setLoading] = useState(true);
+   158→  const [uploading, setUploading] = useState(false);
+   159→  const [selCamp, setSelCamp] = useState<Campaign|null>(null);
+   160→  const [showUpload, setShowUpload] = useState(false);
+   161→  const [elig, setElig] = useState<any>(null);
+   162→  const [loans, setLoans] = useState<any[]>([]);
+   163→  const fileRef = useRef<HTMLInputElement>(null);
+   164→
+   165→  const loadData = async () => {
+   166→    setLoading(true);
+   167→    try {
+   168→      const [dr, cr, ir] = await Promise.all([
+   169→        authFetch('/api/missions/dashboard'),
+   170→        authFetch('/api/missions/campaigns'),
+   171→        authFetch('/api/missions/images?limit=20'),
+   172→      ]);
+   173→      const dd = await dr.json(); if (dd.success) setDash(dd.dashboard);
+   174→      const cd = await cr.json(); if (cd.success) setCampaigns(cd.campaigns);
+   175→      const id2 = await ir.json(); if (id2.success) setImages(id2.images);
+   176→    } catch {}
+   177→    setLoading(false);
+   178→  };
+   179→
+   180→  useEffect(() => { loadData(); // eslint-disable-line react-hooks/set-state-in-effect
+   181→  }, []);
+   182→
+   183→  const loadElig = async () => {
+   184→    try { const r = await authFetch('/api/missions/eligibility'); const d = await r.json(); if (d.success) setElig({ ...d.eligibility, userLevel: d.userLevel, userLevelLabel: d.userLevelLabel, activeLoan: d.activeLoan }); } catch {}
+   185→  };
+   186→
+   187→  const loadLoans = async () => {
+   188→    try { const r = await authFetch('/api/missions/loans'); const d = await r.json(); if (d.success) setLoans(d.loans); } catch {}
+   189→  };
+   190→
+   191→  const handleUpload = async (file: File) => {
+   192→    if (!selCamp) return;
+   193→    setUploading(true);
+   194→    const reader = new FileReader();
+   195→    reader.onload = async (e) => {
+   196→      const b64 = (e.target?.result as string).split(',')[1];
+   197→      try {
+   198→        const r = await authFetch('/api/missions/images', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ campaignId: selCamp.id, imageData: b64 }) });
+   199→        const d = await r.json();
+   200→        if (d.success) { addToast('Image envoyée ! Validation IA en cours...', 'success'); setShowUpload(false); setSelCamp(null); setTimeout(loadData, 3000); }
+   201→        else addToast(d.error || 'Erreur', 'error');
+   202→      } catch { addToast('Erreur d\'envoi', 'error'); }
+   203→      setUploading(false);
+   204→    };
+   205→    reader.readAsDataURL(file);
+   206→  };
+   207→
+   208→  const reqLoan = async (amt: number) => {
+   209→    try {
+   210→      const r = await authFetch('/api/missions/loans', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amountCfa: amt }) });
+   211→      const d = await r.json();
+   212→      if (d.success) { addToast(`Demande de ${formatCfa(amt)} enregistrée !`, 'success'); loadLoans(); loadElig(); }
+   213→      else addToast(d.error || 'Conditions non remplies', 'error');
+   214→    } catch { addToast('Erreur', 'error'); }
+   215→  };
+   216→
+   217→  const depositCaution = async () => {
+   218→    try {
+   219→      const r = await authFetch('/api/missions/caution', { method: 'POST' });
+   220→      const d = await r.json();
+   221→      if (d.success) { addToast('Caution constituée !', 'success'); loadData(); }
+   222→      else addToast(d.error || 'Erreur', 'error');
+   223→    } catch { addToast('Erreur', 'error'); }
+   224→  };
+   225→
+   226→  const repay = async (lid: string) => {
+   227→    const s = prompt('Montant à rembourser (FCFA) :');
+   228→    if (!s) return;
+   229→    const amt = parseInt(s);
+   230→    if (isNaN(amt) || amt <= 0) { addToast('Montant invalide', 'error'); return; }
+   231→    try {
+   232→      const r = await authFetch(`/api/missions/loans/${lid}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'repay', amountCfa: amt }) });
+   233→      const d = await r.json();
+   234→      if (d.success) { addToast('Remboursement effectué !', 'success'); loadLoans(); loadData(); refreshUser(); }
+   235→      else addToast(d.error || 'Erreur', 'error');
+   236→    } catch { addToast('Erreur', 'error'); }
+   237→  };
+   238→
+   239→  if (!user) return null;
+   240→
+   241→  // Menu principal du tableau de bord (spec §4)
+   242→  // « Portefeuille » est un raccourci vers l'écran portefeuille (nav),
+   243→  // les autres entrées restent des sous-onglets locaux.
+   244→  const tabs: { id: string; icon: string; label: string; nav?: string }[] = [
+   245→    { id: 'dashboard', icon: 'fa-th-large', label: 'Tableau' },
+   246→    { id: 'campaigns', icon: 'fa-bullhorn', label: 'Missions' },
+   247→    { id: 'myimages', icon: 'fa-images', label: 'Mes images' },
+   248→    { id: 'wallet', icon: 'fa-wallet', label: 'Portefeuille', nav: 'wallet' },
+   249→    { id: 'eligibility', icon: 'fa-chart-bar', label: 'Éligibilité' },
+   250→    { id: 'loans', icon: 'fa-hand-holding-usd', label: 'Mes prêts' },
+   251→    { id: 'referral', icon: 'fa-users', label: 'Parrainage' },
+   252→  ];
+   253→
+   254→  const firstName = (user.name || '').trim().split(/\s+/)[0] || (user.email || '').split('@')[0] || 'vous';
+   255→
+   256→  return (
+   257→    <>
+   258→      <Header title={<><LogoImg className="w-[26px] h-[26px] rounded-md" style={{ objectFit: 'contain' }} /> <span className="text-[#1F2937] font-black">Jeune Élan</span></>} rightElement={
+   259→        <div className="flex items-center gap-1.5">
+   260→          <NotificationBell />
+   261→          <button onClick={() => setPage('profile')} className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none text-[0.85rem]"><i className="far fa-user-circle"></i></button>
+   262→        </div>
+   263→      } />
+   264→      <div className="flex gap-1 px-4 pt-2 pb-1 overflow-x-auto bg-white border-b border-[rgba(0,0,0,0.05)]">
+   265→        {tabs.map(t => (
+   266→          <button key={t.id} onClick={() => { if (t.nav) { setPage(t.nav); return; } setTab(t.id as TabId); if (t.id === 'eligibility') loadElig(); if (t.id === 'loans') loadLoans(); }}
+   267→            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[0.72rem] font-semibold border-none cursor-pointer transition-all whitespace-nowrap ${tab === t.id ? 'bg-[#22C55E] text-white' : 'bg-[rgba(0,0,0,0.03)] text-[#64748B]'}`}>
+   268→            <i className={`fas ${t.icon} text-[0.65rem]`}></i> {t.label}
+   269→          </button>
+   270→        ))}
+   271→      </div>
+   272→      <div className="flex-1 overflow-y-auto px-4 py-4">
+   273→        {/* Le tableau de bord s'affiche immédiatement (données fictives ÉTAPE 1).
+   274→            Les autres onglets continuent d'utiliser les vraies APIs. */}
+   275→        {tab === 'dashboard' ? <DashV firstName={firstName} setPage={setPage} go={setTab} />
+   276→        : loading && !dash ? <div className="flex items-center justify-center py-12"><div className="w-6 h-6 border-[2.5px] border-[rgba(0,0,0,0.08)] border-t-[#22C55E] rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} /></div>
+   277→        : tab === 'campaigns' ? <CampV camps={campaigns} onSel={c => { setSelCamp(c); setShowUpload(true); }} />
+   278→        : tab === 'myimages' ? <ImgV imgs={images} />
+   279→        : tab === 'eligibility' ? <EligV elig={elig} onLoan={reqLoan} onCaution={depositCaution} dash={dash} onLoad={loadElig} />
+   280→        : tab === 'loans' ? <LoanV loans={loans} onRepay={repay} />
+   281→        : tab === 'referral' ? <ParrainV code={user.referralCode || MOCK_REFERRALS.code} required={MOCK_REFERRALS.required} referrals={MOCK_REFERRALS.referrals} />
+   282→        : null}
+   283→      </div>
+   284→
+   285→      {/* Upload modal — primary way to submit images */}
+   286→      {showUpload && selCamp && (
+   287→        <div className="fixed inset-0 z-50 bg-[rgba(0,0,0,0.6)] flex items-end justify-center" onClick={() => setShowUpload(false)}>
+   288→          <div className="bg-white w-full max-w-lg rounded-t-2xl p-5 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+   289→            <div className="flex justify-between items-center mb-4">
+   290→              <h3 className="text-lg font-bold text-[#1F2937]">Poster une image</h3>
+   291→              <button onClick={() => setShowUpload(false)} className="text-[#94A3B8] text-xl cursor-pointer border-none bg-transparent"><i className="fas fa-times"></i></button>
+   292→            </div>
+   293→
+   294→            {/* Campaign info */}
+   295→            <div className="mb-4 p-3.5 bg-[rgba(34,197,94,0.06)] rounded-xl border border-[rgba(34,197,94,0.12)]">
+   296→              <div className="flex items-center gap-2 mb-2">
+   297→                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: (CAT_ICON[selCamp.category] || CAT_ICON.general).color + '15' }}>
+   298→                  <i className={`fas ${(CAT_ICON[selCamp.category] || CAT_ICON.general).icon} text-[0.75rem]`} style={{ color: (CAT_ICON[selCamp.category] || CAT_ICON.general).color }}></i>
+   299→                </div>
+   300→                <div>
+   301→                  <div className="text-[0.78rem] font-bold text-[#1F2937]">{selCamp.brand}</div>
+   302→                  <div className="text-[0.65rem] text-[#64748B]">{selCamp.name}</div>
+   303→                </div>
+   304→              </div>
+   305→              <div className="text-[0.65rem] text-[#64748B] leading-relaxed">{selCamp.brief}</div>
+   306→              {selCamp.constraints && <div className="text-[0.6rem] text-[#94A3B8] mt-1.5 italic">📌 {selCamp.constraints}</div>}
+   307→            </div>
+   308→
+   309→            {/* Instructions - CRITICAL: explain external creation */}
+   310→            <div className="mb-4 p-3.5 bg-[rgba(59,130,246,0.06)] rounded-xl border border-[rgba(59,130,246,0.12)]">
+   311→              <div className="text-[0.72rem] font-bold text-[#3B82F6] mb-2"><i className="fas fa-info-circle mr-1"></i> Comment ça marche ?</div>
+   312→              <ol className="text-[0.65rem] text-[#1E40AF] space-y-1.5 list-decimal ml-3.5">
+   313→                <li>Ouvrez <strong>ChatGPT, DALL-E, Midjourney</strong> ou toute autre IA</li>
+   314→                <li>Générez une image en suivant le brief ci-dessus</li>
+   315→                <li>Téléchargez l&apos;image sur votre appareil</li>
+   316→                <li>Uploadez-la ici en cliquant le bouton ci-dessous</li>
+   317→              </ol>
+   318→            </div>
+   319→
+   320→            {/* Upload button */}
+   321→            <label className="w-full py-4 rounded-xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-semibold text-[0.88rem] cursor-pointer flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(34,197,94,0.25)] transition-transform active:scale-[0.97] mb-3">
+   322→              {uploading ? (
+   323→                <><div className="w-4 h-4 border-[2px] border-white/30 border-t-white rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} /> Envoi en cours...</>
+   324→              ) : (
+   325→                <><i className="fas fa-cloud-upload-alt text-[1rem]"></i> Uploader mon image</>
+   326→              )}
+   327→              <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && handleUpload(e.target.files[0])} disabled={uploading} />
+   328→            </label>
+   329→
+   330→            {/* Reward info */}
+   331→            <div className="flex items-center justify-center gap-4 text-[0.65rem] text-[#94A3B8]">
+   332→              <span><i className="fas fa-coins text-[#F59E0B] mr-1"></i> +{selCamp.rewardCfa} FCFA/image validée</span>
+   333→              <span><i className="fas fa-clock mr-1"></i> Max {selCamp.dailyLimit}/jour</span>
+   334→              <span><i className="fas fa-expand mr-1"></i> Format {selCamp.format}</span>
+   335→            </div>
+   336→          </div>
+   337→        </div>
+   338→      )}
+   339→    </>
+   340→  );
+   341→}
+   342→
+   343→/* ============================================================
+   344→   DASHBOARD VIEW — ÉTAPE 1 : TABLEAU DE BORD DU JEUNE
+   345→   Design conforme à la spec (§5 à §18). Données fictives
+   346→   (MOCK_*) structurées comme les futures réponses API.
+   347→   ============================================================ */
+   348→function DashV({ firstName, setPage, go }: { firstName: string; setPage: (p: string) => void; go: (t: TabId) => void }) {
+   349→  const s = MOCK_STATS;
+   350→
+   351→  /* Valeurs calculées — resteront exactes quand les vraies données
+   352→     remplaceront les données fictives. IMPORTANT (spec §11) : la
+   353→     progression vers 2 500 F se base sur les gains issus des missions
+   354→     validées, PAS sur le solde (dépôts, caution et prêts exclus). */
+   355→  const pctObjective = Math.min(100, Math.round((s.missionGainsCfa / s.objectiveCfa) * 100));
+   356→  const restObjective = Math.max(0, s.objectiveCfa - s.missionGainsCfa);
+   357→  const pctSubs = Math.min(100, Math.round((s.todaySubmissions / s.dailyLimit) * 100));
+   358→  const restSubs = Math.max(0, s.dailyLimit - s.todaySubmissions);
+   359→  const pctRef = Math.min(100, Math.round((s.referralCount / s.referralRequired) * 100));
+   360→  const restRef = Math.max(0, s.referralRequired - s.referralCount);
+   361→  const cautionReady = s.cautionBalanceCfa >= s.cautionRequiredCfa;
+   362→  const gainsOk = s.missionGainsCfa >= s.objectiveCfa;
+   363→  const referralsOk = s.referralCount >= s.referralRequired;
+   364→  const eligible = cautionReady && gainsOk && referralsOk && s.accountVerified;
+   365→  const missing: string[] = [];
+   366→  if (!gainsOk) missing.push(`${formatCfa(restObjective)} de gains`);
+   367→  if (!cautionReady) missing.push('la caution');
+   368→  if (!referralsOk) missing.push(`${restRef} parrainage${restRef > 1 ? 's' : ''}`);
+   369→
+   370→  const cond = (ok: boolean, label: string) => (
+   371→    <div className="flex items-center gap-2 py-1">
+   372→      <i className={`fas ${ok ? 'fa-check-circle text-[#22C55E]' : 'fa-times-circle text-[#EF4444]'} text-[0.72rem] w-4 text-center shrink-0`}></i>
+   373→      <span className={`text-[0.68rem] flex-1 ${ok ? 'text-[#1F2937]' : 'text-[#94A3B8]'}`}>{label}</span>
+   374→    </div>
+   375→  );
+   376→
+   377→  return (
+   378→    <div>
+   379→      {/* ===== Présentation du compte (spec §5) ===== */}
+   380→      <div className="mb-4">
+   381→        <div className="text-[1.15rem] font-black text-[#1F2937]">Bonjour, {firstName} 👋</div>
+   382→        <div className="text-[0.72rem] text-[#64748B] mt-0.5">Voici l&apos;état de votre activité aujourd&apos;hui.</div>
+   383→      </div>
+   384→
+   385→      {/* ===== Quatre cartes statistiques (spec §6-§9) ===== */}
+   386→      <div className="grid grid-cols-2 gap-2.5 mb-3">
+   387→        {/* 1. SOLDE */}
+   388→        <div className="bg-white rounded-2xl p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)] flex flex-col">
+   389→          <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2 bg-[rgba(34,197,94,0.1)]"><i className="fas fa-wallet text-[0.7rem] text-[#22C55E]"></i></div>
+   390→          <div className="text-[0.58rem] text-[#94A3B8] font-bold uppercase tracking-wide">Solde disponible</div>
+   391→          <div className="text-[1.05rem] font-black text-[#1F2937] mt-0.5">{formatCfa(s.balanceCfa)}</div>
+   392→          <div className="text-[0.55rem] text-[#94A3B8] mt-1 leading-relaxed flex-1">Montant actuellement disponible selon les règles du programme.</div>
+   393→          <button onClick={() => setPage('wallet')} className="mt-2.5 w-full py-1.5 rounded-lg bg-[rgba(34,197,94,0.08)] text-[#16A34A] text-[0.62rem] font-bold border border-[rgba(34,197,94,0.15)] cursor-pointer transition-transform active:scale-95">Voir mon portefeuille</button>
+   394→        </div>
+   395→
+   396→        {/* 2. GAINS DU JOUR */}
+   397→        <div className="bg-white rounded-2xl p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)] flex flex-col">
+   398→          <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2 bg-[rgba(245,158,11,0.1)]"><i className="fas fa-coins text-[0.7rem] text-[#F59E0B]"></i></div>
+   399→          <div className="text-[0.58rem] text-[#94A3B8] font-bold uppercase tracking-wide">Gains aujourd&apos;hui</div>
+   400→          <div className="text-[1.05rem] font-black text-[#22C55E] mt-0.5">+{formatCfa(s.todayEarnedCfa)}</div>
+   401→          <div className="text-[0.55rem] text-[#94A3B8] mt-1 leading-relaxed flex-1">{s.todayValidated} image{s.todayValidated > 1 ? 's' : ''} validée{s.todayValidated > 1 ? 's' : ''} aujourd&apos;hui.</div>
+   402→        </div>
+   403→
+   404→        {/* 3. ACTIVITÉ DU JOUR (compteur 10/jour) */}
+   405→        <div className="bg-white rounded-2xl p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)] flex flex-col">
+   406→          <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2 bg-[rgba(59,130,246,0.1)]"><i className="fas fa-images text-[0.7rem] text-[#3B82F6]"></i></div>
+   407→          <div className="text-[0.58rem] text-[#94A3B8] font-bold uppercase tracking-wide">Images aujourd&apos;hui</div>
+   408→          <div className="text-[1.05rem] font-black text-[#1F2937] mt-0.5">{s.todaySubmissions} / {s.dailyLimit}</div>
+   409→          <div className="w-full h-1.5 bg-[rgba(0,0,0,0.05)] rounded-full overflow-hidden my-1.5">
+   410→            <div className="h-full bg-gradient-to-r from-[#3B82F6] to-[#06B6D4] rounded-full transition-all duration-500" style={{ width: `${pctSubs}%` }} />
+   411→          </div>
+   412→          <div className="text-[0.55rem] text-[#94A3B8] mt-0.5 leading-relaxed flex-1">Il vous reste {restSubs} soumission{restSubs > 1 ? 's' : ''} aujourd&apos;hui.</div>
+   413→        </div>
+   414→
+   415→        {/* 4. PARRAINAGE */}
+   416→        <div className="bg-white rounded-2xl p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)] flex flex-col">
+   417→          <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2 bg-[rgba(168,85,247,0.1)]"><i className="fas fa-users text-[0.7rem] text-[#A855F7]"></i></div>
+   418→          <div className="text-[0.58rem] text-[#94A3B8] font-bold uppercase tracking-wide">Parrainages validés</div>
+   419→          <div className="text-[1.05rem] font-black text-[#1F2937] mt-0.5">{s.referralCount} / {s.referralRequired}</div>
+   420→          <div className="w-full h-1.5 bg-[rgba(0,0,0,0.05)] rounded-full overflow-hidden my-1.5">
+   421→            <div className="h-full bg-gradient-to-r from-[#A855F7] to-[#7C3AED] rounded-full transition-all duration-500" style={{ width: `${pctRef}%` }} />
+   422→          </div>
+   423→          <div className="text-[0.55rem] text-[#94A3B8] mt-0.5 leading-relaxed flex-1">Encore {restRef} pour le seuil du prêt de 5 000 FCFA.</div>
+   424→          <button onClick={() => go('referral')} className="mt-2.5 w-full py-1.5 rounded-lg bg-[rgba(168,85,247,0.08)] text-[#7C3AED] text-[0.62rem] font-bold border border-[rgba(168,85,247,0.15)] cursor-pointer transition-transform active:scale-95">Voir mon parrainage</button>
+   425→        </div>
+   426→      </div>
+   427→
+   428→      {/* ===== Objectif 2 500 FCFA (spec §10) — basé sur les gains de missions, pas le solde ===== */}
+   429→      <div className="bg-white rounded-2xl p-4 mb-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+   430→        <div className="flex items-center gap-2 mb-1">
+   431→          <i className="fas fa-bullseye text-[#22C55E] text-[0.8rem]"></i>
+   432→          <div className="text-[0.82rem] font-bold text-[#1F2937]">Objectif : 2 500 FCFA</div>
+   433→        </div>
+   434→        <div className="text-[0.62rem] text-[#94A3B8] mb-3 leading-relaxed">Accumulez au moins {formatCfa(s.objectiveCfa)} grâce aux missions validées pour débloquer cette étape de votre parcours.</div>
+   435→        <div className="flex justify-between items-end mb-1.5">
+   436→          <div className="text-[0.95rem] font-black text-[#1F2937]">{formatCfa(s.missionGainsCfa)} <span className="text-[#94A3B8] font-semibold text-[0.68rem]">/ {formatCfa(s.objectiveCfa)}</span></div>
+   437→          <div className="text-[0.72rem] font-black text-[#22C55E]">{pctObjective} %</div>
+   438→        </div>
+   439→        <div className="w-full h-3 bg-[rgba(0,0,0,0.05)] rounded-full overflow-hidden">
+   440→          <div className="h-full bg-gradient-to-r from-[#22C55E] to-[#16A34A] rounded-full transition-all duration-500" style={{ width: `${pctObjective}%` }} />
+   441→        </div>
+   442→        <div className="text-[0.62rem] text-[#64748B] mt-2">
+   443→          {gainsOk
+   444→            ? '🎉 Objectif atteint ! Cette étape de votre parcours est débloquée.'
+   445→            : <>Il vous reste <strong className="text-[#1F2937]">{formatCfa(restObjective)}</strong> pour atteindre cet objectif.</>}
+   446→        </div>
+   447→      </div>
+   448→
+   449→      {/* ===== Mon éligibilité (spec §12-§13) ===== */}
+   450→      <div className={`rounded-2xl p-4 mb-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border ${eligible ? 'bg-[rgba(34,197,94,0.05)] border-[rgba(34,197,94,0.2)]' : 'bg-white border-[rgba(0,0,0,0.03)]'}`}>
+   451→        <div className="text-[0.82rem] font-bold text-[#1F2937] mb-0.5">Mon éligibilité</div>
+   452→        <div className="text-[0.65rem] text-[#64748B] mb-2.5">Prêt de 5 000 FCFA</div>
+   453→        {cond(gainsOk, `Gains minimum — ${formatCfa(s.missionGainsCfa)} / ${formatCfa(s.objectiveCfa)}`)}
+   454→        {cond(cautionReady, `Caution — ${formatCfa(s.cautionBalanceCfa)} / ${formatCfa(s.cautionRequiredCfa)}`)}
+   455→        {cond(referralsOk, `Parrainages — ${s.referralCount} / ${s.referralRequired}`)}
+   456→        {cond(s.accountVerified, 'Compte vérifié')}
+   457→        <div className={`mt-3 rounded-xl p-2.5 ${eligible ? 'bg-[rgba(34,197,94,0.1)]' : 'bg-[rgba(0,0,0,0.03)]'}`}>
+   458→          {eligible ? (
+   459→            <>
+   460→              <div className="text-[0.7rem] font-bold text-[#16A34A]">🟢 Conditions remplies</div>
+   461→              <div className="text-[0.6rem] text-[#64748B] mt-0.5 leading-relaxed">Vous pouvez maintenant soumettre une demande de prêt.</div>
+   462→            </>
+   463→          ) : (
+   464→            <>
+   465→              <div className="text-[0.7rem] font-bold text-[#F59E0B]">Pas encore éligible</div>
+   466→              <div className="text-[0.6rem] text-[#64748B] mt-0.5 leading-relaxed">Il vous manque : {missing.join(', ')}.</div>
+   467→            </>
+   468→          )}
+   469→        </div>
+   470→        <button onClick={() => go('eligibility')} className="w-full mt-3 py-2.5 rounded-xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-semibold text-[0.75rem] border-none cursor-pointer shadow-[0_2px_10px_rgba(34,197,94,0.2)] transition-transform active:scale-[0.97]">
+   471→          {eligible ? 'Demander un prêt' : 'Voir les conditions'}
+   472→        </button>
+   473→      </div>
+   474→
+   475→      {/* ===== Ma caution (spec §14) — visuellement distincte, hors solde ===== */}
+   476→      <div className="bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white rounded-2xl p-4 mb-3 relative overflow-hidden">
+   477→        <div className="absolute -top-10 -right-10 w-[120px] h-[120px] bg-[radial-gradient(circle,rgba(245,158,11,0.15),transparent_65%)]" />
+   478→        <div className="relative z-[1]">
+   479→          <div className="flex items-center justify-between mb-1">
+   480→            <div className="flex items-center gap-2">
+   481→              <div className="w-8 h-8 rounded-lg bg-[rgba(245,158,11,0.15)] flex items-center justify-center"><i className="fas fa-lock text-[#FBBF24] text-[0.75rem]"></i></div>
+   482→              <div className="text-[0.82rem] font-bold">🔒 Ma caution</div>
+   483→            </div>
+   484→            <span className={`px-2 py-0.5 rounded-full text-[0.55rem] font-bold ${cautionReady ? 'bg-[rgba(34,197,94,0.2)] text-[#4ADE80]' : 'bg-[rgba(245,158,11,0.15)] text-[#FBBF24]'}`}>{cautionReady ? 'Constituée ✓' : 'À constituer'}</span>
+   485→          </div>
+   486→          <div className="text-[1.25rem] font-black mt-1">{formatCfa(s.cautionRequiredCfa)}</div>
+   487→          <div className="text-[0.62rem] text-[rgba(255,255,255,0.55)] mt-1 leading-relaxed">Montant réservé comme caution selon les conditions du programme.</div>
+   488→          <div className="text-[0.6rem] text-[#FBBF24] mt-1.5 flex items-center gap-1.5"><i className="fas fa-shield-alt"></i> Ce montant n&apos;est pas inclus dans votre solde disponible.</div>
+   489→        </div>
+   490→      </div>
+   491→
+   492→      {/* ===== Missions disponibles (spec §15-§16) — bouton « Voir la mission », JAMAIS « Générer » ===== */}
+   493→      <div className="text-[0.82rem] font-black text-[#1F2937] mb-2 mt-1">Missions disponibles</div>
+   494→      <div className="grid grid-cols-2 gap-2.5 mb-3">
+   495→        {MOCK_MISSIONS.map(m => {
+   496→          const cat = CAT_ICON[m.category] || CAT_ICON.general;
+   497→          return (
+   498→            <div key={m.id} className="bg-white rounded-2xl p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)] flex flex-col">
+   499→              <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: cat.color + '15' }}><i className={`fas ${cat.icon} text-[0.7rem]`} style={{ color: cat.color }}></i></div>
+   500→              <div className="text-[0.78rem] font-bold text-[#1F2937]">Mission {m.name}</div>
+   501→              <div className="text-[0.65rem] text-[#22C55E] font-bold mt-0.5">{m.rewardCfa} FCFA / image</div>
+   502→              <div className="text-[0.58rem] text-[#94A3B8] mt-1 flex-1">{m.userDailyCount} / {m.dailyLimit} aujourd&apos;hui</div>
+   503→              <button onClick={() => go('campaigns')} className="mt-2.5 w-full py-2 rounded-lg bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white text-[0.65rem] font-bold border-none cursor-pointer shadow-[0_2px_8px_rgba(34,197,94,0.2)] transition-transform active:scale-95">Voir la mission</button>
+   504→            </div>
+   505→          );
+   506→        })}
+   507→      </div>
+   508→
+   509→      {/* ===== Comment ça marche ? (spec §17) ===== */}
+   510→      <div className="bg-white rounded-2xl p-4 mb-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+   511→        <div className="text-[0.82rem] font-bold text-[#1F2937] mb-3">Comment gagner ?</div>
+   512→        {[
+   513→          { n: 1, t: 'Choisissez une mission', c: '#22C55E' },
+   514→          { n: 2, t: 'Créez votre image avec une IA externe', c: '#3B82F6' },
+   515→          { n: 3, t: 'Importez votre image ici', c: '#A855F7' },
+   516→          { n: 4, t: "Notre système vérifie l'image", c: '#F59E0B' },
+   517→          { n: 5, t: 'Si elle est validée : +25 FCFA', c: '#EF4444' },
+   518→        ].map((x, i, arr) => (
+   519→          <div key={x.n}>
+   520→            <div className="flex items-center gap-2.5">
+   521→              <div className="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-[0.6rem] shrink-0" style={{ background: x.c }}>{x.n}</div>
+   522→              <div className="text-[0.7rem] text-[#64748B] flex-1">{x.t}</div>
+   523→            </div>
+   524→            {i < arr.length - 1 && <div className="text-[#CBD5E1] text-[0.7rem] leading-none my-1 pl-2.5">↓</div>}
+   525→          </div>
+   526→        ))}
+   527→        <div className="text-[0.6rem] text-[#94A3B8] mt-3 italic leading-relaxed">La génération se fait à l&apos;extérieur du site : consultez le brief, créez votre image avec l&apos;outil de votre choix, puis revenez ici pour l&apos;importer.</div>
+   528→      </div>
+   529→
+   530→      {/* ===== Activité récente (spec §18) ===== */}
+   531→      <div className="bg-white rounded-2xl p-4 mb-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+   532→        <div className="text-[0.82rem] font-bold text-[#1F2937] mb-3">Activité récente</div>
+   533→        <div className="space-y-2.5">
+   534→          {MOCK_ACTIVITY.map(a => (
+   535→            <div key={a.id} className="flex items-start gap-2.5 pb-2.5 border-b border-[rgba(0,0,0,0.04)] last:border-0 last:pb-0">
+   536→              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: a.ok ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)' }}>
+   537→                <i className={`fas ${a.ok ? 'fa-check-circle text-[#22C55E]' : 'fa-times-circle text-[#EF4444]'} text-[0.75rem]`}></i>
+   538→              </div>
+   539→              <div className="flex-1 min-w-0">
+   540→                <div className="text-[0.55rem] text-[#94A3B8]">{a.when}</div>
+   541→                <div className={`text-[0.7rem] font-semibold ${a.ok ? 'text-[#1F2937]' : 'text-[#64748B]'}`}>{a.label}</div>
+   542→                {a.detail && <div className="text-[0.58rem] text-[#94A3B8] italic">{a.detail}</div>}
+   543→              </div>
+   544→              <div className={`text-[0.72rem] font-black shrink-0 ${a.ok ? 'text-[#22C55E]' : 'text-[#CBD5E1]'}`}>{a.amountCfa > 0 ? `+${a.amountCfa} F` : '0 F'}</div>
+   545→            </div>
+   546→          ))}
+   547→        </div>
+   548→        <button onClick={() => go('myimages')} className="w-full mt-3 py-2 rounded-xl bg-[rgba(0,0,0,0.03)] text-[#64748B] text-[0.68rem] font-semibold border border-[rgba(0,0,0,0.04)] cursor-pointer transition-transform active:scale-[0.97]">Voir tout l&apos;historique</button>
+   549→      </div>
+   550→    </div>
+   551→  );
+   552→}
+   553→
+   554→/* ============ CAMPAIGNS VIEW ============ */
+   555→function CampV({ camps, onSel }: { camps: Campaign[]; onSel: (c: Campaign) => void }) {
+   556→  if (!camps.length) return (
+   557→    <div className="text-center py-12">
+   558→      <div className="w-16 h-16 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center mx-auto mb-3"><i className="fas fa-bullhorn text-[#94A3B8] text-xl"></i></div>
+   559→      <div className="text-[0.85rem] font-semibold text-[#64748B]">Aucune campagne active</div>
+   560→      <div className="text-[0.72rem] text-[#94A3B8]">De nouvelles missions arriveront bientôt !</div>
+   561→    </div>
+   562→  );
+   563→  return (
+   564→    <div>
+   565→      <div className="mb-3 p-3.5 bg-[rgba(59,130,246,0.06)] rounded-xl border border-[rgba(59,130,246,0.12)]">
+   566→        <div className="text-[0.72rem] font-bold text-[#3B82F6] mb-1"><i className="fas fa-lightbulb mr-1"></i> Astuce</div>
+   567→        <div className="text-[0.65rem] text-[#1E40AF]">Utilisez <strong>ChatGPT, DALL-E, Midjourney</strong> ou n&apos;importe quelle IA pour créer vos images, puis uploadez-les ici.</div>
+   568→      </div>
+   569→      <div className="space-y-3">
+   570→        {camps.map(c => {
+   571→          const cat = CAT_ICON[c.category] || CAT_ICON.general;
+   572→          return (
+   573→            <div key={c.id} className="bg-white rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+   574→              <div className="flex items-start gap-3 mb-3">
+   575→                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: `linear-gradient(135deg, ${cat.color}, ${cat.color}cc)` }}>
+   576→                  <i className={`fas ${cat.icon} text-white text-[0.95rem]`}></i>
+   577→                </div>
+   578→                <div className="flex-1 min-w-0">
+   579→                  <div className="text-[0.85rem] font-bold text-[#1F2937]">{c.brand}</div>
+   580→                  <div className="text-[0.68rem] text-[#64748B]">{c.name}</div>
+   581→                </div>
+   582→                <span className="px-2 py-0.5 rounded-full text-[0.55rem] font-bold bg-[rgba(34,197,94,0.1)] text-[#22C55E]">+{c.rewardCfa}F</span>
+   583→              </div>
+   584→              <div className="text-[0.68rem] text-[#64748B] mb-2.5 leading-relaxed line-clamp-2">{c.brief}</div>
+   585→              {c.constraints && <div className="text-[0.6rem] text-[#94A3B8] mb-2.5 italic">📌 {c.constraints}</div>}
+   586→              <div className="flex items-center gap-3 mb-3 text-[0.6rem] text-[#94A3B8]">
+   587→                <span><i className="fas fa-image mr-0.5"></i>{c.totalImages}/{c.maxImages}</span>
+   588→                <span><i className="fas fa-check mr-0.5"></i>{c.totalValidated} validées</span>
+   589→                <span><i className="fas fa-expand mr-0.5"></i>{c.format}</span>
+   590→                <span><i className="fas fa-palette mr-0.5"></i>{c.style}</span>
+   591→              </div>
+   592→              <button onClick={() => onSel(c)} disabled={c.userDailyCount >= c.dailyLimit} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-semibold text-[0.78rem] border-none cursor-pointer disabled:opacity-40 flex items-center justify-center gap-1.5 shadow-[0_2px_10px_rgba(34,197,94,0.2)]">
+   593→                <i className="fas fa-upload text-[0.7rem]"></i> {c.userDailyCount >= c.dailyLimit ? 'Limite atteinte' : 'Poster une image'}
+   594→              </button>
+   595→            </div>
+   596→          );
+   597→        })}
+   598→      </div>
+   599→    </div>
+   600→  );
+   601→}
+   602→
+   603→/* ============ MY IMAGES VIEW ============ */
+   604→function ImgV({ imgs }: { imgs: MissionImage[] }) {
+   605→  if (!imgs.length) return (
+   606→    <div className="text-center py-12">
+   607→      <div className="w-16 h-16 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center mx-auto mb-3"><i className="fas fa-images text-[#94A3B8] text-xl"></i></div>
+   608→      <div className="text-[0.85rem] font-semibold text-[#64748B]">Aucune image soumise</div>
+   609→      <div className="text-[0.72rem] text-[#94A3B8]">Postez votre première image dans une mission !</div>
+   610→    </div>
+   611→  );
+   612→  return (
+   613→    <div className="space-y-2.5">
+   614→      {imgs.map(img => {
+   615→        const s = ST[img.status] || ST.pending;
+   616→        return (
+   617→          <div key={img.id} className="bg-white rounded-xl p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)] flex items-start gap-3">
+   618→            <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: s.bg }}><i className={`fas ${s.icon} text-[0.85rem]`} style={{ color: s.color }}></i></div>
+   619→            <div className="flex-1 min-w-0">
+   620→              <div className="flex items-center gap-2 mb-0.5"><span className="text-[0.72rem] font-bold" style={{ color: s.color }}>{s.label}</span>{img.aiScore > 0 && <span className="text-[0.55rem] text-[#94A3B8]">Score: {Math.round(img.aiScore)}%</span>}</div>
+   621→              <div className="text-[0.65rem] text-[#64748B]">{img.campaign?.brand} — {img.campaign?.name}</div>
+   622→              <div className="text-[0.55rem] text-[#94A3B8]">{new Date(img.createdAt).toLocaleString('fr-FR')}</div>
+   623→              {img.aiAnalysis && img.status === 'non_compliant' && (
+   624→                <div className="text-[0.55rem] text-[#EF4444] mt-1 italic line-clamp-2">{img.aiAnalysis.substring(0, 150)}</div>
+   625→              )}
+   626→            </div>
+   627→          </div>
+   628→        );
+   629→      })}
+   630→    </div>
+   631→  );
+   632→}
+   633→
+   634→/* ============ ELIGIBILITY VIEW ============ */
+   635→function EligV({ elig, onLoan, onCaution, dash, onLoad }: { elig: any; onLoan: (a: number) => void; onCaution: () => void; dash: DashboardData|null; onLoad: () => void }) {
+   636→  if (!elig) return <div className="text-center py-8"><button onClick={onLoad} className="px-4 py-2 rounded-xl bg-[#22C55E] text-white text-[0.78rem] font-semibold border-none cursor-pointer">Vérifier l&apos;éligibilité</button></div>;
+   637→  const { smallLoan, largeLoan, userLevel, userLevelLabel } = elig;
+   638→  const cond = (m: boolean, t: string) => <div className="flex items-center gap-2 py-1.5"><i className={`fas ${m ? 'fa-check-circle text-[#22C55E]' : 'fa-times-circle text-[#EF4444]'} text-[0.75rem]`}></i><span className={`text-[0.68rem] ${m ? 'text-[#1F2937]' : 'text-[#94A3B8]'}`}>{t}</span></div>;
+   639→  return (
+   640→    <div>
+   641→      {/* User level */}
+   642→      <div className="bg-[#0F172A] text-white rounded-2xl p-4 mb-4">
+   643→        <div className="text-[0.65rem] text-[rgba(255,255,255,0.5)]">Votre niveau</div>
+   644→        <div className="text-[1.3rem] font-black">{userLevelLabel}</div>
+   645→        <div className="flex gap-1 mt-2">{[1,2,3,4].map(l => <div key={l} className={`h-1.5 flex-1 rounded-full ${l <= userLevel ? 'bg-[#22C55E]' : 'bg-[rgba(255,255,255,0.15)]'}`} />)}</div>
+   646→      </div>
+   647→
+   648→      {/* Caution alert */}
+   649→      {dash && dash.cautionStatus !== 'active' && (
+   650→        <div className="bg-[rgba(245,158,11,0.06)] rounded-xl p-3.5 mb-3 border border-[rgba(245,158,11,0.1)]">
+   651→          <div className="text-[0.72rem] font-bold text-[#F59E0B] mb-1"><i className="fas fa-shield-alt mr-1"></i> Caution non constituée</div>
+   652→          <div className="text-[0.62rem] text-[#92400E] mb-2">La caution de {dash.cautionAmountCfa} FCFA est requise pour les prêts. Elle sera bloquée et non retirable.</div>
+   653→          <button onClick={onCaution} className="px-3 py-1.5 rounded-lg bg-[#F59E0B] text-white text-[0.68rem] font-semibold border-none cursor-pointer">Constituer la caution</button>
+   654→        </div>
+   655→      )}
+   656→
+   657→      {/* Eligibility table */}
+   658→      <div className="bg-white rounded-2xl overflow-hidden mb-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+   659→        <div className="p-3.5 bg-[rgba(0,0,0,0.02)] border-b border-[rgba(0,0,0,0.05)]"><div className="text-[0.78rem] font-bold text-[#1F2937]">Tableau d&apos;éligibilité</div></div>
+   660→        <table className="w-full text-[0.65rem]">
+   661→          <thead><tr className="bg-[rgba(0,0,0,0.02)]"><th className="text-left p-2.5 font-semibold text-[#64748B]">Condition</th><th className="text-center p-2.5 font-semibold text-[#64748B]">5 000 F</th><th className="text-center p-2.5 font-semibold text-[#64748B]">10 000 F</th></tr></thead>
+   662→          <tbody>
+   663→            <tr className="border-t border-[rgba(0,0,0,0.03)]"><td className="p-2.5">Fonds min.</td><td className={`p-2.5 text-center font-semibold ${smallLoan.fundsEligible ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>{smallLoan.fundsCurrent}/{smallLoan.fundsRequired}</td><td className={`p-2.5 text-center font-semibold ${largeLoan.fundsEligible ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>{largeLoan.fundsCurrent}/{largeLoan.fundsRequired}</td></tr>
+   664→            <tr className="border-t border-[rgba(0,0,0,0.03)]"><td className="p-2.5">Caution</td><td className={`p-2.5 text-center font-semibold ${smallLoan.cautionReady ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>{smallLoan.cautionCurrent}/{smallLoan.cautionRequired}</td><td className={`p-2.5 text-center font-semibold ${largeLoan.cautionReady ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>{largeLoan.cautionCurrent}/{largeLoan.cautionRequired}</td></tr>
+   665→            <tr className="border-t border-[rgba(0,0,0,0.03)]"><td className="p-2.5">Parrainages</td><td className={`p-2.5 text-center font-semibold ${smallLoan.referralsOk ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>{smallLoan.referralsCurrent}/{smallLoan.referralsRequired}</td><td className={`p-2.5 text-center font-semibold ${largeLoan.referralsOk ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>{largeLoan.referralsCurrent}/{largeLoan.referralsRequired}</td></tr>
+   666→          </tbody>
+   667→        </table>
+   668→      </div>
+   669→
+   670→      {/* Loan cards */}
+   671→      {[{ loan: smallLoan, amt: 5000 }, { loan: largeLoan, amt: 10000 }].map(({ loan, amt }) => (
+   672→        <div key={amt} className="bg-white rounded-2xl p-4 mb-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+   673→          <div className="flex justify-between items-center mb-2">
+   674→            <div className="text-[0.82rem] font-bold text-[#1F2937]">Prêt de {formatCfa(amt)}</div>
+   675→            <span className={`px-2 py-0.5 rounded-full text-[0.55rem] font-bold ${loan.eligible ? 'bg-[rgba(34,197,94,0.1)] text-[#22C55E]' : 'bg-[rgba(239,68,68,0.1)] text-[#EF4444]'}`}>{loan.eligible ? '✓ Éligible' : 'Non éligible'}</span>
+   676→          </div>
+   677→          {cond(loan.fundsEligible, `Gains missions: ${loan.fundsCurrent}/${loan.fundsRequired} FCFA`)}
+   678→          {cond(loan.cautionReady, `Caution: ${loan.cautionCurrent}/${loan.cautionRequired} FCFA`)}
+   679→          {cond(loan.referralsOk, `Parrainages validés: ${loan.referralsCurrent}/${loan.referralsRequired}`)}
+   680→          {cond(loan.accountVerified, 'Compte vérifié')}
+   681→          {cond(loan.noOverdueLoan, 'Aucun prêt en retard')}
+   682→          {cond(loan.noActiveLoan, 'Aucun prêt en cours')}
+   683→          {loan.eligible && <button onClick={() => onLoan(amt)} className="w-full mt-3 py-2.5 rounded-xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-semibold text-[0.78rem] border-none cursor-pointer shadow-[0_2px_10px_rgba(34,197,94,0.2)]">Demander mon prêt</button>}
+   684→        </div>
+   685→      ))}
+   686→    </div>
+   687→  );
+   688→}
+   689→
+   690→/* ============ LOANS VIEW ============ */
+   691→function LoanV({ loans, onRepay }: { loans: any[]; onRepay: (id: string) => void }) {
+   692→  if (!loans.length) return (
+   693→    <div className="text-center py-12">
+   694→      <div className="w-16 h-16 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center mx-auto mb-3"><i className="fas fa-hand-holding-usd text-[#94A3B8] text-xl"></i></div>
+   695→      <div className="text-[0.85rem] font-semibold text-[#64748B]">Aucun prêt</div>
+   696→      <div className="text-[0.72rem] text-[#94A3B8]">Vérifiez votre éligibilité pour demander un micro-prêt.</div>
+   697→    </div>
+   698→  );
+   699→  return (
+   700→    <div className="space-y-3">
+   701→      {loans.map(l => {
+   702→        const s = LOAN_ST[l.status] || { label: l.status, color: '#94A3B8' };
+   703→        return (
+   704→          <div key={l.id} className="bg-white rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+   705→            <div className="flex justify-between items-start mb-2">
+   706→              <div><div className="text-[0.85rem] font-bold text-[#1F2937]">{formatCfa(l.amountCfa)}</div><div className="text-[0.65rem] text-[#94A3B8]">{new Date(l.requestedAt).toLocaleDateString('fr-FR')}</div></div>
+   707→              <span className="px-2 py-0.5 rounded-full text-[0.55rem] font-bold" style={{ background: `${s.color}18`, color: s.color }}>{s.label}</span>
+   708→            </div>
+   709→            {l.dueDate && <div className="text-[0.62rem] text-[#64748B]">Échéance: {new Date(l.dueDate).toLocaleDateString('fr-FR')}</div>}
+   710→            <div className="text-[0.68rem] text-[#1F2937] mt-1">Restant: {formatCfa(l.amountRemainingCfa)}</div>
+   711→            {['active','repaying','overdue'].includes(l.status) && <button onClick={() => onRepay(l.id)} className="w-full mt-3 py-2 rounded-xl bg-[#22C55E] text-white font-semibold text-[0.72rem] border-none cursor-pointer">Rembourser</button>}
+   712→          </div>
+   713→        );
+   714→      })}
+   715→    </div>
+   716→  );
+   717→}
+   718→
+   719→/* ============================================================
+   720→   PARRAINAGE VIEW (spec §4 — « voir les filleuls et le code »)
+   721→   Données fictives (MOCK_REFERRALS) structurées comme la réponse
+   722→   de GET /api/referral/list → remplacement direct plus tard.
+   723→   ============================================================ */
+   724→function ParrainV({ code, required, referrals }: { code: string; required: number; referrals: { id: string; name: string; date: string; validated: boolean }[] }) {
+   725→  const [copied, setCopied] = useState(false);
+   726→  const valides = referrals.filter(r => r.validated).length;
+   727→  const rest = Math.max(0, required - valides);
+   728→  const pct = Math.min(100, Math.round((valides / required) * 100));
+   729→
+   730→  const copy = async () => {
+   731→    try {
+   732→      await navigator.clipboard.writeText(code);
+   733→      setCopied(true);
+   734→      setTimeout(() => setCopied(false), 2000);
+   735→    } catch { /* clipboard indisponible */ }
+   736→  };
+   737→
+   738→  return (
+   739→    <div>
+   740→      {/* Code de parrainage */}
+   741→      <div className="bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white rounded-2xl p-5 mb-3 relative overflow-hidden">
+   742→        <div className="absolute -top-12 -right-12 w-[140px] h-[140px] bg-[radial-gradient(circle,rgba(168,85,247,0.18),transparent_65%)]" />
+   743→        <div className="relative z-[1]">
+   744→          <div className="text-[0.65rem] text-[rgba(255,255,255,0.5)] mb-1.5">Mon code de parrainage</div>
+   745→          <div className="flex items-center gap-2.5">
+   746→            <div className="text-[1.5rem] font-black tracking-[2px]">{code}</div>
+   747→            <button onClick={copy} className={`px-3 py-1.5 rounded-lg text-[0.62rem] font-bold border-none cursor-pointer transition-all active:scale-95 ${copied ? 'bg-[#22C55E] text-white' : 'bg-white/10 text-white'}`}>
+   748→              <i className={`fas ${copied ? 'fa-check' : 'fa-copy'} mr-1`}></i>{copied ? 'Copié !' : 'Copier'}
+   749→            </button>
+   750→          </div>
+   751→          <div className="text-[0.6rem] text-[rgba(255,255,255,0.45)] mt-2 leading-relaxed">Partagez ce code à vos amis lors de leur inscription.</div>
+   752→        </div>
+   753→      </div>
+   754→
+   755→      {/* Progression */}
+   756→      <div className="bg-white rounded-2xl p-4 mb-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+   757→        <div className="flex justify-between items-center mb-2">
+   758→          <div className="text-[0.82rem] font-bold text-[#1F2937]">Parrainages validés</div>
+   759→          <div className="text-[0.72rem] font-semibold text-[#A855F7]">{valides} / {required}</div>
+   760→        </div>
+   761→        <div className="w-full h-2.5 bg-[rgba(0,0,0,0.05)] rounded-full overflow-hidden">
+   762→          <div className="h-full bg-gradient-to-r from-[#A855F7] to-[#7C3AED] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+   763→        </div>
+   764→        <div className="text-[0.62rem] text-[#94A3B8] mt-1.5">
+   765→          {rest === 0
+   766→            ? '🎉 Seuil de parrainages atteint !'
+   767→            : `Encore ${rest} parrainage${rest > 1 ? 's' : ''} validé${rest > 1 ? 's' : ''} pour atteindre le seuil requis pour le prêt de 5 000 FCFA.`}
+   768→        </div>
+   769→      </div>
+   770→
+   771→      {/* Liste des filleuls */}
+   772→      <div className="bg-white rounded-2xl p-4 mb-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.03)]">
+   773→        <div className="text-[0.82rem] font-bold text-[#1F2937] mb-3">Mes filleuls</div>
+   774→        {referrals.length ? (
+   775→          <div className="space-y-2.5">
+   776→            {referrals.map(r => (
+   777→              <div key={r.id} className="flex items-center gap-2.5 pb-2.5 border-b border-[rgba(0,0,0,0.04)] last:border-0 last:pb-0">
+   778→                <div className="w-9 h-9 rounded-full bg-[rgba(168,85,247,0.1)] flex items-center justify-center shrink-0 text-[#7C3AED] text-[0.7rem] font-bold">
+   779→                  {r.name.substring(0, 2).toUpperCase()}
+   780→                </div>
+   781→                <div className="flex-1 min-w-0">
+   782→                  <div className="text-[0.72rem] font-semibold text-[#1F2937]">{r.name}</div>
+   783→                  <div className="text-[0.58rem] text-[#94A3B8]">Inscrit le {r.date}</div>
+   784→                </div>
+   785→                <span className={`px-2 py-0.5 rounded-full text-[0.55rem] font-bold ${r.validated ? 'bg-[rgba(34,197,94,0.1)] text-[#22C55E]' : 'bg-[rgba(245,158,11,0.1)] text-[#F59E0B]'}`}>
+   786→                  {r.validated ? '✓ Validé' : 'En attente'}
+   787→                </span>
+   788→              </div>
+   789→            ))}
+   790→          </div>
+   791→        ) : (
+   792→          <div className="text-center py-6">
+   793→            <div className="w-14 h-14 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center mx-auto mb-2"><i className="fas fa-users text-[#94A3B8] text-lg"></i></div>
+   794→            <div className="text-[0.75rem] font-semibold text-[#64748B]">Aucun filleul pour l&apos;instant</div>
+   795→            <div className="text-[0.65rem] text-[#94A3B8]">Partagez votre code pour commencer !</div>
+   796→          </div>
+   797→        )}
+   798→      </div>
+   799→
+   800→      {/* Explication */}
+   801→      <div className="bg-[rgba(59,130,246,0.06)] rounded-xl p-3.5 border border-[rgba(59,130,246,0.12)]">
+   802→        <div className="text-[0.72rem] font-bold text-[#3B82F6] mb-1"><i className="fas fa-info-circle mr-1"></i> Comment ça marche ?</div>
+   803→        <div className="text-[0.62rem] text-[#1E40AF] leading-relaxed">
+   804→          Partagez votre code à vos amis. Lorsqu&apos;ils s&apos;inscrivent avec votre code et deviennent actifs, ils comptent comme parrainages validés.
+   805→          {required} parrainages validés font partie des conditions pour accéder au prêt de 5 000 FCFA.
+   806→        </div>
+   807→      </div>
+   808→    </div>
+   809→  );
+   810→}
+   811→

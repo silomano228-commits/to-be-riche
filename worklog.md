@@ -174,3 +174,25 @@ Stage Summary:
 - Serveur persistant sur port 3000 (échappe au reaper du sandbox)
 - Preview publique fonctionnelle : https://preview-chat-22a8267e-7545-4ea8-a9c0-08397f681c05.space-z.ai/
 - La commande « relancer le serveur » = node /home/z/my-project/scripts/launch-dev-server.js
+
+---
+Task ID: 5
+Agent: main (Super Z)
+Task: Refonte onglet 1 (Accueil maquette) + onglet Mission détaillé + Investir/Communauté/Portefeuille + Activité admin + dépôt git
+
+Work Log:
+- Image maquette non parvenue au serveur (upload tmpfs vide) — implémentation basée sur la description vocale détaillée de l'utilisateur
+- Créé AccueilScreen.tsx (nouveau 1er onglet) : Bonjour {prénom}, 4 cartes stats (Solde disponible 1 850 F, Gains aujourd'hui +175 F, Missions réservées 2, File active 7/10), Objectif du mois = prêt 5 000 F (conditions : solde 2 500 F alimenté par gains journaliers, caution = MOITIÉ du prêt 2 500 F, parrainages 3/5, compte vérifié), carte 🔒 caution verrouillée, comment gagner, activité récente, accès rapides (Jeu, Projets, Parrainage, Messages, Guide, Investir, Déposer, Admin si admin) — section Missions disponibles SUPPRIMÉE
+- MissionsScreen → onglet Mission : sous-onglets Missions/Mes images/Éligibilité/Mes prêts/Parrainage ; flux liste → « Voir la mission » → détail (La mission, Les règles, format/style) → « Soumettre ma création » (marche à suivre ChatGPT/Gemini, import) ; limites 10 images/j et 30 F max/image
+- page.tsx : nav bas 7 onglets (Accueil, Mission, Investir — nom conservé, Communauté, Portefeuille, Guide, Profil) ; ancien HomeScreen local remplacé ; atterrissage post-login/OTP/inscription → 'home'
+- ChatScreen renommé « Communauté » (sans bouton retour, onglet principal) ; WalletScreen : Compte Missions « Gains des images validées + investissements »
+- AdminScreen : nouvel onglet « Activité » (stats : actifs, images validées/j, investissements actifs, gains/jour ; filtres missions/investir ; par utilisateur : missions détaillées + investissements) — l'admin garde l'interface jeune complète
+- Corrections : redirections setPage('missions') → 'home' (3 endroits), libellé admin raccourci, header ChatScreen réparé
+- Vérifié navigateur : inscription Richard → OTP auto → dashboard complet, 7 onglets, détail mission, modal soumission, Investir 5%/jour, Communauté, Portefeuille, admin (Bonjour Admin + Activité) — tsc 0 erreur, lint 0 problème
+- Serveur : relancé persistant après plantage compilation (PID 2883) ; commit 89450c2 poussé sur GitHub
+
+Stage Summary:
+- Premier onglet conforme à la maquette décrite, caution = moitié du prêt (2 500 F pour 5 000 F)
+- Investir garde son nom (fonctionnalité 5%/jour), Communauté ajouté, Mission avec détail + soumission
+- Admin : vue utilisateur + onglet Activité de surveillance
+- 89450c2 poussé sur GitHub
