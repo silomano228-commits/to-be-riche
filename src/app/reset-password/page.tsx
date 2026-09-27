@@ -127,7 +127,7 @@ function ResetForm({ token }: { token: string }) {
         <div className="w-full max-w-[380px] text-center">
           <img
             src={LOGO_URL}
-            alt="Jeune Élan"
+            alt="Be Rich"
             className="w-[80px] h-[80px] mx-auto mb-4 object-contain"
             style={{ filter: 'drop-shadow(0 4px 20px rgba(0,200,83,0.2))' }}
             onError={(e) => {
@@ -169,7 +169,7 @@ function ResetForm({ token }: { token: string }) {
       <div className="w-full max-w-[380px] text-center">
         <img
           src={LOGO_URL}
-          alt="Jeune Élan"
+          alt="Be Rich"
           className="w-[80px] h-[80px] mx-auto mb-4 object-contain"
           style={{ filter: 'drop-shadow(0 4px 20px rgba(251,191,36,0.2))' }}
           onError={(e) => {
@@ -184,7 +184,7 @@ function ResetForm({ token }: { token: string }) {
           }}
         />
         <h1 className="text-[1.6rem] font-black mb-1 bg-gradient-to-r from-[#FCD34D] via-[#FBBF24] to-[#F59E0B] bg-[length:200%_auto] text-transparent bg-clip-text tracking-[2px]">
-          JEUNE ÉLAN
+          BE RICH
         </h1>
 
         <div className="w-14 h-14 mx-auto rounded-full bg-[rgba(251,191,36,0.1)] flex items-center justify-center mb-4 mt-6">

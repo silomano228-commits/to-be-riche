@@ -45,7 +45,7 @@ export interface AppUser {
   activeEnterprisesCount?: number;
   claimableInvestments?: number;
   unlockedLevel?: number;
-  // Jeune Élan — Mission & Micro-Prêt
+  // Be Rich — Mission & Micro-Prêt
   missionBalance?: number;
   missionTotalEarned?: number;
   missionValidatedToday?: number;
@@ -58,6 +58,7 @@ export interface AppUser {
   dateOfBirth?: string;
   country?: string;
   city?: string;
+  phone?: string;
   paymentMethod?: string;
   paymentAddress?: string;
   accountVerified?: string;

@@ -178,6 +178,11 @@ export interface MyImage {
 
 export type Project = 'likes' | 'missions' | 'invest';
 
+/* Libellés des projets (utilisés par l'admin et la modale Yas) */
+export const PROJECT_LABEL: Record<Project, string> = {
+  likes: 'Lives Likes', missions: 'Missions images', invest: 'Investir',
+};
+
 export interface YasTransfer {
   id: string; kind: 'deposit' | 'withdrawal'; project: Project;
   amount: number; account: string;
@@ -525,7 +530,10 @@ export const useSimpleStore = create<SimpleState>((set, get) => ({
     const patch: Partial<SimpleState> = { yasTransfers: [{ id: 'y-' + Math.random().toString(36).slice(2, 8), kind, project, amount, account: acc, status: 'pending', date: `Aujourd'hui — ${now()}` } as YasTransfer, ...s.yasTransfers] };
     if (project === 'invest') patch.invest = { ...s.invest, invested: s.invest.invested - amount };
     else if (project === 'missions') patch.savings = s.savings - amount;
-    else patch.balance = s.balance - Math.min(amount, s.balance), patch.likes = { ...s.likes, cagnotte: Math.max(0, s.likes.cagnotte - Math.max(0, amount - Math.min(amount, s.balance))) };
+    else {
+      patch.balance = s.balance - Math.min(amount, s.balance);
+      patch.likes = { ...s.likes, cagnotte: Math.max(0, s.likes.cagnotte - Math.max(0, amount - Math.min(amount, s.balance))) };
+    }
 
     set(patch);
     return { ok: true };

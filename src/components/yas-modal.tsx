@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAppStore, formatCfa } from '@/lib/store';
 import {
   useSimpleStore, validateYasAccount, ADMIN_YAS_ACCOUNT, YAS_MIN_DEPOSIT, YAS_MIN_WITHDRAW,
+  PROJECT_LABEL,
   type Project,
 } from '@/lib/simple-store';
 
@@ -13,10 +14,6 @@ import {
    3. Vérification par l'administrateur -> argent crédité/payé.
    L'admin contrôle l'entrée ET la sortie de l'argent.
    ================================================================ */
-
-export const PROJECT_LABEL: Record<Project, string> = {
-  likes: 'Lives Likes', missions: 'Missions images', invest: 'Investir',
-};
 
 export function YasModal({ open, kind, project, onClose }: {
   open: boolean; kind: 'deposit' | 'withdrawal'; project: Project; onClose: () => void;
@@ -30,7 +27,10 @@ export function YasModal({ open, kind, project, onClose }: {
   const [err, setErr] = useState('');
 
   useEffect(() => {
-    if (!open) { setStep('amount'); setAmount(''); setAccount(''); setErr(''); setCopied(false); }
+    if (!open) {
+      const t = setTimeout(() => { setStep('amount'); setAmount(''); setAccount(''); setErr(''); setCopied(false); }, 0);
+      return () => clearTimeout(t);
+    }
   }, [open]);
 
   if (!open) return null;

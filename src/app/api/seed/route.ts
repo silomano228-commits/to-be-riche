@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 
 function generateReferralCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = 'JÉ-';
+  let code = 'BR-';
   for (let i = 0; i < 6; i++) {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
           name: 'Admin',
           password: 'Admin@2024',
           role: 'admin',
-          referralCode: 'JÉ-ADMIN',
+          referralCode: 'BR-ADMIN',
           emailVerified: true,
         },
       });
@@ -51,12 +51,12 @@ export async function POST(request: Request) {
           password: 'Test1234',
           role: 'user',
           referralCode: testReferral,
-          referredByCode: 'JÉ-ADMIN',
+          referredByCode: 'BR-ADMIN',
           emailVerified: true,
         },
       });
       await db.user.update({
-        where: { referralCode: 'JÉ-ADMIN' },
+        where: { referralCode: 'BR-ADMIN' },
         data: { referralCount: { increment: 1 } },
       });
       results.push('Test user created');

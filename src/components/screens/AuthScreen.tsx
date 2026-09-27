@@ -37,23 +37,50 @@ export default function AuthScreen() {
     const fd = new FormData(e.target as HTMLFormElement);
     const name = (fd.get('name') as string)?.trim() || '';
     const email = (fd.get('email') as string)?.trim() || '';
+    const phone = ((fd.get('phone') as string) || '').replace(/\s+/g, '');
     const password = fd.get('password') as string || '';
     const password2 = fd.get('password2') as string || '';
     const referralCode = (fd.get('referralCode') as string)?.trim().toUpperCase() || '';
     const errs: Record<string, string> = {};
     if (name.length < 2) errs.name = 'Min. 2 caractères';
+    if (!/^\+?\d{8,15}$/.test(phone)) errs.phone = 'Numéro invalide (8 à 15 chiffres)';
     if (password.length < 6) errs.password = 'Min. 6 caractères';
     if (password !== password2) errs.password2 = 'Ne correspond pas';
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password, password2, referralCode }), headers: { 'Content-Type': 'application/json' } });
+      const res = await fetch('/api/auth/register', { method: 'POST', body: JSON.stringify({ name, email, phone, password, password2, referralCode }), headers: { 'Content-Type': 'application/json' } });
       const data = await res.json();
       if (data.success) {
-        setUser(data.user);
-        addToast('Compte créé !', 'success');
-        setPage('home');
+        /* Compte créé : vérification par code envoyé par email.
+           En mode simulation, le code est renvoyé par l'API →
+           vérification automatique, puis connexion. */
+        if (data.requires_verification) {
+          if (data.plain_code) {
+            const verifyRes = await fetch('/api/auth/otp', {
+              method: 'POST',
+              body: JSON.stringify({ action: 'verify', email, code: data.plain_code, purpose: 'email_verification' }),
+              headers: { 'Content-Type': 'application/json' },
+            });
+            const verifyData = await verifyRes.json();
+            if (verifyData.success && verifyData.user) {
+              setUser(verifyData.user);
+              addToast('Compte créé et vérifié ! Bienvenue 🎉', 'success');
+              setPage('home');
+            } else {
+              addToast('Compte créé — code de vérification incorrect, reconnectez-vous.', 'error');
+              setMode('login');
+            }
+          } else {
+            addToast('Compte créé ! Vérifiez votre email (code envoyé) puis connectez-vous.', 'success');
+            setMode('login');
+          }
+        } else {
+          setUser(data.user);
+          addToast('Compte créé !', 'success');
+          setPage('home');
+        }
       } else { addToast(data.error, 'error'); }
     } catch { addToast('Erreur réseau', 'error'); }
     setLoading(false);
@@ -73,8 +100,8 @@ export default function AuthScreen() {
     <section className="absolute inset-0 bg-[#0B1120] flex flex-col items-center justify-center z-[200]">
       <div className="w-full max-w-[330px] text-center px-5">
         <LogoImg className="w-[100px] h-[100px] mx-auto mb-4" style={{ filter: 'drop-shadow(0 4px 20px rgba(251,191,36,0.2))', objectFit: 'contain' }} />
-        <h1 className="text-[1.8rem] font-black mb-1 bg-gradient-to-r from-[#FCD34D] via-[#FBBF24] to-[#F59E0B] bg-[length:200%_auto] text-transparent bg-clip-text tracking-[2px]" style={{ animation: 'gs 3s linear infinite' }}>JEUNE ÉLAN</h1>
-        <p className="text-[rgba(255,255,255,0.3)] text-[0.72rem] mb-3">{mode === 'login' ? 'Connectez-vous à votre compte.' : 'Rejoignez Jeune Élan.'}</p>
+        <h1 className="text-[1.8rem] font-black mb-1 bg-gradient-to-r from-[#FCD34D] via-[#FBBF24] to-[#F59E0B] bg-[length:200%_auto] text-transparent bg-clip-text tracking-[2px]" style={{ animation: 'gs 3s linear infinite' }}>BE RICH</h1>
+        <p className="text-[rgba(255,255,255,0.3)] text-[0.72rem] mb-3">{mode === 'login' ? 'Connectez-vous à votre compte.' : 'Rejoignez Be Rich.'}</p>
 
         {/* Propositions de valeur — la promesse dès l'entrée */}
         <div className="flex flex-col items-center gap-1.5 mb-5">
@@ -133,6 +160,12 @@ export default function AuthScreen() {
               <label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(255,255,255,0.35)]">Email</label>
               <input name="email" type="email" required placeholder="votre@email.com" className="w-full py-2.5 px-3.5 bg-[rgba(255,255,255,0.05)] border-[1.5px] border-[rgba(255,255,255,0.08)] rounded-xl text-[0.85rem] outline-none transition-all font-[Inter] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:bg-[rgba(255,255,255,0.08)] focus:border-[#00C853]" />
             </div>
+            <div className="mb-2.5 w-full">
+              <label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(255,255,255,0.35)]">Numéro de téléphone <span className="text-[rgba(251,191,36,0.8)]">*</span></label>
+              <input name="phone" type="tel" required inputMode="tel" placeholder="Ex : 90123456" className={`w-full py-2.5 px-3.5 bg-[rgba(255,255,255,0.05)] border-[1.5px] ${errors.phone ? 'border-red-500' : 'border-[rgba(255,255,255,0.08)]'} rounded-xl text-[0.85rem] outline-none transition-all font-[Inter] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:bg-[rgba(255,255,255,0.08)] focus:border-[#00C853]`} />
+              {errors.phone && <p className="text-red-500 text-[0.65rem] mt-0.5 font-medium">{errors.phone}</p>}
+              <p className="text-[0.58rem] mt-0.5 text-left text-[rgba(255,255,255,0.25)]">Un seul compte par numéro — il prouve votre identité</p>
+            </div>
             <div className="mb-2.5 w-full relative">
               <label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(255,255,255,0.35)]">Mot de passe</label>
               <input name="password" type={showPw.r ? 'text' : 'password'} required placeholder="Min. 6 caractères" minLength={6} onChange={(e) => checkStrength(e.target.value)} className={`w-full py-2.5 px-3.5 pr-10 bg-[rgba(255,255,255,0.05)] border-[1.5px] ${errors.password ? 'border-red-500' : 'border-[rgba(255,255,255,0.08)]'} rounded-xl text-[0.85rem] outline-none transition-all font-[Inter] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:bg-[rgba(255,255,255,0.08)] focus:border-[#00C853]`} />
@@ -152,7 +185,7 @@ export default function AuthScreen() {
             </div>
             <div className="mb-2.5 w-full">
               <label className="block mb-1 text-[0.72rem] font-semibold text-[rgba(255,255,255,0.35)]">Code de parrainage <span className="opacity-50">(optionnel)</span></label>
-              <input name="referralCode" type="text" placeholder="JÉ-XXXXXX" className="w-full py-2.5 px-3.5 bg-[rgba(255,255,255,0.05)] border-[1.5px] border-[rgba(255,255,255,0.08)] rounded-xl text-[0.85rem] outline-none transition-all font-[Inter] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:bg-[rgba(255,255,255,0.08)] focus:border-[#FBBF24]" />
+              <input name="referralCode" type="text" placeholder="BR-XXXXXX" className="w-full py-2.5 px-3.5 bg-[rgba(255,255,255,0.05)] border-[1.5px] border-[rgba(255,255,255,0.08)] rounded-xl text-[0.85rem] outline-none transition-all font-[Inter] text-white placeholder:text-[rgba(255,255,255,0.2)] focus:bg-[rgba(255,255,255,0.08)] focus:border-[#FBBF24]" />
               <p className="text-[0.58rem] mt-0.5 text-left text-[rgba(255,255,255,0.25)]">Si un ami vous a invité, entrez son code</p>
             </div>
             <button type="submit" disabled={loading} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#FCD34D] to-[#FBBF24] text-[#78350F] font-bold text-[0.88rem] border-none cursor-pointer shadow-[0_4px_20px_rgba(251,191,36,0.2)] font-[Inter] transition-transform active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2">

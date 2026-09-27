@@ -127,7 +127,7 @@ export default function ForgotPasswordPage() {
           <span className="text-white font-black text-[1.5rem] tracking-[1px]">JÉ</span>
         </div>
         <h1 className="text-[1.6rem] font-black mb-1 bg-gradient-to-r from-[#22C55E] to-[#16A34A] bg-clip-text text-transparent tracking-[2px]">
-          JEUNE ÉLAN
+          BE RICH
         </h1>
 
         {/* Step 1: Email */}

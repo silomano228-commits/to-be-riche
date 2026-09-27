@@ -16,8 +16,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Jeune Élan - Missions & Micro-prêts",
-  description: "Plateforme de missions rémunérées et de micro-prêts pour les jeunes. Gagnez avec vos créations et accédez au micro-crédit.",
+  title: "BE RICH - Gagnez avec vos créations, likes & investissements",
+  description: "BE RICH : missions images rémunérées, Lives Likes, investissements quotidiens et micro-prêts. Gagnez, prouvez votre crédibilité, gravissez les niveaux.",
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -29,13 +29,13 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Jeune Élan",
+    title: "BE RICH",
   },
   openGraph: {
     type: "website",
-    title: "Jeune Élan - Missions & Micro-prêts",
-    description: "Plateforme de missions rémunérées et de micro-prêts pour les jeunes. Gagnez avec vos créations et accédez au micro-crédit.",
-    siteName: "Jeune Élan",
+    title: "BE RICH - Gagnez avec vos créations, likes & investissements",
+    description: "Missions images rémunérées, Lives Likes, investissements quotidiens et micro-prêts. Gagnez, prouvez votre crédibilité, gravissez les niveaux.",
+    siteName: "BE RICH",
   },
 };
 

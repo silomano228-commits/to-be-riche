@@ -1,7 +1,7 @@
 {
-  "name": "Jeune Élan - Missions & Micro-prêts",
-  "short_name": "Jeune Élan",
-  "description": "Plateforme de missions rémunérées et de micro-prêts pour les jeunes.",
+  "name": "BE RICH - Gagnez avec vos créations",
+  "short_name": "BE RICH",
+  "description": Missions images, Lives Likes, investissements et micro-prêts. Prouvez votre crédibilité, gravissez les niveaux.,
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F0FDF4",

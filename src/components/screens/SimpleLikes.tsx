@@ -24,7 +24,7 @@ const HOSTS = [
 ];
 const hostToday = HOSTS[Math.floor(Date.now() / 86400000) % HOSTS.length];
 
-export default function SimpleLikes() {
+export default function SimpleLikes({ onBack }: { onBack?: () => void }) {
   const { addToast } = useAppStore();
   const s = useSimpleStore();
   const [phase, setPhase] = useState<'idle' | 'playing' | 'success' | 'fail'>('idle');
@@ -36,6 +36,12 @@ export default function SimpleLikes() {
   const heartId = useRef(0);
   const [yasDeposit, setYasDeposit] = useState(false);
   const [yasWithdraw, setYasWithdraw] = useState(false);
+
+  const backBtn = onBack ? (
+    <button onClick={onBack} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.05)] text-[#64748B] cursor-pointer border-none mr-1">
+      <i className="fas fa-arrow-left text-[0.8rem]"></i>
+    </button>
+  ) : undefined;
 
   const vip = s.likes.cagnotte >= LIKE_VIP_CAGNOTTE;
   const reward = vip ? LIKE_VIP_REWARD : LIKE_REWARD;
@@ -60,10 +66,12 @@ export default function SimpleLikes() {
     if (phase !== 'playing') return;
     if (timeLeft <= 0) {
       if (likes >= LIKE_TARGET) return; /* déjà géré par le tap final */
-      s.registerLikeFail();
-      setPhase('fail');
-      setCooldown(LIKE_FAIL_COOLDOWN);
-      return;
+      const t = setTimeout(() => {
+        s.registerLikeFail();
+        setPhase('fail');
+        setCooldown(LIKE_FAIL_COOLDOWN);
+      }, 0);
+      return () => clearTimeout(t);
     }
     const t = setTimeout(() => setTimeLeft((v) => v - 1), 1000);
     return () => clearTimeout(t);
@@ -80,7 +88,7 @@ export default function SimpleLikes() {
       if (r.ok) setPhase('success');
       else { addToast(r.reason || 'Limite atteinte', 'info'); setPhase('idle'); }
     }
-  }, [phase, likes, vip, s]);
+  }, [phase, likes, vip, s, addToast]);
 
   const start = () => {
     if (!canPlay) {
@@ -99,7 +107,7 @@ export default function SimpleLikes() {
 
   return (
     <>
-      <Header title="Lives Likes" icon="fa-heart" iconColor="#EC4899" />
+      <Header title="Lives Likes" icon="fa-heart" iconColor="#EC4899" leftElement={backBtn} />
       <div className="flex-1 overflow-y-auto px-4 py-4">
 
         {/* ----- LE LIVE (zone de jeu) ----- */}

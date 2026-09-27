@@ -1,5 +1,5 @@
 // ==================== GUIDE DATA ====================
-// All guide content for the Jeune Élan app
+// All guide content for the Be Rich app
 // Plateforme de missions rémunérées d'images et micro-prêts pour la jeunesse
 
 export interface GuideStep {
@@ -79,14 +79,14 @@ export const MISSIONS_GUIDE: GuideSection = {
       color: '#8B5CF6',
     },
     {
-      title: '3. Uploader sur Jeune Élan',
-      description: 'Téléchargez l\'image générée sur la plateforme Jeune Élan. Vous pouvez soumettre jusqu\'à 10 images par jour maximum.',
+      title: '3. Uploader sur Be Rich',
+      description: 'Téléchargez l\'image générée sur la plateforme Be Rich. Vous pouvez soumettre jusqu\'à 10 images par jour maximum.',
       icon: 'fa-cloud-upload-alt',
       color: '#3B82F6',
     },
     {
       title: '4. Validation automatique par IA',
-      description: 'Chaque image uploadée est automatiquement analysée par l\'IA de Jeune Élan. Elle vérifie : correspondance au brief, originalité, absence de doublon, image non téléchargée d\'internet.',
+      description: 'Chaque image uploadée est automatiquement analysée par l\'IA de Be Rich. Elle vérifie : correspondance au brief, originalité, absence de doublon, image non téléchargée d\'internet.',
       icon: 'fa-robot',
       color: '#22C55E',
     },
@@ -164,8 +164,8 @@ export const PARRAINAGE_GUIDE: GuideSection = {
   color: '#8B5CF6',
   steps: [
     {
-      title: '1. Partager votre code JÉ-XXXXXX',
-      description: 'Vous disposez d\'un code de parrainage unique au format JÉ-XXXXXX. Partagez-le avec vos amis pour qu\'ils s\'inscrivent avec votre code.',
+      title: '1. Partager votre code BR-XXXXXX',
+      description: 'Vous disposez d\'un code de parrainage unique au format BR-XXXXXX. Partagez-le avec vos amis pour qu\'ils s\'inscrivent avec votre code.',
       icon: 'fa-share-alt',
       color: '#8B5CF6',
     },
@@ -309,7 +309,7 @@ export const SECURITE_GUIDE: GuideSection = {
     },
     {
       title: '2. Mot de passe sécurisé',
-      description: 'Choisissez un mot de passe fort et unique. Ne le partagez avec personne — Jeune Élan ne vous le demandera jamais.',
+      description: 'Choisissez un mot de passe fort et unique. Ne le partagez avec personne — Be Rich ne vous le demandera jamais.',
       icon: 'fa-key',
       color: '#3B82F6',
     },
@@ -327,7 +327,7 @@ export const SECURITE_GUIDE: GuideSection = {
     },
   ],
   tips: [
-    'Jeune Élan ne vous demandera JAMAIS votre mot de passe — si quelqu\'un le demande, c\'est une arnaque.',
+    'Be Rich ne vous demandera JAMAIS votre mot de passe — si quelqu\'un le demande, c\'est une arnaque.',
     'Utilisez un mot de passe unique et fort (majuscules, minuscules, chiffres, symboles).',
     'Vérifiez régulièrement l\'activité de votre compte et signalez toute anomalie.',
   ],

@@ -6,9 +6,10 @@ import { useAppStore, authFetch } from '@/lib/store';
 import { ToastContainer } from '@/components/shared';
 
 /* ================================================================
-   JEUNE ÉLAN — VERSION ÉPURÉE
+   BE RICH — VERSION ÉPURÉE
    ----------------------------------------------------------------
-   5 onglets : Accueil · Missions · Investir · Portefeuille ·
+   4 onglets bas : Accueil · Gagner (hub des 3 projets financiers :
+   Lives Likes, Missions images, Investir) · Portefeuille ·
    Communauté (+ Admin pour les administrateurs, + Profil via
    l'avatar). Un écran = une chose. Flux clair : chaque clic a
    une suite logique.
@@ -16,8 +17,7 @@ import { ToastContainer } from '@/components/shared';
 
 const AuthScreen = dynamic(() => import('@/components/screens/AuthScreen'), { ssr: false });
 const SimpleHome = dynamic(() => import('@/components/screens/SimpleHome'), { ssr: false });
-const SimpleMissions = dynamic(() => import('@/components/screens/SimpleMissions'), { ssr: false });
-const SimpleInvest = dynamic(() => import('@/components/screens/SimpleInvest'), { ssr: false });
+const SimpleEarn = dynamic(() => import('@/components/screens/SimpleEarn'), { ssr: false });
 const SimpleWallet = dynamic(() => import('@/components/screens/SimpleWallet'), { ssr: false });
 const SimpleProfile = dynamic(() => import('@/components/screens/SimpleProfile'), { ssr: false });
 const SimpleAdmin = dynamic(() => import('@/components/screens/SimpleAdmin'), { ssr: false });
@@ -48,14 +48,13 @@ class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError:
   }
 }
 
-/* ==================== BOTTOM NAV (5 onglets + admin) ==================== */
+/* ==================== BOTTOM NAV (4 onglets + admin) ==================== */
 function BottomNav() {
   const { user, currentPage, setPage } = useAppStore();
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'admin';
   const tabs = [
     { id: 'home', icon: 'fa-house', label: 'Accueil' },
-    { id: 'missions', icon: 'fa-bullhorn', label: 'Missions' },
-    { id: 'invest', icon: 'fa-chart-line', label: 'Investir' },
+    { id: 'earn', icon: 'fa-sack-dollar', label: 'Gagner' },
     { id: 'wallet', icon: 'fa-wallet', label: 'Portefeuille' },
     { id: 'chat', icon: 'fa-comments', label: 'Communauté' },
     ...(isAdmin ? [{ id: 'admin', icon: 'fa-shield-halved', label: 'Admin' }] : []),
@@ -64,7 +63,11 @@ function BottomNav() {
   return (
     <nav className="h-[62px] bg-white/95 backdrop-blur-xl border-t border-[rgba(0,0,0,0.06)] flex items-center justify-around px-0.5 shrink-0">
       {tabs.map((t) => (
-        <button key={t.id} onClick={() => setPage(t.id)} className={`relative flex flex-col items-center justify-center py-1.5 border-none cursor-pointer min-w-0 flex-1 transition-all ${active(t.id) ? 'text-[#22C55E]' : 'text-[rgba(0,0,0,0.3)]'}`}>
+        <button key={t.id} onClick={() => {
+          /* Re-clic sur « Gagner » : retour au hub (événement écouté par SimpleEarn) */
+          if (t.id === 'earn' && currentPage === 'earn') window.dispatchEvent(new Event('berich:earn-home'));
+          setPage(t.id);
+        }} className={`relative flex flex-col items-center justify-center py-1.5 border-none cursor-pointer min-w-0 flex-1 transition-all ${active(t.id) ? 'text-[#22C55E]' : 'text-[rgba(0,0,0,0.3)]'}`}>
           {active(t.id) && <div className="absolute -top-0.5 w-5 h-[3px] rounded-full bg-[#22C55E]"></div>}
           <i className={`fas ${t.icon} text-[0.82rem] mb-1`}></i>
           <span className={`text-[0.5rem] ${active(t.id) ? 'font-black' : 'font-semibold'} truncate max-w-full`}>{t.label}</span>
@@ -75,7 +78,7 @@ function BottomNav() {
 }
 
 /* ==================== MAIN APP ==================== */
-export default function JeuneElanApp() {
+export default function BeRichApp() {
   const { user, currentPage, setPage, setUser } = useAppStore();
   const [initialized, setInitialized] = useState(false);
 
@@ -119,8 +122,7 @@ export default function JeuneElanApp() {
           <div className="h-full flex flex-col min-h-0">
             {!user && <AuthScreen />}
             {user && currentPage === 'home' && <SimpleHome />}
-            {user && currentPage === 'missions' && <SimpleMissions />}
-            {user && currentPage === 'invest' && <SimpleInvest />}
+            {user && currentPage === 'earn' && <SimpleEarn />}
             {user && currentPage === 'wallet' && <SimpleWallet />}
             {user && currentPage === 'chat' && <ChatScreen />}
             {user && currentPage === 'profile' && <SimpleProfile />}
