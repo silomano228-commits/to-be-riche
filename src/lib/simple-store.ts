@@ -1,26 +1,25 @@
 import { create } from 'zustand';
 
 /* ================================================================
-   SIMPLE STORE v2 — Jeune Élan, version « vrai système »
+   SIMPLE STORE v3 — Be Rich, « vrai système »
    ----------------------------------------------------------------
-   Une seule source de vérité. Même dynamique qu'avant :
-   missions images (30 F max), investir (gains journaliers),
-   prêt 5 000 F (caution = 50 %, parrainages requis).
+   Une seule source de vérité. Trois projets financiers :
+   1. LIKES (live) : 100 coeurs en 45 s -> +25 F, 10 sessions/jour
+      (+ lives VIP si cagnotte versée via Yas).
+   2. MISSIONS images : jusqu'à 30 F/image, épargne AU CHOIX du
+      jeune (compte pour la caution du prêt), détection de
+      doublons, aperçu image pour l'admin.
+   3. INVESTIR : 5 %/jour (7 % boosté a 10 filleuls) — dépôts et
+      retraits via Yas, validés par l'administrateur.
 
-   NOUVEAU — mécaniques d'engagement (favorables à la plateforme) :
-   • XP + niveaux (Bronze → Diamant) : le quota d'images/jour
-     augmente avec le niveau → plus de production pour la
-     plateforme, du statut pour le jeune.
-   • Série active (streak) : un jour manqué = série perdue →
-     retour quotidien garanti.
-   • Défi du jour : 3 images validées → +10 F (production).
-   • Paliers de prêts 5 000 → 10 000 → 25 000 F : la caution
-     reste TOUJOURS la moitié, les parrainages exigés montent,
-     et chaque prêt est remboursé avec frais → revenu plateforme.
-   • Booster d'investissement 7 %/jour verrouillé à 10 filleuls
-     validés → moteur de recrutement.
-   • +100 F par filleul validé → croissance.
-   • Persistance localStorage → la progression est réelle.
+   Tout est favorable à la plateforme :
+   • Prêts = caution 50 % verrouillée + frais 10 %.
+   • 1er retrait exige >= 1 filleul ; chaque niveau exige des
+     parrainages croissants -> moteur de recrutement.
+   • Crédibilité obligatoire avant prêt (tâches à prouver).
+   • Retraits/dépôts Yas filtrés par l'admin -> il contrôle
+     l'entrée et la sortie de l'argent.
+   • Persistance localStorage -> la progression est réelle.
    ================================================================ */
 
 export const BASE_DAILY_LIMIT = 10;
@@ -32,22 +31,52 @@ export const REFERRAL_BONUS = 100;
 export const CHALLENGE_TARGET = 3;
 export const CHALLENGE_REWARD = 10;
 
-export interface Level {
-  name: string; icon: string; color: string; min: number; quota: number; perk: string;
+/* ---- Projet LIKES (live) ---- */
+export const LIKE_TARGET = 100;      // coeurs à atteindre
+export const LIKE_SECONDS = 45;      // en 45 secondes (difficile mais raisonnable)
+export const LIKE_REWARD = 25;       // F par session réussie
+export const LIKE_ROUNDS_MAX = 10;   // sessions par jour
+export const LIKE_VIP_REWARD = 50;   // lives VIP (cagnotte >= 1000 F via Yas)
+export const LIKE_VIP_CAGNOTTE = 1000;
+export const LIKE_FAIL_COOLDOWN = 60; // secondes avant de retenter
+
+/* ---- Yas (mobile money) ---- */
+export const ADMIN_YAS_ACCOUNT = '90 87 64 59';
+export const YAS_MIN_DEPOSIT = 1000;
+export const YAS_MIN_WITHDRAW = 2500;
+
+/* ---- Numéro Yas (Togo) : 8 chiffres, préfixe 90-93 / 70-73 ---- */
+export function validateYasAccount(acc: string): string | null {
+  const t = (acc || '').replace(/\s+/g, '');
+  if (!t) return 'Numéro Yas requis';
+  if (!/^\d{8}$/.test(t)) return '8 chiffres exactement';
+  if (!['90', '91', '92', '93', '70', '71', '72', '73'].includes(t.slice(0, 2))) {
+    return 'Doit commencer par 90-93 ou 70-73';
+  }
+  return null;
 }
+
+export interface Level {
+  name: string; icon: string; color: string; min: number; quota: number;
+  referrals: number; perk: string;
+}
+/* Niveaux : les parrainages sont OBLIGATOIRES pour monter */
 export const LEVELS: Level[] = [
-  { name: 'Bronze',  icon: 'fa-medal',  color: '#B45309', min: 0,   quota: 10, perk: 'Accès aux missions' },
-  { name: 'Argent',  icon: 'fa-medal',  color: '#94A3B8', min: 150, quota: 10, perk: 'Priorité de validation' },
-  { name: 'Or',      icon: 'fa-trophy', color: '#F59E0B', min: 400, quota: 12, perk: '12 images/jour' },
-  { name: 'Diamant', icon: 'fa-gem',    color: '#3B82F6', min: 900, quota: 15, perk: '15 images/jour' },
+  { name: 'Bronze',  icon: 'fa-medal',  color: '#B45309', min: 0,   quota: 10, referrals: 0, perk: 'Accès aux missions' },
+  { name: 'Argent',  icon: 'fa-medal',  color: '#94A3B8', min: 150, quota: 10, referrals: 1, perk: 'Priorité de validation' },
+  { name: 'Or',      icon: 'fa-trophy', color: '#F59E0B', min: 400, quota: 12, referrals: 3, perk: '12 images/jour' },
+  { name: 'Diamant', icon: 'fa-gem',    color: '#3B82F6', min: 900, quota: 15, referrals: 5, perk: '15 images/jour' },
 ];
 
-export function levelFor(xp: number): { level: Level; index: number; next: Level | null; toNext: number } {
+/* Le niveau exige XP ET parrainages (obligatoire avant de monter) */
+export function levelFor(xp: number, referralCount = 0): { level: Level; index: number; next: Level | null; toNext: number } {
   let index = 0;
-  for (let i = 0; i < LEVELS.length; i++) if (xp >= LEVELS[i].min) index = i;
+  for (let i = 0; i < LEVELS.length; i++) {
+    if (xp >= LEVELS[i].min && referralCount >= LEVELS[i].referrals) index = i;
+  }
   const level = LEVELS[index];
   const next = index < LEVELS.length - 1 ? LEVELS[index + 1] : null;
-  const toNext = next ? next.min - xp : 0;
+  const toNext = next ? Math.max(next.min - xp, next.referrals - referralCount) : 0;
   return { level, index, next, toNext };
 }
 
@@ -99,16 +128,16 @@ export const MISSIONS: Mission[] = [
   },
 ];
 
-/* Mission vedette du jour (change chaque jour → raison de revenir) */
+/* Mission vedette du jour (change chaque jour -> raison de revenir) */
 export const FEATURED_MISSION_ID: string = MISSIONS[Math.floor(Date.now() / 86400000) % MISSIONS.length].id;
 
-/* ---------------- Preuve sociale (flux live + top créateurs) ---------------- */
+/* ---------------- Preuve sociale ---------------- */
 
 export interface FeedEvent { name: string; action: string; amount: number; when: string }
 export const LIVE_FEED: FeedEvent[] = [
-  { name: 'Awa D.', action: 'a validé une image', amount: 25, when: 'il y a 2 min' },
-  { name: 'Moussa T.', action: 'a réclamé ses gains du jour', amount: 25, when: 'il y a 9 min' },
-  { name: 'Fatou B.', action: 'a validé une image', amount: 30, when: 'il y a 14 min' },
+  { name: 'Awa D.', action: 'a réussi un live Likes (100 coeurs)', amount: 25, when: 'il y a 2 min' },
+  { name: 'Moussa T.', action: 'a validé une image', amount: 30, when: 'il y a 9 min' },
+  { name: 'Fatou B.', action: 'a réclamé ses gains du jour', amount: 25, when: 'il y a 14 min' },
   { name: 'Ibrahim S.', action: 'a atteint 7 jours de série 🔥', amount: 5, when: 'il y a 22 min' },
   { name: 'Awa D.', action: 'a débloqué le niveau Argent', amount: 0, when: 'il y a 31 min' },
   { name: 'Fatou B.', action: 'a validé une image', amount: 25, when: 'il y a 44 min' },
@@ -121,16 +150,43 @@ export const TOP_CREATORS = [
   { name: 'Moussa T.', earned: 860, streak: 6 },
 ];
 
+/* ---------------- Projets à soutenir (présentation Investir, comme avant) ---------------- */
+
+export interface SupportProject {
+  id: string; name: string; sector: string; rate: string; img: string; suggested: number; description: string;
+}
+export const SUPPORT_PROJECTS: SupportProject[] = [
+  {
+    id: 'solar', name: 'Solaire Village', sector: '12 % · Énergie', rate: '12 %', img: 'https://picsum.photos/seed/solar99/100/100',
+    suggested: 3000, description: 'Centrale solaire communautaire — rendement fort',
+  },
+  {
+    id: 'immo', name: 'Résidence Green', sector: '8 % · Immobilier', rate: '8 %', img: 'https://picsum.photos/seed/immo77/100/100',
+    suggested: 5000, description: 'Logements durables — rendement régulier',
+  },
+];
+
 /* ---------------- Types d'état ---------------- */
 
 export interface MyImage {
   id: string; missionId: string; missionTitle: string; reward: number;
-  status: 'pending' | 'validated' | 'refused'; date: string;
+  status: 'pending' | 'validated' | 'refused' | 'duplicate'; date: string;
+  data?: string;   /* aperçu compressé (data URL) pour l'admin */
+  hash?: string;   /* empreinte pour la détection de doublons */
+  dupOf?: string;  /* id de l'image déjà envoyée */
+}
+
+export type Project = 'likes' | 'missions' | 'invest';
+
+export interface YasTransfer {
+  id: string; kind: 'deposit' | 'withdrawal'; project: Project;
+  amount: number; account: string;
+  status: 'pending' | 'approved' | 'rejected'; date: string;
 }
 
 export interface Tx {
   id: string; label: string; amount: number;
-  kind: 'mission' | 'invest' | 'daily' | 'loan' | 'caution' | 'bonus'; date: string;
+  kind: 'mission' | 'invest' | 'daily' | 'loan' | 'caution' | 'bonus' | 'likes' | 'yas'; date: string;
 }
 
 export interface AdminUserRow {
@@ -142,6 +198,13 @@ const now = () => new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minu
 const today = () => new Date().toDateString();
 const yesterday = () => new Date(Date.now() - 86400000).toDateString();
 
+/* Empreinte simple et stable d'une image (djb2) */
+export function hashString(str: string): string {
+  let h = 5381;
+  for (let i = 0; i < str.length; i += 3) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36) + '-' + str.length.toString(36);
+}
+
 interface SimpleState {
   balance: number;
   missionTotalEarned: number;
@@ -150,6 +213,9 @@ interface SimpleState {
   submissionsToday: number;
   referralCount: number;
   invest: { invested: number; totalEarned: number; claimedToday: boolean };
+  likes: { roundsToday: number; totalEarned: number; lastFailAt: number; cagnotte: number; vip: boolean };
+  savings: number;            /* épargne missions (choisie par le jeune) */
+  savingsGoal: number;        /* objectif d'épargne choisi */
   xp: number;
   streak: number;
   bestStreak: number;
@@ -159,13 +225,16 @@ interface SimpleState {
   dayProcessed: string;
   cautionBalance: number;
   loansTaken: number;
+  withdrawalsDone: number;    /* 0 = premier retrait non encore fait */
+  phoneVerified: boolean;     /* numéro vérifié (crédibilité) */
   reservedMissionIds: string[];
   myImages: MyImage[];
   transactions: Tx[];
   adminUsers: AdminUserRow[];
+  yasTransfers: YasTransfer[];
 
   processNewDay: () => { messages: string[]; bonus: number };
-  submitImage: (missionId: string) => { ok: boolean; reason?: string };
+  submitImage: (missionId: string, file?: { data: string; hash: string; name: string }) => { ok: boolean; reason?: string; duplicate?: boolean };
   validateImage: (imageId: string) => { challengeBonus?: number };
   refuseImage: (imageId: string) => void;
   claimDailyChallenge: () => { ok: boolean; reason?: string };
@@ -174,15 +243,22 @@ interface SimpleState {
   claimDailyGains: () => { ok: boolean; reason?: string; gain?: number };
   payCaution: () => boolean;
   requestLoan: () => { ok: boolean; reason?: string };
+  addSavings: (amount: number) => { ok: boolean; reason?: string };
+  requestYasTransfer: (kind: 'deposit' | 'withdrawal', project: Project, amount: number, account: string) => { ok: boolean; reason?: string };
+  approveYasTransfer: (id: string) => { ok: boolean; credited?: number };
+  rejectYasTransfer: (id: string) => boolean;
+  completeLikeRound: (vip: boolean) => { ok: boolean; reward?: number; reason?: string };
+  registerLikeFail: () => void;
+  markPhoneVerified: () => void;
 }
 
 /* ---------------- Persistance (vrai système) ---------------- */
 
-const LS_KEY = 'je_state_v2';
+const LS_KEY = 'berich_state_v1';
 const DATA_KEYS = ['balance', 'missionTotalEarned', 'todayEarned', 'todayValidated', 'submissionsToday',
-  'referralCount', 'invest', 'xp', 'streak', 'bestStreak', 'lastActiveDate', 'dailyDate',
-  'challengeClaimed', 'dayProcessed', 'cautionBalance', 'loansTaken', 'reservedMissionIds',
-  'myImages', 'transactions', 'adminUsers'] as const;
+  'referralCount', 'invest', 'likes', 'savings', 'savingsGoal', 'xp', 'streak', 'bestStreak', 'lastActiveDate',
+  'dailyDate', 'challengeClaimed', 'dayProcessed', 'cautionBalance', 'loansTaken', 'withdrawalsDone',
+  'phoneVerified', 'reservedMissionIds', 'myImages', 'transactions', 'adminUsers', 'yasTransfers'] as const;
 
 function loadPersisted(): Partial<SimpleState> {
   if (typeof window === 'undefined') return {};
@@ -201,6 +277,11 @@ function persist(state: SimpleState) {
   try {
     const out: Record<string, unknown> = {};
     for (const k of DATA_KEYS) out[k] = (state as unknown as Record<string, unknown>)[k];
+    /* quota : on ne garde l'aperçu que des 12 dernières images */
+    const imgs = out.myImages as MyImage[] | undefined;
+    if (imgs) {
+      out.myImages = imgs.map((im, i) => (i < 12 ? im : { ...im, data: undefined }));
+    }
     localStorage.setItem(LS_KEY, JSON.stringify(out));
   } catch { /* quota dépassé : silencieux */ }
 }
@@ -215,6 +296,9 @@ export const useSimpleStore = create<SimpleState>((set, get) => ({
   submissionsToday: 7,
   referralCount: 3,
   invest: { invested: 0, totalEarned: 0, claimedToday: false },
+  likes: { roundsToday: 0, totalEarned: 0, lastFailAt: 0, cagnotte: 0, vip: false },
+  savings: 0,
+  savingsGoal: 2500,
   xp: 355,
   streak: 5,
   bestStreak: 5,
@@ -224,6 +308,8 @@ export const useSimpleStore = create<SimpleState>((set, get) => ({
   dayProcessed: '',
   cautionBalance: 0,
   loansTaken: 0,
+  withdrawalsDone: 0,
+  phoneVerified: false,
   reservedMissionIds: ['m2', 'm3'],
   myImages: [
     { id: 'i-1', missionId: 'm1', missionTitle: 'Affiche — Le Méridien', reward: 25, status: 'validated', date: "Aujourd'hui — 10:42" },
@@ -244,6 +330,7 @@ export const useSimpleStore = create<SimpleState>((set, get) => ({
     { id: 'u-4', name: 'Fatou B.', xp: 180, imagesSubmitted: 9, imagesValidated: 7, imagesPending: 1, invested: 1000, earned: 610, lastActive: 'il y a 3 h' },
     { id: 'u-5', name: 'Ibrahim S.', xp: 90, imagesSubmitted: 5, imagesValidated: 4, imagesPending: 0, invested: 0, earned: 340, lastActive: 'hier' },
   ],
+  yasTransfers: [],
   ...loadPersisted(),
 
   /* ---- Passage au nouveau jour : reset quotidien + série active ---- */
@@ -261,6 +348,7 @@ export const useSimpleStore = create<SimpleState>((set, get) => ({
       patch.todayValidated = 0;
       patch.challengeClaimed = false;
       patch.invest = { ...s.invest, claimedToday: false };
+      patch.likes = { ...s.likes, roundsToday: 0 };
       patch.dailyDate = today();
     }
 
@@ -289,15 +377,31 @@ export const useSimpleStore = create<SimpleState>((set, get) => ({
     return { messages, bonus };
   },
 
-  /* ---- Soumettre une image (flux mission) : +2 XP ---- */
-  submitImage: (missionId) => {
+  /* ---- Soumettre une image (flux mission) : +2 XP, doublon bloqué ---- */
+  submitImage: (missionId, file) => {
     const s = get();
-    const quota = levelFor(s.xp).level.quota;
+    const quota = levelFor(s.xp, s.referralCount).level.quota;
     if (s.submissionsToday >= quota) {
       return { ok: false, reason: `Limite de ${quota} images par jour atteinte.` };
     }
     const mission = MISSIONS.find((m) => m.id === missionId);
     if (!mission) return { ok: false, reason: 'Mission introuvable.' };
+
+    /* Filtre anti-doublon : la même image (empreinte) déjà envoyée ? */
+    if (file?.hash) {
+      const dup = s.myImages.find((i) => i.hash === file.hash);
+      if (dup) {
+        const img: MyImage = {
+          id: 'i-' + Math.random().toString(36).slice(2, 8),
+          missionId, missionTitle: `${mission.title} — ${mission.brand}`,
+          reward: 0, status: 'duplicate', date: `Aujourd'hui — ${now()}`,
+          data: undefined, hash: file.hash, dupOf: dup.id,
+        };
+        set((st) => ({ myImages: [img, ...st.myImages] }));
+        return { ok: false, duplicate: true, reason: `Cette image a déjà été envoyée (${dup.date}). Une création originale est attendue.` };
+      }
+    }
+
     const reward = Math.min(mission.reward, MAX_REWARD_PER_IMAGE);
     const img: MyImage = {
       id: 'i-' + Math.random().toString(36).slice(2, 8),
@@ -306,6 +410,8 @@ export const useSimpleStore = create<SimpleState>((set, get) => ({
       reward,
       status: 'pending',
       date: `Aujourd'hui — ${now()}`,
+      data: file?.data,
+      hash: file?.hash,
     };
     set((st) => ({
       submissionsToday: st.submissionsToday + 1,
@@ -318,7 +424,7 @@ export const useSimpleStore = create<SimpleState>((set, get) => ({
     return { ok: true };
   },
 
-  /* ---- Admin : valider une image → gain + XP + défi du jour ---- */
+  /* ---- Admin : valider une image -> gain + XP + défi du jour ---- */
   validateImage: (imageId) => {
     const s = get();
     const img = s.myImages.find((i) => i.id === imageId);
@@ -337,7 +443,7 @@ export const useSimpleStore = create<SimpleState>((set, get) => ({
         ? { ...u, imagesPending: Math.max(0, u.imagesPending - 1), imagesValidated: u.imagesValidated + 1, earned: u.earned + img.reward, xp: u.xp + 10 }
         : u),
     };
-    /* Défi du jour : 3 images validées → +10 F (crédité automatiquement) */
+    /* Défi du jour : 3 images validées -> +10 F (crédité automatiquement) */
     if (!s.challengeClaimed && newValidated >= CHALLENGE_TARGET) {
       challengeBonus = CHALLENGE_REWARD;
       patch.challengeClaimed = true;
@@ -356,7 +462,7 @@ export const useSimpleStore = create<SimpleState>((set, get) => ({
     }));
   },
 
-  /* ---- Défi du jour : réclamation manuelle (si déjà ≥ 3 au chargement) ---- */
+  /* ---- Défi du jour : réclamation manuelle (si déjà >= 3 au chargement) ---- */
   claimDailyChallenge: () => {
     const s = get();
     if (s.challengeClaimed) return { ok: false, reason: 'Bonus du jour déjà reçu.' };
@@ -370,7 +476,118 @@ export const useSimpleStore = create<SimpleState>((set, get) => ({
     return { ok: true };
   },
 
-  /* ---- Investir : déposer (+20 XP) / retirer ---- */
+  /* ---- Épargne missions : le jeune CHOISIT combien épargner ---- */
+  addSavings: (amount) => {
+    const s = get();
+    if (amount <= 0) return { ok: false, reason: 'Choisissez un montant.' };
+    if (amount > s.balance) return { ok: false, reason: 'Solde disponible insuffisant.' };
+    set((st) => ({
+      balance: st.balance - amount,
+      savings: st.savings + amount,
+      xp: st.xp + 5,
+      transactions: [{ id: 't-' + Math.random().toString(36).slice(2, 8), label: `Épargne missions — objectif ${st.savingsGoal} F`, amount: -amount, kind: 'mission' as const, date: `Aujourd'hui — ${now()}` }, ...st.transactions],
+    }));
+    return { ok: true };
+  },
+
+  /* ---- Yas : dépôts / retraits (validés par l'admin) ---- */
+  requestYasTransfer: (kind, project, amount, account) => {
+    const s = get();
+    const acc = (account || '').replace(/\s+/g, '');
+    const accErr = validateYasAccount(acc);
+    if (accErr) return { ok: false, reason: `Numéro Yas invalide : ${accErr}.` };
+    if (!Number.isFinite(amount) || amount <= 0) return { ok: false, reason: 'Montant invalide.' };
+
+    const label: Record<Project, string> = { likes: 'Lives Likes', missions: 'Missions images', invest: 'Investir' };
+
+    if (kind === 'deposit') {
+      if (amount < YAS_MIN_DEPOSIT) return { ok: false, reason: `Dépôt minimum : ${YAS_MIN_DEPOSIT} F.` };
+      const pending = s.yasTransfers.some((t) => t.status === 'pending');
+      if (pending) return { ok: false, reason: 'Une demande est déjà en attente de vérification.' };
+      const t: YasTransfer = { id: 'y-' + Math.random().toString(36).slice(2, 8), kind, project, amount, account: acc, status: 'pending', date: `Aujourd'hui — ${now()}` };
+      set((st) => ({ yasTransfers: [t, ...st.yasTransfers] }));
+      return { ok: true };
+    }
+
+    /* Retrait : premier retrait exige >= 1 filleul (obligatoire) */
+    if (s.withdrawalsDone === 0 && s.referralCount < 1) {
+      return { ok: false, reason: 'Premier retrait : parrainez au moins 1 personne (obligatoire). Onglet Profil.' };
+    }
+    if (amount < YAS_MIN_WITHDRAW) return { ok: false, reason: `Retrait minimum : ${YAS_MIN_WITHDRAW} F.` };
+
+    /* fonds disponibles selon le projet */
+    const funds = project === 'invest' ? s.invest.invested
+      : project === 'missions' ? s.savings
+      : s.likes.cagnotte + s.balance; /* likes : gains + cagnotte */
+    if (amount > funds) return { ok: false, reason: `Fonds insuffisants sur ${label[project]} (${funds} F disponibles).` };
+
+    /* le montant est mis de côté dès la demande */
+    const patch: Partial<SimpleState> = { yasTransfers: [{ id: 'y-' + Math.random().toString(36).slice(2, 8), kind, project, amount, account: acc, status: 'pending', date: `Aujourd'hui — ${now()}` } as YasTransfer, ...s.yasTransfers] };
+    if (project === 'invest') patch.invest = { ...s.invest, invested: s.invest.invested - amount };
+    else if (project === 'missions') patch.savings = s.savings - amount;
+    else patch.balance = s.balance - Math.min(amount, s.balance), patch.likes = { ...s.likes, cagnotte: Math.max(0, s.likes.cagnotte - Math.max(0, amount - Math.min(amount, s.balance))) };
+
+    set(patch);
+    return { ok: true };
+  },
+
+  /* ---- Admin : valide la transaction Yas ---- */
+  approveYasTransfer: (id) => {
+    const s = get();
+    const t = s.yasTransfers.find((x) => x.id === id);
+    if (!t || t.status !== 'pending') return { ok: false };
+    const patch: Record<string, unknown> = {
+      yasTransfers: s.yasTransfers.map((x) => (x.id === id ? { ...x, status: 'approved' } : x)),
+      xp: s.xp + 15,
+    };
+    if (t.kind === 'deposit') {
+      if (t.project === 'invest') patch.invest = { ...s.invest, invested: s.invest.invested + t.amount };
+      else if (t.project === 'missions') patch.savings = s.savings + t.amount;
+      else patch.likes = { ...s.likes, cagnotte: s.likes.cagnotte + t.amount, vip: s.likes.cagnotte + t.amount >= LIKE_VIP_CAGNOTTE };
+      patch.transactions = [{ id: 't-' + Math.random().toString(36).slice(2, 8), label: `Dépôt Yas validé (${t.project === 'likes' ? 'Lives' : t.project === 'missions' ? 'Missions' : 'Investir'})`, amount: t.amount, kind: 'yas' as const, date: `Aujourd'hui — ${now()}` }, ...s.transactions];
+    } else {
+      patch.withdrawalsDone = s.withdrawalsDone + 1;
+      patch.transactions = [{ id: 't-' + Math.random().toString(36).slice(2, 8), label: `Retrait Yas payé (${t.project === 'likes' ? 'Lives' : t.project === 'missions' ? 'Missions' : 'Investir'})`, amount: -t.amount, kind: 'yas' as const, date: `Aujourd'hui — ${now()}` }, ...s.transactions];
+    }
+    set(patch as Partial<SimpleState>);
+    return { ok: true, credited: t.kind === 'deposit' ? t.amount : undefined };
+  },
+
+  rejectYasTransfer: (id) => {
+    const s = get();
+    const t = s.yasTransfers.find((x) => x.id === id);
+    if (!t || t.status !== 'pending') return false;
+    const patch: Record<string, unknown> = { yasTransfers: s.yasTransfers.map((x) => (x.id === id ? { ...x, status: 'rejected' } : x)) };
+    /* retrait refusé -> fonds restitués */
+    if (t.kind === 'withdrawal') {
+      if (t.project === 'invest') patch.invest = { ...s.invest, invested: s.invest.invested + t.amount };
+      else if (t.project === 'missions') patch.savings = s.savings + t.amount;
+      else patch.balance = s.balance + t.amount;
+    }
+    set(patch as Partial<SimpleState>);
+    return true;
+  },
+
+  /* ---- Lives Likes : session réussie -> gain ---- */
+  completeLikeRound: (vip) => {
+    const s = get();
+    if (s.likes.roundsToday >= LIKE_ROUNDS_MAX) return { ok: false, reason: 'Limite de 10 sessions aujourd’hui — reviens demain 🔁' };
+    const reward = vip ? LIKE_VIP_REWARD : LIKE_REWARD;
+    set((st) => ({
+      balance: st.balance + reward,
+      todayEarned: st.todayEarned + reward,
+      xp: st.xp + 5,
+      likes: { ...st.likes, roundsToday: st.likes.roundsToday + 1, totalEarned: st.likes.totalEarned + reward },
+      transactions: [{ id: 't-' + Math.random().toString(36).slice(2, 8), label: vip ? 'Live VIP réussi (100 coeurs)' : 'Live réussi (100 coeurs)', amount: reward, kind: 'likes' as const, date: `Aujourd'hui — ${now()}` }, ...st.transactions],
+    }));
+    return { ok: true, reward };
+  },
+
+  registerLikeFail: () => set((st) => ({ likes: { ...st.likes, lastFailAt: Date.now() } })),
+
+  markPhoneVerified: () => set({ phoneVerified: true }),
+
+  /* ---- Investir : déposer (+20 XP) / retirer (interne, depuis le solde) ---- */
   deposit: (amount) => {
     if (amount <= 0) return false;
     set((st) => ({
@@ -393,7 +610,7 @@ export const useSimpleStore = create<SimpleState>((set, get) => ({
     return true;
   },
 
-  /* ---- Gains journaliers (taux boosté si ≥ 10 filleuls) ---- */
+  /* ---- Gains journaliers (taux boosté si >= 10 filleuls) ---- */
   claimDailyGains: () => {
     const s = get();
     if (s.invest.invested <= 0) return { ok: false, reason: 'Vous n’avez rien investi pour l’instant.' };
@@ -409,14 +626,18 @@ export const useSimpleStore = create<SimpleState>((set, get) => ({
     return { ok: true, gain };
   },
 
-  /* ---- Caution : la moitié du prêt, versée depuis le solde ---- */
+  /* ---- Caution : la moitié du prêt (solde + épargne) ---- */
   payCaution: () => {
     const s = get();
     const tier = LOAN_TIERS[Math.min(s.loansTaken, LOAN_TIERS.length - 1)];
     if (s.cautionBalance >= tier.caution) return false;
-    if (s.balance < tier.caution) return false;
+    const total = s.balance + s.savings;
+    if (total < tier.caution) return false;
+    const fromBalance = Math.min(s.balance, tier.caution);
+    const fromSavings = tier.caution - fromBalance;
     set((st) => ({
-      balance: st.balance - tier.caution,
+      balance: st.balance - fromBalance,
+      savings: st.savings - fromSavings,
       cautionBalance: tier.caution,
       xp: st.xp + 25,
       transactions: [{ id: 't-' + Math.random().toString(36).slice(2, 8), label: `Caution verrouillée (garantie prêt ${tier.amount} F)`, amount: -tier.caution, kind: 'caution' as const, date: `Aujourd'hui — ${now()}` }, ...st.transactions],
@@ -424,15 +645,12 @@ export const useSimpleStore = create<SimpleState>((set, get) => ({
     return true;
   },
 
-  /* ---- Demande du prêt : palier suivant, frais inclus ----
-     Logique microfinance : le solde exigé prouve la capacité d'épargne ;
-     il est ensuite VERROUILLÉ en caution. Une fois la caution versée,
-     la condition de solde est acquise. Restent : parrainages + niveau. */
+  /* ---- Demande du prêt : crédibilité prouvée obligatoire ---- */
   requestLoan: () => {
     const s = get();
     const tier = LOAN_TIERS[Math.min(s.loansTaken, LOAN_TIERS.length - 1)];
-    const { level } = levelFor(s.xp);
-    if (s.cautionBalance < tier.caution) return { ok: false, reason: `Verrouillez d’abord la caution de ${tier.caution} F (votre solde devient la garantie).` };
+    const { level } = levelFor(s.xp, s.referralCount);
+    if (s.cautionBalance < tier.caution) return { ok: false, reason: `Verrouillez d’abord la caution de ${tier.caution} F (votre épargne + solde deviennent la garantie).` };
     if (s.referralCount < tier.referrals) return { ok: false, reason: `Parrainages insuffisants (${s.referralCount}/${tier.referrals}).` };
     if (LEVELS.indexOf(level) < tier.levelMin) return { ok: false, reason: `Niveau ${LEVELS[tier.levelMin].name} requis.` };
     set((st) => ({
@@ -445,7 +663,27 @@ export const useSimpleStore = create<SimpleState>((set, get) => ({
   },
 }));
 
-/* Sauvegarde automatique à chaque changement → vrai système persistant */
+/* Sauvegarde automatique à chaque changement -> vrai système persistant */
 if (typeof window !== 'undefined') {
   useSimpleStore.subscribe((s) => persist(s));
+}
+
+/* ---------------- Crédibilité (tâches à prouver avant le prêt) ---------------- */
+
+export interface CredTask { id: string; label: string; sub: string; points: number; done: boolean; icon: string; color: string }
+
+export function credibilityTasks(s: {
+  phoneVerified: boolean; todayValidated: number; myImages: MyImage[];
+  streak: number; referralCount: number; savings: number;
+}): { tasks: CredTask[]; score: number } {
+  const validatedTotal = s.myImages.filter((i) => i.status === 'validated').length;
+  const tasks: CredTask[] = [
+    { id: 'phone', label: 'Numéro de téléphone vérifié', sub: 'Un numéro unique par compte — preuve d’identité.', points: 20, done: s.phoneVerified, icon: 'fa-phone', color: '#3B82F6' },
+    { id: 'tasks', label: `Créer et valider 5 images`, sub: `Images validées : ${validatedTotal} / 5 — prouver votre sérieux.`, points: 20, done: validatedTotal >= 5, icon: 'fa-image', color: '#22C55E' },
+    { id: 'streak', label: 'Série active de 3 jours', sub: `Série actuelle : ${s.streak} jours — régularité exigée.`, points: 20, done: s.streak >= 3, icon: 'fa-fire', color: '#EF4444' },
+    { id: 'ref', label: 'Parrainer au moins 1 personne', sub: `${s.referralCount} filleul(s) — votre réseau vous recommande.`, points: 20, done: s.referralCount >= 1, icon: 'fa-user-plus', color: '#A855F7' },
+    { id: 'savings', label: 'Épargner au moins 500 F', sub: `Épargne missions : ${s.savings} / 500 F — capacité à épargner.`, points: 20, done: s.savings >= 500, icon: 'fa-piggy-bank', color: '#F59E0B' },
+  ];
+  const score = tasks.reduce((a, t) => a + (t.done ? t.points : 0), 0);
+  return { tasks, score };
 }

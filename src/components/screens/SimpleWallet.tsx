@@ -2,11 +2,12 @@
 
 import { useAppStore, formatCfa } from '@/lib/store';
 import { Header } from '@/components/shared';
-import { useSimpleStore, levelFor, LOAN_TIERS } from '@/lib/simple-store';
+import { useSimpleStore, levelFor, LOAN_TIERS, YAS_MIN_WITHDRAW } from '@/lib/simple-store';
 
 /* ================================================================
-   PORTEFEUILLE DE MISSION (épuré) — le portefeuille du « gagné » :
-   gains missions + investissements + revenus journaliers.
+   PORTEFEUILLE — tout l’argent du jeune :
+   solde + gains (images, likes, invest) + épargne + caution,
+   retrait Yas (1er retrait : 1 filleul requis).
    ================================================================ */
 
 export default function SimpleWallet() {
@@ -14,13 +15,16 @@ export default function SimpleWallet() {
   const { user } = useAppStore();
   if (!user) return null;
 
-  const { level } = levelFor(s.xp);
-  const total = s.balance + s.invest.invested;
+  const { level } = levelFor(s.xp, s.referralCount);
+  const total = s.balance + s.invest.invested + s.savings + s.likes.cagnotte;
 
   const rows = [
     { icon: 'fa-image', color: '#22C55E', label: 'Gains des images validées', value: s.missionTotalEarned },
+    { icon: 'fa-heart', color: '#EC4899', label: 'Gains des Lives Likes', value: s.likes.totalEarned },
     { icon: 'fa-chart-line', color: '#14B8A6', label: 'Investissements', value: s.invest.invested },
     { icon: 'fa-calendar-day', color: '#F59E0B', label: 'Revenus journaliers (investir)', value: s.invest.totalEarned },
+    { icon: 'fa-piggy-bank', color: '#A855F7', label: 'Épargne missions (choisie)', value: s.savings },
+    { icon: 'fa-building-columns', color: '#3B82F6', label: 'Cagnotte Lives VIP', value: s.likes.cagnotte },
   ];
 
   return (
@@ -34,11 +38,16 @@ export default function SimpleWallet() {
           <div className="relative z-[1]">
             <div className="text-[0.58rem] text-white/70 font-bold uppercase tracking-wide mb-1">Valeur totale</div>
             <div className="text-[1.6rem] font-black leading-none">{formatCfa(total)}</div>
-            <div className="text-[0.6rem] text-white/70 mt-2">Solde disponible : {formatCfa(s.balance)} · Investi : {formatCfa(s.invest.invested)}</div>
+            <div className="text-[0.6rem] text-white/70 mt-2">Solde : {formatCfa(s.balance)} · Investi : {formatCfa(s.invest.invested)} · Épargne : {formatCfa(s.savings)}</div>
             <div className="text-[0.55rem] text-white/60 mt-1"><i className={`fas ${level.icon} mr-1`}></i>Niveau {level.name} · {level.perk} · série {s.streak} jours</div>
             {s.cautionBalance > 0 && (
               <div className="text-[0.58rem] text-[#FBBF24] mt-1.5 flex items-center gap-1.5">
                 <i className="fas fa-lock"></i> Caution verrouillée : {formatCfa(s.cautionBalance)} / {formatCfa(LOAN_TIERS[Math.min(s.loansTaken, LOAN_TIERS.length - 1)].caution)}
+              </div>
+            )}
+            {s.withdrawalsDone === 0 && (
+              <div className="text-[0.56rem] text-[#FCD34D] mt-1.5 flex items-center gap-1.5">
+                <i className="fas fa-user-plus"></i> Premier retrait : parrainez 1 personne (obligatoire) — ensuite via Yas (min. {formatCfa(YAS_MIN_WITHDRAW)})
               </div>
             )}
           </div>

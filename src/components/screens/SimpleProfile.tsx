@@ -7,8 +7,9 @@ import {
 } from '@/lib/simple-store';
 
 /* ================================================================
-   PROFIL — identité + niveau + parrainage valorisé (+100 F/filleul,
-   booster 7 % à 10 filleuls) + déconnexion.
+   PROFIL — identité + niveau (parrainages OBLIGATOIRES pour monter)
+   + crédibilité (téléphone à vérifier) + parrainage valorisé
+   (+100 F/filleul, booster 7 % à 10 filleuls) + déconnexion.
    ================================================================ */
 
 export default function SimpleProfile() {
@@ -16,13 +17,19 @@ export default function SimpleProfile() {
   const s = useSimpleStore();
   if (!user) return null;
 
-  const { level, index, next, toNext } = levelFor(s.xp);
+  const { level, index, next, toNext } = levelFor(s.xp, s.referralCount);
   const tier = LOAN_TIERS[Math.min(s.loansTaken, LOAN_TIERS.length - 1)];
 
   const copyCode = () => {
-    const code = user.referralCode || 'JE-XXXX';
+    const code = user.referralCode || 'BR-XXXX';
     try { navigator.clipboard.writeText(code); } catch { /* silencieux */ }
     addToast('Code de parrainage copié ✓', 'success');
+  };
+
+  const verifyPhone = () => {
+    if (s.phoneVerified) return;
+    s.markPhoneVerified();
+    addToast('Numéro vérifié — crédibilité +20 pts ✓', 'success');
   };
 
   return (
@@ -42,15 +49,31 @@ export default function SimpleProfile() {
             <i className={`fas ${level.icon} text-[1.5rem]`} style={{ color: level.color }}></i>
           </div>
           <div className="text-[1rem] font-black text-[#1F2937]">{user.name}</div>
-          <div className="text-[0.65rem] text-[#94A3B8]">{user.email}</div>
+          <div className="text-[0.65rem] text-[#94A3B8]">{user.email}{user.phone ? ` · ${user.phone}` : ''}</div>
           <div className="flex items-center gap-1.5 mt-2 flex-wrap justify-center">
             <span className="px-2.5 py-0.5 rounded-full text-[0.55rem] font-black" style={{ background: level.color + '15', color: level.color }}>
               <i className={`fas ${level.icon} mr-1`}></i>Niveau {level.name}
             </span>
-            <span className="px-2.5 py-0.5 rounded-full text-[0.55rem] font-bold bg-[rgba(34,197,94,0.1)] text-[#22C55E]"><i className="fas fa-check-circle mr-1"></i>Vérifié</span>
+            <span className={`px-2.5 py-0.5 rounded-full text-[0.55rem] font-bold ${s.phoneVerified ? 'bg-[rgba(34,197,94,0.1)] text-[#22C55E]' : 'bg-[rgba(245,158,11,0.1)] text-[#B45309]'}`}>
+              <i className={`fas ${s.phoneVerified ? 'fa-check-circle' : 'fa-circle-exclamation'} mr-1`}></i>{s.phoneVerified ? 'Vérifié' : 'Téléphone à vérifier'}
+            </span>
             {user.role === 'ADMIN' && <span className="px-2.5 py-0.5 rounded-full text-[0.55rem] font-bold bg-[rgba(239,68,68,0.1)] text-[#EF4444]"><i className="fas fa-shield-halved mr-1"></i>Admin</span>}
           </div>
         </div>
+
+        {/* Vérification du téléphone (crédibilité +20) */}
+        {!s.phoneVerified && (
+          <button onClick={verifyPhone} className="w-full bg-white rounded-2xl p-4 mb-3 border border-[rgba(245,158,11,0.3)] shadow-[0_1px_3px_rgba(0,0,0,0.04)] cursor-pointer text-left active:scale-[0.98] transition-transform">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[rgba(245,158,11,0.1)] shrink-0"><i className="fas fa-phone text-[#F59E0B] text-[0.85rem]"></i></div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[0.72rem] font-bold text-[#1F2937]">Vérifier mon numéro de téléphone</div>
+                <div className="text-[0.56rem] text-[#64748B] leading-snug">Un numéro unique par compte — +20 pts de crédibilité (prêt débloqué plus vite).</div>
+              </div>
+              <span className="px-2.5 py-1 rounded-lg bg-[rgba(245,158,11,0.12)] text-[#B45309] font-black text-[0.55rem] shrink-0">+20</span>
+            </div>
+          </button>
+        )}
 
         {/* Niveau + XP */}
         <div className="bg-white rounded-2xl p-4 mb-3 border border-[rgba(0,0,0,0.04)] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
@@ -69,7 +92,7 @@ export default function SimpleProfile() {
             ))}
           </div>
           <div className="text-[0.58rem] text-[#64748B] mt-2.5 leading-relaxed">
-            Avantage actuel : <strong>{level.perk}</strong>. Gagnez de l’XP : images validées (+10), parrainages (+50), dépôts (+20), régularité.
+            Avantage actuel : <strong>{level.perk}</strong>. Monter de niveau exige <strong>de l’XP ET des parrainages</strong> (obligatoire) : Argent 1 filleul, Or 3, Diamant 5.
           </div>
         </div>
 
@@ -81,12 +104,13 @@ export default function SimpleProfile() {
           </div>
           <div className="text-[0.6rem] text-[#64748B] mb-3 leading-relaxed">
             Chaque filleul validé : <strong className="text-[#A855F7]">+{REFERRAL_BONUS} F</strong> immédiatement.
-            À <strong>{INVEST_BOOST_REFERRALS} filleuls</strong> : taux d’investissement boosté à <strong>7 %/jour</strong>.
+            <strong>Obligatoire</strong> pour monter de niveau et pour le <strong>premier retrait</strong>.
+            À <strong>{INVEST_BOOST_REFERRALS} filleuls</strong> : taux boosté à <strong>7 %/jour</strong>.
             Et les parrainages comptent pour le prêt (palier {tier.id} : {tier.referrals} requis).
           </div>
           <div className="flex items-center gap-2.5 mb-2.5">
             <div className="flex-1 py-2.5 px-4 rounded-xl bg-[rgba(0,0,0,0.03)] border border-[rgba(0,0,0,0.05)] text-[0.8rem] font-black text-[#1F2937] tracking-wider">
-              {user.referralCode || 'JE-XXXX'}
+              {user.referralCode || 'BR-XXXX'}
             </div>
             <button onClick={copyCode} className="px-4 py-2.5 rounded-xl bg-[rgba(168,85,247,0.1)] text-[#7C3AED] font-bold text-[0.7rem] border border-[rgba(168,85,247,0.2)] cursor-pointer transition-transform active:scale-95">
               <i className="fas fa-copy mr-1"></i>Copier

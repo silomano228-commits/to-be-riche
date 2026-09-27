@@ -5,13 +5,15 @@ import { useAppStore, formatCfa } from '@/lib/store';
 import { Header, LogoImg } from '@/components/shared';
 import {
   useSimpleStore, levelFor, LOAN_TIERS, LEVELS, LIVE_FEED, TOP_CREATORS,
-  CHALLENGE_TARGET, CHALLENGE_REWARD, MAX_REWARD_PER_IMAGE,
+  CHALLENGE_TARGET, CHALLENGE_REWARD, MAX_REWARD_PER_IMAGE, credibilityTasks,
+  LIKE_ROUNDS_MAX, LIKE_VIP_REWARD, LIKE_REWARD,
 } from '@/lib/simple-store';
 
 /* ================================================================
-   ACCUEIL — version engageante
-   Salutation + niveau · potentiel · 4 stats · bonus du jour ·
-   objectif du mois (paliers de prêt) · communauté en direct.
+   ACCUEIL — Be Rich, version engageante
+   Salutation + niveau · crédibilité à prouver · potentiel ·
+   4 stats · bonus du jour · objectif du mois (paliers de prêt) ·
+   communauté en direct.
    ================================================================ */
 
 export default function SimpleHome() {
@@ -34,25 +36,30 @@ export default function SimpleHome() {
   if (!user) return null;
 
   const firstName = (user.name || '').trim().split(/\s+/)[0] || 'vous';
-  const { level, next, toNext } = levelFor(s.xp);
+  const { level, next, toNext } = levelFor(s.xp, s.referralCount);
   const quota = level.quota;
   const restSubs = Math.max(0, quota - s.submissionsToday);
+  const vip = s.likes.cagnotte >= 1000;
+  const likeReward = vip ? LIKE_VIP_REWARD : LIKE_REWARD;
+
+  /* Crédibilité : tâches à prouver avant le prêt */
+  const { tasks: credTasks, score: credScore } = credibilityTasks(s);
 
   /* Objectif du mois = palier de prêt en cours */
   const tierIndex = Math.min(s.loansTaken, LOAN_TIERS.length - 1);
   const tier = LOAN_TIERS[tierIndex];
   const loanDone = s.loansTaken >= LOAN_TIERS.length;
   const cautionOk = s.cautionBalance >= tier.caution;
-  /* Le solde exigé prouve la capacité d'épargne : atteint si le solde
-     couvre la caution, ou si la caution (issue du solde) est verrouillée. */
-  const soldeOk = cautionOk || s.balance >= tier.caution;
+  /* Le solde + l'épargne exigés prouvent la capacité d'épargne : atteints
+     si solde+épargne couvrent la caution, ou si la caution est verrouillée. */
+  const soldeOk = cautionOk || (s.balance + s.savings) >= tier.caution;
   const referralOk = s.referralCount >= tier.referrals;
   const levelOk = LEVELS.indexOf(level) >= tier.levelMin;
   const eligible = cautionOk && referralOk && levelOk;
-  const pctObjective = cautionOk ? 100 : Math.min(100, Math.round((s.balance / tier.caution) * 100));
+  const pctObjective = cautionOk ? 100 : Math.min(100, Math.round(((s.balance + s.savings) / tier.caution) * 100));
 
-  /* Potentiel réel dans les règles actuelles */
-  const dayPotential = quota * MAX_REWARD_PER_IMAGE;
+  /* Potentiel réel dans les règles actuelles (3 projets) */
+  const dayPotential = (quota - s.submissionsToday) * MAX_REWARD_PER_IMAGE + (LIKE_ROUNDS_MAX - s.likes.roundsToday) * likeReward;
 
   /* Bonus du jour */
   const challengeReady = s.todayValidated >= CHALLENGE_TARGET && !s.challengeClaimed;
@@ -71,8 +78,9 @@ export default function SimpleHome() {
 
   const handleLoan = () => {
     if (loanDone) { addToast('Tous les paliers de prêt sont déjà obtenus 🏆', 'info'); return; }
-    if (!cautionOk && s.balance >= tier.caution) {
-      if (s.payCaution()) addToast(`Caution de ${formatCfa(tier.caution)} versée et verrouillée`, 'success');
+    if (credScore < 100) { addToast('Prouvez d’abord votre crédibilité (carte ci-dessous) — toutes les tâches sont obligatoires.', 'error'); return; }
+    if (!cautionOk && (s.balance + s.savings) >= tier.caution) {
+      if (s.payCaution()) addToast(`Caution de ${formatCfa(tier.caution)} versée et verrouillée (solde + épargne)`, 'success');
       else addToast('Solde insuffisant pour verser la caution', 'error');
       return;
     }
@@ -90,7 +98,7 @@ export default function SimpleHome() {
   return (
     <>
       <Header
-        title={<><LogoImg className="w-[26px] h-[26px] rounded-md" /> <span className="text-[#1F2937] font-black">Jeune Élan</span></>}
+        title={<><LogoImg className="w-[26px] h-[26px] rounded-md" /> <span className="text-[#1F2937] font-black">Be Rich</span></>}
         rightElement={
           <button onClick={() => setPage('profile')} className="w-9 h-9 rounded-full flex items-center justify-center bg-[rgba(0,0,0,0.04)] text-[#64748B] cursor-pointer border-none">
             <i className="far fa-user-circle text-[1.05rem]"></i>
@@ -120,16 +128,43 @@ export default function SimpleHome() {
           </div>
         </div>
 
-        {/* Potentiel (dans les règles : quota × 30 F) */}
+        {/* Potentiel (3 projets : images + lives + invest) */}
         <div className="rounded-2xl p-3.5 mb-3 text-white relative overflow-hidden bg-gradient-to-r from-[#16A34A] to-[#15803D]">
           <div className="flex items-center gap-3 relative z-[1]">
             <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0"><i className="fas fa-fire text-[1rem] text-[#FBBF24]"></i></div>
             <div className="flex-1 min-w-0">
-              <div className="text-[0.78rem] font-black leading-tight">Jusqu’à {formatCfa(dayPotential)} aujourd’hui</div>
-              <div className="text-[0.58rem] text-white/75 mt-0.5">{quota} images × 30 F max — soit {formatCfa(dayPotential * 30)} par mois. Chaque image validée compte.</div>
+              <div className="text-[0.78rem] font-black leading-tight">Encore {formatCfa(dayPotential)} à prendre aujourd’hui</div>
+              <div className="text-[0.58rem] text-white/75 mt-0.5">Missions images + Lives Likes + gains d’investissement. Onglet « Gagner ».</div>
             </div>
-            <button onClick={() => setPage('missions')} className="px-3.5 py-2 rounded-xl bg-white text-[#15803D] font-black text-[0.65rem] border-none cursor-pointer shrink-0 transition-transform active:scale-95">Gagner</button>
+            <button onClick={() => setPage('earn')} className="px-3.5 py-2 rounded-xl bg-white text-[#15803D] font-black text-[0.65rem] border-none cursor-pointer shrink-0 transition-transform active:scale-95">Gagner</button>
           </div>
+        </div>
+
+        {/* CRÉDIBILITÉ : à prouver avant le prêt */}
+        <div className="bg-white rounded-2xl p-4 mb-3 border border-[rgba(245,158,11,0.35)] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <i className="fas fa-shield-heart text-[#F59E0B] text-[0.8rem]"></i>
+              <div className="text-[0.82rem] font-bold text-[#1F2937]">Ma crédibilité</div>
+            </div>
+            <span className={`px-2 py-0.5 rounded-full text-[0.55rem] font-black ${credScore >= 100 ? 'bg-[rgba(34,197,94,0.1)] text-[#22C55E]' : 'bg-[rgba(245,158,11,0.1)] text-[#B45309]'}`}>
+              {credScore} / 100 {credScore >= 100 ? '· prêt débloqué' : '· à prouver'}
+            </span>
+          </div>
+          <div className="w-full h-2.5 bg-[rgba(0,0,0,0.05)] rounded-full overflow-hidden mb-3">
+            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${credScore}%`, background: 'linear-gradient(90deg,#F59E0B,#22C55E)' }} />
+          </div>
+          <div className="text-[0.58rem] text-[#64748B] mb-2 leading-relaxed">La plateforme prête uniquement aux profils crédibles : accomplissez ces tâches pour débloquer le micro-prêt.</div>
+          {credTasks.map((t) => (
+            <div key={t.id} className="flex items-center gap-2.5 py-1">
+              <i className={`fas ${t.done ? 'fa-circle-check' : 'fa-circle'} ${t.done ? 'text-[#22C55E]' : 'text-[#CBD5E1]'} text-[0.7rem] w-4 text-center shrink-0`}></i>
+              <div className="flex-1 min-w-0">
+                <div className={`text-[0.66rem] font-bold ${t.done ? 'text-[#1F2937]' : 'text-[#64748B]'}`}>{t.label}</div>
+                <div className="text-[0.54rem] text-[#94A3B8] leading-snug truncate">{t.sub}</div>
+              </div>
+              <span className={`text-[0.55rem] font-black shrink-0 ${t.done ? 'text-[#22C55E]' : 'text-[#94A3B8]'}`}>+{t.points}</span>
+            </div>
+          ))}
         </div>
 
         {/* 4 cartes stats */}
@@ -144,17 +179,18 @@ export default function SimpleHome() {
             <div className="text-[0.56rem] text-[#94A3B8] font-bold uppercase tracking-wide">Gain aujourd’hui</div>
             <div className="text-[1.05rem] font-black text-[#22C55E] mt-0.5">+{formatCfa(s.todayEarned)}</div>
           </button>
-          <button onClick={() => setPage('missions')} className="bg-white rounded-2xl p-3.5 text-left border border-[rgba(0,0,0,0.04)] shadow-[0_1px_3px_rgba(0,0,0,0.04)] cursor-pointer transition-transform active:scale-[0.97]">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2 bg-[rgba(168,85,247,0.1)]"><i className="fas fa-thumbtack text-[0.7rem] text-[#A855F7]"></i></div>
-            <div className="text-[0.56rem] text-[#94A3B8] font-bold uppercase tracking-wide">Mission réservée</div>
-            <div className="text-[1.05rem] font-black text-[#1F2937] mt-0.5">{s.reservedMissionIds.length}</div>
+          <button onClick={() => setPage('earn')} className="bg-white rounded-2xl p-3.5 text-left border border-[rgba(0,0,0,0.04)] shadow-[0_1px_3px_rgba(0,0,0,0.04)] cursor-pointer transition-transform active:scale-[0.97]">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2 bg-[rgba(236,72,153,0.1)]"><i className="fas fa-heart text-[0.7rem] text-[#EC4899]"></i></div>
+            <div className="text-[0.56rem] text-[#94A3B8] font-bold uppercase tracking-wide">Sessions Likes restantes</div>
+            <div className="text-[1.05rem] font-black text-[#1F2937] mt-0.5">{Math.max(0, LIKE_ROUNDS_MAX - s.likes.roundsToday)} / {LIKE_ROUNDS_MAX}</div>
+            <div className="text-[0.52rem] text-[#94A3B8] mt-0.5">+{likeReward} F par session réussie</div>
           </button>
-          <button onClick={() => setPage('missions')} className="bg-white rounded-2xl p-3.5 text-left border border-[rgba(0,0,0,0.04)] shadow-[0_1px_3px_rgba(0,0,0,0.04)] cursor-pointer transition-transform active:scale-[0.97]">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2 bg-[rgba(59,130,246,0.1)]"><i className="fas fa-layer-group text-[0.7rem] text-[#3B82F6]"></i></div>
-            <div className="text-[0.56rem] text-[#94A3B8] font-bold uppercase tracking-wide">File active</div>
+          <button onClick={() => setPage('earn')} className="bg-white rounded-2xl p-3.5 text-left border border-[rgba(0,0,0,0.04)] shadow-[0_1px_3px_rgba(0,0,0,0.04)] cursor-pointer transition-transform active:scale-[0.97]">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2 bg-[rgba(168,85,247,0.1)]"><i className="fas fa-bullhorn text-[0.7rem] text-[#A855F7]"></i></div>
+            <div className="text-[0.56rem] text-[#94A3B8] font-bold uppercase tracking-wide">Soumissions images</div>
             <div className="text-[1.05rem] font-black text-[#1F2937] mt-0.5">{s.submissionsToday} / {quota}</div>
             <div className="w-full h-1.5 bg-[rgba(0,0,0,0.05)] rounded-full overflow-hidden mt-1.5">
-              <div className="h-full bg-[#3B82F6] rounded-full" style={{ width: `${(s.submissionsToday / quota) * 100}%` }} />
+              <div className="h-full bg-[#A855F7] rounded-full" style={{ width: `${(s.submissionsToday / quota) * 100}%` }} />
             </div>
             <div className="text-[0.52rem] text-[#94A3B8] mt-1">{restSubs} restante{restSubs > 1 ? 's' : ''} aujourd’hui</div>
           </button>
@@ -234,7 +270,7 @@ export default function SimpleHome() {
               </div>
 
               <div className="flex justify-between items-end mb-1.5">
-                <div className="text-[0.88rem] font-black text-[#1F2937]">{formatCfa(cautionOk ? tier.caution : Math.min(s.balance, tier.caution))} <span className="text-[#94A3B8] font-semibold text-[0.62rem]">/ {formatCfa(tier.caution)} d’épargne</span></div>
+                <div className="text-[0.88rem] font-black text-[#1F2937]">{formatCfa(cautionOk ? tier.caution : Math.min(s.balance + s.savings, tier.caution))} <span className="text-[#94A3B8] font-semibold text-[0.62rem]">/ {formatCfa(tier.caution)} d’épargne</span></div>
                 <div className="text-[0.7rem] font-black text-[#22C55E]">{pctObjective} %</div>
               </div>
               <div className="w-full h-3 bg-[rgba(0,0,0,0.05)] rounded-full overflow-hidden mb-3">
@@ -243,7 +279,7 @@ export default function SimpleHome() {
 
               <div className="text-[0.6rem] font-black text-[#1F2937] uppercase tracking-wide mb-0.5">Les conditions</div>
               <div className="rounded-xl bg-[rgba(0,0,0,0.02)] p-2.5 mb-3">
-                {cond(soldeOk, `Épargne — ${cautionOk ? 'caution couverte ✓' : `${formatCfa(s.balance)} / ${formatCfa(tier.caution)}`}`, 'Votre solde prouve votre capacité d’épargne — il finance ensuite la caution.')}
+                {cond(soldeOk, `Épargne — ${cautionOk ? 'caution couverte ✓' : `${formatCfa(s.balance + s.savings)} / ${formatCfa(tier.caution)}`}`, 'Solde + épargne missions (le montant que VOUS choisissez) prouvent votre capacité d’épargne.')}
                 {cond(cautionOk, `Caution — ${formatCfa(s.cautionBalance)} / ${formatCfa(tier.caution)}`, 'Garantie = la MOITIÉ de la somme empruntée, verrouillée pendant le prêt.')}
                 {cond(referralOk, `Parrainages — ${s.referralCount} / ${tier.referrals}`, `Chaque filleul validé vous rapporte aussi +100 F.`)}
                 {cond(levelOk, `Niveau ${LEVELS[tier.levelMin].name} requis — vous êtes ${level.name}`, `Gagnez de l’expérience : images validées, parrainages, régularité.`)}
